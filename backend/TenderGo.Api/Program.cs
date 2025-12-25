@@ -1,3 +1,6 @@
+using Microsoft.EntityFrameworkCore;
+using TenderGo.Api.Database;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -15,6 +18,11 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+builder.Services.AddDbContext<TenderGoContext>(options => options.UseSqlServer(connectionString));
+builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+
 
 var summaries = new[]
 {
