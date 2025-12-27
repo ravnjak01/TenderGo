@@ -1,51 +1,81 @@
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 using TenderGo.Api.Database;
+using TenderGo.Models.Entities;
+using TenderGo.Services.Interfaces; 
+using TenderGo.Services.Services;  
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+// 1. Konfiguracija baze
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+builder.Services.AddDbContext<TenderGoContext>(options => options.UseSqlServer(connectionString, b =>
+{
+    b.MigrationsAssembly("TenderGo.Services");
+}));
+
+// 2. Identity postavke
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+{
+    options.Password.RequiredLength = 8;
+    options.Password.RequireDigit = true;
+    options.Password.RequireUppercase = true;
+    options.Password.RequireNonAlphanumeric = false;
+    options.User.RequireUniqueEmail = true;
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
+    options.Lockout.MaxFailedAccessAttempts = 5;
+})
+    .AddEntityFrameworkStores<TenderGoContext>()
+    .AddDefaultTokenProviders();
+
+// 3. Autentifikacija i JWT
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidAudience = builder.Configuration["Jwt:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
+    };
+});
+
+// 4. Registracija ostalih servisa (OBAVEZNO PRIJE builder.Build())
+builder.Services.AddControllers(); // Ovo je neophodno za rad [ApiController] kontrolera
+builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+//  custom servisi
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+
+// --- OVDE SE ZAKLJUČAVAJU SERVISI ---
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    // Ispravljeno: Standardne metode za Swagger u .NET 7/8
+// 5. Middleware Pipeline (Redoslijed je bitan)
     app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwaggerUI(c => {
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "TenderGo API V1");
+    c.RoutePrefix = "swagger"; // Ovo osigurava da je na /swagger
+});
 
 app.UseHttpsRedirection();
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-builder.Services.AddDbContext<TenderGoContext>(options => options.UseSqlServer(connectionString));
-builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+//  da bi zaštita radila
+app.UseAuthentication();
+app.UseAuthorization();
 
-
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
+app.MapControllers(); // Bez ovoga ruta /api/auth/register neće raditi
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
