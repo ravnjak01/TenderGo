@@ -13,5 +13,7 @@ namespace TenderGo.Services.Interfaces
     {
 
         Task<IdentityResult> RegisterAsync(RegisterDTO dto);
+        Task<LoginResponseDto> LoginAsync(LoginDTO dto);
+
     }
 }
