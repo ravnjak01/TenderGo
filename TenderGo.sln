@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TenderGo.Api", "backend\TenderGo.Api\TenderGo.Api.csproj", "{E0EBEC90-848B-424C-81BA-00B2457D7FD9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TenderGo.Models", "backend\TenderGo.Models\TenderGo.Models.csproj", "{A7FE2278-BA26-4825-8ADF-E0D6A740EAB4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TenderGo.Services", "backend\TenderGo.Services\TenderGo.Services.csproj", "{1E997826-592A-4F22-BDF1-B9528B0E7751}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E0EBEC90-848B-424C-81BA-00B2457D7FD9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E0EBEC90-848B-424C-81BA-00B2457D7FD9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E0EBEC90-848B-424C-81BA-00B2457D7FD9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E0EBEC90-848B-424C-81BA-00B2457D7FD9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A7FE2278-BA26-4825-8ADF-E0D6A740EAB4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A7FE2278-BA26-4825-8ADF-E0D6A740EAB4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A7FE2278-BA26-4825-8ADF-E0D6A740EAB4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A7FE2278-BA26-4825-8ADF-E0D6A740EAB4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1E997826-592A-4F22-BDF1-B9528B0E7751}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1E997826-592A-4F22-BDF1-B9528B0E7751}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1E997826-592A-4F22-BDF1-B9528B0E7751}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1E997826-592A-4F22-BDF1-B9528B0E7751}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

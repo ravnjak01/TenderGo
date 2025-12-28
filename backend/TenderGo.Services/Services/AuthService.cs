@@ -1,8 +1,11 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using TenderGo.Models.Entities;
@@ -11,7 +14,7 @@ using TenderGo.Services.Interfaces;
 
 namespace TenderGo.Services.Services
 {
-    public class AuthService:IAuthService
+    public class AuthService : IAuthService
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IConfiguration _config;
@@ -34,8 +37,65 @@ namespace TenderGo.Services.Services
             };
             var result = await _userManager.CreateAsync(user, dto.Password);
 
-          
+
             return result;
+        }
+
+        public async Task<LoginResponseDto?> LoginAsync(LoginDTO dto)
+        {
+            var user = await _userManager.FindByEmailAsync(dto.Email);
+            if (user==null)
+            {
+                return null;
+
+            }
+
+            var passwordValid = await _userManager.CheckPasswordAsync(user, dto.Password);
+            if (!passwordValid)
+                return null;
+
+            var token = GenerateJwtToken(user);
+
+            return new LoginResponseDto
+            {
+                Token = token,
+                ExpiresAt = DateTime.UtcNow.AddMinutes(
+            int.Parse(_config["Jwt:ExpiresInMinutes"])
+        )
+            };
+        }
+
+        private string GenerateJwtToken(ApplicationUser user)
+        {
+
+            var jwtKey = _config["Jwt:Key"]
+    ?? throw new Exception("Jwt:Key nije postavljen");
+
+            var expires = int.Parse(
+       _config["Jwt:ExpiresInMinutes"]
+       ?? throw new Exception("Jwt:ExpiresInMinutes nije postavljen")
+   );
+            var claims = new List<Claim>
+                   {
+                  new Claim(JwtRegisteredClaimNames.Sub,user.Id),
+                 new Claim(JwtRegisteredClaimNames.Email,user.Email),
+                  new Claim(JwtRegisteredClaimNames.Jti,Guid.NewGuid().ToString()),
+                 };
+
+            var key=new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
+
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var token = new JwtSecurityToken(
+                issuer: _config["Jwt:Issuer"],
+                audience: _config["Jwt:Audience"],
+                claims: claims,
+                 expires: DateTime.UtcNow.AddMinutes(expires),
+                signingCredentials: creds
+                );
+
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
     }
 }
