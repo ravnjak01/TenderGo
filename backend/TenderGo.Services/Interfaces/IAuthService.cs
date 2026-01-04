@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using TenderGo.Models.Entities;
+using TenderGo.Models.Requests;
 using TenderGo.Services.DTOs;
 
 namespace TenderGo.Services.Interfaces
@@ -12,8 +13,8 @@ namespace TenderGo.Services.Interfaces
     public interface IAuthService
     {
 
-        Task<IdentityResult> RegisterAsync(RegisterDTO dto);
-        Task<LoginResponseDto> LoginAsync(LoginDTO dto);
+        Task<IdentityResult> RegisterAsync(RegisterRequest dto);
+        Task<LoginResponseDto> LoginAsync(LoginRequest dto);
 
     }
 }

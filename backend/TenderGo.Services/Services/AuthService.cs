@@ -9,6 +9,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using TenderGo.Models.Entities;
+using TenderGo.Models.Requests;
 using TenderGo.Services.DTOs;
 using TenderGo.Services.Interfaces;
 
@@ -25,7 +26,7 @@ namespace TenderGo.Services.Services
             _config = config;
         }
 
-        public async Task<IdentityResult> RegisterAsync(RegisterDTO dto)
+        public async Task<IdentityResult> RegisterAsync(RegisterRequest dto)
         {
             var user = new ApplicationUser
             {
@@ -37,11 +38,14 @@ namespace TenderGo.Services.Services
             };
             var result = await _userManager.CreateAsync(user, dto.Password);
 
+            await _userManager.AddToRoleAsync(user, "User");
+
+
 
             return result;
         }
 
-        public async Task<LoginResponseDto?> LoginAsync(LoginDTO dto)
+        public async Task<LoginResponseDto?> LoginAsync(LoginRequest dto)
         {
             var user = await _userManager.FindByEmailAsync(dto.Email);
             if (user==null)

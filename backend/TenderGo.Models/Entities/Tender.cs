@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using TenderGo.Models.Entities;
 
 namespace TenderGo.Api.Database;
 
@@ -20,4 +21,7 @@ public partial class Tender
     public int Status { get; set; }
 
     public string? UserId { get; set; }
+
+    public int CategoryId { get; set; }
+    public virtual Category  Category { get; set; }
 }

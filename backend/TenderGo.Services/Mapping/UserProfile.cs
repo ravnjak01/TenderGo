@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using TenderGo.Models.Entities;
-using TenderGo.Services.DTOs;
+using TenderGo.Models.Requests;
 
 namespace TenderGo.Services.Mapping
 {
@@ -14,7 +14,7 @@ namespace TenderGo.Services.Mapping
 
         public UserProfile()
         {
-     CreateMap<RegisterDTO,ApplicationUser>()
+     CreateMap<RegisterRequest,ApplicationUser>()
             .ForMember(dest => dest.UserName,
                opt => opt.MapFrom(src => src.Email));
 

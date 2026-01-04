@@ -5,9 +5,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TenderGo.Services.DTOs
+namespace TenderGo.Models.Requests
 {
-    public class LoginDTO
+    public class LoginRequest
     {
         [Required(ErrorMessage = "Email is required.")]
         public string Email { get; set; }

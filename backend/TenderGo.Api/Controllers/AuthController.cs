@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using TenderGo.Services.DTOs;
+using TenderGo.Models.Requests;
 using TenderGo.Services.Interfaces;
 
 namespace TenderGo.Api.Controllers
@@ -18,7 +18,7 @@ namespace TenderGo.Api.Controllers
         }
         [AllowAnonymous]
         [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] RegisterDTO dto)
+        public async Task<IActionResult> Register([FromBody] RegisterRequest dto)
         {
             var result = await _authService.RegisterAsync(dto);
             if (result.Succeeded)
@@ -29,7 +29,7 @@ namespace TenderGo.Api.Controllers
         }
         [AllowAnonymous]
         [HttpPost("login")]
-            public async Task<IActionResult> Login([FromBody] LoginDTO dto)
+            public async Task<IActionResult> Login([FromBody] LoginRequest dto)
             {
                 var result = await _authService.LoginAsync(dto);
             if (result == null)

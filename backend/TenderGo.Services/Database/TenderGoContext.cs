@@ -19,6 +19,8 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
 
     public virtual DbSet<Tender> Tenders { get; set; }
 
+
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
 

@@ -5,9 +5,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TenderGo.Services.DTOs
+namespace TenderGo.Models.Requests
 {
-    public class RegisterDTO
+    public class RegisterRequest
     {
         [Required(ErrorMessage = "Username is required")]
         [StringLength(50, MinimumLength = 3)]
