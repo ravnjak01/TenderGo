@@ -5,10 +5,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using TenderGo.Api.Database;
+using TenderGo.Models.ENUMs;
 
 namespace TenderGo.Models.Entities
 {
-    public class TenderApllication
+    public class TenderApplication
     {
         public int Id { get; set; }
         public int UserId { get; set; }
@@ -16,5 +17,6 @@ namespace TenderGo.Models.Entities
         public DateTime AppliedAt { get; set; }
         public int TenderId { get; set; }
         public virtual Tender Tender { get; set; }
+        public ApplicationStatus Status { get; set; }
     }
 }

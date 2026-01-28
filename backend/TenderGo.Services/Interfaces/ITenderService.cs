@@ -9,14 +9,14 @@ using TenderGo.Services.DTOs;
 
 namespace TenderGo.Services.Interfaces
 {
-    public interface ITenderService:IBaseService<TenderDTO,TenderInsertRequest,TenderUpdateRequest>
+    public interface ITenderService:IBaseService<TenderDTO,Tender,TenderInsertRequest,TenderUpdateRequest>
     {
         Task<IEnumerable<TenderDTO>> GetTendersByCategory(int id);
        Task<IEnumerable<TenderDTO>> GetClosedTenders();
         Task<IEnumerable<TenderDTO>> GetActiveTenders();
-        Task<Tender> GetTenderByIdAsync(int id);
 
-
+        Task CloseTender(int tenderId);
+        Task AcceptBid (int tenderId, int bidId);
 
 
     }

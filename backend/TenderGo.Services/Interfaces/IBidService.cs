@@ -10,10 +10,12 @@ using TenderGo.Services.Services;
 
 namespace TenderGo.Services.Interfaces
 {
-    public interface IBidService:IBaseService<BidDTO, BidCreateRequest, BidCreateRequest>
+    public interface IBidService:IBaseService<BidDTO,Bid, BidInsertRequest, BidUpdateRequest>
     {
 
-         Task<Bid> SubmitBidAsync(string userId, BidCreateRequest request);
-    Task<IEnumerable<Bid>> GetBidsForTenderAsync(int tenderId);
-}
+         Task<BidDTO> SubmitBidAsync( BidInsertRequest request);
+        Task AcceptBidAsync(int bidId);
+        Task RejectBidAsync(int bidId);
+
+    }
 }

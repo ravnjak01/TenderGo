@@ -9,8 +9,8 @@ namespace TenderGo.Models.Requests
     public class TenderUpdateRequest
     {
         public int Id { get; set; }
-        public string Title { get; set; }
-        public string Description { get; set; }
-        public decimal MaxBudget { get; set; }
+        public string? Title { get; set; }
+        public string? Description { get; set; }
+        public decimal? MaxBudget { get; set; }
     }
 }

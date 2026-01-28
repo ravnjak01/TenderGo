@@ -13,7 +13,7 @@ using TenderGo.Services.Interfaces;
 
 namespace TenderGo.Services.Services
 {
-    public class BaseService<T,TDb,TInsert,TUpdate> : IBaseService<T,TInsert,TUpdate> where TDb : class where T : class
+    public class BaseService<T,TDb,TInsert,TUpdate> : IBaseService<T,TDb,TInsert,TUpdate> where TDb : class where T : class
     {
 
        protected readonly TenderGoContext _context;
@@ -51,7 +51,7 @@ namespace TenderGo.Services.Services
             await _context.SaveChangesAsync();
             return _mapper.Map<T>(entity);
         }
-        public async Task Update(int id, TUpdate request)
+        public virtual async Task Update(int id, TUpdate request)
         {
             var entity = await _context.Set<TDb>().FindAsync(id)
        ?? throw new UserException($"{typeof(TDb).Name} not found");

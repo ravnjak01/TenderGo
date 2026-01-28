@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using TenderGo.Api.Database;
+using TenderGo.Models.ENUMs;
 
 namespace TenderGo.Models.Entities
 {
@@ -16,5 +17,6 @@ namespace TenderGo.Models.Entities
         public string SubmittedByUserId { get; set; }
         public decimal OfferedPrice { get; set; }
         public DateTime SubmittedAt { get; set; } = DateTime.UtcNow;
+        public ApplicationStatus Status { get; set; } = ApplicationStatus.Pending;
     }
 }

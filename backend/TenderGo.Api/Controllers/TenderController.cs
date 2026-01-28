@@ -5,8 +5,11 @@ using TenderGo.Models.Requests;
 using TenderGo.Services.DTOs;
 using TenderGo.Services.Interfaces;
 
+
+
+[Route("api/tender")]
 public class TenderController
-   : BaseController<TenderDTO, TenderInsertRequest, TenderUpdateRequest>
+   : BaseController<TenderDTO, Tender,TenderInsertRequest, TenderUpdateRequest>
 {
 
     private readonly ITenderService _tenderService;
@@ -32,5 +35,18 @@ public class TenderController
     public async Task<ActionResult<List<TenderDTO>>> GetByCategory(int id)
         => Ok(await _tenderService.GetTendersByCategory(id));
 
+    [Authorize(Roles = "User,Admin")]
+    [HttpPatch("{tenderId}/close")]
+    public async Task<IActionResult> CloseTender(int tenderId)
+    {
+        await _tenderService.CloseTender(tenderId);
+        return NoContent();
+    }
+    [HttpPatch("{tenderId}/bids/{bidId}/accept")]
+    public async Task<IActionResult> AcceptBid(int tenderId, int bidId)
+    {
+        await _tenderService.AcceptBid(tenderId, bidId);
+        return NoContent();
+    }
 
 }

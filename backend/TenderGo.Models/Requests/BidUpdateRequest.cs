@@ -6,9 +6,7 @@ using System.Threading.Tasks;
 
 namespace TenderGo.Models.Requests
 {
-    public class BidCreateRequest
+    public class BidUpdateRequest
     {
-        public int TenderId { get; set; }
-        public decimal OfferedPrice { get; set; }
     }
 }

@@ -23,7 +23,7 @@ public partial class Tender
 
     public string? CreatedByUserId { get; set; }
     public virtual ApplicationUser CreatedByUser { get; set; }
-    public virtual ICollection<TenderApllication> Applicants { get; set; }
+    public virtual ICollection<TenderApplication> Applicants { get; set; }
 
     public int CategoryId { get; set; }
     public virtual Category  Category { get; set; }

@@ -50,11 +50,42 @@ namespace TenderGo.Services.Services
 
         }
 
-     
+     public async Task CloseTender(int tenderId)
+        {
+            var tender = await _context.Tenders.FindAsync(tenderId)
+                ?? throw new UserException("Tender not found");
+            tender.Status = TenderStatus.Closed;
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task AcceptBid(int tenderId, int bidId)
+        {
+            var tender = await _context.Tenders.FindAsync(tenderId)
+                ?? throw new UserException("Tender not found");
+            var bid = await _context.Bids.FindAsync(bidId)
+                ?? throw new UserException("Bid not found");
+            if (tender.Status != TenderStatus.Open)
+                throw new UserException("Tender is not open");
+
+            var application = tender.Applicants.FirstOrDefault(a => a.Id == bidId);
+            if (application == null)
+            {
+                throw new UserException("Bidder did not apply for this tender");
+            }
 
 
 
-      
+            foreach (var app in tender.Applicants)
+            {
+                app.Status =app.Id==bidId ? ApplicationStatus.Accepted : ApplicationStatus.Rejected;
+            }
 
-    }
+            tender.Status = TenderStatus.Closed;
+            await _context.SaveChangesAsync();
+
+
+
+
+        }
+        }
 }

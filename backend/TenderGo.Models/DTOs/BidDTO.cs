@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace TenderGo.Models.DTOs
 {
-    public class BidDTO
+    public class BidDTO:IHasId
     {
         public int Id { get; set; }
 
