@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.Reflection.Emit;
 using System.Text;
 using TenderGo.Api.Database;
 using TenderGo.Models.Entities;
@@ -57,10 +58,16 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddControllers(); // Ovo je neophodno za rad [ApiController] kontrolera
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
+builder.Services.AddHttpContextAccessor();
 //  custom servisi
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+builder.Services.AddSingleton<ITenderService, TenderService>();
+builder.Services.AddScoped(typeof(IBaseService<,,>), typeof(BaseService<,,,>));
+//builder.Entity<Rating>()
+//  .HasCheckConstraint("CK_Rating_Score", "Score BETWEEN 1 AND 5");
+
+
 
 // --- OVDE SE ZAKLJUČAVAJU SERVISI ---
 var app = builder.Build();

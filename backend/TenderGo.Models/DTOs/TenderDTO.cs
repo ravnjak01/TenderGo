@@ -1,13 +1,15 @@
-﻿namespace TenderGo.Services.DTOs
+﻿using TenderGo.Models.DTOs;
+using TenderGo.Models.ENUMs;
+namespace TenderGo.Services.DTOs
 {
-    public class TenderDTO
+    public class TenderDTO: IHasId
     {
         public int Id { get; set; }
         public string Title { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public decimal MaxBudget { get; set; }
         public DateTime Deadline { get; set; }
-        public string Status { get; set; } = string.Empty; // Npr. "Open", "Closed"
+        public TenderStatus Status {get; set;} // Npr. "Open", "Closed"
 
         // Dodatno: Možeš dodati i broj ponuda da Flutter odmah prikaže npr. "5 ponuda"
         public int TotalBids { get; set; }

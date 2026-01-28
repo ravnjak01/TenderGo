@@ -12,6 +12,8 @@ using TenderGo.Models.Entities;
 using TenderGo.Models.Requests;
 using TenderGo.Services.DTOs;
 using TenderGo.Services.Interfaces;
+using Microsoft.AspNetCore.Http;
+using System.Security.Claims;
 
 namespace TenderGo.Services.Services
 {
@@ -19,11 +21,14 @@ namespace TenderGo.Services.Services
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IConfiguration _config;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public AuthService(UserManager<ApplicationUser> userManager, IConfiguration config)
+
+        public AuthService(UserManager<ApplicationUser> userManager, IConfiguration config, IHttpContextAccessor httpContextAccessor)
         {
             _userManager = userManager;
             _config = config;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<IdentityResult> RegisterAsync(RegisterRequest dto)
@@ -69,7 +74,7 @@ namespace TenderGo.Services.Services
             };
         }
 
-        private string GenerateJwtToken(ApplicationUser user)
+        public string GenerateJwtToken(ApplicationUser user)
         {
 
             var jwtKey = _config["Jwt:Key"]
@@ -101,5 +106,13 @@ namespace TenderGo.Services.Services
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
+
+        public int GetCurrentUserId()
+        {
+
+            var userId = _httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+            return userId != null ? int.Parse(userId) : throw new Exception("User not logged");
+        }
+
     }
 }

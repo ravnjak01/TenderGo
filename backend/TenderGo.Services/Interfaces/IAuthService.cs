@@ -15,6 +15,8 @@ namespace TenderGo.Services.Interfaces
 
         Task<IdentityResult> RegisterAsync(RegisterRequest dto);
         Task<LoginResponseDto> LoginAsync(LoginRequest dto);
+        string GenerateJwtToken(ApplicationUser user);
+        int GetCurrentUserId();
 
     }
 }

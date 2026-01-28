@@ -39,6 +39,7 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
             entity.Property(e => e.MaxBudget).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.Title).HasMaxLength(200);
             entity.Property(e => e.UserId).HasMaxLength(450);
+            entity.Property(e => e.Status).HasConversion<string>();
         });
 
         OnModelCreatingPartial(modelBuilder);

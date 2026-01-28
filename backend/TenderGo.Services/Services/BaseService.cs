@@ -1,4 +1,6 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -11,56 +13,60 @@ using TenderGo.Services.Interfaces;
 
 namespace TenderGo.Services.Services
 {
-    public class BaseService<T,TDb> : IBaseService<T> where TDb : class where T : class
+    public class BaseService<T,TDb,TInsert,TUpdate> : IBaseService<T,TInsert,TUpdate> where TDb : class where T : class
     {
 
-        TenderGoContext _context;
-        IMapper _mapper;
-        public BaseService(TenderGoContext context,IMapper mapper) {
+       protected readonly TenderGoContext _context;
+       protected  readonly IMapper _mapper;
+        protected readonly IHttpContextAccessor _httpContextAccessor;
+        public BaseService(TenderGoContext context,IMapper mapper, IHttpContextAccessor httpContextAccessor)
+        {
 
             _context = context;
             _mapper = mapper;
-
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<IEnumerable<T>>Get()
         {
-            var query = _context.Set<TDb>().AsQueryable();
+            var query = _context.Set<TDb>();
             var list =await query.ToListAsync();
 
-            return _mapper.Map<List<T>>(list);
+            return _mapper.Map<IEnumerable<T>>(list);
         }
 
         public async Task<T?>GetById(int id)
         {
-            var entity=await _context.Set<TDb>().FindAsync(id);
-            return _mapper.Map<T?>(entity);
+            var entity = await _context.Set<TDb>().FindAsync(id)
+      ?? throw new UserException($"{typeof(TDb).Name} not found");
+
+            return _mapper.Map<T>(entity);
+
+
         }
-        public async Task<T> Insert(TenderInsertRequest request)
+        public async Task<T> Insert(TInsert request)
         {
             var entity = _mapper.Map<TDb>(request);
             _context.Set<TDb>().Add(entity);
             await _context.SaveChangesAsync();
             return _mapper.Map<T>(entity);
         }
-        public async Task<T?> Update(int id, TenderUpdateRequest request)
+        public async Task Update(int id, TUpdate request)
         {
-            var entity = await _context.Set<TDb>().FindAsync(id);
-            if (entity == null)
-                return null;
+            var entity = await _context.Set<TDb>().FindAsync(id)
+       ?? throw new UserException($"{typeof(TDb).Name} not found");
+
             _mapper.Map(request, entity);
             await _context.SaveChangesAsync();
-            return _mapper.Map<T>(entity);
         }
 
-        public async Task<bool> Delete(int id)
+        public async Task Delete(int id)
         {
-            var entity = await _context.Set<TDb>().FindAsync(id);
-            if (entity == null)
-                return false;
+            var entity = await _context.Set<TDb>().FindAsync(id)
+     ?? throw new UserException($"{typeof(TDb).Name} not found");
+
             _context.Set<TDb>().Remove(entity);
             await _context.SaveChangesAsync();
-            return true;
         }
     }
 }

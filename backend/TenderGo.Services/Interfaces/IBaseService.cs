@@ -7,12 +7,12 @@ using TenderGo.Models.Requests;
 
 namespace TenderGo.Services.Interfaces
     {
-        public interface IBaseService<T>
+        public interface IBaseService<T,TInsert,TUpdate>
         {
-            Task<IEnumerable<T>> Get();
-            Task<T?>GetById(int id);
-             Task<T> Insert(TenderInsertRequest request);
-              Task<T?> Update(int id, TenderUpdateRequest request);
-                Task<bool> Delete(int id);
+        Task<IEnumerable<T>> Get();
+        Task<T> GetById(int id);              
+        Task<T> Insert(TInsert request);
+        Task Update(int id, TUpdate request); 
+        Task Delete(int id);
     }
     }
