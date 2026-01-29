@@ -68,5 +68,7 @@ namespace TenderGo.Services.Services
             _context.Set<TDb>().Remove(entity);
             await _context.SaveChangesAsync();
         }
+
+       
     }
 }

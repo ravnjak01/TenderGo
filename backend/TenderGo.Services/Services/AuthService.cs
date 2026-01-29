@@ -14,6 +14,10 @@ using TenderGo.Services.DTOs;
 using TenderGo.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
+using TenderGo.Models.DTOs;
+using TenderGo.Api.Database;
+using AutoMapper;
 
 namespace TenderGo.Services.Services
 {
@@ -22,13 +26,16 @@ namespace TenderGo.Services.Services
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IConfiguration _config;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly TenderGoContext _context;
+        private readonly IMapper _mapper;
 
-
-        public AuthService(UserManager<ApplicationUser> userManager, IConfiguration config, IHttpContextAccessor httpContextAccessor)
+        public AuthService(UserManager<ApplicationUser> userManager, IConfiguration config, IHttpContextAccessor httpContextAccessor,TenderGoContext context,IMapper mapper)
         {
             _userManager = userManager;
             _config = config;
             _httpContextAccessor = httpContextAccessor;
+            _context = context;
+            _mapper = mapper;
         }
 
         public async Task<IdentityResult> RegisterAsync(RegisterRequest dto)
@@ -128,6 +135,28 @@ namespace TenderGo.Services.Services
 
             var userId = _httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier);
             return userId ?? throw new Exception("User not logged");
+        }
+
+        public async Task<MeResponseDTO> GetMyProfile()
+        {
+            var userId = GetCurrentUserId(); // Već imaš ovu metodu
+            var user = await _context.Users
+                .FirstOrDefaultAsync(u => u.Id == userId);
+
+            if (user == null) throw new Exception("User not found");
+
+            var roles=await _context.UserRoles
+                .Where(u=>u.UserId==user.Id)
+                .Join(_context.Roles,
+                ur => ur.RoleId,
+                r => r.Id,
+                (ur, r) => r.Name)
+                .ToListAsync();
+
+            var response = _mapper.Map<MeResponseDTO>(user);
+            response.Roles = roles; 
+
+            return response;
         }
 
     }

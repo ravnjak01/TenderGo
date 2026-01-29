@@ -97,8 +97,9 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 builder.Services.AddScoped<ITenderService, TenderService>();
 builder.Services.AddScoped<IBidService, BidService>();
-
 builder.Services.AddScoped(typeof(IBaseService<,,,>), typeof(BaseService<,,,>));
+
+
 //builder.Entity<Rating>()
 //  .HasCheckConstraint("CK_Rating_Score", "Score BETWEEN 1 AND 5");
 

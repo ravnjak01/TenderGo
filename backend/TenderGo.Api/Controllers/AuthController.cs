@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using TenderGo.Models.DTOs;
 using TenderGo.Models.Requests;
 using TenderGo.Services.Interfaces;
 
@@ -41,6 +42,12 @@ namespace TenderGo.Api.Controllers
                 Data=result
                 
             });
+        }
+
+        [HttpGet("me")]
+        public async Task<MeResponseDTO> GetMe()
+        {
+            return await _authService.GetMyProfile();
         }
 
     }

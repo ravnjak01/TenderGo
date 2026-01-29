@@ -28,6 +28,7 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
 
 
 
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
 
@@ -65,7 +66,15 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
         OnModelCreatingPartial(modelBuilder);
 
         modelBuilder.Entity<Bid>().Navigation(b => b.SubmittedByUser).AutoInclude();//da se uvijek ucitava korisnik koji je poslao bid
-        modelBuilder.Entity<Tender>().Navigation(b => b.CreatedByUser).AutoInclude();//da se uvijek ucitava korisnik koji je kreirao tender
+        modelBuilder.Entity<Tender>()
+            .HasOne(t => t.CreatedByUser)
+            .WithMany()
+            .HasForeignKey(t => t.CreatedByUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+           
+            
+           modelBuilder.Entity<Tender>() .Navigation(b => b.CreatedByUser).AutoInclude();//da se uvijek ucitava korisnik koji je kreirao tender
+       
         
     }
 
