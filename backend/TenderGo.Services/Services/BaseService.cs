@@ -44,7 +44,7 @@ namespace TenderGo.Services.Services
 
 
         }
-        public async Task<T> Insert(TInsert request)
+        public virtual async Task<T> Insert(TInsert request)
         {
             var entity = _mapper.Map<TDb>(request);
             _context.Set<TDb>().Add(entity);

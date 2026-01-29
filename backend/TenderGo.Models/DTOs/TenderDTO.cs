@@ -9,6 +9,10 @@ namespace TenderGo.Services.DTOs
         public string Description { get; set; } = string.Empty;
         public decimal MaxBudget { get; set; }
         public DateTime Deadline { get; set; }
+
+        public string CreatedByUserId { get; set; }
+
+        public string CreatedByFullname { get; set; }
         public TenderStatus Status {get; set;} // Npr. "Open", "Closed"
 
         // Dodatno: Možeš dodati i broj ponuda da Flutter odmah prikaže npr. "5 ponuda"

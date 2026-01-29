@@ -18,9 +18,11 @@ namespace TenderGo.Services.Services
 {
     public class TenderService : BaseService<TenderDTO, Tender,TenderInsertRequest,TenderUpdateRequest>, ITenderService
     {
-        public TenderService(TenderGoContext context, IMapper mapper,IHttpContextAccessor httpContextAccessor) : base(context, mapper,httpContextAccessor)
-        {
 
+        private readonly IAuthService _authService;
+        public TenderService(TenderGoContext context, IMapper mapper,IHttpContextAccessor httpContextAccessor,IAuthService authService) : base(context, mapper,httpContextAccessor)
+        {
+            _authService = authService;
         }
 
 
@@ -83,9 +85,18 @@ namespace TenderGo.Services.Services
             tender.Status = TenderStatus.Closed;
             await _context.SaveChangesAsync();
 
+        }
 
+        public override async Task<TenderDTO>Insert( TenderInsertRequest request)
+        {
+            var entity = _mapper.Map<Tender>(request);
 
+            entity.CreatedByUserId = _authService.GetCurrentUserId();
 
+            _context.Set<Tender>().Add(entity);
+            await _context.SaveChangesAsync();
+
+            return _mapper.Map<TenderDTO>(entity);
         }
         }
 }

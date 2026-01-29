@@ -43,7 +43,13 @@ namespace TenderGo.Services.Services
             };
             var result = await _userManager.CreateAsync(user, dto.Password);
 
-            await _userManager.AddToRoleAsync(user, "User");
+            if(!result.Succeeded)
+            {
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                throw new Exception(errors);
+            }
+
+            await _userManager.AddToRoleAsync(user, AppRoles.User);
 
 
 
@@ -63,7 +69,23 @@ namespace TenderGo.Services.Services
             if (!passwordValid)
                 return null;
 
-            var token = GenerateJwtToken(user);
+            var roles= await _userManager.GetRolesAsync(user);
+
+            var claims= new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier,user.Id),
+                new Claim(ClaimTypes.Email,user.Email),
+                new Claim(ClaimTypes.Name,user.UserName)
+
+            };
+
+
+            foreach (var role in roles)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, role));
+            }
+
+            var token = GenerateJwtToken(user,claims);
 
             return new LoginResponseDto
             {
@@ -74,7 +96,7 @@ namespace TenderGo.Services.Services
             };
         }
 
-        public string GenerateJwtToken(ApplicationUser user)
+        public string GenerateJwtToken(ApplicationUser user,IEnumerable<Claim>claims)
         {
 
             var jwtKey = _config["Jwt:Key"]
@@ -84,13 +106,7 @@ namespace TenderGo.Services.Services
        _config["Jwt:ExpiresInMinutes"]
        ?? throw new Exception("Jwt:ExpiresInMinutes nije postavljen")
    );
-            var claims = new List<Claim>
-                   {
-                  new Claim(JwtRegisteredClaimNames.Sub,user.Id),
-                 new Claim(JwtRegisteredClaimNames.Email,user.Email),
-                  new Claim(JwtRegisteredClaimNames.Jti,Guid.NewGuid().ToString()),
-                 };
-
+          
             var key=new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
 
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -107,11 +123,11 @@ namespace TenderGo.Services.Services
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        public int GetCurrentUserId()
+        public string GetCurrentUserId()
         {
 
             var userId = _httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier);
-            return userId != null ? int.Parse(userId) : throw new Exception("User not logged");
+            return userId ?? throw new Exception("User not logged");
         }
 
     }

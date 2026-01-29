@@ -7,7 +7,6 @@ using TenderGo.Services.Interfaces;
 using TenderGo.Services.Services;
 
 
-[Authorize(Roles = "User")]
 public abstract class BaseController<T,TDb, TInsert, TUpdate>
     : ControllerBase where T:IHasId
 {

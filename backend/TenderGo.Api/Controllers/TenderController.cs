@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TenderGo.Api.Database;
+using TenderGo.Models.Entities;
 using TenderGo.Models.Requests;
 using TenderGo.Services.DTOs;
 using TenderGo.Services.Interfaces;
@@ -35,7 +36,7 @@ public class TenderController
     public async Task<ActionResult<List<TenderDTO>>> GetByCategory(int id)
         => Ok(await _tenderService.GetTendersByCategory(id));
 
-    [Authorize(Roles = "User,Admin")]
+    [Authorize(Roles = AppRoles.Admin)]
     [HttpPatch("{tenderId}/close")]
     public async Task<IActionResult> CloseTender(int tenderId)
     {

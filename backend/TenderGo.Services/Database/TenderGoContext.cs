@@ -63,6 +63,10 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
                 .OnDelete(DeleteBehavior.Restrict);
         });
         OnModelCreatingPartial(modelBuilder);
+
+        modelBuilder.Entity<Bid>().Navigation(b => b.SubmittedByUser).AutoInclude();//da se uvijek ucitava korisnik koji je poslao bid
+        modelBuilder.Entity<Tender>().Navigation(b => b.CreatedByUser).AutoInclude();//da se uvijek ucitava korisnik koji je kreirao tender
+        
     }
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder);

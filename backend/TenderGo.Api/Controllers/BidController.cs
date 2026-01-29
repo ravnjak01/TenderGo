@@ -38,7 +38,7 @@ namespace TenderGo.Api.Controllers
             return NoContent();
         }
 
-        [HttpPatch("reject/{bidId}")]
+        [HttpPatch(" reject/{bidId}")]
         public async Task<IActionResult> RejectBid(int bidId)
         {
             await _bidService.RejectBidAsync(bidId);

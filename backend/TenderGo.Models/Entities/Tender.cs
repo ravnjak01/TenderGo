@@ -21,7 +21,7 @@ public partial class Tender
 
     public TenderStatus Status { get; set; }
 
-    public string? CreatedByUserId { get; set; }
+    public string CreatedByUserId { get; set; }
     public virtual ApplicationUser CreatedByUser { get; set; }
     public virtual ICollection<TenderApplication> Applicants { get; set; }
 

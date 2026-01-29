@@ -19,9 +19,10 @@ namespace TenderGo.Services.Services
    public class BidService : BaseService<BidDTO, Bid, BidInsertRequest, BidUpdateRequest>, IBidService
     {
 
-        public BidService(TenderGoContext context, IMapper mapper, IHttpContextAccessor httpContextAccessor) : base(context, mapper, httpContextAccessor)
+        private readonly IAuthService _authService;
+        public BidService(TenderGoContext context, IMapper mapper, IHttpContextAccessor httpContextAccessor,IAuthService authService) : base(context, mapper, httpContextAccessor)
         {
-
+            authService = _authService;
         }
 
          public async Task AcceptBidAsync(int bidId)
@@ -95,6 +96,21 @@ namespace TenderGo.Services.Services
             return bidDto;
         }
 
-       
+
+        public override async Task<BidDTO> Insert(BidInsertRequest request)
+        {
+            var entity = _mapper.Map<Bid>(request);
+
+            entity.SubmittedByUserId = _authService.GetCurrentUserId();
+
+            _context.Set<Bid>().Add(entity);
+            await _context.SaveChangesAsync();
+
+            var result = await _context.Set<Bid>()
+        .Include(x => x.SubmittedByUser)
+        .FirstOrDefaultAsync(x => x.Id == entity.Id);
+
+            return _mapper.Map<BidDTO>(entity);
+        }
     }
 }

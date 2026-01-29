@@ -9,11 +9,15 @@ namespace TenderGo.Models.Requests
 {
     public class BidInsertRequest
     {
-        public int Id { get; set; }
+        [Required]
         public decimal Price { get; set; }
+        [Required]
+
         public int TenderId { get; set; }
         [StringLength(500)]
         public string? Note { get; set; }
+        [Required]
+
         public int UserId { get; set; }
     }
 }

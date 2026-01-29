@@ -2,9 +2,12 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using System.Reflection.Emit;
+using System.Security.Claims;
 using System.Text;
 using TenderGo.Api.Database;
+using TenderGo.Data;
 using TenderGo.Models.Entities;
 using TenderGo.Services.Interfaces; 
 using TenderGo.Services.Services;  
@@ -44,6 +47,7 @@ builder.Services.AddAuthentication(options =>
 {
     options.TokenValidationParameters = new TokenValidationParameters
     {
+        RoleClaimType = ClaimTypes.Role,
         ValidateIssuer = true,
         ValidateAudience = true,
         ValidateLifetime = true,
@@ -57,7 +61,36 @@ builder.Services.AddAuthentication(options =>
 // 4. Registracija ostalih servisa (OBAVEZNO PRIJE builder.Build())
 builder.Services.AddControllers(); // Ovo je neophodno za rad [ApiController] kontrolera
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(opt =>
+{
+    opt.SwaggerDoc("v1", new OpenApiInfo { Title = "TenderGo API", Version = "v1" });
+
+    // Dodajemo definiciju za Bearer Token
+    opt.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        In = ParameterLocation.Header,
+        Description = "Unesite token u formatu: Bearer {vaš_token}",
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        BearerFormat = "JWT",
+        Scheme = "bearer"
+    });
+
+    opt.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new string[]{}
+        }
+    });
+});
 builder.Services.AddHttpContextAccessor();
 //  custom servisi
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -89,19 +122,10 @@ app.UseAuthorization();
 
 app.MapControllers(); // Bez ovoga ruta /api/auth/register neće raditi
 
-app.Run();
-
 using (var scope = app.Services.CreateScope())
 {
-    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-
-    string[] roles = { "Admin", "User" };
-
-    foreach (var role in roles)
-    {
-        if (!await roleManager.RoleExistsAsync(role))
-        {
-            await roleManager.CreateAsync(new IdentityRole(role));
-        }
-    }
+   var services = scope.ServiceProvider;
+    await IdentitySeeder.SeedRolesAsync(services);
 }
+app.Run();
+

@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using TenderGo.Models.Entities;
@@ -15,8 +16,8 @@ namespace TenderGo.Services.Interfaces
 
         Task<IdentityResult> RegisterAsync(RegisterRequest dto);
         Task<LoginResponseDto> LoginAsync(LoginRequest dto);
-        string GenerateJwtToken(ApplicationUser user);
-        int GetCurrentUserId();
+        string GenerateJwtToken(ApplicationUser user,IEnumerable<Claim>claims);
+        string GetCurrentUserId();
 
     }
 }

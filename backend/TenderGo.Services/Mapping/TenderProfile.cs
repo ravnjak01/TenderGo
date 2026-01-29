@@ -17,6 +17,9 @@ namespace TenderGo.Services.Mapping
             CreateMap<Tender, TenderDTO>();
             CreateMap<TenderInsertRequest, Tender>();
             CreateMap<TenderUpdateRequest, Tender>();
+            CreateMap<Tender, TenderDTO>()
+                 .ForMember(dest => dest.CreatedByFullname,
+               opt => opt.MapFrom(src => src.CreatedByUser.FirstName + " " + src.CreatedByUser.LastName));
 
         }
     }
