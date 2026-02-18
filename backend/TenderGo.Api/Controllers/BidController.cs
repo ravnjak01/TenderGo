@@ -38,6 +38,17 @@ namespace TenderGo.Api.Controllers
             return NoContent();
         }
 
+
+        [HttpGet("tender/{tenderId}")]
+        public async Task<ActionResult<List<BidDTO>>> GetBidsForTender(int tenderId)
+        {
+            var bids = await _bidService.GetBidsForTender(tenderId);
+
+            if (bids == null || !bids.Any())
+                return NotFound(); 
+
+            return Ok(bids);
+        }
     }
 }
 

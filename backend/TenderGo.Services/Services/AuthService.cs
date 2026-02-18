@@ -17,6 +17,8 @@ using Microsoft.EntityFrameworkCore;
 using TenderGo.Models.DTOs;
 using TenderGo.Api.Database;
 using AutoMapper;
+using TenderGo.Services.Services.Exceptions;
+using Microsoft.Extensions.Logging;
 
 namespace TenderGo.Services.Services
 {
@@ -27,9 +29,12 @@ namespace TenderGo.Services.Services
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly TenderGoContext _context;
         private readonly IMapper _mapper;
+        private readonly ILogger<AuthService> _logger;
 
-        public AuthService(UserManager<ApplicationUser> userManager, IConfiguration config, IHttpContextAccessor httpContextAccessor,TenderGoContext context,IMapper mapper)
+        public AuthService(UserManager<ApplicationUser> userManager, IConfiguration config, IHttpContextAccessor httpContextAccessor,TenderGoContext context,IMapper mapper,ILogger<AuthService> logger
+            )
         {
+            _logger = logger;
             _userManager = userManager;
             _config = config;
             _httpContextAccessor = httpContextAccessor;
@@ -39,6 +44,8 @@ namespace TenderGo.Services.Services
 
         public async Task<IdentityResult> RegisterAsync(RegisterRequest dto)
         {
+            _logger.LogInformation("Registering new user with email {Email}", dto.Email);
+
             var user = new ApplicationUser
             {
                 UserName = dto.Email,
@@ -57,13 +64,16 @@ namespace TenderGo.Services.Services
 
             await _userManager.AddToRoleAsync(user, AppRoles.User);
 
-
-
             return result;
+
+            _logger.LogInformation("User with email {Email} registered successfully", dto.Email);
         }
 
         public async Task<LoginResponseDto?> LoginAsync(LoginRequest dto)
         {
+
+            _logger.LogInformation("Attempting login for user with email {Email}", dto.Email);
+
             var user = await _userManager.FindByEmailAsync(dto.Email);
             if (user==null)
             {
@@ -98,8 +108,14 @@ namespace TenderGo.Services.Services
                 Token = token,
                 ExpiresAt = DateTime.UtcNow.AddMinutes(
             int.Parse(_config["Jwt:ExpiresInMinutes"])
+
+
+
         )
             };
+
+
+            _logger.LogInformation("User with email {Email} logged in successfully", dto.Email);
         }
 
         public string GenerateJwtToken(ApplicationUser user,IEnumerable<Claim>claims)

@@ -15,6 +15,6 @@ namespace TenderGo.Services.Interfaces
 
         Task RejectBidAsync(int bidId);
         Task AcceptBid(int tenderId, int bidId);
-
+        Task<List<BidDTO>> GetBidsForTender(int tenderId);
     }
 }

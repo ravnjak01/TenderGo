@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,6 +13,7 @@ using TenderGo.Models.Entities;
 using TenderGo.Models.ENUMs;
 using TenderGo.Models.Requests;
 using TenderGo.Services.Interfaces;
+using TenderGo.Services.Services.Exceptions;
 
 namespace TenderGo.Services.Services
 {
@@ -19,15 +21,19 @@ namespace TenderGo.Services.Services
     {
 
         private readonly IAuthService _authService;
-        public BidService(TenderGoContext context, IMapper mapper, IHttpContextAccessor httpContextAccessor,IAuthService authService) : base(context, mapper, httpContextAccessor)
+        protected readonly ILogger<BidService> _logger;
+        public BidService(TenderGoContext context, IMapper mapper, IHttpContextAccessor httpContextAccessor,IAuthService authService, ILogger<BidService> logger) : base(context, mapper, httpContextAccessor)
         {
             _authService = authService;
+            _logger = logger;
         }
 
 
 
         public async Task AcceptBid(int tenderId, int bidId)
         {
+
+            _logger.LogInformation("Accepting bid {BidId} for tender {TenderId}", bidId, tenderId);
 
             var currentUserId = _authService.GetCurrentUserId();
 
@@ -38,7 +44,7 @@ namespace TenderGo.Services.Services
 
 
             if (tender.CreatedByUserId != currentUserId)
-                throw new UserException("You are not the owner of this tender");
+                throw new ForbiddenException("You are not the owner of this tender");
 
             if (tender.Status != TenderStatus.Open)
                 throw new UserException("Tender is not open");
@@ -60,11 +66,16 @@ namespace TenderGo.Services.Services
             tender.Status = TenderStatus.Closed;
             await _context.SaveChangesAsync();
 
+
+            _logger.LogInformation("Bid {BidId} has been accepted for tender {TenderId}", bidId, tenderId);
+
         }
 
 
         public async Task RejectBidAsync(int bidId)
         {
+
+
              var currentUserId = _authService.GetCurrentUserId();
 
     var bid = await _context.Bids
@@ -73,7 +84,7 @@ namespace TenderGo.Services.Services
         ?? throw new UserException("Bid not found");
 
     if (bid.Tender.CreatedByUserId != currentUserId)
-        throw new UserException("You are not the owner of this tender");
+        throw new ForbiddenException("You are not the owner of this tender");
 
     if (bid.Status != ApplicationStatus.Pending)
         throw new UserException("Only pending bids can be rejected");
@@ -96,7 +107,7 @@ namespace TenderGo.Services.Services
                 throw new UserException("Cannot submit bid to a closed tender");
 
             if (tender.CreatedByUserId == currentUserId)
-                throw new UserException("You cannot bid on your own tender");
+                throw new ForbiddenException("You cannot bid on your own tender");
 
             if (tender.Deadline < DateTime.UtcNow)
                 throw new UserException("Tender deadline has passed");
@@ -115,6 +126,17 @@ namespace TenderGo.Services.Services
             await _context.SaveChangesAsync();
 
             return _mapper.Map<BidDTO>(entity);
+        }
+
+
+
+        public async Task<List<BidDTO>> GetBidsForTender(int tenderId)
+        {
+            var bids = await _context.Bids
+                .Where(b => b.TenderId == tenderId)
+                  .OrderByDescending(b => b.SubmittedAt)
+                .ToListAsync();
+            return _mapper.Map<List<BidDTO>>(bids);
         }
     }
 }

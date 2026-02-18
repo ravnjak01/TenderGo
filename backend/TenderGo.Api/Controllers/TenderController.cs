@@ -36,6 +36,17 @@ public class TenderController
     public async Task<ActionResult<List<TenderDTO>>> GetByCategory(int id)
         => Ok(await _tenderService.GetTendersByCategory(id));
 
+    [HttpGet("user/{userId}")]
+    public async Task<ActionResult<List<TenderDTO>>> GetByUser(string userId)
+    {
+        var tenders = await _tenderService.GetTendersByUser(userId);
+
+        if (tenders == null || !tenders.Any())
+            return NotFound(); 
+
+        return Ok(tenders);
+    }
+
     [Authorize(Roles = $"{AppRoles.Admin},{AppRoles.User}")]
     [HttpPatch("{tenderId}/close")]
     public async Task<IActionResult> CancelTender(int tenderId)
@@ -43,6 +54,8 @@ public class TenderController
         await _tenderService.CancelTender(tenderId);
         return NoContent();
     }
+
+
  
 
 }

@@ -7,6 +7,8 @@ using System.Reflection.Emit;
 using System.Security.Claims;
 using System.Text;
 using TenderGo.Api.Database;
+using TenderGo.Api.Filters;
+using TenderGo.Api.Middleware;
 using TenderGo.Data;
 using TenderGo.Models.Entities;
 using TenderGo.Services.Interfaces; 
@@ -59,7 +61,10 @@ builder.Services.AddAuthentication(options =>
 });
 
 // 4. Registracija ostalih servisa (OBAVEZNO PRIJE builder.Build())
-builder.Services.AddControllers(); // Ovo je neophodno za rad [ApiController] kontrolera
+builder.Services.AddControllers(x =>
+{
+    x.Filters.Add<ErrorFilter>();
+}); 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(opt =>
 {
@@ -69,7 +74,7 @@ builder.Services.AddSwaggerGen(opt =>
     opt.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         In = ParameterLocation.Header,
-        Description = "Unesite token u formatu: Bearer {vaš_token}",
+        Description = "Enter token in format: Bearer {your_token}",
         Name = "Authorization",
         Type = SecuritySchemeType.Http,
         BearerFormat = "JWT",
@@ -107,17 +112,16 @@ builder.Services.AddScoped(typeof(IBaseService<,,,>), typeof(BaseService<,,,>));
 
 // --- OVDE SE ZAKLJUČAVAJU SERVISI ---
 var app = builder.Build();
+app.UseMiddleware<GlobalExceptionMiddleware>();
 
-// 5. Middleware Pipeline (Redoslijed je bitan)
     app.UseSwagger();
 app.UseSwaggerUI(c => {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "TenderGo API V1");
-    c.RoutePrefix = "swagger"; // Ovo osigurava da je na /swagger
+    c.RoutePrefix = "swagger"; 
 });
 
 app.UseHttpsRedirection();
 
-//  da bi zaštita radila
 app.UseAuthentication();
 app.UseAuthorization();
 

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,6 +16,7 @@ using TenderGo.Models.Entities;
 using TenderGo.Models.ENUMs;
 using TenderGo.Models.Requests;
 using TenderGo.Services.Interfaces;
+using TenderGo.Services.Services.Exceptions;
 
 namespace TenderGo.Services.Services
 {
@@ -22,8 +24,10 @@ namespace TenderGo.Services.Services
     {
 
         private readonly IAuthService _authService;
-        public TenderService(TenderGoContext context, IMapper mapper,IHttpContextAccessor httpContextAccessor,IAuthService authService) : base(context, mapper,httpContextAccessor)
+        protected readonly ILogger<TenderService> _logger;
+        public TenderService(TenderGoContext context, IMapper mapper,IHttpContextAccessor httpContextAccessor,IAuthService authService,ILogger<TenderService>logger) : base(context, mapper,httpContextAccessor)
         {
+            _logger = logger;
             _authService = authService;
         }
 
@@ -54,15 +58,27 @@ namespace TenderGo.Services.Services
 
         }
 
+
+        public async Task<List<TenderDTO>> GetTendersByUser(string userId)
+        {
+            var tenders = await _context.Tenders
+                      .Where(t => t.CreatedByUserId == userId)
+                       .OrderByDescending(t => t.CreatedAt)
+                       .ToListAsync();
+            return _mapper.Map<List<TenderDTO>>(tenders);
+        }
+
         public async Task CancelTender(int tenderId)
         {
+
+            _logger.LogInformation("Attempting to cancel tender with ID {TenderId}", tenderId);
             var currentUserId = _authService.GetCurrentUserId();
 
             var tender = await _context.Tenders.FindAsync(tenderId)
-                ?? throw new UserException("Tender not found");
+                ?? throw new NotFoundException(nameof(Tender), tenderId);
 
             if (tender.CreatedByUserId != currentUserId)
-                throw new UserException("You are not the owner of this tender");
+                throw new ForbiddenException("You are not the owner of this tender");
 
             if (tender.Status != TenderStatus.Open)
                 throw new UserException("Only open tenders can be cancelled");
@@ -73,12 +89,15 @@ namespace TenderGo.Services.Services
 
             tender.Status = TenderStatus.Cancelled;
             await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Tender with ID {TenderId} has been cancelled", tenderId);
         }
 
      
 
         public override async Task<TenderDTO>Insert( TenderInsertRequest request)
         {
+            _logger.LogInformation("Attempting to create a new tender with title {Title}", request.Title);
 
             if (request.Deadline <= DateTime.UtcNow)
                 throw new UserException("Deadline must be in the future");
@@ -92,11 +111,16 @@ namespace TenderGo.Services.Services
             await _context.SaveChangesAsync();
 
             return _mapper.Map<TenderDTO>(entity);
+
+            _logger.LogInformation("Tender with title {Title} has been created with ID {TenderId}", request.Title, entity.Id);
         }
 
 
         public override async Task Update(int id, TenderUpdateRequest request)
         {
+
+            _logger.LogInformation("Attempting to update tender with ID {TenderId}", id);
+
             var tender = await _context.Tenders.FindAsync(id)
                 ?? throw new UserException("Tender not found");
 
@@ -108,6 +132,9 @@ namespace TenderGo.Services.Services
 
             _mapper.Map(request, tender);
             await _context.SaveChangesAsync();
+
+
+            _logger.LogInformation("Tender with ID {TenderId} has been updated", id);
         }
 
 
