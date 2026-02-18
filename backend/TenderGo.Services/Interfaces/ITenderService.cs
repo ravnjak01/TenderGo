@@ -5,18 +5,18 @@ using System.Text;
 using System.Threading.Tasks;
 using TenderGo.Api.Database;
 using TenderGo.Models.Requests;
-using TenderGo.Services.DTOs;
+using TenderGo.Models.DTOs;
 
 namespace TenderGo.Services.Interfaces
 {
-    public interface ITenderService:IBaseService<TenderDTO,Tender,TenderInsertRequest,TenderUpdateRequest>
+    public interface ITenderService:IReadService<TenderDTO>,IWriteService<TenderDTO,TenderInsertRequest,TenderUpdateRequest>
     {
         Task<IEnumerable<TenderDTO>> GetTendersByCategory(int id);
        Task<IEnumerable<TenderDTO>> GetClosedTenders();
         Task<IEnumerable<TenderDTO>> GetActiveTenders();
 
-        Task CloseTender(int tenderId);
-        Task AcceptBid (int tenderId, int bidId);
+        Task CancelTender(int tenderId);
+      
 
 
     }

@@ -5,8 +5,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using TenderGo.Api.Database;
+using TenderGo.Models.DTOs;
+using TenderGo.Models.Entities;
 using TenderGo.Models.Requests;
-using TenderGo.Services.DTOs;
 
 namespace TenderGo.Services.Mapping
 {

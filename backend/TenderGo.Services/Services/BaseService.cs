@@ -8,12 +8,15 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using TenderGo.Api.Database;
+using TenderGo.Models.DTOs;
 using TenderGo.Models.Requests;
 using TenderGo.Services.Interfaces;
 
 namespace TenderGo.Services.Services
 {
-    public class BaseService<T,TDb,TInsert,TUpdate> : IBaseService<T,TDb,TInsert,TUpdate> where TDb : class where T : class
+    public class BaseService<T,TDb,TInsert,TUpdate> : IWriteService<T,TInsert,TUpdate> ,IReadService<T>
+            where TDb : class
+            where T : class
     {
 
        protected readonly TenderGoContext _context;
@@ -27,13 +30,34 @@ namespace TenderGo.Services.Services
             _httpContextAccessor = httpContextAccessor;
         }
 
-        public async Task<IEnumerable<T>>Get()
+        public async Task<PagedResult<T>>Get(PagedResult<T> pagedResult)
         {
-            var query = _context.Set<TDb>();
-            var list =await query.ToListAsync();
+            var query = _context.Set<TDb>().AsQueryable();
+            query = ApplyFilter(query);
 
-            return _mapper.Map<IEnumerable<T>>(list);
+            var totalCount = await query.CountAsync();
+
+
+            var list=await query
+                .Skip((pagedResult.Page - 1) * pagedResult.PageSize)
+                .Take(pagedResult.PageSize)
+                .ToListAsync();
+
+
+
+            return new PagedResult<T>
+            {
+                
+                Result = _mapper.Map<List<T>>(list),
+
+                TotalCount = totalCount,
+                Page = pagedResult.Page,
+                PageSize = pagedResult.PageSize
+            };
         }
+
+
+        protected virtual IQueryable<TDb> ApplyFilter(IQueryable<TDb> query) => query;
 
         public async Task<T?>GetById(int id)
         {
@@ -60,7 +84,7 @@ namespace TenderGo.Services.Services
             await _context.SaveChangesAsync();
         }
 
-        public async Task Delete(int id)
+        public virtual async Task Delete(int id)
         {
             var entity = await _context.Set<TDb>().FindAsync(id)
      ?? throw new UserException($"{typeof(TDb).Name} not found");

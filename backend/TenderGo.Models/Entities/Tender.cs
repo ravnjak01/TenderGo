@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using TenderGo.Models.Entities;
 using TenderGo.Models.ENUMs;
 
-namespace TenderGo.Api.Database;
+namespace TenderGo.Models.Entities;
 
 public partial class Tender
 {
@@ -23,7 +23,7 @@ public partial class Tender
 
     public string CreatedByUserId { get; set; }
     public virtual ApplicationUser CreatedByUser { get; set; }
-    public virtual ICollection<TenderApplication> Applicants { get; set; }
+    public virtual ICollection<Bid> Bids { get; set; }
 
     public int CategoryId { get; set; }
     public virtual Category  Category { get; set; }

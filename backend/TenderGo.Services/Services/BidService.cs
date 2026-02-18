@@ -11,7 +11,6 @@ using TenderGo.Models.DTOs;
 using TenderGo.Models.Entities;
 using TenderGo.Models.ENUMs;
 using TenderGo.Models.Requests;
-using TenderGo.Services.DTOs;
 using TenderGo.Services.Interfaces;
 
 namespace TenderGo.Services.Services
@@ -22,93 +21,98 @@ namespace TenderGo.Services.Services
         private readonly IAuthService _authService;
         public BidService(TenderGoContext context, IMapper mapper, IHttpContextAccessor httpContextAccessor,IAuthService authService) : base(context, mapper, httpContextAccessor)
         {
-            authService = _authService;
+            _authService = authService;
         }
 
-         public async Task AcceptBidAsync(int bidId)
+
+
+        public async Task AcceptBid(int tenderId, int bidId)
         {
-          
-            var bid =await _context.Bids
-                .Include(b => b.Tender)
-                .ThenInclude(t=>t.Applicants)
-                .FirstOrDefaultAsync(b => b.Id == bidId);
-            if (bid == null)
-            {
-                throw new Exception("Bid not found");
-            }
 
-            if (bid.Tender.Status != Models.ENUMs.TenderStatus.Open)
-            {
-                throw new Exception("Cannot accept bid for a closed tender");
-            }
+            var currentUserId = _authService.GetCurrentUserId();
 
-            foreach (var b in bid.Tender.Applicants)
-                b.Status = b.Id == bidId ? ApplicationStatus.Accepted : ApplicationStatus.Rejected;
-            bid.Tender.Status = TenderStatus.Closed;
+            var tender = await _context.Tenders
+             .Include(t => t.Bids)
+             .FirstOrDefaultAsync(t => t.Id == tenderId)
+             ?? throw new UserException("Tender not found");
 
 
-            await _context.SaveChangesAsync();
-
-
-        }
-
-   
-       
-
-      
-        public async Task RejectBidAsync(int bidId)
-        {
-            var bid = await _context.Bids.FindAsync(bidId);
-
-            if (bid == null)
-                throw new UserException("Bid not found");
-
-            if (bid.Status != ApplicationStatus.Pending)
-                throw new UserException("Only pending bids can be rejected");
-
-            bid.Status = ApplicationStatus.Rejected;
-            await _context.SaveChangesAsync();
-        }
-
-      
-        public async Task<BidDTO> SubmitBidAsync(BidInsertRequest request)
-        {
-           var tender=await _context.Tenders
-                .FirstOrDefaultAsync(t => t.Id == request.TenderId);
-
-            if (tender == null)
-            {
-                throw new UserException("Tender not found");
-            }
+            if (tender.CreatedByUserId != currentUserId)
+                throw new UserException("You are not the owner of this tender");
 
             if (tender.Status != TenderStatus.Open)
+                throw new UserException("Tender is not open");
+
+
+            var acceptedBid = tender.Bids.FirstOrDefault(b => b.Id == bidId)
+           ?? throw new UserException("Bid not found for this tender");
+
+
+
+
+            foreach (var bid in tender.Bids)
             {
-                throw new UserException("Cannot submit bid to a closed tender");
+                bid.Status = bid.Id == bidId
+                    ? ApplicationStatus.Accepted
+                    : ApplicationStatus.Rejected;
             }
 
-
-            var bid = _mapper.Map<Bid>(request);
-            bid.Status = ApplicationStatus.Pending;
-
-            _context.Bids.Add(bid);
+            tender.Status = TenderStatus.Closed;
             await _context.SaveChangesAsync();
-            BidDTO bidDto = _mapper.Map<BidDTO>(bid);
-            return bidDto;
+
         }
+
+
+        public async Task RejectBidAsync(int bidId)
+        {
+             var currentUserId = _authService.GetCurrentUserId();
+
+    var bid = await _context.Bids
+        .Include(b => b.Tender)
+        .FirstOrDefaultAsync(b => b.Id == bidId)
+        ?? throw new UserException("Bid not found");
+
+    if (bid.Tender.CreatedByUserId != currentUserId)
+        throw new UserException("You are not the owner of this tender");
+
+    if (bid.Status != ApplicationStatus.Pending)
+        throw new UserException("Only pending bids can be rejected");
+
+    bid.Status = ApplicationStatus.Rejected;
+    await _context.SaveChangesAsync();
+        }
+
+
 
 
         public override async Task<BidDTO> Insert(BidInsertRequest request)
         {
+            var currentUserId = _authService.GetCurrentUserId();
+
+            var tender = await _context.Tenders.FindAsync(request.TenderId)
+                ?? throw new UserException("Tender not found");
+
+            if (tender.Status != TenderStatus.Open)
+                throw new UserException("Cannot submit bid to a closed tender");
+
+            if (tender.CreatedByUserId == currentUserId)
+                throw new UserException("You cannot bid on your own tender");
+
+            if (tender.Deadline < DateTime.UtcNow)
+                throw new UserException("Tender deadline has passed");
+
+            var existingBid = await _context.Bids
+                .AnyAsync(b => b.TenderId == request.TenderId && b.SubmittedByUserId == currentUserId);
+            if (existingBid)
+                throw new UserException("You have already submitted a bid for this tender");
+
             var entity = _mapper.Map<Bid>(request);
+            entity.SubmittedByUserId = currentUserId;
+            entity.Status = ApplicationStatus.Pending;
+            entity.SubmittedAt = DateTime.UtcNow;
 
-            entity.SubmittedByUserId = _authService.GetCurrentUserId();
-
-            _context.Set<Bid>().Add(entity);
+            _context.Bids.Add(entity);
             await _context.SaveChangesAsync();
-
-            var result = await _context.Set<Bid>()
-        .Include(x => x.SubmittedByUser)
-        .FirstOrDefaultAsync(x => x.Id == entity.Id);
 
             return _mapper.Map<BidDTO>(entity);
         }

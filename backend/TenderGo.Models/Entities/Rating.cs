@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using TenderGo.Api.Database;
+using TenderGo.Models.Entities;
 
 namespace TenderGo.Models.Entities
 {

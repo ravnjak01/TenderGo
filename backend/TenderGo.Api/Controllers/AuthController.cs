@@ -21,31 +21,23 @@ namespace TenderGo.Api.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest dto)
         {
-            var result = await _authService.RegisterAsync(dto);
-            if (result.Succeeded)
-            {
-                return Ok(new { Message = "User registered successfully" });
-            }
-            return BadRequest(result.Errors);
+            await _authService.RegisterAsync(dto);
+            return Ok(new { Message = "User registered successfully" });
         }
         [AllowAnonymous]
         [HttpPost("login")]
             public async Task<IActionResult> Login([FromBody] LoginRequest dto)
             {
-                var result = await _authService.LoginAsync(dto);
+            var result = await _authService.LoginAsync(dto);
             if (result == null)
-                return Unauthorized("Invalid email or password");
+                return Unauthorized(new { Message = "Invalid email or password" });
 
-            return Ok(new
-            {
-                Message="Login successfull",
-                Data=result
-                
-            });
+            return Ok(result);
         }
 
+        [Authorize]
         [HttpGet("me")]
-        public async Task<MeResponseDTO> GetMe()
+        public async Task<ActionResult<MeResponseDTO>> GetMe()
         {
             return await _authService.GetMyProfile();
         }

@@ -6,12 +6,14 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using TenderGo.Api.Database;
+using TenderGo.Models.DTOs;
+using TenderGo.Models.Entities;
 using TenderGo.Models.ENUMs;
 using TenderGo.Models.Requests;
-using TenderGo.Services.DTOs;
 using TenderGo.Services.Interfaces;
 
 namespace TenderGo.Services.Services
@@ -52,51 +54,62 @@ namespace TenderGo.Services.Services
 
         }
 
-     public async Task CloseTender(int tenderId)
+        public async Task CancelTender(int tenderId)
         {
-            var tender = await _context.Tenders.FindAsync(tenderId)
-                ?? throw new UserException("Tender not found");
-            tender.Status = TenderStatus.Closed;
-            await _context.SaveChangesAsync();
-        }
+            var currentUserId = _authService.GetCurrentUserId();
 
-        public async Task AcceptBid(int tenderId, int bidId)
-        {
             var tender = await _context.Tenders.FindAsync(tenderId)
                 ?? throw new UserException("Tender not found");
-            var bid = await _context.Bids.FindAsync(bidId)
-                ?? throw new UserException("Bid not found");
+
+            if (tender.CreatedByUserId != currentUserId)
+                throw new UserException("You are not the owner of this tender");
+
             if (tender.Status != TenderStatus.Open)
-                throw new UserException("Tender is not open");
+                throw new UserException("Only open tenders can be cancelled");
 
-            var application = tender.Applicants.FirstOrDefault(a => a.Id == bidId);
-            if (application == null)
-            {
-                throw new UserException("Bidder did not apply for this tender");
-            }
+            await _context.Bids
+                .Where(b => b.TenderId == tenderId)
+                .ExecuteUpdateAsync(b => b.SetProperty(x => x.Status, ApplicationStatus.Rejected));
 
-
-
-            foreach (var app in tender.Applicants)
-            {
-                app.Status =app.Id==bidId ? ApplicationStatus.Accepted : ApplicationStatus.Rejected;
-            }
-
-            tender.Status = TenderStatus.Closed;
+            tender.Status = TenderStatus.Cancelled;
             await _context.SaveChangesAsync();
-
         }
+
+     
 
         public override async Task<TenderDTO>Insert( TenderInsertRequest request)
         {
+
+            if (request.Deadline <= DateTime.UtcNow)
+                throw new UserException("Deadline must be in the future");
+
             var entity = _mapper.Map<Tender>(request);
 
             entity.CreatedByUserId = _authService.GetCurrentUserId();
+            entity.Status = TenderStatus.Open;
 
             _context.Set<Tender>().Add(entity);
             await _context.SaveChangesAsync();
 
             return _mapper.Map<TenderDTO>(entity);
         }
+
+
+        public override async Task Update(int id, TenderUpdateRequest request)
+        {
+            var tender = await _context.Tenders.FindAsync(id)
+                ?? throw new UserException("Tender not found");
+
+            if (tender.CreatedByUserId != _authService.GetCurrentUserId())
+                throw new UserException("You can only edit your own tenders");
+
+            if (tender.Status != TenderStatus.Open)
+                throw new UserException("Cannot edit a tender that is not open");
+
+            _mapper.Map(request, tender);
+            await _context.SaveChangesAsync();
         }
+
+
+    }
 }

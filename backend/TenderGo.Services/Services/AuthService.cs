@@ -13,7 +13,6 @@ using TenderGo.Models.Requests;
 using TenderGo.Services.DTOs;
 using TenderGo.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
-using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using TenderGo.Models.DTOs;
 using TenderGo.Api.Database;
@@ -42,7 +41,7 @@ namespace TenderGo.Services.Services
         {
             var user = new ApplicationUser
             {
-                UserName = dto.Username,
+                UserName = dto.Email,
                 Email = dto.Email,
                 FirstName = dto.FirstName,
                 LastName = dto.LastName,
@@ -53,7 +52,7 @@ namespace TenderGo.Services.Services
             if(!result.Succeeded)
             {
                 var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                throw new Exception(errors);
+                throw new UserException(errors);
             }
 
             await _userManager.AddToRoleAsync(user, AppRoles.User);
@@ -139,22 +138,16 @@ namespace TenderGo.Services.Services
 
         public async Task<MeResponseDTO> GetMyProfile()
         {
-            var userId = GetCurrentUserId(); // Već imaš ovu metodu
-            var user = await _context.Users
-                .FirstOrDefaultAsync(u => u.Id == userId);
 
+            var userId = GetCurrentUserId();
+
+            var user = await _userManager.FindByIdAsync(userId);
             if (user == null) throw new Exception("User not found");
 
-            var roles=await _context.UserRoles
-                .Where(u=>u.UserId==user.Id)
-                .Join(_context.Roles,
-                ur => ur.RoleId,
-                r => r.Id,
-                (ur, r) => r.Name)
-                .ToListAsync();
+            var roles = await _userManager.GetRolesAsync(user);
 
             var response = _mapper.Map<MeResponseDTO>(user);
-            response.Roles = roles; 
+            response.Roles = roles.ToList();
 
             return response;
         }

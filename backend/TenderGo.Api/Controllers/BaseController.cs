@@ -8,44 +8,48 @@ using TenderGo.Services.Services;
 
 
 public abstract class BaseController<T,TDb, TInsert, TUpdate>
-    : ControllerBase where T:IHasId
+    : ControllerBase
+    where T : class
+    where TDb : class
 {
-    protected readonly IBaseService<T,TDb, TInsert, TUpdate> _service;
+    protected readonly IReadService<T> _readService;
+    protected readonly IWriteService<T, TInsert, TUpdate> _writeService;
     private readonly ILogger<BaseController<T,TDb, TInsert, TUpdate>> _logger;
 
-    protected BaseController(IBaseService<T,TDb ,TInsert, TUpdate> service, ILogger<BaseController<T, TDb,TInsert, TUpdate>> logger)
+    protected BaseController(IWriteService<T, TInsert, TUpdate> writeService, IReadService<T> readService, ILogger<BaseController<T, TDb,TInsert, TUpdate>> logger)
     {
-        _service = service;
+        _readService = readService;
+        _writeService = writeService;
         _logger = logger;
     }
 
 
     [HttpGet]
-    public async Task<ActionResult<List<T>>> GetAll()
-        => Ok(await _service.Get());
+    public async Task<ActionResult<PagedResult<T>>> GetAll([FromQuery] PagedResult<T> pagedResult)
+        => Ok(await _readService.Get( pagedResult));
 
     [HttpGet("{id}")]
     public async Task<ActionResult<T>> GetById(int id)
-        => Ok(await _service.GetById(id));
+        => Ok(await _readService.GetById(id));
 
     [HttpPost]
     public async Task<ActionResult<T>> Insert(TInsert request)
     {
-        var result = await _service.Insert(request);
-        return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+        var result = await _writeService.Insert(request);
+        return Ok(result);
     }
 
     [HttpPatch("{id}")]
     public async Task<IActionResult> Update(int id, TUpdate request)
     {
-        await _service.Update(id, request);
+        await _writeService.Update(id, request);
         return NoContent();
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-        await _service.Delete(id);
+        await _writeService.Delete(id);
         return NoContent();
     }
 }

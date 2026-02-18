@@ -9,14 +9,9 @@ using TenderGo.Models.Requests;
 
 namespace TenderGo.Services.Interfaces
     {
-        public interface IBaseService<T,TDb,TInsert,TUpdate>
-        {
-        Task<IEnumerable<T>> Get();
-        Task<T> GetById(int id);              
-        Task<T> Insert(TInsert request);
-        Task Update(int id, TUpdate request); 
-        Task Delete(int id);
-     
+        public interface IBaseService<T,TDb,TInsert,TUpdate>:IWriteService<T, TInsert, TUpdate> where TDb : class where T : class
+    {
+   
 
 
     }

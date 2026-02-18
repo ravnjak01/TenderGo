@@ -1,6 +1,6 @@
 ﻿using TenderGo.Models.DTOs;
 using TenderGo.Models.ENUMs;
-namespace TenderGo.Services.DTOs
+namespace TenderGo.Models.DTOs
 {
     public class TenderDTO: IHasId
     {
