@@ -18,5 +18,6 @@ namespace TenderGo.Models.Entities
         public decimal OfferedPrice { get; set; }
         public DateTime SubmittedAt { get; set; } = DateTime.UtcNow;
         public ApplicationStatus Status { get; set; } = ApplicationStatus.Pending;
+        public string? DeliveryNote { get; set; }
     }
 }

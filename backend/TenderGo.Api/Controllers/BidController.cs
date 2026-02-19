@@ -22,20 +22,21 @@ namespace TenderGo.Api.Controllers
         }
 
 
-     
 
-        [HttpPatch("{tenderId}/accept/{bidId}")]
-        public async Task<IActionResult> AcceptBid(int tenderId,int bidId)
+
+        [HttpPatch("{id}")]
+        public override async Task<IActionResult> Update(int id, [FromBody] BidUpdateRequest request)
         {
-            await _bidService.AcceptBid(tenderId,bidId);
-            return NoContent();
+            var result = await _bidService.Update(id, request);
+            return Ok(result);
         }
 
-        [HttpPatch("reject/{bidId}")]
-        public async Task<IActionResult> RejectBid(int bidId)
+      
+        [HttpPatch("{id}/withdraw")]
+        public async Task<ActionResult<BidDTO>> Withdraw(int id)
         {
-            await _bidService.RejectBidAsync(bidId);
-            return NoContent();
+            var result = await _bidService.Withdraw(id);
+            return Ok(result);
         }
 
 

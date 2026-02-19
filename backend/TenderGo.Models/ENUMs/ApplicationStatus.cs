@@ -8,8 +8,9 @@ namespace TenderGo.Models.ENUMs
 {
     public enum ApplicationStatus
     {
-       Pending = 0,
-        Accepted = 1,
-        Rejected = 2
+       Pending = 1,
+        Accepted = 2,
+        Rejected = 3,
+        Withdrawn = 4   
     }
 }

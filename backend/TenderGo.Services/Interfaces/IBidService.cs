@@ -13,8 +13,8 @@ namespace TenderGo.Services.Interfaces
     public interface IBidService:IReadService<BidDTO>,IWriteService<BidDTO, BidInsertRequest, BidUpdateRequest>
     {
 
-        Task RejectBidAsync(int bidId);
-        Task AcceptBid(int tenderId, int bidId);
+        Task<BidDTO>Withdraw(int bidId);
         Task<List<BidDTO>> GetBidsForTender(int tenderId);
+        Task<BidDTO> Update(int id, BidUpdateRequest request);
     }
 }

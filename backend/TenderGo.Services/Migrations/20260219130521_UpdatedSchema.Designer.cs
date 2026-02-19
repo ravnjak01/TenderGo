@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TenderGo.Api.Database;
 
@@ -11,9 +12,11 @@ using TenderGo.Api.Database;
 namespace TenderGo.Services.Migrations
 {
     [DbContext(typeof(TenderGoContext))]
-    partial class TenderGoContextModelSnapshot : ModelSnapshot
+    [Migration("20260219130521_UpdatedSchema")]
+    partial class UpdatedSchema
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -352,9 +355,6 @@ namespace TenderGo.Services.Migrations
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsEdited")
-                        .HasColumnType("bit");
 
                     b.Property<decimal>("MaxBudget")
                         .HasColumnType("decimal(18, 2)");

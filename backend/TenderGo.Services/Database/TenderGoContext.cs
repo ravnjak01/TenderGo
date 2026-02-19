@@ -25,6 +25,7 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
     public virtual DbSet<ApplicationUser> Users { get; set; }
     public virtual DbSet<Bid>Bids { get; set; }
 
+    public virtual DbSet<TenderImage> TenderImages { get; set; }
 
 
 
@@ -52,30 +53,64 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
         modelBuilder.Entity<Rating>(entity =>
         {
 
+            entity.HasOne(d => d.RatedUser) 
+                        .WithMany(p => p.RatingsReceived)
+                    .HasForeignKey(d => d.RatedUserId)
+                     .OnDelete(DeleteBehavior.Restrict);
+
             entity.HasOne(d => d.RatedByUser)
-                .WithMany(p => p.Ratings)
-                .HasForeignKey(d => d.RatedUserId)
-                .OnDelete(DeleteBehavior.Restrict);
+        .WithMany(p => p.RatingsGiven)
+        .HasForeignKey(d => d.RatedByUserId)
+        .OnDelete(DeleteBehavior.Restrict);
 
 
-            entity.HasOne(d=>d.RatedByUser)
-                .WithMany()
-                .HasForeignKey(d => d.RatedByUserId)
-                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<Rating>()
+                .HasIndex(r => new { r.TenderId, r.RatedByUserId, r.RatedUserId })
+                    .IsUnique();
         });
         OnModelCreatingPartial(modelBuilder);
 
         modelBuilder.Entity<Bid>().Navigation(b => b.SubmittedByUser).AutoInclude();//da se uvijek ucitava korisnik koji je poslao bid
+        modelBuilder.Entity<Bid>(entity =>
+        {
+            // Primarni ključ
+            entity.HasKey(e => e.Id);
+
+            // Konfiguracija veze 1:N (Jedan Tender -> Više Bids)
+            entity.HasOne(b => b.Tender)           // Bid ima jedan Tender
+                  .WithMany(t => t.Bids)           // Tender ima mnogo Bids
+                  .HasForeignKey(b => b.TenderId)  // Strani ključ je TenderId
+                  .OnDelete(DeleteBehavior.Cascade); 
+
+            entity.Property(b => b.OfferedPrice).HasPrecision(18, 2);
+        });
+
+
         modelBuilder.Entity<Tender>()
             .HasOne(t => t.CreatedByUser)
             .WithMany()
             .HasForeignKey(t => t.CreatedByUserId)
             .OnDelete(DeleteBehavior.Restrict);
-           
-            
-           modelBuilder.Entity<Tender>() .Navigation(b => b.CreatedByUser).AutoInclude();//da se uvijek ucitava korisnik koji je kreirao tender
-       
-        
+
+        modelBuilder.Entity<Tender>()
+    .HasOne(t => t.WinningBid)
+    .WithMany() 
+    .HasForeignKey(t => t.WinningBidId)
+    .OnDelete(DeleteBehavior.Restrict);
+
+
+        modelBuilder.Entity<Tender>() .Navigation(b => b.CreatedByUser).AutoInclude();//da se uvijek ucitava korisnik koji je kreirao tender
+
+
+        modelBuilder.Entity<TenderImage>(entity =>
+        {
+            entity.HasOne(ti => ti.Tender)
+                  .WithMany(t => t.Images)
+                  .HasForeignKey(ti => ti.TenderId)
+                  .OnDelete(DeleteBehavior.Cascade); 
+        });
+
+
     }
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder);

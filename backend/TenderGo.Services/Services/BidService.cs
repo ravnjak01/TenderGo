@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -14,6 +15,7 @@ using TenderGo.Models.ENUMs;
 using TenderGo.Models.Requests;
 using TenderGo.Services.Interfaces;
 using TenderGo.Services.Services.Exceptions;
+using TenderGo.Services.StateMachines.BidStates;
 
 namespace TenderGo.Services.Services
 {
@@ -22,113 +24,60 @@ namespace TenderGo.Services.Services
 
         private readonly IAuthService _authService;
         protected readonly ILogger<BidService> _logger;
-        public BidService(TenderGoContext context, IMapper mapper, IHttpContextAccessor httpContextAccessor,IAuthService authService, ILogger<BidService> logger) : base(context, mapper, httpContextAccessor)
+        protected readonly IServiceProvider _serviceProvider;
+
+        public BidService(TenderGoContext context, IMapper mapper, IHttpContextAccessor httpContextAccessor,IAuthService authService, ILogger<BidService> logger, IServiceProvider serviceProvider) : base(context, mapper, httpContextAccessor)
         {
             _authService = authService;
             _logger = logger;
+            _serviceProvider = serviceProvider;
         }
 
 
 
-        public async Task AcceptBid(int tenderId, int bidId)
-        {
-
-            _logger.LogInformation("Accepting bid {BidId} for tender {TenderId}", bidId, tenderId);
-
-            var currentUserId = _authService.GetCurrentUserId();
-
-            var tender = await _context.Tenders
-             .Include(t => t.Bids)
-             .FirstOrDefaultAsync(t => t.Id == tenderId)
-             ?? throw new UserException("Tender not found");
-
-
-            if (tender.CreatedByUserId != currentUserId)
-                throw new ForbiddenException("You are not the owner of this tender");
-
-            if (tender.Status != TenderStatus.Open)
-                throw new UserException("Tender is not open");
-
-
-            var acceptedBid = tender.Bids.FirstOrDefault(b => b.Id == bidId)
-           ?? throw new UserException("Bid not found for this tender");
-
-
-
-
-            foreach (var bid in tender.Bids)
-            {
-                bid.Status = bid.Id == bidId
-                    ? ApplicationStatus.Accepted
-                    : ApplicationStatus.Rejected;
-            }
-
-            tender.Status = TenderStatus.Closed;
-            await _context.SaveChangesAsync();
-
-
-            _logger.LogInformation("Bid {BidId} has been accepted for tender {TenderId}", bidId, tenderId);
-
-        }
-
-
-        public async Task RejectBidAsync(int bidId)
-        {
-
-
-             var currentUserId = _authService.GetCurrentUserId();
-
-    var bid = await _context.Bids
-        .Include(b => b.Tender)
-        .FirstOrDefaultAsync(b => b.Id == bidId)
-        ?? throw new UserException("Bid not found");
-
-    if (bid.Tender.CreatedByUserId != currentUserId)
-        throw new ForbiddenException("You are not the owner of this tender");
-
-    if (bid.Status != ApplicationStatus.Pending)
-        throw new UserException("Only pending bids can be rejected");
-
-    bid.Status = ApplicationStatus.Rejected;
-    await _context.SaveChangesAsync();
-        }
-
-
+       
 
 
         public override async Task<BidDTO> Insert(BidInsertRequest request)
         {
-            var currentUserId = _authService.GetCurrentUserId();
 
             var tender = await _context.Tenders.FindAsync(request.TenderId)
-                ?? throw new UserException("Tender not found");
+                  ?? throw new UserException("Tender not found");
 
-            if (tender.Status != TenderStatus.Open)
-                throw new UserException("Cannot submit bid to a closed tender");
 
-            if (tender.CreatedByUserId == currentUserId)
-                throw new ForbiddenException("You cannot bid on your own tender");
+            _logger.LogInformation("Attempting to create a new bid for tender {TenderId} by user {UserId}", request.TenderId, _authService.GetCurrentUserId());
 
-            if (tender.Deadline < DateTime.UtcNow)
-                throw new UserException("Tender deadline has passed");
+            // Kreiramo stanje (ovdje proslijeđujemo početni status Pending i trenutni status tendera)
+            var state = CreateState(ApplicationStatus.Pending, tender.Status);
 
-            var existingBid = await _context.Bids
-                .AnyAsync(b => b.TenderId == request.TenderId && b.SubmittedByUserId == currentUserId);
-            if (existingBid)
-                throw new UserException("You have already submitted a bid for this tender");
+            return await state.Insert(request);
+        }
 
-            var entity = _mapper.Map<Bid>(request);
-            entity.SubmittedByUserId = currentUserId;
-            entity.Status = ApplicationStatus.Pending;
-            entity.SubmittedAt = DateTime.UtcNow;
+        public override async Task<BidDTO> Update(int id, BidUpdateRequest request)
+        {
+            var bid = await _context.Bids.Include(b => b.Tender).FirstOrDefaultAsync(b => b.Id == id)
+                ?? throw new UserException("Bid not found");
 
-            _context.Bids.Add(entity);
-            await _context.SaveChangesAsync();
+            _logger.LogInformation("Attempting to update bid {BidId}", id);
 
-            return _mapper.Map<BidDTO>(entity);
+            var state = CreateState(bid.Status, bid.Tender.Status);
+
+            return await state.Update(id, request);
         }
 
 
+
+        public async Task<BidDTO> Withdraw(int id)
+        {
+            var bid = await _context.Bids.Include(b => b.Tender).FirstOrDefaultAsync(b => b.Id == id)
+                ?? throw new UserException("Bid not found");
+
+            _logger.LogInformation("Attempting to withdraw bid {BidId}", id);
+
+            var state = CreateState(bid.Status, bid.Tender.Status);
+
+            return await state.Withdraw(id);
+        }
 
         public async Task<List<BidDTO>> GetBidsForTender(int tenderId)
         {
@@ -138,5 +87,24 @@ namespace TenderGo.Services.Services
                 .ToListAsync();
             return _mapper.Map<List<BidDTO>>(bids);
         }
+
+
+        public BaseBidState CreateState(ApplicationStatus bidStatus, TenderStatus tenderStatus)
+        {
+            if (tenderStatus != TenderStatus.Open && tenderStatus != TenderStatus.Draft)
+            {
+                return _serviceProvider.GetRequiredService<FinalBidState>();
+            }
+
+            return bidStatus switch
+            {
+                ApplicationStatus.Pending => _serviceProvider.GetRequiredService<OpenBidState>(),
+                ApplicationStatus.Withdrawn => _serviceProvider.GetRequiredService<FinalBidState>(),
+                ApplicationStatus.Accepted => _serviceProvider.GetRequiredService<FinalBidState>(),
+                ApplicationStatus.Rejected => _serviceProvider.GetRequiredService<FinalBidState>(),
+                _ => _serviceProvider.GetRequiredService<OpenBidState>()
+            };
+        }
+
     }
 }

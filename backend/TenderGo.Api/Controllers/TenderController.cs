@@ -47,15 +47,30 @@ public class TenderController
         return Ok(tenders);
     }
 
-    [Authorize(Roles = $"{AppRoles.Admin},{AppRoles.User}")]
-    [HttpPatch("{tenderId}/close")]
-    public async Task<IActionResult> CancelTender(int tenderId)
+
+
+    [HttpPut("{id}/activate")]
+    public async Task<ActionResult<TenderDTO>> Activate(int id)
     {
-        await _tenderService.CancelTender(tenderId);
-        return NoContent();
+        var result= await _tenderService.Activate(id);
+        return Ok(result);
+    }
+
+    [Authorize(Roles = $"{AppRoles.Admin},{AppRoles.User}")]
+    [HttpPatch("{id}/cancel")]
+    public async Task<ActionResult<TenderDTO>> Cancel(int id)
+    {
+        var result = await _tenderService.Cancel(id);
+        return Ok(result);
+    }
+
+    [HttpPatch("{id}/award/{bidId}")]
+    public async Task<ActionResult<TenderDTO>> Award(int id, int bidId)
+    {
+        var result = await _tenderService.Award(id, bidId);
+        return Ok(result);
     }
 
 
- 
 
 }

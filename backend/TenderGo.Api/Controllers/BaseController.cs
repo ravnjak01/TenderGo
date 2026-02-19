@@ -40,7 +40,7 @@ public abstract class BaseController<T,TDb, TInsert, TUpdate>
     }
 
     [HttpPatch("{id}")]
-    public async Task<IActionResult> Update(int id, TUpdate request)
+    public virtual async Task<IActionResult> Update(int id, TUpdate request)
     {
         await _writeService.Update(id, request);
         return NoContent();

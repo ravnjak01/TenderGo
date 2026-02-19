@@ -11,8 +11,10 @@ using TenderGo.Api.Filters;
 using TenderGo.Api.Middleware;
 using TenderGo.Data;
 using TenderGo.Models.Entities;
-using TenderGo.Services.Interfaces; 
-using TenderGo.Services.Services;  
+using TenderGo.Services.Interfaces;
+using TenderGo.Services.Services;
+using TenderGo.Services.StateMachines.BidStates;
+using TenderGo.Services.StateMachines.TenderStates;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -103,6 +105,16 @@ builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 builder.Services.AddScoped<ITenderService, TenderService>();
 builder.Services.AddScoped<IBidService, BidService>();
 builder.Services.AddScoped(typeof(IBaseService<,,,>), typeof(BaseService<,,,>));
+builder.Services.AddTransient < InitialTenderState>() ;
+builder.Services.AddTransient<OpenTenderState>();
+builder.Services.AddTransient<ClosedTenderState>();
+builder.Services.AddTransient<AwardedTenderState>();
+builder.Services.AddTransient<CancelledTenderState>();
+builder.Services.AddTransient<ArchivedTenderState>();
+
+
+builder.Services.AddScoped<OpenBidState>();
+builder.Services.AddScoped<FinalBidState>();
 
 
 //builder.Entity<Rating>()

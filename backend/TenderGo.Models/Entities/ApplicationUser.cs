@@ -13,6 +13,9 @@ namespace TenderGo.Models.Entities
         public string LastName { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public virtual ICollection<TenderApplication> MyApplications { get; set; }
-        public virtual ICollection<Rating>Ratings { get; set; }=new List<Rating>();
+
+        public virtual ICollection<Rating> RatingsReceived { get; set; } = new List<Rating>();
+
+        public virtual ICollection<Rating> RatingsGiven { get; set; } = new List<Rating>();
     }
 }

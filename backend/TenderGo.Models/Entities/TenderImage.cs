@@ -17,5 +17,7 @@ namespace TenderGo.Models.Entities
 
         public int TenderId { get; set; }
         public virtual Tender Tender { get; set; } = null!;
+
+        public DateTime? CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }
