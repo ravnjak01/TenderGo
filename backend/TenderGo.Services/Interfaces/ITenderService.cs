@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using TenderGo.Api.Database;
 using TenderGo.Models.Requests;
 using TenderGo.Models.DTOs;
+using TenderGo.Models.Entities;
 
 namespace TenderGo.Services.Interfaces
 {
@@ -19,6 +20,7 @@ namespace TenderGo.Services.Interfaces
         Task<TenderDTO> Cancel(int tenderId);
         Task<TenderDTO> Activate(int tenderId);
         Task<TenderDTO> Award(int id, int bidId);
+        Task<List<string>> AllowedActions(int id);
 
     }
 }

@@ -89,6 +89,17 @@ namespace TenderGo.Services.Services
         }
 
 
+        public async Task<List<string>> AllowedActions(int id)
+        {
+            var entity= await _context.Bids.Include(b => b.Tender).FirstOrDefaultAsync(b => b.Id == id)
+                ?? throw new UserException("Bid not found");
+
+            var state = CreateState(entity.Status, entity.Tender.Status);
+
+            return await state.AllowedActions(entity);
+        }
+
+
         public BaseBidState CreateState(ApplicationStatus bidStatus, TenderStatus tenderStatus)
         {
             if (tenderStatus != TenderStatus.Open && tenderStatus != TenderStatus.Draft)

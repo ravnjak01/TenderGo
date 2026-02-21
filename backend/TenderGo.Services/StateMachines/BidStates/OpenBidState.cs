@@ -95,5 +95,25 @@ namespace TenderGo.Services.StateMachines.BidStates
             await _context.SaveChangesAsync();
             return _mapper.Map<BidDTO>(bid);
         }
+
+
+        public override async Task<List<string>>AllowedActions(Bid entity)
+        {
+
+            var list =await base.AllowedActions(entity);
+            var authService = _serviceProvider.GetRequiredService<IAuthService>();
+            var currentUserId = authService.GetCurrentUserId();
+
+            bool isBidOwner = entity.SubmittedByUserId == currentUserId;
+
+            if (isBidOwner) {
+
+                list.Add("Withdraw");
+                list.Add("Update");
+            }
+            return list;
+
+         
+        }
     }
 }

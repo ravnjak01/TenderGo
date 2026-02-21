@@ -14,7 +14,7 @@ using TenderGo.Models.Requests;
 using TenderGo.Services.Interfaces;
 using TenderGo.Services.Services.Exceptions;
 
-namespace TenderGo.Services.StateMachines
+namespace TenderGo.Services.StateMachines.TenderStates
 {
     public class BaseState
     {
@@ -24,7 +24,7 @@ namespace TenderGo.Services.StateMachines
         protected readonly IServiceProvider _serviceProvider;
         protected readonly ILogger<BaseState> _logger;
 
-        public BaseState(IServiceProvider serviceProvider, TenderGoContext context, IMapper mapper,ILogger<BaseState>logger)
+        public BaseState(IServiceProvider serviceProvider, TenderGoContext context, IMapper mapper, ILogger<BaseState> logger)
         {
             _serviceProvider = serviceProvider;
             _context = context;
@@ -49,5 +49,6 @@ namespace TenderGo.Services.StateMachines
         public virtual Task<TenderDTO> Award(int id, int bidId) => throw new UserException("Not allowed in this state");
 
         public virtual Task<TenderDTO> Archive(int id) => throw new UserException("Not allowed in this state");
+        public virtual Task<List<string>> AllowedActions(Tender entity) => Task.FromResult(new List<string>());
     }
 }

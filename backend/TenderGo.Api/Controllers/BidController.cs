@@ -50,6 +50,14 @@ namespace TenderGo.Api.Controllers
 
             return Ok(bids);
         }
+
+
+        [HttpGet("{id}/allowed-actions")]
+        public async Task<ActionResult<List<string>>> GetAllowedActions(int id)
+        {
+            var actions = await _bidService.AllowedActions(id);
+            return Ok(actions);
+        }
     }
 }
 

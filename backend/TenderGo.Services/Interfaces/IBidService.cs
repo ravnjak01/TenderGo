@@ -16,5 +16,6 @@ namespace TenderGo.Services.Interfaces
         Task<BidDTO>Withdraw(int bidId);
         Task<List<BidDTO>> GetBidsForTender(int tenderId);
         Task<BidDTO> Update(int id, BidUpdateRequest request);
+        Task<List<string>> AllowedActions(int bidId);
     }
 }

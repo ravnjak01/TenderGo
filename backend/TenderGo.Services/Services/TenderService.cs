@@ -18,7 +18,6 @@ using TenderGo.Models.ENUMs;
 using TenderGo.Models.Requests;
 using TenderGo.Services.Interfaces;
 using TenderGo.Services.Services.Exceptions;
-using TenderGo.Services.StateMachines;
 using TenderGo.Services.StateMachines.TenderStates;
 
 namespace TenderGo.Services.Services
@@ -128,6 +127,20 @@ namespace TenderGo.Services.Services
             var tender = await _context.Tenders.FindAsync(id);
             var state = CreateState(tender.Status);
             return await state.Award(id, bidId);
+        }
+
+
+        public async Task<List<string>> AllowedActions(int id)
+        {
+            var entity = await _context.Tenders
+           .Include(t => t.Bids) 
+           .FirstOrDefaultAsync(t => t.Id == id)
+           ?? throw new UserException("Tender not found.");
+
+            
+            var state = CreateState(entity.Status);
+
+            return await state.AllowedActions(entity);
         }
 
         public BaseState CreateState(TenderStatus status)

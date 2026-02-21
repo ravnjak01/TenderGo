@@ -105,6 +105,7 @@ builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 builder.Services.AddScoped<ITenderService, TenderService>();
 builder.Services.AddScoped<IBidService, BidService>();
 builder.Services.AddScoped(typeof(IBaseService<,,,>), typeof(BaseService<,,,>));
+builder.Services.AddTransient<BaseState>();
 builder.Services.AddTransient < InitialTenderState>() ;
 builder.Services.AddTransient<OpenTenderState>();
 builder.Services.AddTransient<ClosedTenderState>();

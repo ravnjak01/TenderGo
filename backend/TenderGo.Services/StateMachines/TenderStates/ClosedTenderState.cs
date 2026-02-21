@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using TenderGo.Api.Database;
 using TenderGo.Models.DTOs;
+using TenderGo.Models.Entities;
 using TenderGo.Models.ENUMs;
 using TenderGo.Services.Interfaces;
 using TenderGo.Services.Services.Exceptions;
@@ -56,5 +57,19 @@ namespace TenderGo.Services.StateMachines.TenderStates
 
             return _mapper.Map<TenderDTO>(tender);
         }
+
+        public override async Task<List<string>> AllowedActions(Tender entity)
+        {
+            var list = await base.AllowedActions(entity);
+
+            if (entity.Bids != null && entity.Bids.Any(b => b.Status == ApplicationStatus.Pending))
+            {
+                list.Add("Award");
+            }
+
+            list.Add("Cancel");
+            return list;
+        }
+
     }
 }

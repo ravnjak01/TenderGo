@@ -71,6 +71,10 @@ public class TenderController
         return Ok(result);
     }
 
-
+    [HttpGet("{id}/allowedActions")]
+    public async Task<List<string>> AllowedActions(int id)
+    {
+        return await _tenderService.AllowedActions(id);
+    }
 
 }
