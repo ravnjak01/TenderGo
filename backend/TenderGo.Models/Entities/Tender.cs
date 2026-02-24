@@ -22,6 +22,7 @@ public partial class Tender
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public TenderStatus Status { get; set; }
+    public TenderStatus Status { get; set; } 
 
     public string CreatedByUserId { get; set; }
     public virtual ApplicationUser CreatedByUser { get; set; }

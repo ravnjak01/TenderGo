@@ -1,7 +1,9 @@
 ﻿using AutoMapper;
+using EasyNetQ;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using RabbitMQ.Client;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,9 +21,12 @@ namespace TenderGo.Services.StateMachines.TenderStates
 {
     public class InitialTenderState : BaseState
     {
-        public InitialTenderState(IServiceProvider serviceProvider, TenderGoContext context, IMapper mapper, ILogger<InitialTenderState> logger) : base(serviceProvider, context, mapper, logger)
-        {
 
+        private readonly IPubSub _pubSub;
+
+        public InitialTenderState(IServiceProvider serviceProvider, TenderGoContext context, IMapper mapper, ILogger<InitialTenderState> logger, IPubSub pubSub) : base(serviceProvider, context, mapper, logger)
+        {
+            _pubSub = pubSub;
         }
 
 
@@ -87,6 +92,34 @@ namespace TenderGo.Services.StateMachines.TenderStates
 
             await _context.SaveChangesAsync();
 
+            var mappedEntity=_mapper.Map<TenderDTO>(entity);
+            await _pubSub.PublishAsync(mappedEntity, "tender_updates");
+
+            try
+            {
+                var factory=new ConnectionFactory() { HostName = "localhost" };
+                using var connection = await factory.CreateConnectionAsync();
+                using var channel = await connection.CreateChannelAsync();
+
+                await channel.QueueDeclareAsync(queue: "tender_updates",
+                                     durable: false,
+                                     exclusive: false,
+                                     autoDelete: false,
+                                     arguments: null);
+
+                const string message= "Hello world";
+                var body = Encoding.UTF8.GetBytes(message);
+
+               await channel.BasicPublishAsync(exchange: string.Empty,
+                                     routingKey: "tender_updates",
+                                     body: body);
+
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to publish message to RabbitMQ for tender activation.");
+            }
             return _mapper.Map<TenderDTO>(entity);
 
         }

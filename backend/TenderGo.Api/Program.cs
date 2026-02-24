@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using EasyNetQ;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -116,6 +117,8 @@ builder.Services.AddTransient<ArchivedTenderState>();
 
 builder.Services.AddScoped<OpenBidState>();
 builder.Services.AddScoped<FinalBidState>();
+
+builder.Services.AddEasyNetQ("host=localhost");
 
 
 //builder.Entity<Rating>()
