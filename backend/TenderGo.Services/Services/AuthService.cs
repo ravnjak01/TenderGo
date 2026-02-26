@@ -64,9 +64,9 @@ namespace TenderGo.Services.Services
 
             await _userManager.AddToRoleAsync(user, AppRoles.User);
 
+            _logger.LogInformation("User with email {Email} registered successfully", dto.Email);
             return result;
 
-            _logger.LogInformation("User with email {Email} registered successfully", dto.Email);
         }
 
         public async Task<LoginResponseDto?> LoginAsync(LoginRequest dto)
@@ -103,6 +103,7 @@ namespace TenderGo.Services.Services
 
             var token = GenerateJwtToken(user,claims);
 
+            _logger.LogInformation("User with email {Email} logged in successfully", dto.Email);
             return new LoginResponseDto
             {
                 Token = token,
@@ -115,21 +116,22 @@ namespace TenderGo.Services.Services
             };
 
 
-            _logger.LogInformation("User with email {Email} logged in successfully", dto.Email);
         }
 
-        public string GenerateJwtToken(ApplicationUser user,IEnumerable<Claim>claims)
+        public string GenerateJwtToken(ApplicationUser user, IEnumerable<Claim> claims)
         {
 
             var jwtKey = _config["Jwt:Key"]
-    ?? throw new Exception("Jwt:Key nije postavljen");
+                 ?? throw new Exception("Jwt:Key isnt set");
 
-            var expires = int.Parse(
-       _config["Jwt:ExpiresInMinutes"]
-       ?? throw new Exception("Jwt:ExpiresInMinutes nije postavljen")
-   );
-          
-            var key=new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
+            if (jwtKey.Length < 32)
+                throw new Exception("Error:Jwt key has to have minimum 32 characters!");
+
+            if (!int.TryParse(_config["Jwt:ExpiresInMinutes"], out var expires))
+                throw new Exception("Greška: Jwt:ExpiresInMinutes isnt valid number!");
+
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
 
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 

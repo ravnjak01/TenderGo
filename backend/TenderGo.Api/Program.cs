@@ -16,11 +16,17 @@ using TenderGo.Services.Interfaces;
 using TenderGo.Services.Services;
 using TenderGo.Services.StateMachines.BidStates;
 using TenderGo.Services.StateMachines.TenderStates;
+using DotNetEnv;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 var builder = WebApplication.CreateBuilder(args);
 
+DotNetEnv.Env.Load();
+
 // 1. Konfiguracija baze
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+var connectionString =
+   builder.Configuration.GetConnectionString("DefaultConnection");
+
 builder.Services.AddDbContext<TenderGoContext>(options => options.UseSqlServer(connectionString, b =>
 {
     b.MigrationsAssembly("TenderGo.Services");
@@ -130,11 +136,17 @@ builder.Services.AddEasyNetQ("host=localhost");
 var app = builder.Build();
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
+
+
+if (app.Environment.IsDevelopment())
+{
     app.UseSwagger();
 app.UseSwaggerUI(c => {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "TenderGo API V1");
     c.RoutePrefix = "swagger"; 
 });
+
+}
 
 app.UseHttpsRedirection();
 
@@ -143,10 +155,39 @@ app.UseAuthorization();
 
 app.MapControllers(); // Bez ovoga ruta /api/auth/register neće raditi
 
+// Izmeni onaj blok u Program.cs
 using (var scope = app.Services.CreateScope())
 {
-   var services = scope.ServiceProvider;
-    await IdentitySeeder.SeedRolesAsync(services);
+    var services = scope.ServiceProvider;
+    var logger = services.GetRequiredService<ILogger<Program>>();
+
+    // Pokušaj 10 puta sa pauzom od 5 sekundi
+    for (int i = 0; i < 10; i++)
+    {
+        try
+        {
+            var context = services.GetRequiredService<TenderGoContext>();
+            context.Database.Migrate();
+            await IdentitySeeder.SeedRolesAsync(services);
+            logger.LogInformation("Database migrated and seeded successfully.");
+            break; // Ako uspe, izađi iz petlje
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning($"Pokušaj {i + 1}: SQL Server još nije spreman... Čekam.");
+            if (i == 9) // Ako je zadnji pokušaj, baci grešku
+            {
+                logger.LogError(ex, "Greška nakon 10 pokušaja.");
+                throw;
+            }
+            Thread.Sleep(5000); // Sačekaj 5 sekundi pre novog pokušaja
+        }
+    }
 }
+   
 app.Run();
+
+
+   
+
 

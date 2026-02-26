@@ -8,10 +8,7 @@ namespace TenderGo.Api.Database;
 
 public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
 {
-    public TenderGoContext()
-    {
-    }
-
+  
     public TenderGoContext(DbContextOptions<TenderGoContext> options)
         : base(options)
     {
@@ -30,9 +27,13 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
 
 
 
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
-
+        if (!optionsBuilder.IsConfigured)
+        {
+            optionsBuilder.UseSqlServer(@"Server=(localdb)\MSSQLLocalDB;Database=TenderGo;Trusted_Connection=True;TrustServerCertificate=True;");
+        }
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -110,6 +111,13 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
                   .OnDelete(DeleteBehavior.Cascade); 
         });
 
+        modelBuilder.Entity<TenderApplication>(entity =>
+        {
+            entity.HasOne(d => d.User)
+                  .WithMany(p => p.MyApplications)
+                  .HasForeignKey(d => d.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
 
     }
 

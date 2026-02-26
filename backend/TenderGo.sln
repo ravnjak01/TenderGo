@@ -11,6 +11,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TenderGo.Services", "Tender
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TenderGo.Subscriber", "TenderGo.Subscriber\TenderGo.Subscriber.csproj", "{A3A361B0-3F22-48A2-8DDD-106B329D7C59}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{9C453341-E2F6-4CE4-A969-45F293846E16}"
+	ProjectSection(SolutionItems) = preProject
+		..\.env = ..\.env
+		docker-compose.yml = docker-compose.yml
+		Dockerfile = Dockerfile
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
