@@ -35,6 +35,15 @@ namespace TenderGo.Api.Controllers
             return Ok(result);
         }
 
+        [HttpPost("logout")]
+        [Authorize]
+
+        public async Task<IActionResult> Logout()
+        {
+            await _authService.LogoutAsync();
+            return Ok(new { Message = "User logged out successfully" });
+        }
+
         [Authorize]
         [HttpGet("me")]
         public async Task<ActionResult<MeResponseDTO>> GetMe()

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace TenderGo.Models.Entities
 {
-    public static class AppRoles
+    public  static class AppRoles
     {
   
         public const string User = "User";

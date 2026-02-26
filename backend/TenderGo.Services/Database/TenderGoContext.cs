@@ -15,17 +15,11 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
     }
 
     public virtual DbSet<Tender> Tenders { get; set; }
-    public virtual DbSet<Rating> Ratings { get; set; }
-
-    public virtual DbSet<TenderApplication> TenderApplications { get; set; }
-    public virtual DbSet<Category> Categories { get; set; }
-    public virtual DbSet<ApplicationUser> Users { get; set; }
     public virtual DbSet<Bid>Bids { get; set; }
-
+    public virtual DbSet<Category> Categories { get; set; }
+    public virtual DbSet<Rating> Ratings { get; set; }
     public virtual DbSet<TenderImage> TenderImages { get; set; }
-
-
-
+    public virtual DbSet<RefreshToken> RefreshTokens { get; set; }
 
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -41,16 +35,35 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
     {
 
         base.OnModelCreating(modelBuilder);
+
+        //tender
         modelBuilder.Entity<Tender>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PK__Tenders__3214EC07AD891A81");
-
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
             entity.Property(e => e.MaxBudget).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.Title).HasMaxLength(200);
             entity.Property(e => e.Status).HasConversion<string>();
+
+            entity.Property(e=>e.Status).HasConversion<string>();
+
+            entity.HasOne(t=>t.WinningBid)
+                .WithMany()
+                .HasForeignKey(t => t.WinningBidId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+
+
+            entity.HasOne(t => t.CreatedByUser)
+                .WithMany(t=>t.CreatedTenders)
+                .HasForeignKey(t => t.CreatedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
         });
 
+        modelBuilder.Entity<Tender>().Navigation(b => b.CreatedByUser).AutoInclude();//da se uvijek ucitava korisnik koji je kreirao tender
+
+        //rating
         modelBuilder.Entity<Rating>(entity =>
         {
 
@@ -60,17 +73,19 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
                      .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasOne(d => d.RatedByUser)
-        .WithMany(p => p.RatingsGiven)
-        .HasForeignKey(d => d.RatedByUserId)
-        .OnDelete(DeleteBehavior.Restrict);
+                    .WithMany(p => p.RatingsGiven)
+                    .HasForeignKey(d => d.RatedByUserId)
+                    .OnDelete(DeleteBehavior.Restrict);
 
 
             modelBuilder.Entity<Rating>()
                 .HasIndex(r => new { r.TenderId, r.RatedByUserId, r.RatedUserId })
-                    .IsUnique();
+                 .IsUnique();
         });
         OnModelCreatingPartial(modelBuilder);
 
+
+        //bid
         modelBuilder.Entity<Bid>().Navigation(b => b.SubmittedByUser).AutoInclude();//da se uvijek ucitava korisnik koji je poslao bid
         modelBuilder.Entity<Bid>(entity =>
         {
@@ -84,25 +99,14 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
                   .OnDelete(DeleteBehavior.Cascade); 
 
             entity.Property(b => b.OfferedPrice).HasPrecision(18, 2);
+
+            // 1 korisnik može poslati samo jedan bid po tenderu
+            entity.HasIndex(b => new { b.TenderId, b.SubmittedByUserId })
+                 .IsUnique();
         });
 
 
-        modelBuilder.Entity<Tender>()
-            .HasOne(t => t.CreatedByUser)
-            .WithMany()
-            .HasForeignKey(t => t.CreatedByUserId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        modelBuilder.Entity<Tender>()
-    .HasOne(t => t.WinningBid)
-    .WithMany() 
-    .HasForeignKey(t => t.WinningBidId)
-    .OnDelete(DeleteBehavior.Restrict);
-
-
-        modelBuilder.Entity<Tender>() .Navigation(b => b.CreatedByUser).AutoInclude();//da se uvijek ucitava korisnik koji je kreirao tender
-
-
+        //tender images
         modelBuilder.Entity<TenderImage>(entity =>
         {
             entity.HasOne(ti => ti.Tender)
@@ -111,13 +115,7 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
                   .OnDelete(DeleteBehavior.Cascade); 
         });
 
-        modelBuilder.Entity<TenderApplication>(entity =>
-        {
-            entity.HasOne(d => d.User)
-                  .WithMany(p => p.MyApplications)
-                  .HasForeignKey(d => d.UserId)
-                  .OnDelete(DeleteBehavior.Cascade);
-        });
+   
 
     }
 

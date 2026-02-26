@@ -19,6 +19,7 @@ using TenderGo.Api.Database;
 using AutoMapper;
 using TenderGo.Services.Services.Exceptions;
 using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Mvc;
 
 namespace TenderGo.Services.Services
 {
@@ -91,9 +92,11 @@ namespace TenderGo.Services.Services
             {
                 new Claim(ClaimTypes.NameIdentifier,user.Id),
                 new Claim(ClaimTypes.Email,user.Email),
-                new Claim(ClaimTypes.Name,user.UserName)
+                new Claim(ClaimTypes.Name,user.UserName),
+                new Claim(JwtRegisteredClaimNames.Jti,Guid.NewGuid().ToString())
 
             };
+
 
 
             foreach (var role in roles)
@@ -118,6 +121,38 @@ namespace TenderGo.Services.Services
 
         }
 
+        public async Task<IActionResult> LogoutAsync()
+        {
+            var refreshToken = _httpContextAccessor.HttpContext?.Request.Cookies["refreshToken"];
+
+            if(string.IsNullOrEmpty(refreshToken))
+            {
+                return new BadRequestObjectResult("No refresh token found");
+            }
+
+
+            var userId = _httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            var storedToken = await _context.RefreshTokens.FirstOrDefaultAsync(rt => rt.Token == refreshToken&& rt.UserId==userId);
+
+
+            if(storedToken!=null)
+            {
+               _context.RefreshTokens.Remove(storedToken);
+                await _context.SaveChangesAsync();
+            }
+
+
+
+            _httpContextAccessor.HttpContext?.Response.Cookies.Delete("refreshToken", new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+            });
+            return new OkObjectResult("Logged out successfully");
+        }
+
         public string GenerateJwtToken(ApplicationUser user, IEnumerable<Claim> claims)
         {
 
@@ -135,10 +170,14 @@ namespace TenderGo.Services.Services
 
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
+
+
+
             var token = new JwtSecurityToken(
                 issuer: _config["Jwt:Issuer"],
                 audience: _config["Jwt:Audience"],
                 claims: claims,
+                notBefore: DateTime.UtcNow,
                  expires: DateTime.UtcNow.AddMinutes(expires),
                 signingCredentials: creds
                 );
