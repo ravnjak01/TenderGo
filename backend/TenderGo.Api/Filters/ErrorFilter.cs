@@ -10,10 +10,30 @@ namespace TenderGo.Api.Filters
         public override void OnException(ExceptionContext context)
         {
 
-            if(context.Exception is UserException userException)
+
+            if(context.Exception is ValidationException validationException)
             {
-                context.ModelState.AddModelError("ERROR", context.Exception.Message);
+                    context.HttpContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                foreach (var error in validationException.Errors)
+                {
+                    context.ModelState.AddModelError(error.Key, string.Join(", ", error.Value));
+                }
+            }   
+            else if(context.Exception is NotFoundException exception)
+            {
+                context.HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
+                context.ModelState.AddModelError("NotFound", exception.Message);
+            }
+            else if (context.Exception is UserException userException)
+            {
                 context.HttpContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                context.ModelState.AddModelError("UserError", userException.Message);
+            }
+
+            else if(context.Exception is ForbiddenException forbidden)
+            {
+                context.HttpContext.Response.StatusCode = (int)HttpStatusCode.Forbidden;
+                context.ModelState.AddModelError("Forbidden", forbidden.Message);
             }
             else
             {

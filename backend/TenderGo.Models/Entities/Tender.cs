@@ -19,7 +19,9 @@ public  class Tender:BaseEntity
     public decimal MaxBudget { get; set; }
 
     public DateTime Deadline { get; set; }
-    public TenderStatus Status { get; set; } 
+    public TenderStatus Status { get; set; }
+
+    public string CreatedByUserId { get; set; } = null!;
 
     public virtual ApplicationUser CreatedByUser { get; set; }
 

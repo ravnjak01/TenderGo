@@ -26,9 +26,9 @@ namespace TenderGo.Services.StateMachines.BidStates
         }
 
         
-        public virtual Task<BidDTO> Insert(BidInsertRequest request) => throw new UserException("Not allowed");
-        public virtual Task<BidDTO> Update(int id, BidUpdateRequest request) => throw new UserException("Not allowed");
-        public virtual Task<BidDTO> Withdraw(int id) => throw new UserException("Not allowed");
+        public virtual Task<BidDTO> Insert(BidInsertRequest request) => throw new ForbiddenException("Not allowed");
+        public virtual Task<BidDTO> Update(int id, BidUpdateRequest request) => throw new ForbiddenException("Not allowed");
+        public virtual Task<BidDTO> Withdraw(int id) => throw new ForbiddenException("Not allowed");
         public virtual Task<List<string>> AllowedActions(Bid entity)
         {
             return Task.FromResult(new List<string>()); 

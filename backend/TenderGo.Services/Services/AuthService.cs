@@ -78,13 +78,19 @@ namespace TenderGo.Services.Services
             var user = await _userManager.FindByEmailAsync(dto.Email);
             if (user==null)
             {
-                return null;
+                _logger.LogWarning("Login failed: User with email {Email} not found.", dto.Email);
+                throw new UserException("Wrong email or password.");
 
             }
 
             var passwordValid = await _userManager.CheckPasswordAsync(user, dto.Password);
             if (!passwordValid)
-                return null;
+            {
+                _logger.LogWarning("Login failed: Invalid password for user {Email}.", dto.Email);
+                throw new UserException("Wrong email or password.");
+
+            }
+
 
             var roles= await _userManager.GetRolesAsync(user);
 
@@ -121,17 +127,21 @@ namespace TenderGo.Services.Services
 
         }
 
-        public async Task<IActionResult> LogoutAsync()
+        public async Task LogoutAsync()
         {
             var refreshToken = _httpContextAccessor.HttpContext?.Request.Cookies["refreshToken"];
 
-            if(string.IsNullOrEmpty(refreshToken))
+            if (string.IsNullOrEmpty(refreshToken))
             {
-                return new BadRequestObjectResult("No refresh token found");
+                throw new UserException("Not found refresh token.");
             }
 
 
             var userId = _httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                throw new UserException("User is not defined.");
+            }
 
             var storedToken = await _context.RefreshTokens.FirstOrDefaultAsync(rt => rt.Token == refreshToken&& rt.UserId==userId);
 
@@ -150,28 +160,35 @@ namespace TenderGo.Services.Services
                 Secure = true,
                 SameSite = SameSiteMode.Strict,
             });
-            return new OkObjectResult("Logged out successfully");
         }
 
         public string GenerateJwtToken(ApplicationUser user, IEnumerable<Claim> claims)
         {
 
-            var jwtKey = _config["Jwt:Key"]
-                 ?? throw new Exception("Jwt:Key isnt set");
+            var jwtKey = _config["Jwt:Key"];
+            if (string.IsNullOrEmpty(jwtKey))
+            {
+                _logger.LogCritical("JWT Key is missing in configuration!");
+                throw new Exception("Server configuration error: Security key is missing.");
+            }
+
 
             if (jwtKey.Length < 32)
-                throw new Exception("Error:Jwt key has to have minimum 32 characters!");
+            {
+                _logger.LogCritical("JWT Key is too short. Minimum 32 characters required.");
+                throw new Exception("Server configuration error: Security key is invalid.");
+            }
+
 
             if (!int.TryParse(_config["Jwt:ExpiresInMinutes"], out var expires))
-                throw new Exception("Greška: Jwt:ExpiresInMinutes isnt valid number!");
+            {
+                _logger.LogError("Jwt:ExpiresInMinutes is not a valid number in appsettings.json");
+                throw new Exception("Server configuration error: Invalid token expiration settings.");
+            }
 
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
-
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-
-
 
             var token = new JwtSecurityToken(
                 issuer: _config["Jwt:Issuer"],
@@ -184,7 +201,11 @@ namespace TenderGo.Services.Services
 
 
             return new JwtSecurityTokenHandler().WriteToken(token);
+
         }
+
+
+
 
         public string GetCurrentUserId()
         {
@@ -193,7 +214,7 @@ namespace TenderGo.Services.Services
             return userId ?? throw new Exception("User not logged");
         }
 
-        public async Task<MeResponseDTO> GetMyProfile()
+        public async Task<UserDTO> GetMyProfile()
         {
 
             var userId = GetCurrentUserId();
@@ -203,7 +224,7 @@ namespace TenderGo.Services.Services
 
             var roles = await _userManager.GetRolesAsync(user);
 
-            var response = _mapper.Map<MeResponseDTO>(user);
+            var response = _mapper.Map<UserDTO>(user);
             response.Roles = roles.ToList();
 
             return response;

@@ -56,6 +56,12 @@ namespace TenderGo.Services.Services
         }
         public async Task<IEnumerable<TenderDTO>> GetTendersByCategory(int id)
         {
+            var categoryExists = await _context.Categories.AnyAsync(c => c.Id == id);
+            if (!categoryExists)
+            {
+                throw new NotFoundException("Category not found", new { CategoryId = id });
+            }
+
             var tenders = await _context.Tenders
                 .Where(t => t.CategoryId == id)
                 .ToListAsync();
@@ -96,7 +102,7 @@ namespace TenderGo.Services.Services
 
 
             var tender = await _context.Tenders.FindAsync(id)
-                ?? throw new UserException("Tender not found");
+                ?? throw new NotFoundException("Tender not found", new { Entity = "Tender", Id = id });
 
          
             var state = CreateState(tender.Status);
@@ -106,7 +112,7 @@ namespace TenderGo.Services.Services
         public async Task<TenderDTO> Activate(int id)
         {
             var entity = await _context.Tenders.FindAsync(id)
-                         ?? throw new UserException("Tender not found");
+                         ?? throw new NotFoundException("Tender not found",new {Entity="Tender",Id=id});
 
             var state = CreateState(entity.Status);
             return await state.Activate(id);
@@ -115,7 +121,8 @@ namespace TenderGo.Services.Services
         public async Task<TenderDTO> Cancel(int id)
         {
             var entity = await _context.Tenders.FindAsync(id)
-                         ?? throw new UserException("Tender not found");
+                              ?? throw new NotFoundException("Tender not found", new { Entity = "Tender", Id = id });
+
 
             var state = CreateState(entity.Status);
             return await state.Cancel(id);
@@ -124,7 +131,9 @@ namespace TenderGo.Services.Services
 
         public async Task<TenderDTO> Award(int id, int bidId)
         {
-            var tender = await _context.Tenders.FindAsync(id);
+            var tender = await _context.Tenders.FindAsync(id)
+                         ?? throw new NotFoundException("Tender not found",new {Entity="Tender",Id=id});
+
             var state = CreateState(tender.Status);
             return await state.Award(id, bidId);
         }
@@ -135,9 +144,10 @@ namespace TenderGo.Services.Services
             var entity = await _context.Tenders
            .Include(t => t.Bids) 
            .FirstOrDefaultAsync(t => t.Id == id)
-           ?? throw new UserException("Tender not found.");
+                         ?? throw new NotFoundException("Tender not found", new { Entity = "Tender", Id = id });
 
-            
+
+
             var state = CreateState(entity.Status);
 
             return await state.AllowedActions(entity);

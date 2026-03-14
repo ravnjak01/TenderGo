@@ -58,7 +58,8 @@ namespace TenderGo.Services.StateMachines.TenderStates
         public override async Task<TenderDTO> Update(int id, TenderUpdateRequest request)
         {
             var entity = await _context.Tenders.FindAsync(id)
-                ?? throw new UserException("Tender not found");
+                    ?? throw new NotFoundException("Tender not found", new { Entity = "Tender", Id = id });
+
 
             var authService = _serviceProvider.GetRequiredService<IAuthService>();
             if (entity.CreatedByUserId != authService.GetCurrentUserId())
@@ -79,7 +80,8 @@ namespace TenderGo.Services.StateMachines.TenderStates
         public override async Task<TenderDTO> Activate(int id)
         {
             var entity = await _context.Tenders.FindAsync(id)
-                ?? throw new UserException("Tender not found");
+                     ?? throw new NotFoundException("Tender not found", new { Entity = "Tender", Id = id });
+
 
             var authService = _serviceProvider.GetRequiredService<IAuthService>();
 
@@ -93,26 +95,10 @@ namespace TenderGo.Services.StateMachines.TenderStates
             await _context.SaveChangesAsync();
 
             var mappedEntity=_mapper.Map<TenderDTO>(entity);
-            await _pubSub.PublishAsync(mappedEntity, "tender_updates");
 
             try
             {
-                var factory=new ConnectionFactory() { HostName = "localhost" };
-                using var connection = await factory.CreateConnectionAsync();
-                using var channel = await connection.CreateChannelAsync();
-
-                await channel.QueueDeclareAsync(queue: "tender_updates",
-                                     durable: false,
-                                     exclusive: false,
-                                     autoDelete: false,
-                                     arguments: null);
-
-                const string message= "Hello world";
-                var body = Encoding.UTF8.GetBytes(message);
-
-               await channel.BasicPublishAsync(exchange: string.Empty,
-                                     routingKey: "tender_updates",
-                                     body: body);
+                await _pubSub.PublishAsync(mappedEntity, "tender_updates");
 
 
             }
@@ -120,7 +106,7 @@ namespace TenderGo.Services.StateMachines.TenderStates
             {
                 _logger.LogError(ex, "Failed to publish message to RabbitMQ for tender activation.");
             }
-            return _mapper.Map<TenderDTO>(entity);
+            return mappedEntity;
 
         }
     }

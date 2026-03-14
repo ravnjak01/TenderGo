@@ -18,10 +18,10 @@ namespace TenderGo.Services.Interfaces
 
         Task<IdentityResult> RegisterAsync(RegisterRequest dto);
         Task<LoginResponseDto> LoginAsync(LoginRequest dto);
-        Task<IActionResult> LogoutAsync();
+        Task LogoutAsync();
         string GenerateJwtToken(ApplicationUser user,IEnumerable<Claim>claims);
         string GetCurrentUserId();
-        Task<MeResponseDTO> GetMyProfile();
+        Task<UserDTO> GetMyProfile();
 
     }
 }

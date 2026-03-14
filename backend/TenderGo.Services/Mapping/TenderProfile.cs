@@ -15,13 +15,19 @@ namespace TenderGo.Services.Mapping
     {
         public TenderProfile()
         {
-            CreateMap<Tender, TenderDTO>();
-            CreateMap<TenderInsertRequest, Tender>();
-            CreateMap<TenderUpdateRequest, Tender>();
             CreateMap<Tender, TenderDTO>()
-                 .ForMember(dest => dest.CreatedByFullname,
-               opt => opt.MapFrom(src => src.CreatedByUser.FirstName + " " + src.CreatedByUser.LastName));
+            .ForMember(dest => dest.CreatedByFullname, opt => opt.MapFrom(src =>
+                src.CreatedByUser != null
+                ? $"{src.CreatedByUser.FirstName} {src.CreatedByUser.LastName}"
+                : "Unknown author"));
 
+            CreateMap<TenderInsertRequest, Tender>()
+                .ForMember(dest => dest.Images,opt=>opt.MapFrom(src=>src.ImageUrls!=null
+                ? src.ImageUrls.Select(url=>new TenderImage {ImageUrl=url }).ToList()
+                : new List<TenderImage>()));
+
+            CreateMap<TenderUpdateRequest, Tender>()
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
         }
     }
 }

@@ -4,6 +4,7 @@ using TenderGo.Models.Entities;
 using TenderGo.Models.Requests;
 using TenderGo.Models.DTOs;
 using TenderGo.Services.Interfaces;
+using TenderGo.Services.Services.Exceptions;
 
 
 
@@ -67,8 +68,10 @@ public class TenderController
     [HttpPatch("{id}/award/{bidId}")]
     public async Task<ActionResult<TenderDTO>> Award(int id, int bidId)
     {
-        var result = await _tenderService.Award(id, bidId);
-        return Ok(result);
+
+        throw new UserException("Testna greska");
+        //var result = await _tenderService.Award(id, bidId);
+        //return Ok(result);
     }
 
     [HttpGet("{id}/allowedActions")]

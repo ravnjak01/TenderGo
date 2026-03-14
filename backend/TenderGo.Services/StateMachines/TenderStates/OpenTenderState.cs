@@ -25,9 +25,10 @@ namespace TenderGo.Services.StateMachines.TenderStates
         public override async Task<TenderDTO> Update(int id, TenderUpdateRequest request)
         {
             var entity = await _context.Tenders.FindAsync(id)
-                ?? throw new UserException("Tender not found");
+                            ?? throw new NotFoundException("Tender not found", new { Entity = "Tender", Id = id });
 
             var authService = _serviceProvider.GetRequiredService<IAuthService>();
+
             if (entity.CreatedByUserId != authService.GetCurrentUserId())
                 throw new UserException("You can only edit your own tenders");
 
@@ -44,7 +45,8 @@ namespace TenderGo.Services.StateMachines.TenderStates
         public override async Task<TenderDTO> Cancel(int id)
         {
             var tender = await _context.Tenders.FindAsync(id)
-                         ?? throw new UserException("Tender not found");
+                            ?? throw new NotFoundException("Tender not found", new { Entity = "Tender", Id = id });
+
 
             var authService = _serviceProvider.GetRequiredService<IAuthService>();
 
@@ -62,7 +64,7 @@ namespace TenderGo.Services.StateMachines.TenderStates
         public override async Task<TenderDTO> Close(int id)
         {
             var entity = await _context.Tenders.FindAsync(id)
-                ?? throw new UserException("Tender not found");
+                ?? throw new NotFoundException("Tender not found",new {Entity="Tender",Id=id});
 
             var authService = _serviceProvider.GetRequiredService<IAuthService>();
             if (entity.CreatedByUserId != authService.GetCurrentUserId())

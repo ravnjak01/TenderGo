@@ -27,7 +27,6 @@ namespace TenderGo.Services.StateMachines.BidStates
             var authService = _serviceProvider.GetRequiredService<IAuthService>();
             var currentUserId = authService.GetCurrentUserId();
 
-            // 1. Provjera: Da li je ovaj korisnik već poslao ponudu za ovaj tender
             var alreadyResponded = await _context.Bids
                 .AnyAsync(b => b.TenderId == request.TenderId && b.SubmittedByUserId == currentUserId && b.Status != ApplicationStatus.Withdrawn);
 
@@ -56,7 +55,7 @@ namespace TenderGo.Services.StateMachines.BidStates
         public override async Task<BidDTO> Update(int id, BidUpdateRequest request)
         {
             var bid = await _context.Bids.Include(b => b.Tender).FirstOrDefaultAsync(x => x.Id == id)
-                ?? throw new UserException("Bid not found");
+                ?? throw new NotFoundException("Bid not found",new { Bid="Bid",Id=id});
 
             var authService = _serviceProvider.GetRequiredService<IAuthService>();
             if (bid.SubmittedByUserId != authService.GetCurrentUserId())
@@ -79,7 +78,8 @@ namespace TenderGo.Services.StateMachines.BidStates
             var bid = await _context.Bids
                 .Include(b => b.Tender)
                 .FirstOrDefaultAsync(b=>b.Id==id)
-                ?? throw new UserException("Bid not found");
+                 ?? throw new NotFoundException("Bid not found", new { Bid = "Bid", Id = id });
+
 
             var authService = _serviceProvider.GetRequiredService<IAuthService>();
             if (bid.SubmittedByUserId != authService.GetCurrentUserId())

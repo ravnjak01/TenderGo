@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TenderGo.Models.Entities;
 
 namespace TenderGo.Models.Requests
 {
@@ -25,5 +26,8 @@ namespace TenderGo.Models.Requests
         [Required]
 
         public DateTime Deadline { get; set; }
+
+        public List<string>? ImageUrls { get; set; } = new();
+
     }
 }

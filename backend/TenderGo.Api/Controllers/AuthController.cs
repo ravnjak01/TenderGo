@@ -46,7 +46,7 @@ namespace TenderGo.Api.Controllers
 
         [Authorize]
         [HttpGet("me")]
-        public async Task<ActionResult<MeResponseDTO>> GetMe()
+        public async Task<ActionResult<UserDTO>> GetMe()
         {
             return await _authService.GetMyProfile();
         }

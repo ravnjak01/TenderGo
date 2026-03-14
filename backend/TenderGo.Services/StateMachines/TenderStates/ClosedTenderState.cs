@@ -32,7 +32,8 @@ namespace TenderGo.Services.StateMachines.TenderStates
             var tender = await _context.Tenders
                 .Include(t => t.Bids)
                 .FirstOrDefaultAsync(t => t.Id == id)
-                ?? throw new UserException("Tender not found");
+                  ?? throw new NotFoundException("Tender not found", new { Entity = "Tender", Id = id });
+
 
             var authService = _serviceProvider.GetRequiredService<IAuthService>();
             if (tender.CreatedByUserId != authService.GetCurrentUserId())
@@ -64,7 +65,7 @@ namespace TenderGo.Services.StateMachines.TenderStates
 
             if (entity.Bids != null && entity.Bids.Any(b => b.Status == ApplicationStatus.Pending))
             {
-                list.Add("Award");
+                list.Add("Award"); 
             }
 
             list.Add("Cancel");

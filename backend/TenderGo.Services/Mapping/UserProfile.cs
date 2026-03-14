@@ -16,13 +16,15 @@ namespace TenderGo.Services.Mapping
         public UserProfile()
         {
             CreateMap<RegisterRequest, ApplicationUser>()
-                   .ForMember(dest => dest.Email,
-                      opt => opt.MapFrom(src => src.Email))
-                   .ForMember(dest => dest.UserName,
-                      opt => opt.MapFrom(src => src.Email));
+             .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.Email));
 
-            CreateMap<ApplicationUser, MeResponseDTO>()
-           .ForMember(dest => dest.Roles, opt => opt.Ignore());
+            CreateMap<ApplicationUser, UserDTO>()
+             .ForMember(dest => dest.Roles, opt => opt.Ignore());
+
+            CreateMap<UpdateProfileDTO, ApplicationUser>()
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+
+            CreateMap<AddressDTO, Address>().ReverseMap();
         }
     }
 }

@@ -12,6 +12,12 @@ namespace TenderGo.Models.Entities
         public string FirstName { get; set; }=string.Empty;
         public string LastName { get; set; } = string.Empty;
 
+        public int? CompanyId { get; set; }
+        public Company? Company { get; set; }
+
+        public string? ProfileImageUrl { get; set; }
+
+        public Address Address { get; set; } 
         public DateTime CreatedAt { get; set; }
         public string? CreatedBy { get; set; }
 
