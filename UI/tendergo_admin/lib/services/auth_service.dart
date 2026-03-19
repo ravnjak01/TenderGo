@@ -4,7 +4,7 @@ import 'package:tendergo_admin/core/network/constants/api_endpoints.dart';
 
 class AuthService {
   final Dio _dio;
-  final _storage = const FlutterSecureStorage();
+  static const _storage = const FlutterSecureStorage();
 
   AuthService(this._dio);
 
@@ -19,9 +19,11 @@ class AuthService {
    
 
       if (response.statusCode == 200) {
-        String token = response.data['Token'];
+        String? token = response.data['Token'];
 
-          if (token == null) return false;
+          if (token == null) {
+            return false;
+          }
         
         await _storage.write(key: 'jwt_token', value: token);
         return true;
@@ -39,7 +41,7 @@ class AuthService {
   }
 
   // 3. Provera da li je korisnik ulogovan 
-  Future<bool> isLoggedIn() async {
+  static Future<bool> isLoggedIn() async {
     String? token = await _storage.read(key: 'jwt_token');
     // Ovde možeš dodati i jwt_decoder da proveriš da li je token istekao
     return token != null;

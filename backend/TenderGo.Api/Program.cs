@@ -132,7 +132,7 @@ builder.Services.AddEasyNetQ("host=localhost");
 
 
 builder.Services.AddCors(options => {
-    options.AddPolicy("AllowFlutter", policy => {
+    options.AddPolicy("AllowAll", policy => {
         policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
     });
 });
@@ -161,8 +161,9 @@ app.UseSwaggerUI(c => {
 
 }
 
+app.UseCors("AllowAll");
 app.UseHttpsRedirection();
-app.UseCors("AllowFlutter");
+app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();

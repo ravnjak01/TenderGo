@@ -32,11 +32,10 @@ class DioClient {
   
     dio.interceptors.add(AuthInterceptor());
 
-    dio.interceptors.add(LogInterceptor(
-      requestHeader: true, 
-      requestBody: true, 
-      responseBody: true,
-    ));
+   // dio.interceptors.add(LogInterceptor(
+     // requestHeader: true, 
+     // requestBody: true, 
+    //));
 
     return dio;
   }

@@ -8,7 +8,11 @@
         {
             "name": "tendergo_admin",
             "request": "launch",
-            "type": "dart"
+            "type": "dart",
+            "toolArgs": [
+              "--dart-define",
+                 "BASE_URL=http://localhost:5179"
+            ]
         },
         {
             "name": "tendergo_admin (profile mode)",

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tendergo_admin/core/theme/app_theme.dart';
+import 'package:tendergo_admin/routes/routes.dart';
 import 'package:tendergo_admin/screens/home_screen.dart';
 import 'package:tendergo_admin/screens/tenders_list_screen.dart';
 import 'package:tendergo_admin/services/auth_service.dart';
@@ -14,7 +15,7 @@ final dio = DioClient.getDio();
 final authService=AuthService(dio);
 
 
-final bool isLoggedIn = await authService.isLoggedIn();
+final bool isLoggedIn = await AuthService.isLoggedIn();
 
 
   runApp(MyApp(isLoggedIn: isLoggedIn,authService: authService,));
@@ -33,9 +34,12 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      initialRoute: AppRoutes.splash,
+
+      routes: AppRoutes.getRoutes(),
+
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
-        home: LoginScreen(authService: authService),
       );
 
   }
