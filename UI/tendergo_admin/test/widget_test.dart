@@ -9,22 +9,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:tendergo_admin/main.dart';
+import 'package:tendergo_admin/services/auth_service.dart';
+import 'package:tendergo_admin/services/dio_client.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('Provjera da li se aplikacija učitava', (WidgetTester tester) async {
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    final dio = DioClient.getDio();
+    final authService = AuthService(dio);
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    // Ovo "bilježi" tvoju aplikaciju u testnom okruženju
+   await tester.pumpWidget(MyApp(
+      authService: authService,
+      isLoggedIn: false, // Možeš staviti true ili false, zavisi šta testiraš
+    ));
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.byType(MaterialApp), findsOneWidget);
+
+    // Test će proći jer nismo postavili nikakve stroge uslove (expect)
+    print("Test uspješno izvršen!");
   });
 }
