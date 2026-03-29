@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tendergo_admin/core/theme/app_theme.dart';
 import 'package:tendergo_admin/screens/home_screen.dart';
+import 'package:tendergo_admin/screens/registration_screen.dart';
 import 'package:tendergo_admin/services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -55,11 +56,11 @@ if(_formKey.currentState!.validate()){
  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background, // Svijetla pozadina za kontrast
+      backgroundColor: AppColors.backgroundLoginAndRegister, 
       body: Center(
-        child: SingleChildScrollView( // Dodajemo zbog manjih ekrana/tastature
+        child: SingleChildScrollView( 
           child: Container(
-            constraints: const BoxConstraints(maxWidth: 400), // Ograničavamo širinu
+            constraints: const BoxConstraints(maxWidth: 400), 
             padding: const EdgeInsets.all(24.0),
             margin: const EdgeInsets.symmetric(horizontal: 20),
             decoration: BoxDecoration(
@@ -161,16 +162,24 @@ if(_formKey.currentState!.validate()){
                       children: [
                         Text("Don't have an account? "),
                         GestureDetector(
-                          onTap: () {
-                            // idi na register screen
-                          },
-                          child: Text(
-                            "Sign up",
-                            style: TextStyle(
-                              color: Colors.blue,
-                              fontWeight: FontWeight.bold,
+                         onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => RegistrationScreen(
+                              // Ovdje proslijedi istu instancu servisa koju koristiš u Login screenu
+                              authService: widget.authService, 
                             ),
                           ),
+                        );
+                      },
+                      child: Text(
+                        "Sign up",
+                        style: TextStyle(
+                          color: Colors.blue,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                         ),
                       ],
                       )
