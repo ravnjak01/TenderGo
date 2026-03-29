@@ -17,9 +17,11 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
   String? _errorMessage;
-
+  final _formKey = GlobalKey<FormState>();
   void _handleLogin() async {
 
+if(_formKey.currentState!.validate()){
+  
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -43,6 +45,12 @@ class _LoginScreenState extends State<LoginScreen> {
       });
     }
   }
+  }
+
+ bool _isValidEmail(String email) {
+  return RegExp(r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+")
+      .hasMatch(email);
+}
 
  @override
   Widget build(BuildContext context) {
@@ -59,12 +67,14 @@ class _LoginScreenState extends State<LoginScreen> {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 10,
                   offset: const Offset(0, 5),
                 ),
               ],
             ),
+            child: Form(
+              key: _formKey,
             child: Column(
               mainAxisSize: MainAxisSize.min, // Zauzima samo koliko mu treba prostora
               children: [
@@ -73,23 +83,52 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textPrimary,),
                 ),
                 const SizedBox(height: 30),
-                TextField(
+                TextFormField(
                   controller: _emailController,
-                  decoration: const InputDecoration(
+                  keyboardType: TextInputType.emailAddress,
+                    autovalidateMode: AutovalidateMode.onUserInteraction, 
+                  decoration:  InputDecoration(
                     labelText: "Email",
                     prefixIcon: Icon(Icons.email),
-                    border: OutlineInputBorder(),
+                    enabledBorder: OutlineInputBorder(),
+                    focusedBorder: OutlineInputBorder(
+                       borderSide: BorderSide(
+                        color: _isValidEmail(_emailController.text) ? Colors.green : Colors.blue,
+                     ),
+                     ),
                   ),
-                  keyboardType: TextInputType.emailAddress,
+                  onChanged: (value) {
+                 setState(() {});
+                    },
+
+                  validator: (value){
+                    if(value == null || value.isEmpty){
+                      return "Please enter your email";
+                    }
+                    if(!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)){
+                      return "Please enter a valid email address";
+                    }
+                    return null;  
+                  },
                 ),
                 const SizedBox(height: 20),
-                TextField(
+                TextFormField(
                   controller: _passwordController,
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
                   decoration: const InputDecoration(
                     labelText: "Password",
                     prefixIcon: Icon(Icons.lock),
                     border: OutlineInputBorder(),
                   ),
+                    validator: (value){
+                      if(value == null || value.isEmpty){
+                        return "Please enter your password";
+                      }
+                      if(value.length < 8){
+                        return "Password must be at least 8 characters";
+                      }
+                      return null;  
+                    },
                   obscureText: true,
                 ),
                 if (_errorMessage != null) ...[
@@ -97,6 +136,13 @@ class _LoginScreenState extends State<LoginScreen> {
                   Text(_errorMessage!, 
                        style: const TextStyle( color: AppColors.error, fontSize: 13)),
                 ],
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () {}  ,
+                    child: const Text("Forgot Password?", style: TextStyle(fontSize: 14,color:Colors.blue)),
+                  ),
+                ),
                 const SizedBox(height: 30),
                 _isLoading
                     ? const CircularProgressIndicator()
@@ -110,8 +156,26 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         child: const Text("Sign In", style: TextStyle(fontSize: 16)),
                       ),
+                      Row(
+                         mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text("Don't have an account? "),
+                        GestureDetector(
+                          onTap: () {
+                            // idi na register screen
+                          },
+                          child: Text(
+                            "Sign up",
+                            style: TextStyle(
+                              color: Colors.blue,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                      )
               ],
-            ),
+            ),),
           ),
         ),
       ),
