@@ -69,7 +69,7 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// 4. Registracija ostalih servisa (OBAVEZNO PRIJE builder.Build())
+// 4. Registracija ostalih servisa 
 builder.Services.AddControllers(x =>
 {
     x.Filters.Add<ErrorFilter>();
@@ -79,7 +79,6 @@ builder.Services.AddSwaggerGen(opt =>
 {
     opt.SwaggerDoc("v1", new OpenApiInfo { Title = "TenderGo API", Version = "v1" });
 
-    // Dodajemo definiciju za Bearer Token
     opt.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         In = ParameterLocation.Header,
@@ -132,6 +131,15 @@ builder.Services.AddScoped<FinalBidState>();
 builder.Services.AddEasyNetQ("host=localhost");
 
 
+builder.Services.AddCors(options => {
+    options.AddPolicy("AllowAll", policy => {
+        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+    });
+});
+
+
+
+
 //builder.Entity<Rating>()
 //  .HasCheckConstraint("CK_Rating_Score", "Score BETWEEN 1 AND 5");
 
@@ -153,14 +161,15 @@ app.UseSwaggerUI(c => {
 
 }
 
+app.UseCors("AllowAll");
 app.UseHttpsRedirection();
+app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers(); // Bez ovoga ruta /api/auth/register neće raditi
 
-// Izmeni onaj blok u Program.cs
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -175,17 +184,17 @@ using (var scope = app.Services.CreateScope())
             context.Database.Migrate();
             await IdentitySeeder.SeedRolesAsync(services);
             logger.LogInformation("Database migrated and seeded successfully.");
-            break; // Ako uspe, izađi iz petlje
+            break; 
         }
         catch (Exception ex)
         {
-            logger.LogWarning($"Pokušaj {i + 1}: SQL Server još nije spreman... Čekam.");
-            if (i == 9) // Ako je zadnji pokušaj, baci grešku
+            logger.LogWarning($"Try {i + 1}: SQL Server still not ready... Waiting.");
+            if (i == 9) // 
             {
-                logger.LogError(ex, "Greška nakon 10 pokušaja.");
+                logger.LogError(ex, "Error after 10 tries.");
                 throw;
             }
-            Thread.Sleep(5000); // Sačekaj 5 sekundi pre novog pokušaja
+            Thread.Sleep(5000); 
         }
     }
 }

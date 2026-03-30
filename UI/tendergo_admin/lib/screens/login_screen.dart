@@ -1,67 +1,182 @@
 import 'package:flutter/material.dart';
-
-import '../services/auth_service.dart';
+import 'package:tendergo_admin/core/theme/app_theme.dart';
+import 'package:tendergo_admin/screens/home_screen.dart';
+import 'package:tendergo_admin/services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final AuthService authService;
+
+  const LoginScreen({super.key, required this.authService});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  bool _isLoading = false;
+  String? _errorMessage;
+  final _formKey = GlobalKey<FormState>();
+  void _handleLogin() async {
 
-  final emailController = TextEditingController();
-  final passwordController = TextEditingController();
+if(_formKey.currentState!.validate()){
+  
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
 
-  void login() async{
-
-    bool success=await AuthService().login(
-       emailController.text,
-      passwordController.text,
+    bool success = await widget.authService.login(
+      _emailController.text.trim(),
+      _passwordController.text,
     );
 
-    
-    if(success){
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("Login success")));
-    }else{
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("Login failed")));
-    }
-
+    if (success) {
+  if (mounted) {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => const HomeScreen()),
+    );
   }
-  @override
+    } else {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = "Sign in not successful. Please check your credentials.";
+      });
+    }
+  }
+  }
+
+ bool _isValidEmail(String email) {
+  return RegExp(r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+")
+      .hasMatch(email);
+}
+
+ @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Login")),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-
-            TextField(
-              controller: emailController,
-              decoration: const InputDecoration(
-                labelText: "Email",
-              ),
+      backgroundColor: AppColors.background, // Svijetla pozadina za kontrast
+      body: Center(
+        child: SingleChildScrollView( // Dodajemo zbog manjih ekrana/tastature
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 400), // Ograničavamo širinu
+            padding: const EdgeInsets.all(24.0),
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
+                ),
+              ],
             ),
+            child: Form(
+              key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min, // Zauzima samo koliko mu treba prostora
+              children: [
+                const Text(
+                  "Login",
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textPrimary,),
+                ),
+                const SizedBox(height: 30),
+                TextFormField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                    autovalidateMode: AutovalidateMode.onUserInteraction, 
+                  decoration:  InputDecoration(
+                    labelText: "Email",
+                    prefixIcon: Icon(Icons.email),
+                    enabledBorder: OutlineInputBorder(),
+                    focusedBorder: OutlineInputBorder(
+                       borderSide: BorderSide(
+                        color: _isValidEmail(_emailController.text) ? Colors.green : Colors.blue,
+                     ),
+                     ),
+                  ),
+                  onChanged: (value) {
+                 setState(() {});
+                    },
 
-            TextField(
-              controller: passwordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: "Password",
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            ElevatedButton(
-              onPressed: login,
-              child: const Text("Login"),
-            )
-          ],
+                  validator: (value){
+                    if(value == null || value.isEmpty){
+                      return "Please enter your email";
+                    }
+                    if(!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)){
+                      return "Please enter a valid email address";
+                    }
+                    return null;  
+                  },
+                ),
+                const SizedBox(height: 20),
+                TextFormField(
+                  controller: _passwordController,
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                  decoration: const InputDecoration(
+                    labelText: "Password",
+                    prefixIcon: Icon(Icons.lock),
+                    border: OutlineInputBorder(),
+                  ),
+                    validator: (value){
+                      if(value == null || value.isEmpty){
+                        return "Please enter your password";
+                      }
+                      if(value.length < 8){
+                        return "Password must be at least 8 characters";
+                      }
+                      return null;  
+                    },
+                  obscureText: true,
+                ),
+                if (_errorMessage != null) ...[
+                  const SizedBox(height: 15),
+                  Text(_errorMessage!, 
+                       style: const TextStyle( color: AppColors.error, fontSize: 13)),
+                ],
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () {}  ,
+                    child: const Text("Forgot Password?", style: TextStyle(fontSize: 14,color:Colors.blue)),
+                  ),
+                ),
+                const SizedBox(height: 30),
+                _isLoading
+                    ? const CircularProgressIndicator()
+                    : ElevatedButton(
+                        onPressed: _handleLogin,
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size(double.infinity, 55),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text("Sign In", style: TextStyle(fontSize: 16)),
+                      ),
+                      Row(
+                         mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text("Don't have an account? "),
+                        GestureDetector(
+                          onTap: () {
+                            // idi na register screen
+                          },
+                          child: Text(
+                            "Sign up",
+                            style: TextStyle(
+                              color: Colors.blue,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                      )
+              ],
+            ),),
+          ),
         ),
       ),
     );
