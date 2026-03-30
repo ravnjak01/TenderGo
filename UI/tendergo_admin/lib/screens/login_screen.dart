@@ -106,7 +106,7 @@ if(_formKey.currentState!.validate()){
                     if(value == null || value.isEmpty){
                       return "Please enter your email";
                     }
-                    if(!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)){
+                    if(!RegExp(r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+").hasMatch(value)){
                       return "Please enter a valid email address";
                     }
                     return null;  
@@ -140,7 +140,9 @@ if(_formKey.currentState!.validate()){
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
-                    onPressed: () {}  ,
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/forgot-password');
+                    }  ,
                     child: const Text("Forgot Password?", style: TextStyle(fontSize: 14,color:Colors.blue)),
                   ),
                 ),
@@ -150,6 +152,8 @@ if(_formKey.currentState!.validate()){
                     : ElevatedButton(
                         onPressed: _handleLogin,
                         style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF2D4DB5),
+
                           minimumSize: const Size(double.infinity, 55),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
@@ -163,14 +167,9 @@ if(_formKey.currentState!.validate()){
                         Text("Don't have an account? "),
                         GestureDetector(
                          onTap: () {
-                        Navigator.push(
+                        Navigator.pushNamed(
                           context,
-                          MaterialPageRoute(
-                            builder: (context) => RegistrationScreen(
-                              // Ovdje proslijedi istu instancu servisa koju koristiš u Login screenu
-                              authService: widget.authService, 
-                            ),
-                          ),
+                          '/registration',
                         );
                       },
                       child: Text(
