@@ -31,8 +31,8 @@ namespace TenderGo.Services.Services
         private readonly TenderGoContext _context;
         private readonly IMapper _mapper;
         private readonly ILogger<AuthService> _logger;
-
-        public AuthService(UserManager<ApplicationUser> userManager, IConfiguration config, IHttpContextAccessor httpContextAccessor,TenderGoContext context,IMapper mapper,ILogger<AuthService> logger
+        private readonly EmailService _emailService;
+        public AuthService(UserManager<ApplicationUser> userManager, IConfiguration config, IHttpContextAccessor httpContextAccessor, TenderGoContext context, IMapper mapper, ILogger<AuthService> logger, EmailService emailService
             )
         {
             _logger = logger;
@@ -41,6 +41,7 @@ namespace TenderGo.Services.Services
             _httpContextAccessor = httpContextAccessor;
             _context = context;
             _mapper = mapper;
+            _emailService = emailService;
         }
 
         public async Task<IdentityResult> RegisterAsync(RegisterRequest dto)
@@ -57,7 +58,7 @@ namespace TenderGo.Services.Services
             };
             var result = await _userManager.CreateAsync(user, dto.Password);
 
-            if(!result.Succeeded)
+            if (!result.Succeeded)
             {
                 var errors = string.Join(", ", result.Errors.Select(e => e.Description));
                 throw new UserException(errors);
@@ -76,7 +77,7 @@ namespace TenderGo.Services.Services
             _logger.LogInformation("Attempting login for user with email {Email}", dto.Email);
 
             var user = await _userManager.FindByEmailAsync(dto.Email);
-            if (user==null)
+            if (user == null)
             {
                 _logger.LogWarning("Login failed: User with email {Email} not found.", dto.Email);
                 throw new UserException("Wrong email or password.");
@@ -92,9 +93,9 @@ namespace TenderGo.Services.Services
             }
 
 
-            var roles= await _userManager.GetRolesAsync(user);
+            var roles = await _userManager.GetRolesAsync(user);
 
-            var claims= new List<Claim>
+            var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier,user.Id),
                 new Claim(ClaimTypes.Email,user.Email),
@@ -110,7 +111,7 @@ namespace TenderGo.Services.Services
                 claims.Add(new Claim(ClaimTypes.Role, role));
             }
 
-            var token = GenerateJwtToken(user,claims);
+            var token = GenerateJwtToken(user, claims);
 
             _logger.LogInformation("User with email {Email} logged in successfully", dto.Email);
             return new LoginResponseDto
@@ -143,12 +144,12 @@ namespace TenderGo.Services.Services
                 throw new UserException("User is not defined.");
             }
 
-            var storedToken = await _context.RefreshTokens.FirstOrDefaultAsync(rt => rt.Token == refreshToken&& rt.UserId==userId);
+            var storedToken = await _context.RefreshTokens.FirstOrDefaultAsync(rt => rt.Token == refreshToken && rt.UserId == userId);
 
 
-            if(storedToken!=null)
+            if (storedToken != null)
             {
-               _context.RefreshTokens.Remove(storedToken);
+                _context.RefreshTokens.Remove(storedToken);
                 await _context.SaveChangesAsync();
             }
 
@@ -230,5 +231,37 @@ namespace TenderGo.Services.Services
             return response;
         }
 
+        public async Task ForgotPasswordAsync(ForgotPasswordRequest model, string baseUrl,CancellationToken cancellationToken)
+        {
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            if (user == null)
+            {
+                _logger.LogWarning($"Trying to reset for nonexisting email : {model.Email}");
+                return;
+            }
+            try
+            {
+                var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+                var resetLink = $"{baseUrl}/reset-password?token={Uri.EscapeDataString(token)}&email={Uri.EscapeDataString(user.Email)}";
+
+                await _emailService.SendResetPasswordEmail(user.Email, resetLink, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error during sending an email for {model.Email}");
+
+                throw new Exception("Sending an email was not successfull.");
+            }
+        }
+
+        public async Task<IdentityResult> ResetPasswordAsync(ResetPasswordRequest model)
+        {
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            if (user == null)
+                return IdentityResult.Failed(new IdentityError { Description = "User not found." });
+            var result = await _userManager.ResetPasswordAsync(user, model.Token, model.NewPassword);
+            return result;
+
+        }
     }
 }

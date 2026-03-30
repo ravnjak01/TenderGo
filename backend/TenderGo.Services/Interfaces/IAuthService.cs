@@ -19,6 +19,10 @@ namespace TenderGo.Services.Interfaces
         Task<IdentityResult> RegisterAsync(RegisterRequest dto);
         Task<LoginResponseDto> LoginAsync(LoginRequest dto);
         Task LogoutAsync();
+
+        Task ForgotPasswordAsync(ForgotPasswordRequest model, string baseUrl,CancellationToken cancellationToken);
+
+        Task<IdentityResult> ResetPasswordAsync(ResetPasswordRequest model);
         string GenerateJwtToken(ApplicationUser user,IEnumerable<Claim>claims);
         string GetCurrentUserId();
         Task<UserDTO> GetMyProfile();

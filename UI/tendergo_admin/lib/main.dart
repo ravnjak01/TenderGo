@@ -1,13 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:tendergo_admin/core/theme/app_theme.dart';
 import 'package:tendergo_admin/routes/routes.dart';
-import 'package:tendergo_admin/screens/home_screen.dart';
-import 'package:tendergo_admin/screens/tenders_list_screen.dart';
 import 'package:tendergo_admin/services/auth_service.dart';
 import 'package:tendergo_admin/services/dio_client.dart';
-
-import './screens/login_screen.dart';
-
 void main() async{
 WidgetsFlutterBinding.ensureInitialized();
 

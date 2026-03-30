@@ -113,7 +113,8 @@ builder.Services.AddScoped<IBidService, BidService>();
 builder.Services.AddScoped(typeof(IBaseService<,,,>), typeof(BaseService<,,,>));
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
-
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+builder.Services.AddScoped<EmailService>();
 
 
 builder.Services.AddTransient<BaseState>();
