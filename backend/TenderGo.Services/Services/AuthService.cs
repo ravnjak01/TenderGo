@@ -242,7 +242,7 @@ namespace TenderGo.Services.Services
             try
             {
                 var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-                var resetLink = $"{baseUrl}/reset-password?token={Uri.EscapeDataString(token)}&email={Uri.EscapeDataString(user.Email)}";
+                var resetLink = $"http://localhost:3000/#/reset-password?token={Uri.EscapeDataString(token)}&email={Uri.EscapeDataString(user.Email)}";
 
                 await _emailService.SendResetPasswordEmail(user.Email, resetLink, cancellationToken);
             }

@@ -3,6 +3,7 @@ import 'package:tendergo_admin/screens/forgot_password_screen.dart';
 import 'package:tendergo_admin/screens/home_screen.dart';
 import 'package:tendergo_admin/screens/login_screen.dart';
 import 'package:tendergo_admin/screens/registration_screen.dart';
+import 'package:tendergo_admin/screens/reset_passsword.screen.dart';
 import 'package:tendergo_admin/screens/splash_screen.dart';
 import 'package:tendergo_admin/services/auth_service.dart';
 import 'package:tendergo_admin/services/dio_client.dart';
@@ -14,6 +15,7 @@ class AppRoutes {
   static const String home = '/home';
   static const String registration = '/registration';
   static const String forgotPassword = '/forgot-password';
+  static const String resetPassword = '/reset-password';
 
   static Map<String, WidgetBuilder> getRoutes() {
     // Kreiramo Dio instancu
@@ -27,6 +29,7 @@ class AppRoutes {
       login: (context) => LoginScreen(authService: authService), 
       registration: (context) => RegistrationScreen(authService: authService),
       forgotPassword: (context) => ForgotPasswordScreen(authService: authService),
+      resetPassword: (context) => ResetPasswordScreen(authService: authService), 
       home: (context) => const HomeScreen(),
     };
   }

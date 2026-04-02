@@ -152,18 +152,21 @@ app.UseMiddleware<GlobalExceptionMiddleware>();
 
 
 
-if (app.Environment.IsDevelopment())
-{
     app.UseSwagger();
 app.UseSwaggerUI(c => {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "TenderGo API V1");
     c.RoutePrefix = "swagger"; 
+  
 });
 
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
 }
 
+
 app.UseCors("AllowAll");
-app.UseHttpsRedirection();
+
 app.UseRouting();
 
 app.UseAuthentication();
