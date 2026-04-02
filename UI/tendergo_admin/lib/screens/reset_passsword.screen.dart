@@ -2,14 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:tendergo_admin/services/auth_service.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
-    final AuthService authService;
-  final String token;
-  final String email;
+  final AuthService authService;
+
   const ResetPasswordScreen({
     super.key,
     required this.authService,
-    required this.token,
-    required this.email, 
   });
 
   @override
@@ -20,7 +17,30 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final _passwordController = TextEditingController();
 
+  late String token;
+  late String email;
+
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // 🔹 Izvuci token i email iz URL-a
+    final uri = Uri.base; // Uri.base daje trenutni URL u Flutter Web
+    token = Uri.decodeComponent(uri.queryParameters['token'] ?? '');
+    email = uri.queryParameters['email'] ?? '';
+
+    // Debug
+    print('TOKEN: $token');
+    print('EMAIL: $email');
+  }
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   void _resetPassword() async {
     if (!_formKey.currentState!.validate()) return;
@@ -28,9 +48,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     setState(() => _isLoading = true);
 
     try {
-       widget.authService.resetPassword(widget.email, widget.token, _passwordController.text) ;
-
-      await Future.delayed(const Duration(seconds: 2)); 
+      // Poziv servisa sa tokenom i emailom iz URL-a
+      await widget.authService.resetPassword(token, _passwordController.text, email);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

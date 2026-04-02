@@ -6,7 +6,7 @@ import 'package:tendergo_admin/core/network/interceptors/auth_interceptor.dart';
 class DioClient {
 
   static const String _baseUrl = String.fromEnvironment(
-    'BASE_URL'
+    'BASE_URL',defaultValue: 'http://localhost:5179'
   );
 
   static Dio getDio() {

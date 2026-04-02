@@ -88,19 +88,32 @@ Future<AuthResult> forgotPassword(String email) async {
       message: 'If this email exists, a reset link was sent.',
     );
   } on DioException catch (e) {
-    return AuthResult(
-      success: false,
-      message: e.response?.data['message'] ?? 'Something went wrong.',
-    );
+    // Add these print statements
+    print('=== FORGOT PASSWORD ERROR ===');
+    print('Status code: ${e.response?.statusCode}');
+    print('Response data: ${e.response?.data}');
+    print('Response data type: ${e.response?.data.runtimeType}');
+    print('Request URL: ${e.requestOptions.baseUrl}${e.requestOptions.path}');
+    print('Request data: ${e.requestOptions.data}');
+    print('Error type: ${e.type}');
+    print('Error message: ${e.message}');
+    print('=============================');
+
+    final data = e.response?.data;
+    final message = (data is Map)
+        ? (data['message']?.toString() ?? 'Something went wrong.')
+        : 'Something went wrong.';
+
+    return AuthResult(success: false, message: message);
   }
 }
-
 // 6. Reset Password
 Future<AuthResult> resetPassword(String token, String newPassword,String email) async {
   try {
     final response = await _dio.post(ApiEndpoints.resetPassword, data: {
       'token': token,
       'newPassword': newPassword,
+      'email': email,
     });
      return const AuthResult(
       success: true,
