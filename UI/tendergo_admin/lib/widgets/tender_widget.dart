@@ -146,22 +146,42 @@ class _CardBody extends StatelessWidget {
     return '${v.toStringAsFixed(0)} KM';
   }
 
-  @override
+ @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 5),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 10), // Malo pojačan donji padding
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Category
-          Text(
-            tender.category.toUpperCase(),
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              letterSpacing: 0.4,
-              color: Color(0xFF888780),
-            ),
+          // Row za Kategoriju i Lokaciju
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                tender.category.toUpperCase(),
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0.4,
+                  color: Color(0xFF888780),
+                ),
+              ),
+              // --- DODANA LOKACIJA ---
+              Row(
+                children: [
+                  const Icon(Icons.pin_drop_outlined, size: 12, color: Color(0xFF185FA5)),
+                  const SizedBox(width: 4),
+                  Text(
+                    tender.location,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF5F5E5A),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
           const SizedBox(height: 5),
 
@@ -170,14 +190,14 @@ class _CardBody extends StatelessWidget {
             tender.title,
             style: const TextStyle(
               fontSize: 14,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w600, // Malo deblji font za bolju čitljivost
               color: Color(0xFF1A1A1A),
               height: 1.4,
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10), // Povećan razmak radi prozračnosti
 
           // Tags
           if (tender.tags.isNotEmpty) ...[
@@ -188,14 +208,14 @@ class _CardBody extends StatelessWidget {
                   .map((t) => _Tag(label: t))
                   .toList(),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
           ],
 
           // Divider
           const Divider(height: 1, thickness: 0.5, color: Color(0xFFE5E3DC)),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
 
-          // Meta row
+          // Meta row (Time, Deadline i Budget)
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
@@ -207,26 +227,31 @@ class _CardBody extends StatelessWidget {
                       _timeAgo(tender.postedAt),
                       style: const TextStyle(fontSize: 11, color: Color(0xFFB4B2A9)),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 4),
                     Row(
                       children: [
-                        const Icon(Icons.access_time_rounded, size: 12, color: Color(0xFF888780)),
-                        const SizedBox(width: 3),
+                        const Icon(Icons.access_time_rounded, size: 13, color: Color(0xFF888780)),
+                        const SizedBox(width: 4),
                         Text(
                           _formatDeadline(tender.deadline),
-                          style: const TextStyle(fontSize: 12, color: Color(0xFF5F5E5A)),
+                          style: const TextStyle(
+                            fontSize: 12, 
+                            color: Color(0xFF5F5E5A),
+                            fontWeight: FontWeight.w500
+                          ),
                         ),
                       ],
                     ),
                   ],
                 ),
               ),
+              // Budget
               Text(
                 _formatValue(tender.valueKM),
                 style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF1A1A1A),
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF185FA5), // Plava boja da istakne vrijednost
                 ),
               ),
             ],
@@ -234,8 +259,7 @@ class _CardBody extends StatelessWidget {
         ],
       ),
     );
-  }
-}
+  }}
 
 // ─── Tag chip ───────────────────────────────────────────────────────────────────
 

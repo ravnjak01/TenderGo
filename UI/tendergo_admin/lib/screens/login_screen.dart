@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:tendergo_admin/core/theme/app_theme.dart';
-import 'package:tendergo_admin/screens/home_screen.dart';
-import 'package:tendergo_admin/screens/registration_screen.dart';
 import 'package:tendergo_admin/screens/tenders_list_screen.dart';
 import 'package:tendergo_admin/services/auth_service.dart';
 import 'package:provider/provider.dart';
