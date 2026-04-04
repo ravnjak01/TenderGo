@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:tendergo_admin/core/theme/app_theme.dart';
 import 'package:tendergo_admin/screens/home_screen.dart';
 import 'package:tendergo_admin/screens/registration_screen.dart';
+import 'package:tendergo_admin/screens/tenders_list_screen.dart';
 import 'package:tendergo_admin/services/auth_service.dart';
+import 'package:provider/provider.dart';
+import 'package:tendergo_admin/providers/tender_provider.dart';
 
 class LoginScreen extends StatefulWidget {
   final AuthService authService;
@@ -36,7 +39,7 @@ if(_formKey.currentState!.validate()){
     if (success) {
   if (mounted) {
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const HomeScreen()),
+      MaterialPageRoute(builder: (_) => TenderListScreen(tenderService: Provider.of<TenderProvider>(context, listen: false).service)),
     );
   }
     } else {

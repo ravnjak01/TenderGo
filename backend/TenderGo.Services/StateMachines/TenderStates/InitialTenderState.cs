@@ -91,6 +91,10 @@ namespace TenderGo.Services.StateMachines.TenderStates
             _logger.LogInformation("Attempting to activate tender with ID {TenderId}", id);
 
             entity.Status = TenderStatus.Open;
+            if (entity.Status != TenderStatus.Open)
+            {
+                entity.PostedAt = DateTime.UtcNow;
+            }
 
             await _context.SaveChangesAsync();
 

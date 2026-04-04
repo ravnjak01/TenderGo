@@ -1,44 +1,49 @@
 import 'package:flutter/material.dart';
 import 'package:tendergo_admin/core/theme/app_theme.dart';
+import 'package:tendergo_admin/providers/tender_provider.dart';
 import 'package:tendergo_admin/routes/routes.dart';
 import 'package:tendergo_admin/services/auth_service.dart';
 import 'package:tendergo_admin/services/dio_client.dart';
-void main() async{
-WidgetsFlutterBinding.ensureInitialized();
+import 'package:tendergo_admin/services/tender_service.dart';
+import 'package:provider/provider.dart';
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
 
-final dio = DioClient.getDio();
-final authService=AuthService(dio);
+  final dio = DioClient.getDio();
+  final authService = AuthService(dio);
+  final tenderService = TenderService(dio);
 
+  final bool isLoggedIn = await AuthService.isLoggedIn();
 
-final bool isLoggedIn = await AuthService.isLoggedIn();
-
-
-  runApp(MyApp(isLoggedIn: isLoggedIn,authService: authService,));
+  runApp(MyApp(
+    isLoggedIn: isLoggedIn,
+    authService: authService,
+    tenderService: tenderService,
+  ));
 }
 
 class MyApp extends StatelessWidget {
-    final AuthService authService;
+  final AuthService authService;
+  final TenderService tenderService;
   final bool isLoggedIn;
 
   const MyApp({
-    super.key, 
-    required this.authService, 
+    super.key,
+    required this.authService,
+    required this.tenderService,
     required this.isLoggedIn,
   });
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      initialRoute: AppRoutes.splash,
-
-      routes: AppRoutes.getRoutes(),
-
+    return ChangeNotifierProvider(
+      create: (_) => TenderProvider(tenderService),
+      child: MaterialApp(
+        initialRoute: AppRoutes.splash,
+        routes: AppRoutes.getRoutes(),
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
-      );
-
+      ),
+    );
   }
 }
-
-  
-  

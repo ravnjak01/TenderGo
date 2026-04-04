@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tendergo_admin/services/auth_service.dart'; // Prilagodi putanju
-import 'package:tendergo_admin/models/auth_result.dart';   // Prilagodi putanju
+import 'package:tendergo_admin/models/ui/auth_result.dart';   // Prilagodi putanju
 
 class ForgotPasswordScreen extends StatefulWidget {
   final AuthService authService;
