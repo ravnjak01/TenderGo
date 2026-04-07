@@ -6,13 +6,19 @@ import 'package:tendergo_admin/core/network/interceptors/auth_interceptor.dart';
 class DioClient {
 
   static const String _baseUrl = String.fromEnvironment(
-    'BASE_URL',defaultValue: 'http://localhost:5179/api'
+    'BASE_URL',defaultValue: 'http://localhost:5179/api/'
   );
 
+
   static Dio getDio() {
+    String finalUrl = _baseUrl;
+    if (!finalUrl.endsWith('/')) {
+      finalUrl = '$finalUrl/';
+    }
+  
     final dio = Dio(
       BaseOptions(
-        baseUrl: _baseUrl,
+        baseUrl: finalUrl,
         connectTimeout: const Duration(seconds: 10),
         receiveTimeout: const Duration(seconds: 10),
         contentType: 'application/json',
@@ -32,10 +38,14 @@ class DioClient {
   
     dio.interceptors.add(AuthInterceptor());
 
-   // dio.interceptors.add(LogInterceptor(
-     // requestHeader: true, 
-     // requestBody: true, 
-    //));
+    dio.interceptors.add(LogInterceptor(
+      request: true,
+      requestHeader: true,
+      requestBody: true,
+      responseHeader: true,
+      responseBody: true,
+      error: true,
+    ));
 
     return dio;
   }

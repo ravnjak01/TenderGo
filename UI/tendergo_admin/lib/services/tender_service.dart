@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:tendergo_admin/core/network/constants/tender_api_endpoints.dart';
 import 'package:tendergo_admin/models/dto/tender_dto.dart';
+import 'package:tendergo_admin/models/dto/tender_post_dto.dart';
 
 class TenderService {
   final Dio _dio;
@@ -84,18 +85,47 @@ class TenderService {
     }
   }
 
-  // ===== CREATE =====
-  Future<dynamic> create(Map<String, dynamic> data) async {
+  // ===== DRAFTS =====
+  Future<List<TenderDto>> getDrafts() async {
     try {
-      final response = await _dio.post(
-        TenderApiEndpoints.insert,
-        data: data,
+      final response = await _dio.get(
+        TenderApiEndpoints.getDrafts,
         options: await _options(),
       );
 
-      return response.data;
+      return List<TenderDto>.from(response.data.map((x) => TenderDto.fromJson(x)));
+    } on DioException catch (e) {
+      throw Exception(e.response?.data ?? 'Error fetching draft tenders');
+    }
+  }
+
+  // ===== CREATE =====
+  Future<TenderDto> create(TenderInsertRequest data ) async {
+    try {
+      final response = await _dio.post(
+        TenderApiEndpoints.insert,
+        data: data.toJson(),
+        options: await _options(),
+      );
+
+      return TenderDto.fromJson(response.data);
     } on DioException catch (e) {
       throw Exception(e.response?.data ?? 'Error creating tender');
+    }
+  }
+
+  // ===== CREATE DRAFT =====
+  Future<TenderDto> createDraft(TenderInsertRequest data) async {
+    try {
+      final response = await _dio.post(
+        TenderApiEndpoints.insertDraft,
+        data: data.toJson(),
+        options: await _options(),
+      );
+
+      return TenderDto.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data ?? 'Error creating draft tender');
     }
   }
 

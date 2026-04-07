@@ -29,7 +29,7 @@ class TenderProvider extends ChangeNotifier {
   Future<void> fetchActiveTenders() async {
     _setLoading(true);
     try {
-      _tenders = await _service.getActive(); // pretpostavljam da _service.getActive() vraća List<TenderDTO>
+      _tenders = await _service.getActive(); 
       _error = null;
     } catch (e) {
       _error = e.toString().replaceFirst('Exception: ', '');

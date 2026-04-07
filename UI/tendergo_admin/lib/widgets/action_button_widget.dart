@@ -11,7 +11,6 @@ class ActionButton extends StatelessWidget {
   final bool isPrimary;
   final VoidCallback? onTap;
 
-  //DOSAO DO UREDJIVANJE KARTICE TENDERA
 
   @override
   Widget build(BuildContext context) {

@@ -15,10 +15,12 @@ namespace TenderGo.Services.Interfaces
         Task<IEnumerable<TenderDTO>> GetTendersByCategory(int id);
        Task<IEnumerable<TenderDTO>> GetClosedTenders();
         Task<IEnumerable<TenderDTO>> GetActiveTenders();
+        Task<IEnumerable<TenderDTO>> GetDraftTenders();
         Task<List<TenderDTO>> GetTendersByUser(string userId);
 
         Task<TenderDTO> Cancel(int tenderId);
-        Task<TenderDTO> Activate(int tenderId);
+        Task<TenderDTO> Publish(int tenderId);
+        Task<TenderDTO> SaveDraft(TenderInsertRequest request);
         Task<TenderDTO> Award(int id, int bidId);
         Task<List<string>> AllowedActions(int id);
 

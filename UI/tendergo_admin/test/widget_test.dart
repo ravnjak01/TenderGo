@@ -27,6 +27,5 @@ void main() {
 
     expect(find.byType(MaterialApp), findsOneWidget);
 
-    print("Test uspješno izvršen!");
   });
 }

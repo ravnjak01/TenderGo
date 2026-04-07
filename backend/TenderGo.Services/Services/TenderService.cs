@@ -46,6 +46,14 @@ namespace TenderGo.Services.Services
             return _mapper.Map<IEnumerable<TenderDTO>>(tenders);
         }
 
+
+        public async Task<IEnumerable<TenderDTO>> GetDraftTenders()
+        {
+            var tenders = await _context.Tenders.Where(t => t.Status == TenderStatus.Draft).ToListAsync();
+            return _mapper.Map<IEnumerable<TenderDTO>>(tenders);
+        }
+
+
         public async Task<IEnumerable<TenderDTO>> GetActiveTenders()
         {
             var tenders = await _context.Tenders
@@ -83,15 +91,17 @@ namespace TenderGo.Services.Services
 
         public override async Task<TenderDTO> Insert(TenderInsertRequest request)
         {
-            _logger.LogInformation("Attempting to create a new tender with title {Title}", request.Title);
+            _logger.LogInformation("Creating published tender {Title}", request.Title);
 
 
-            var state = CreateState(TenderStatus.Draft);
+            var state = CreateState(TenderStatus.Open);
 
             return await state.Insert(request); 
 
           
         }
+
+      
 
 
         public override async Task<TenderDTO> Update(int id, TenderUpdateRequest request)
@@ -109,7 +119,7 @@ namespace TenderGo.Services.Services
              return await state.Update(id, request);
         }
 
-        public async Task<TenderDTO> Activate(int id)
+        public async Task<TenderDTO> Publish(int id)
         {
             var entity = await _context.Tenders.FindAsync(id)
                          ?? throw new NotFoundException("Tender not found",new {Entity="Tender",Id=id});
@@ -117,6 +127,18 @@ namespace TenderGo.Services.Services
             var state = CreateState(entity.Status);
             return await state.Activate(id);
         }
+
+        public async Task<TenderDTO> SaveDraft(TenderInsertRequest request)
+        {
+            _logger.LogInformation(
+                "Attempting to save tender draft with title {Title}",
+                request.Title
+            );
+
+            var state = CreateState(TenderStatus.Draft);
+            return await state.Insert(request);
+        }
+
 
         public async Task<TenderDTO> Cancel(int id)
         {

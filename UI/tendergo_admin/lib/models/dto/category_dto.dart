@@ -15,7 +15,16 @@ class CategoryDto {
       name: json['name'] as String,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+    };
+  }
 }
+
+
 
 // --- UI Theme logika za kategorije ---
 

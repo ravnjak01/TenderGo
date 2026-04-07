@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:tendergo_admin/models/dto/category_dto.dart';
 import 'package:tendergo_admin/models/dto/tender_dto.dart';
 import 'package:tendergo_admin/models/ui/tendercardmodel.dart';
 import 'package:tendergo_admin/providers/tender_provider.dart';
+import 'package:tendergo_admin/services/category_service.dart';
+import 'package:tendergo_admin/services/dio_client.dart';
 import 'package:tendergo_admin/services/tender_service.dart';
 import 'package:tendergo_admin/models/enums/tenderstatus.dart';
 import 'package:tendergo_admin/widgets/category_chip_widget.dart';
 import 'package:tendergo_admin/widgets/tender_widget.dart';
+import 'package:tendergo_admin/screens/tender_post_screen.dart';
 
 class TenderListScreen extends StatefulWidget {
   final TenderService tenderService;
@@ -20,14 +24,31 @@ class TenderListScreen extends StatefulWidget {
 class _TenderListScreenState extends State<TenderListScreen> {
   final Set<int> _savedIds = {};
   String _selectedCategory = 'All';
-  final List<String> _categories = [
-    'All',
-    'Public',
-    'Private',
-    'Infrastructure',
-    'IT',
-    'Health',
-  ];
+  final CategoryService _categoryService = CategoryService(DioClient.getDio());
+  final List<String> _categories = ['All'];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCategories();
+  }
+
+  Future<void> _loadCategories() async {
+    try {
+      final List<CategoryDto> apiCategories = await _categoryService.getAll();
+      if (!mounted) return;
+
+      setState(() {
+        _categories
+          ..clear()
+          ..add('All')
+          ..addAll(apiCategories.map((c) => c.name));
+      });
+    } catch (_) {
+      // Keep fallback category so the screen remains usable if fetch fails.
+    }
+  }
+
   void _showLocationPicker(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -37,11 +58,11 @@ class _TenderListScreenState extends State<TenderListScreen> {
       builder: (context) {
         return Container(
           padding: const EdgeInsets.all(20),
-          height: 300, // Prilagodi po potrebi
+          height: 300, 
           child: Column(
             children: [
               const Text(
-                'Izaberite lokaciju',
+                'Choose a location',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const Divider(),
@@ -75,17 +96,14 @@ class _TenderListScreenState extends State<TenderListScreen> {
 
       status: _mapStatus(dto.status),
 
-      // maxBudget mapiramo na valueKM
       valueKM: dto.maxBudget,
 
       // Datumi
       deadline: dto.deadline,
       postedAt: dto.postedAt,
 
-      // možemo poslati praznu listu ili fiksne tagove (Public, Infrastructure)
       tags: [dto.locationName, dto.country],
 
-      // Izvlačimo URL iz TenderImageDto objekta ako postoji
       imageUrl: dto.images?.imageUrl,
       location: dto.locationName,
     );
@@ -133,7 +151,18 @@ class _TenderListScreenState extends State<TenderListScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   ElevatedButton(
-                    onPressed: () {},
+                    onPressed: () async {
+                      final result = await Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => TenderPostScreen(
+                            tenderService: widget.tenderService,
+                          ),
+                        ),
+                      );
+                      if (result == true) {
+                        context.read<TenderProvider>().fetchActiveTenders();
+                      }
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF185FA5),
                       foregroundColor: Colors.white,
@@ -187,8 +216,13 @@ class _TenderListScreenState extends State<TenderListScreen> {
             }
 
             final tenders = provider.tenders;
+            final filteredTenders = _selectedCategory == 'All'
+                ? tenders
+                : tenders
+                    .where((t) => t.categoryName == _selectedCategory)
+                    .toList();
 
-            if (tenders.isEmpty) {
+            if (filteredTenders.isEmpty) {
               return const Center(child: Text('No active tenders available.'));
             }
 
@@ -267,7 +301,7 @@ class _TenderListScreenState extends State<TenderListScreen> {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          '${tenders.length} aktivnih tendera',
+                          '${filteredTenders.length} active tenders',
                           style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w500,
@@ -296,7 +330,7 @@ class _TenderListScreenState extends State<TenderListScreen> {
                       return Wrap(
                         spacing: spacing,
                         runSpacing: spacing,
-                        children: tenders.map((dto) {
+                        children: filteredTenders.map((dto) {
                           final model = _toCardModel(dto);
                           return SizedBox(
                             width: cardWidth,
