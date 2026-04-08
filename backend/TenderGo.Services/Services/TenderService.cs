@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using EasyNetQ;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -35,63 +36,100 @@ namespace TenderGo.Services.Services
             _serviceProvider = serviceProvider;
         }
 
-
-
-
-
-
-        public async Task<IEnumerable<TenderDTO>> GetClosedTenders()
-        {
-            var tenders = await _context.Tenders.Where(t => t.Status == TenderStatus.Closed).ToListAsync();
-            return _mapper.Map<IEnumerable<TenderDTO>>(tenders);
-        }
-
         public async Task<IEnumerable<TenderDTO>> GetActiveTenders()
         {
             var tenders = await _context.Tenders
+                .Include(t => t.Category)
+                .Include(t => t.CreatedByUser)  
                 .Include(t => t.Images)
-                .Where(t => t.Status == TenderStatus.Open).ToListAsync();
-
+                .Where(t => t.Status == TenderStatus.Open)
+                .ToListAsync();
             return _mapper.Map<IEnumerable<TenderDTO>>(tenders);
         }
+        public async Task<IEnumerable<TenderDTO>> GetClosedTenders()
+        {
+            var tenders = await _context.Tenders
+                .Include(t => t.Category)
+                .Include(t => t.CreatedByUser)
+                .Include(t => t.Images)
+                .Where(t => t.Status == TenderStatus.Closed)
+                .ToListAsync();
+            return _mapper.Map<IEnumerable<TenderDTO>>(tenders);
+        }
+
+        public async Task<IEnumerable<TenderDTO>> GetDraftTenders()
+        {
+            var tenders = await _context.Tenders
+                .Include(t => t.Category)
+                .Include(t => t.CreatedByUser)
+                .Include(t => t.Images)
+                .Where(t => t.Status == TenderStatus.Draft)
+                .ToListAsync();
+            return _mapper.Map<IEnumerable<TenderDTO>>(tenders);
+        }
+
         public async Task<IEnumerable<TenderDTO>> GetTendersByCategory(int id)
         {
             var categoryExists = await _context.Categories.AnyAsync(c => c.Id == id);
             if (!categoryExists)
-            {
                 throw new NotFoundException("Category not found", new { CategoryId = id });
-            }
 
             var tenders = await _context.Tenders
+                .Include(t => t.Category)
+                .Include(t => t.CreatedByUser)
+                .Include(t => t.Images)
                 .Where(t => t.CategoryId == id)
                 .ToListAsync();
             return _mapper.Map<IEnumerable<TenderDTO>>(tenders);
-
-
         }
-
 
         public async Task<List<TenderDTO>> GetTendersByUser(string userId)
         {
             var tenders = await _context.Tenders
-                      .Where(t => t.CreatedByUserId == userId)
-                       .OrderByDescending(t => t.CreatedAt)
-                       .ToListAsync();
+                .Include(t => t.Category)
+                .Include(t => t.CreatedByUser)
+                .Include(t => t.Images)
+                .Where(t => t.CreatedByUserId == userId)
+                .OrderByDescending(t => t.CreatedAt)
+                .ToListAsync();
             return _mapper.Map<List<TenderDTO>>(tenders);
         }
 
 
         public override async Task<TenderDTO> Insert(TenderInsertRequest request)
         {
-            _logger.LogInformation("Attempting to create a new tender with title {Title}", request.Title);
+            _logger.LogInformation("Posting tender {Title}", request.Title);
 
+            if (request.Deadline <= DateTime.UtcNow)
+                throw new UserException("Deadline must be in the future");
 
-            var state = CreateState(TenderStatus.Draft);
+            var entity = _mapper.Map<Tender>(request);
 
-            return await state.Insert(request); 
+            if (!string.IsNullOrWhiteSpace(request.LocationName))
+            {
+                var parts = request.LocationName.Split(',');
+                entity.LocationName = parts.Length >= 2 ? parts[0].Trim() : request.LocationName.Trim();
+                entity.Country = parts.Length >= 2 ? parts[1].Trim() : "Unknown";
+            }
 
-          
+            entity.Status = TenderStatus.Open;  // ✅ directly Open, no Draft step
+            entity.PostedAt = DateTime.UtcNow;
+            entity.CreatedAt = DateTime.UtcNow;
+            entity.CreatedByUserId = _authService.GetCurrentUserId();
+
+            _context.Tenders.Add(entity);
+            await _context.SaveChangesAsync();
+
+            var saved = await _context.Tenders
+                .Include(t => t.CreatedByUser)
+                .Include(t => t.Category)
+                .Include(t => t.Images)
+                .Include(t => t.Bids)
+                .FirstAsync(t => t.Id == entity.Id);
+            return _mapper.Map<TenderDTO>(saved);
         }
+
+
 
 
         public override async Task<TenderDTO> Update(int id, TenderUpdateRequest request)
@@ -109,7 +147,7 @@ namespace TenderGo.Services.Services
              return await state.Update(id, request);
         }
 
-        public async Task<TenderDTO> Activate(int id)
+        public async Task<TenderDTO> Publish(int id)
         {
             var entity = await _context.Tenders.FindAsync(id)
                          ?? throw new NotFoundException("Tender not found",new {Entity="Tender",Id=id});
@@ -117,6 +155,18 @@ namespace TenderGo.Services.Services
             var state = CreateState(entity.Status);
             return await state.Activate(id);
         }
+
+        public async Task<TenderDTO> SaveDraft(TenderInsertRequest request)
+        {
+            _logger.LogInformation(
+                "Attempting to save tender draft with title {Title}",
+                request.Title
+            );
+
+            var state = CreateState(TenderStatus.Draft);
+            return await state.Insert(request);
+        }
+
 
         public async Task<TenderDTO> Cancel(int id)
         {

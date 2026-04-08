@@ -11,22 +11,21 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tendergo_admin/main.dart';
 import 'package:tendergo_admin/services/auth_service.dart';
 import 'package:tendergo_admin/services/dio_client.dart';
+import 'package:tendergo_admin/services/tender_service.dart';
 
 void main() {
   testWidgets('Provjera da li se aplikacija učitava', (WidgetTester tester) async {
 
     final dio = DioClient.getDio();
     final authService = AuthService(dio);
-
-    // Ovo "bilježi" tvoju aplikaciju u testnom okruženju
+    final TenderService tenderService = TenderService(dio);
    await tester.pumpWidget(MyApp(
       authService: authService,
-      isLoggedIn: false, // Možeš staviti true ili false, zavisi šta testiraš
+      tenderService: tenderService,
+      isLoggedIn: false, 
     ));
 
     expect(find.byType(MaterialApp), findsOneWidget);
 
-    // Test će proći jer nismo postavili nikakve stroge uslove (expect)
-    print("Test uspješno izvršen!");
   });
 }

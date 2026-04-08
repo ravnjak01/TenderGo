@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:tendergo_admin/screens/login_screen.dart';
 import '../services/auth_service.dart';
 
 class RegistrationScreen extends StatefulWidget {
@@ -22,9 +21,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   bool _obscureConfirm  = true;
   bool _isLoading       = false;
 
-  static const Color _darkBlue   = Color(0xFF1A2F6B);
   static const Color _midBlue    = Color(0xFF2A4BAD);
-  static const Color _background = Color(0xFF1E3A8A);
   static const Color _btnBlue    = Color(0xFF2D4DB5);
   static const Color _linkBlue   = Color(0xFF4472C4);
 
@@ -191,7 +188,7 @@ void _showSnack(String msg, {bool isError = false}) {
                   borderRadius: BorderRadius.circular(18),
                   boxShadow: [
                     BoxShadow(
-                        color: Colors.black.withOpacity(0.25),
+                        color: Colors.black.withValues(alpha: 0.25),
                         blurRadius: 40,
                         offset: const Offset(0, 12))
                   ],

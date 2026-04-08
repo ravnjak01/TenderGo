@@ -1,4 +1,5 @@
 ﻿using TenderGo.Models.DTOs;
+using TenderGo.Models.Entities;
 using TenderGo.Models.ENUMs;
 namespace TenderGo.Models.DTOs
 {
@@ -6,19 +7,25 @@ namespace TenderGo.Models.DTOs
     {
         public int Id { get; set; }
         public string Title { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
+        public string? Description { get; set; } = string.Empty;
         public decimal MaxBudget { get; set; }
         public DateTime Deadline { get; set; }
 
         public string CreatedByUserId { get; set; }
 
         public string CreatedByFullname { get; set; }
-        public TenderStatus Status {get; set;} // Npr. "Open", "Closed"
+        public TenderStatus Status {get; set;} 
 
-        // Dodatno: Možeš dodati i broj ponuda da Flutter odmah prikaže npr. "5 ponuda"
         public int TotalBids { get; set; }
+        public virtual ICollection<TenderImageDTO>? Images { get; set; } = new List<TenderImageDTO>();
 
-        // Ako je već neko ponudio najnižu cijenu, pošalji i nju
-        public decimal? CurrentLowestBid { get; set; }
+        public string LocationName { get; set; }
+        public string Country { get; set; }
+
+        public int CategoryId { get; set; }
+        public string CategoryName { get; set; } = string.Empty;
+
+        public DateTime PostedAt { get; set; }
+
     }
 }

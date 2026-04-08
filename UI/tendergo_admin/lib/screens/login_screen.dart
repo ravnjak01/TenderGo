@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:tendergo_admin/core/theme/app_theme.dart';
-import 'package:tendergo_admin/screens/home_screen.dart';
-import 'package:tendergo_admin/screens/registration_screen.dart';
+import 'package:tendergo_admin/screens/tenders_list_screen.dart';
 import 'package:tendergo_admin/services/auth_service.dart';
+import 'package:provider/provider.dart';
+import 'package:tendergo_admin/providers/tender_provider.dart';
 
 class LoginScreen extends StatefulWidget {
   final AuthService authService;
@@ -19,26 +20,31 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   String? _errorMessage;
   final _formKey = GlobalKey<FormState>();
-  void _handleLogin() async {
-
-if(_formKey.currentState!.validate()){
-  
+ void _handleLogin() async {
+  if (_formKey.currentState!.validate()) {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
+
+    // 1. Izvuci servis PRIJE await-a ili odmah nakon, dok si siguran u context
+    final tenderProvider = Provider.of<TenderProvider>(context, listen: false);
 
     bool success = await widget.authService.login(
       _emailController.text.trim(),
       _passwordController.text,
     );
 
+    // 2. Provjeri mounted status
+    if (!mounted) return;
+
     if (success) {
-  if (mounted) {
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const HomeScreen()),
-    );
-  }
+      // Koristi spremljenu referencu na tenderProvider.service umjesto context-a ponovo
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => TenderListScreen(tenderService: tenderProvider.service),
+        ),
+      );
     } else {
       setState(() {
         _isLoading = false;
@@ -46,8 +52,8 @@ if(_formKey.currentState!.validate()){
       });
     }
   }
-  }
-
+}
+  
  bool _isValidEmail(String email) {
   return RegExp(r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+")
       .hasMatch(email);
@@ -56,7 +62,7 @@ if(_formKey.currentState!.validate()){
  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.backgroundLoginAndRegister, 
+      backgroundColor: AppColors.background, 
       body: Center(
         child: SingleChildScrollView( 
           child: Container(

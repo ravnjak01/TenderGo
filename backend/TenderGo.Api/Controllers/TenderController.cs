@@ -8,6 +8,7 @@ using TenderGo.Services.Services.Exceptions;
 
 
 
+[ApiController]
 [Route("api/tender")]
 [Authorize]
 public class TenderController
@@ -33,6 +34,10 @@ public class TenderController
     public async Task<ActionResult<List<TenderDTO>>> GetClosed()
         => Ok(await _tenderService.GetClosedTenders());
 
+    [HttpGet("drafts")]
+    public async Task<ActionResult<List<TenderDTO>>> GetDrafts()
+        => Ok(await _tenderService.GetDraftTenders());
+
     [HttpGet("category/{id}")]
     public async Task<ActionResult<List<TenderDTO>>> GetByCategory(int id)
         => Ok(await _tenderService.GetTendersByCategory(id));
@@ -50,13 +55,20 @@ public class TenderController
 
 
 
-    [HttpPut("{id}/activate")]
-    public async Task<ActionResult<TenderDTO>> Activate(int id)
+    [HttpPut("{id}/publish")]
+    public async Task<ActionResult<TenderDTO>> Publish(int id)
     {
-        var result= await _tenderService.Activate(id);
+        var result= await _tenderService.Publish(id);
         return Ok(result);
     }
 
+    [HttpPost("draft")]
+    public async Task<ActionResult<TenderDTO>> SaveDraft(TenderInsertRequest request)
+    {
+        var result = await _tenderService.SaveDraft(request);
+        return Ok(result);
+
+    }
     [Authorize(Roles = $"{AppRoles.Admin},{AppRoles.User}")]
     [HttpPatch("{id}/cancel")]
     public async Task<ActionResult<TenderDTO>> Cancel(int id)

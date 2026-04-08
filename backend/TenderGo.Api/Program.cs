@@ -115,7 +115,7 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddScoped<EmailService>();
-
+builder.Services.AddTransient<ICategoryService, CategoryService>();
 
 builder.Services.AddTransient<BaseState>();
 builder.Services.AddTransient < InitialTenderState>() ;

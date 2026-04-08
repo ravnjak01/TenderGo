@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:tendergo_admin/core/network/constants/api_endpoints.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
-import 'package:tendergo_admin/models/auth_result.dart';
+import 'package:tendergo_admin/models/ui/auth_result.dart';
 class AuthService {
   final Dio _dio;
   static const _storage = const FlutterSecureStorage();
@@ -20,7 +20,7 @@ class AuthService {
    
 
       if (response.statusCode == 200) {
-        String? token = response.data['Token'];
+        String? token = response.data['token'];
 
           if (token == null) {
             return false;
@@ -69,10 +69,8 @@ class AuthService {
         'lastName': lastName,
       });
 
-      print('Registration response status: ${response.statusCode}, data: ${response.data}');
       return response.statusCode != null && response.statusCode! >= 200 && response.statusCode! < 300;
     } on DioException catch (e) {
-      print("Error during registration: ${e.response?.data}");
       return false;
     }
   }
@@ -88,16 +86,7 @@ Future<AuthResult> forgotPassword(String email) async {
       message: 'If this email exists, a reset link was sent.',
     );
   } on DioException catch (e) {
-    // Add these print statements
-    print('=== FORGOT PASSWORD ERROR ===');
-    print('Status code: ${e.response?.statusCode}');
-    print('Response data: ${e.response?.data}');
-    print('Response data type: ${e.response?.data.runtimeType}');
-    print('Request URL: ${e.requestOptions.baseUrl}${e.requestOptions.path}');
-    print('Request data: ${e.requestOptions.data}');
-    print('Error type: ${e.type}');
-    print('Error message: ${e.message}');
-    print('=============================');
+
 
     final data = e.response?.data;
     final message = (data is Map)

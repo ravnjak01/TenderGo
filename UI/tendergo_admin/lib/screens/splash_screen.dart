@@ -24,7 +24,7 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
 
     if (isLoggedIn) {
-      Navigator.pushReplacementNamed(context, '/home');
+      Navigator.pushReplacementNamed(context, '/tenders');
     } else {
       Navigator.pushReplacementNamed(context, '/login');
     }

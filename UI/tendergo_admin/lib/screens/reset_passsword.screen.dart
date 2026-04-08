@@ -26,14 +26,12 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   void initState() {
     super.initState();
 
-    // 🔹 Izvuci token i email iz URL-a
+    
     final uri = Uri.base; // Uri.base daje trenutni URL u Flutter Web
     token = Uri.decodeComponent(uri.queryParameters['token'] ?? '');
     email = uri.queryParameters['email'] ?? '';
 
-    // Debug
-    print('TOKEN: $token');
-    print('EMAIL: $email');
+  
   }
 
   @override
@@ -48,7 +46,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // Poziv servisa sa tokenom i emailom iz URL-a
       await widget.authService.resetPassword(token, _passwordController.text, email);
 
       if (mounted) {

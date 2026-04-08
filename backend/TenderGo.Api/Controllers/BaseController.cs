@@ -33,7 +33,7 @@ public abstract class BaseController<T,TDb, TInsert, TUpdate>
         => Ok(await _readService.GetById(id));
 
     [HttpPost]
-    public async Task<ActionResult<T>> Insert(TInsert request)
+    public virtual async Task<ActionResult<T>> Insert( [FromBody]TInsert request)
     {
         var result = await _writeService.Insert(request);
         return Ok(result);
@@ -47,7 +47,7 @@ public abstract class BaseController<T,TDb, TInsert, TUpdate>
     }
 
     [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
+    public virtual async Task<IActionResult> Delete(int id)
     {
         await _writeService.Delete(id);
         return NoContent();
