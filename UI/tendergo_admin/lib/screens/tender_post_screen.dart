@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:tendergo_admin/core/theme/app_theme.dart';
 import 'package:tendergo_admin/models/dto/category_dto.dart';
 import 'package:tendergo_admin/models/dto/tender_post_dto.dart';
+import 'package:tendergo_admin/providers/tender_provider.dart';
 import 'package:tendergo_admin/services/category_service.dart';
 import 'package:tendergo_admin/services/dio_client.dart';
 import 'package:tendergo_admin/services/tender_service.dart';
@@ -153,7 +155,7 @@ class _TenderPostScreenState extends State<TenderPostScreen>
         imageUrls: _imageUrls.isEmpty ? null : List.from(_imageUrls),
       );
 
-      await _tenderService.create(request);
+      await context.read<TenderProvider>().createTender(request);
 
       if (!mounted) return;
       _showSnack('Tender published successfully!');

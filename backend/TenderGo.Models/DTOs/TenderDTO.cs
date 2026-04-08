@@ -27,6 +27,5 @@ namespace TenderGo.Models.DTOs
 
         public DateTime PostedAt { get; set; }
 
-        public int MyProperty { get; set; }
     }
 }

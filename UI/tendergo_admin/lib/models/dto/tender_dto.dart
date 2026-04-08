@@ -35,6 +35,51 @@ class TenderDto {
     required this.images,
   });
 
+  static String? _readStringValue(dynamic value) {
+    if (value is String) {
+      final normalized = value.trim();
+      return normalized.isEmpty ? null : normalized;
+    }
+
+    if (value is Map<String, dynamic>) {
+      return _firstNonEmptyString([
+        value['name'],
+        value['title'],
+        value['city'],
+        value['label'],
+      ]);
+    }
+
+    return null;
+  }
+
+  static String? _firstNonEmptyString(List<dynamic> candidates) {
+    for (final candidate in candidates) {
+      final value = _readStringValue(candidate);
+      if (value != null) {
+        return value;
+      }
+    }
+    return null;
+  }
+
+  static int _readCategoryId(Map<String, dynamic> json) {
+    final rawCategoryId = json['categoryId'] ??
+        (json['category'] is Map<String, dynamic>
+            ? (json['category'] as Map<String, dynamic>)['id']
+            : null);
+
+    if (rawCategoryId is int) {
+      return rawCategoryId;
+    }
+
+    if (rawCategoryId is num) {
+      return rawCategoryId.toInt();
+    }
+
+    return 0;
+  }
+
 
 
 factory TenderDto.fromJson(Map<String, dynamic> json) {
@@ -48,11 +93,30 @@ factory TenderDto.fromJson(Map<String, dynamic> json) {
     createdByFullname: json['createdByFullname'] as String,
     status: TenderStatus.fromInt(json['status'] as int),
     totalBids: json['totalBids'] as int,
-    locationName: json['locationName'] as String? ?? "Not specified", 
-    country: json['country'] as String? ?? "Not specified",
-    categoryId: json['categoryId'] as int,
-    // Ispravljeno malo 'c' i dodano '?'
-    categoryName: json['categoryName'] as String? ?? "No category",
+    locationName: _firstNonEmptyString([
+        json['locationName'],
+        json['location'],
+        json['locationDto'],
+      ]) ??
+      'Not specified',
+    country: _firstNonEmptyString([
+        json['country'],
+        json['locationCountry'],
+        json['location'] is Map<String, dynamic>
+          ? (json['location'] as Map<String, dynamic>)['country']
+          : null,
+        json['locationDto'] is Map<String, dynamic>
+          ? (json['locationDto'] as Map<String, dynamic>)['country']
+          : null,
+      ]) ??
+      'Not specified',
+    categoryId: _readCategoryId(json),
+    categoryName: _firstNonEmptyString([
+        json['categoryName'],
+        json['category'],
+        json['categoryDto'],
+      ]) ??
+      'No category',
     postedAt: DateTime.parse(json['postedAt'] as String),
    images: (json['images'] != null && (json['images'] as List).isNotEmpty)
         ? TenderImageDto.fromJson(json['images'][0]) 

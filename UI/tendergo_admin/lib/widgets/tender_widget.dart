@@ -155,18 +155,8 @@ class _CardBody extends StatelessWidget {
         children: [
           // Row za Kategoriju i Lokaciju
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              Text(
-                tender.category.toUpperCase(),
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  letterSpacing: 0.4,
-                  color: Color(0xFF888780),
-                ),
-              ),
-              // --- DODANA LOKACIJA ---
               Row(
                 children: [
                   const Icon(Icons.pin_drop_outlined, size: 12, color: Color(0xFF185FA5)),
@@ -190,26 +180,23 @@ class _CardBody extends StatelessWidget {
             tender.title,
             style: const TextStyle(
               fontSize: 14,
-              fontWeight: FontWeight.w600, // Malo deblji font za bolju čitljivost
+              fontWeight: FontWeight.w600, 
               color: Color(0xFF1A1A1A),
               height: 1.4,
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 10), // Povećan razmak radi prozračnosti
+          const SizedBox(height: 10), 
 
-          // Tags
-          if (tender.tags.isNotEmpty) ...[
+     
             Wrap(
-              spacing: 5,
-              runSpacing: 5,
-              children: tender.tags
-                  .map((t) => _Tag(label: t))
-                  .toList(),
+                children: [
+              _Tag(label: tender.category), 
+                ],
             ),
             const SizedBox(height: 12),
-          ],
+          
 
           // Divider
           const Divider(height: 1, thickness: 0.5, color: Color(0xFFE5E3DC)),
@@ -269,11 +256,19 @@ class _Tag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
+    final theme = themeForCategory(label);
+    
+    
+    const primaryColor = Color(0xFF185FA5);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: const Color(0xFFF1EFE8),
-        borderRadius: BorderRadius.circular(999),
+       color: theme.bg, 
+        borderRadius: BorderRadius.circular(6), 
+        border: Border.all(
+          color: primaryColor.withValues(alpha: 0.2),
+        ),
       ),
       child: Text(
         label,

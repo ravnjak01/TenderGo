@@ -30,15 +30,15 @@ public  class Tender:BaseEntity
     public DateTime? PostedAt { get; set; }
 
     public int CategoryId { get; set; }
-    public virtual Category  Category { get; set; }=null!;
+    public virtual Category  Category { get; set; }
 
     public int? WinningBidId { get; set; }
     public virtual Bid? WinningBid { get; set; }
 
     public bool IsEdited { get; set; } = false;
 
-    public string? LocationName { get; set; } 
-    public string? Country { get; set; }
+    public string LocationName { get; set; } 
+    public string Country { get; set; }
 
     public virtual ICollection<Bid> Bids { get; set; } = new List<Bid>();
     public virtual ICollection<TenderImage> Images { get; set; } = new List<TenderImage>();

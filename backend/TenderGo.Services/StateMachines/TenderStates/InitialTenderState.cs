@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using EasyNetQ;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -28,20 +29,38 @@ namespace TenderGo.Services.StateMachines.TenderStates
         {
             _pubSub = pubSub;
         }
-
-
         public override async Task<TenderDTO> Insert(TenderInsertRequest request)
         {
 
+            _logger.LogInformation("DEBUG: Request Location: {Loc}", request.LocationName);
 
             if (request.Deadline <= DateTime.UtcNow)
                 throw new UserException("Deadline must be in the future");
 
             var entity = _mapper.Map<Tender>(request);
 
+            if (!string.IsNullOrWhiteSpace(request.LocationName))
+            {
+                var parts = request.LocationName.Split(',');
+
+                if (parts.Length >= 2)
+                {
+                    entity.LocationName = parts[0].Trim(); 
+                    entity.Country = parts[1].Trim();      
+                }
+                else
+                {
+                    entity.LocationName = request.LocationName.Trim();
+                    entity.Country = "Unknown"; 
+                }
+            }
+
+
+            _logger.LogInformation("DEBUG: Entity Location after mapping: {Loc}", entity.LocationName);
+
             entity.Status = TenderStatus.Draft;
             entity.CreatedAt = DateTime.UtcNow;
-
+                
 
             var authService = _serviceProvider.GetRequiredService<IAuthService>();
             entity.CreatedByUserId = authService.GetCurrentUserId();
@@ -50,8 +69,15 @@ namespace TenderGo.Services.StateMachines.TenderStates
             _context.Tenders.Add(entity);
             await _context.SaveChangesAsync();
 
+            var saved = await _context.Tenders
+                   .Include(t => t.CreatedByUser)
+                   .Include(t => t.Category)
+                   .Include(t => t.Images)
+                   .Include(t => t.Bids)
+                   .FirstAsync(t => t.Id == entity.Id);
+
             _logger.LogInformation("Tender {Id} created as Draft.", entity.Id);
-            return _mapper.Map<TenderDTO>(entity);
+            return _mapper.Map<TenderDTO>(saved);
 
         }
 
@@ -90,11 +116,11 @@ namespace TenderGo.Services.StateMachines.TenderStates
 
             _logger.LogInformation("Attempting to activate tender with ID {TenderId}", id);
 
-            entity.Status = TenderStatus.Open;
-            if (entity.Status != TenderStatus.Open)
+            if (entity.Status == TenderStatus.Draft) 
             {
                 entity.PostedAt = DateTime.UtcNow;
             }
+            entity.Status = TenderStatus.Open;
 
             await _context.SaveChangesAsync();
 

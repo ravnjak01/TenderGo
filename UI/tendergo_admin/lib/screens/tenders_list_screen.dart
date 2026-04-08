@@ -30,6 +30,10 @@ class _TenderListScreenState extends State<TenderListScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<TenderProvider>().fetchActiveTenders();
+    });
     _loadCategories();
   }
 
@@ -111,11 +115,9 @@ class _TenderListScreenState extends State<TenderListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<TenderProvider>(
-      create: (_) => TenderProvider(widget.tenderService)..fetchActiveTenders(),
-      child: Scaffold(
-        backgroundColor: const Color(0xFFF4F2EB),
-        appBar: AppBar(
+    return Scaffold(
+      backgroundColor: const Color(0xFFF4F2EB),
+      appBar: AppBar(
           backgroundColor: Colors.white,
           elevation: 0,
           automaticallyImplyLeading: false,
@@ -159,8 +161,8 @@ class _TenderListScreenState extends State<TenderListScreen> {
                           ),
                         ),
                       );
-                      if (result == true) {
-                        context.read<TenderProvider>().fetchActiveTenders();
+                      if (result == true && context.mounted) {
+                        await context.read<TenderProvider>().fetchActiveTenders();
                       }
                     },
                     style: ElevatedButton.styleFrom(
@@ -205,8 +207,8 @@ class _TenderListScreenState extends State<TenderListScreen> {
             child: Container(height: 0.5, color: const Color(0xFFE5E3DC)),
           ),
         ),
-        body: Consumer<TenderProvider>(
-          builder: (context, provider, _) {
+      body: Consumer<TenderProvider>(
+        builder: (context, provider, _) {
             if (provider.isLoading) {
               return const Center(child: CircularProgressIndicator());
             }
@@ -362,7 +364,6 @@ class _TenderListScreenState extends State<TenderListScreen> {
             );
           },
         ),
-      ),
     );
   }
 }
