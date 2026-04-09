@@ -4,9 +4,9 @@ class ApiEndpoints {
   static const String register = '/auth/register';
   static const String forgotPassword = '/auth/forgot-password';
   static const String resetPassword = '/auth/reset-password';
-
-
-
   // --- KORISNIK ---
-  static const String userProfile = '/user/profile';
+
+  static const String  me = '/auth/me';
+
+
 }

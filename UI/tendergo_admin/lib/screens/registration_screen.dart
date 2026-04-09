@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tendergo_admin/models/dto/auth_dto.dart';
 import '../services/auth_service.dart';
 
 class RegistrationScreen extends StatefulWidget {
@@ -45,10 +46,12 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     setState(() => _isLoading = true);
 
     final success = await widget.authService.register(
-      _emailController.text.trim(),
-      _passwordController.text,
-      _fnameController.text.trim(),
-      _lnameController.text.trim(),
+      RegisterRequest(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+        firstName: _fnameController.text.trim(),
+        lastName: _lnameController.text.trim(),
+      ),
     );
 
     if (!mounted) return;

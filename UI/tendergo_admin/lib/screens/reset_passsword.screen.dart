@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tendergo_admin/models/dto/auth_dto.dart';
 import 'package:tendergo_admin/services/auth_service.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
@@ -46,7 +47,22 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     setState(() => _isLoading = true);
 
     try {
-      await widget.authService.resetPassword(token, _passwordController.text, email);
+      final result = await widget.authService.resetPassword(
+        ResetPasswordRequest(
+          token: token,
+          newPassword: _passwordController.text,
+          email: email,
+        ),
+      );
+
+      if (!mounted) return;
+
+      if (!result.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result.message)),
+        );
+        return;
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
