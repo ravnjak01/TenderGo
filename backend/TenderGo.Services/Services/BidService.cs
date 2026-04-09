@@ -41,6 +41,9 @@ namespace TenderGo.Services.Services
         public override async Task<BidDTO> Insert(BidInsertRequest request)
         {
 
+            try
+            {
+
             var tender = await _context.Tenders.FindAsync(request.TenderId)
                   ?? throw new UserException("Tender not found");
 
@@ -51,6 +54,19 @@ namespace TenderGo.Services.Services
             var state = CreateState(ApplicationStatus.Pending, tender.Status);
 
             return await state.Insert(request);
+            }
+            catch (UserException ex)
+            {
+                _logger.LogWarning(ex, "User error while creating bid for tender {TenderId}: {Message}", request.TenderId, ex.Message);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error while creating bid for tender {TenderId}", request.TenderId);
+                Console.WriteLine("STACK TRACE: " + ex.StackTrace);
+                Console.WriteLine("GREŠKA: " + ex.Message);
+                throw new UserException("An unexpected error occurred while creating the bid.");
+            }
         }
 
         public override async Task<BidDTO> Update(int id, BidUpdateRequest request)

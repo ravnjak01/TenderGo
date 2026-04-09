@@ -11,9 +11,11 @@ namespace TenderGo.Models.Entities
     public class Bid:BaseEntity
     {
         public int Id { get; set; }
+        [Required]
         public int TenderId { get; set; }
         public Tender Tender { get; set; }= null!;
 
+        [Required]
         public string SubmittedByUserId { get; set; }
         public ApplicationUser SubmittedByUser { get; set; } = null!;
 
@@ -21,6 +23,7 @@ namespace TenderGo.Models.Entities
         public decimal OfferedPrice { get; set; }
         public DateTime SubmittedAt { get; set; } = DateTime.UtcNow;
         public ApplicationStatus Status { get; set; } = ApplicationStatus.Pending;
-        public string? DeliveryNote { get; set; }
+        public string? Proposal { get; set; }
+        public int? DeliveryDays { get; set; }
     }
 }
