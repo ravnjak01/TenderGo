@@ -36,7 +36,7 @@ class TenderCardModel {
       deadline: dto.deadline,
       postedAt: dto.postedAt,
       tags: [], 
-      imageUrl: dto.images?.imageUrl, 
+      imageUrl: dto.primaryImage?.imageUrl, 
       location: dto.locationName,
     );
   }

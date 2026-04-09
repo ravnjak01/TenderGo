@@ -1,21 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tendergo_admin/models/dto/category_dto.dart';
-import 'package:tendergo_admin/models/dto/tender_dto.dart';
-import 'package:tendergo_admin/models/ui/tendercardmodel.dart';
 import 'package:tendergo_admin/providers/tender_provider.dart';
 import 'package:tendergo_admin/services/category_service.dart';
 import 'package:tendergo_admin/services/dio_client.dart';
 import 'package:tendergo_admin/services/tender_service.dart';
-import 'package:tendergo_admin/models/enums/tenderstatus.dart';
 import 'package:tendergo_admin/widgets/category_chip_widget.dart';
 import 'package:tendergo_admin/widgets/tender_widget.dart';
 import 'package:tendergo_admin/screens/tender_post_screen.dart';
+import 'package:tendergo_admin/screens/tender_details_screen.dart';
 
 class TenderListScreen extends StatefulWidget {
   final TenderService tenderService;
+  final bool embedded;
+  final ValueChanged<int>? onTenderSelected;
 
-  const TenderListScreen({super.key, required this.tenderService});
+  const TenderListScreen({
+    super.key,
+    required this.tenderService,
+    this.embedded = false,
+    this.onTenderSelected,
+  });
 
   @override
   State<TenderListScreen> createState() => _TenderListScreenState();
@@ -23,7 +28,7 @@ class TenderListScreen extends StatefulWidget {
 
 class _TenderListScreenState extends State<TenderListScreen> {
   final Set<int> _savedIds = {};
-  String _selectedCategory = 'All';
+  final Set<String> selectedCategory = {'All'};
   final CategoryService _categoryService = CategoryService(DioClient.getDio());
   final List<String> _categories = ['All'];
 
@@ -78,43 +83,15 @@ class _TenderListScreenState extends State<TenderListScreen> {
     );
   }
 
-  // Maps your existing TenderStatus enum → TenderCardWidget's TenderStatus enum
-  TenderStatus _mapStatus(TenderStatus status) {
-    switch (status) {
-      case TenderStatus.open:
-        return TenderStatus.open;
-      case TenderStatus.closed:
-        return TenderStatus.closed;
-      default:
-        return TenderStatus.open;
-    }
-  }
-
-  // Converts TenderDto → TenderModel expected by the card widget
-  TenderCardModel _toCardModel(TenderDto dto) {
-    return TenderCardModel(
-      id: dto.id.toString(),
-
-      title: dto.title,
-      category: dto.categoryName,
-
-      status: _mapStatus(dto.status),
-
-      valueKM: dto.maxBudget,
-
-      // Datumi
-      deadline: dto.deadline,
-      postedAt: dto.postedAt,
-
-      tags: [dto.locationName, dto.country],
-
-      imageUrl: dto.images?.imageUrl,
-      location: dto.locationName,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
+    if (widget.embedded) {
+      return Container(
+        color: const Color(0xFFF4F2EB),
+        child: _buildBody(),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF4F2EB),
       appBar: AppBar(
@@ -207,7 +184,12 @@ class _TenderListScreenState extends State<TenderListScreen> {
             child: Container(height: 0.5, color: const Color(0xFFE5E3DC)),
           ),
         ),
-      body: Consumer<TenderProvider>(
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    return Consumer<TenderProvider>(
         builder: (context, provider, _) {
             if (provider.isLoading) {
               return const Center(child: CircularProgressIndicator());
@@ -218,15 +200,11 @@ class _TenderListScreenState extends State<TenderListScreen> {
             }
 
             final tenders = provider.tenders;
-            final filteredTenders = _selectedCategory == 'All'
+            final filteredTenders = selectedCategory.contains('All')
                 ? tenders
                 : tenders
-                    .where((t) => t.categoryName == _selectedCategory)
+                    .where((t) => selectedCategory.contains(t.categoryName))
                     .toList();
-
-            if (filteredTenders.isEmpty) {
-              return const Center(child: Text('No active tenders available.'));
-            }
 
             return SingleChildScrollView(
               padding: const EdgeInsets.all(16),
@@ -254,11 +232,26 @@ class _TenderListScreenState extends State<TenderListScreen> {
                                   children: _categories.map((cat) {
                                     return CategoryChipWidget(
                                       label: cat,
-                                      isSelected: _selectedCategory == cat,
+                                      isSelected: selectedCategory.contains(cat),
                                       onTap: () {
                                         setState(() {
-                                          _selectedCategory = cat;
-                                          // Ovdje možeš pozvati provider da filtrira listu
+                                          if (cat == 'All') {
+                                            selectedCategory.clear();
+                                            selectedCategory.add('All');
+                                          } else {
+                                            selectedCategory.remove('All');
+                                            
+                                            if (selectedCategory.contains(cat)) {
+                                              selectedCategory.remove(cat);
+                                            } else {
+                                              selectedCategory.add(cat);
+                                            }
+                                            
+                                            // Ako si sve odznačio, vrati na 'All'
+                                            if (selectedCategory.isEmpty) {
+                                              selectedCategory.add('All');
+                                            }
+                                          }
                                         });
                                       },
                                     );
@@ -269,7 +262,7 @@ class _TenderListScreenState extends State<TenderListScreen> {
                             const SizedBox(width: 12),
                             TextButton.icon(
                               onPressed: () {
-                                //napraviti novi screen za ovaj dio
+                                
                                 _showLocationPicker(context);
                               },
                               icon: const Icon(
@@ -313,57 +306,74 @@ class _TenderListScreenState extends State<TenderListScreen> {
                       ],
                     ),
                   ),
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      // Izračun broja kolona
-                      int crossAxisCount = 1;
-                      if (constraints.maxWidth >= 900) {
-                        crossAxisCount = 3;
-                      } else if (constraints.maxWidth >= 600) {
-                        crossAxisCount = 2;
-                      }
+                  if (filteredTenders.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 48),
+                      child: Center(
+                        child: Text('No tenders match the selected filters.'),
+                      ),
+                    )
+                  else
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        // Izračun broja kolona
+                        int crossAxisCount = 1;
+                        if (constraints.maxWidth >= 900) {
+                          crossAxisCount = 3;
+                        } else if (constraints.maxWidth >= 600) {
+                          crossAxisCount = 2;
+                        }
 
-                      final double spacing = 14.0;
-                      final cardWidth =
-                          (constraints.maxWidth -
-                              (spacing * (crossAxisCount - 1))) /
-                          crossAxisCount;
+                        final double spacing = 14.0;
+                        final cardWidth =
+                            (constraints.maxWidth -
+                                (spacing * (crossAxisCount - 1))) /
+                            crossAxisCount;
 
-                      return Wrap(
-                        spacing: spacing,
-                        runSpacing: spacing,
-                        children: filteredTenders.map((dto) {
-                          final model = _toCardModel(dto);
-                          return SizedBox(
-                            width: cardWidth,
-                            child: TenderCardWidget(
-                              tender: model,
-                              isSaved: _savedIds.contains(dto.id),
-                              onTap: () => Navigator.pushNamed(
-                                context,
-                                '/tender-detail',
-                                arguments: dto,
-                              ),
-                              onSave: () {
-                                setState(() {
-                                  if (_savedIds.contains(dto.id)) {
-                                    _savedIds.remove(dto.id);
-                                  } else {
-                                    _savedIds.add(dto.id);
+                        return Wrap(
+                          spacing: spacing,
+                          runSpacing: spacing,
+                          children: filteredTenders.map((dto) {
+                            final model = dto.toCardModel(dto);
+                            return SizedBox(
+                              width: cardWidth,
+                              child: TenderCardWidget(
+                                tender: model,
+                                isSaved: _savedIds.contains(dto.id),
+                                onTap: () {
+                                  if (widget.onTenderSelected != null) {
+                                    widget.onTenderSelected!(dto.id);
+                                    return;
                                   }
-                                });
-                              },
-                            ),
-                          );
-                        }).toList(),
-                      );
-                    },
-                  ),
+
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => TenderDetailsScreen(
+                                        tenderService: widget.tenderService,
+                                        tenderId: dto.id,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                onSave: () {
+                                  setState(() {
+                                    if (_savedIds.contains(dto.id)) {
+                                      _savedIds.remove(dto.id);
+                                    } else {
+                                      _savedIds.add(dto.id);
+                                    }
+                                  });
+                                },
+                              ),
+                            );
+                          }).toList(),
+                        );
+                      },
+                    ),
                 ],
               ),
             );
           },
-        ),
-    );
+        );
   }
 }

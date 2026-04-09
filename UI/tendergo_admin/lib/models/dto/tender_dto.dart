@@ -1,5 +1,6 @@
 import 'package:tendergo_admin/models/enums/tenderstatus.dart';
 import 'package:tendergo_admin/models/dto/tender_image_dto.dart';
+import 'package:tendergo_admin/models/ui/tendercardmodel.dart';
 
 class TenderDto {
   final int id;
@@ -16,7 +17,26 @@ class TenderDto {
   final int categoryId;
   final String categoryName;
   final DateTime postedAt; 
-  final TenderImageDto? images;
+  final List<TenderImageDto> images;
+
+  TenderImageDto? get primaryImage {
+    if (images.isEmpty) return null;
+
+    for (final image in images) {
+      if (image.isPrimary && image.imageUrl.trim().isNotEmpty) {
+        return image;
+      }
+    }
+
+    for (final image in images) {
+      if (image.imageUrl.trim().isNotEmpty) {
+        return image;
+      }
+    }
+
+    return null;
+  }
+
   TenderDto({
     required this.id,
     required this.title,
@@ -80,6 +100,42 @@ class TenderDto {
     return 0;
   }
 
+  static List<TenderImageDto>? _readImages(Map<String, dynamic> json) {
+    final rawImages = json['images'];
+
+    try {
+      if (rawImages is List) {
+        final parsed = rawImages
+            .whereType<Map<String, dynamic>>()
+            .map(TenderImageDto.fromJson)
+            .where((image) => image.imageUrl.trim().isNotEmpty)
+            .toList();
+
+        return parsed;
+      }
+
+      if (rawImages is Map<String, dynamic>) {
+        final image = TenderImageDto.fromJson(rawImages);
+        if (image.imageUrl.trim().isNotEmpty) {
+          return [image];
+        }
+      }
+
+      final String? fallbackImageUrl = _firstNonEmptyString([
+        json['imageUrl'],
+        json['primaryImageUrl'],
+      ]);
+
+      if (fallbackImageUrl != null) {
+        return [TenderImageDto(imageUrl: fallbackImageUrl, isPrimary: true)];
+      }
+    } catch (_) {
+      // Keep tender parsing resilient even if image payload has invalid shape.
+    }
+
+    return null;
+  }
+
 
 
 factory TenderDto.fromJson(Map<String, dynamic> json) {
@@ -118,9 +174,7 @@ factory TenderDto.fromJson(Map<String, dynamic> json) {
       ]) ??
       'No category',
     postedAt: DateTime.parse(json['postedAt'] as String),
-   images: (json['images'] != null && (json['images'] as List).isNotEmpty)
-        ? TenderImageDto.fromJson(json['images'][0]) 
-        : null,
+    images: _readImages(json) ?? const [],
   );
 }
 
@@ -139,11 +193,50 @@ factory TenderDto.fromJson(Map<String, dynamic> json) {
         'categoryId': categoryId,
         'categoryName': categoryName,
         'postedAt': postedAt.toIso8601String(),
-        'images': images != null
-            ? {
-                'url': images!.imageUrl,
-                'isPrimary': images!.isPrimary,
-              }
-            : null,
+        'images': images
+            .map(
+              (image) => {
+                'imageUrl': image.imageUrl,
+                'isPrimary': image.isPrimary,
+              },
+            )
+            .toList(),
       };
+
+      
+  // Maps your existing TenderStatus enum → TenderCardWidget's TenderStatus enum
+  TenderStatus mapStatus(TenderStatus status) {
+    switch (status) {
+      case TenderStatus.open:
+        return TenderStatus.open;
+      case TenderStatus.closed:
+        return TenderStatus.closed;
+      default:
+        return TenderStatus.open;
+    }
+  }
+
+  // Converts TenderDto → TenderModel expected by the card widget
+  TenderCardModel toCardModel(TenderDto dto) {
+    return TenderCardModel(
+      id: dto.id.toString(),
+
+      title: dto.title,
+      category: dto.categoryName,
+
+      status: mapStatus(dto.status),
+
+      valueKM: dto.maxBudget,
+
+      // Datumi
+      deadline: dto.deadline,
+      postedAt: dto.postedAt,
+
+      tags: [dto.locationName, dto.country],
+
+      imageUrl: dto.primaryImage?.imageUrl,
+      location: dto.locationName,
+    );
+  }
+
 }

@@ -31,44 +31,47 @@ namespace TenderGo.Services.Services
             _httpContextAccessor = httpContextAccessor;
         }
 
-        public async Task<PagedResult<T>>Get(PagedResult<T> pagedResult)
+        protected virtual IQueryable<TDb> AddIncludes(IQueryable<TDb> query) => query;
+
+        public async Task<T?> GetById(int id)
         {
             var query = _context.Set<TDb>().AsQueryable();
+
+            query = AddIncludes(query);
+
+            var entity = await query.FirstOrDefaultAsync(e => EF.Property<int>(e, "Id") == id)
+                 ?? throw new UserException($"{typeof(TDb).Name} not found");
+
+            return _mapper.Map<T>(entity);
+        }
+
+        public async Task<PagedResult<T>> Get(PagedResult<T> pagedResult)
+        {
+            var query = _context.Set<TDb>().AsQueryable();
+
+            query = AddIncludes(query); 
             query = ApplyFilter(query);
 
             var totalCount = await query.CountAsync();
 
-
-            var list=await query
+            var list = await query
                 .Skip((pagedResult.Page - 1) * pagedResult.PageSize)
                 .Take(pagedResult.PageSize)
                 .ToListAsync();
 
-
-
             return new PagedResult<T>
             {
-                
                 Result = _mapper.Map<List<T>>(list),
-
                 TotalCount = totalCount,
                 Page = pagedResult.Page,
                 PageSize = pagedResult.PageSize
             };
         }
 
-
         protected virtual IQueryable<TDb> ApplyFilter(IQueryable<TDb> query) => query;
 
-        public async Task<T?>GetById(int id)
-        {
-            var entity = await _context.Set<TDb>().FindAsync(id)
-      ?? throw new UserException($"{typeof(TDb).Name} not found");
-
-            return _mapper.Map<T>(entity);
-
-
-        }
+        
+        
         public virtual async Task<T> Insert(TInsert request)
         {
             var entity = _mapper.Map<TDb>(request);

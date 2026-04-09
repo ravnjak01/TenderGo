@@ -1,25 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using TenderGo.Models.DTOs;
 
-namespace TenderGo.Models.DTOs
+public class BidDTO : IHasId
 {
-    public class BidDTO:IHasId
-    {
-        public int Id { get; set; }
-
-        public int TenderId { get; set; }
-
-        // Umjesto cijelog objekta Tender, često je korisno poslati samo Naslov
-        public string TenderTitle { get; set; }
-
-        public string SubmittedByUserId { get; set; }
-
-        public string SubmittedByUserName { get; set; }
-
-        public decimal OfferedPrice { get; set; }
-        public DateTime SubmittedAt { get; set; }
-    }
+    public int Id { get; set; }
+    public int TenderId { get; set; }
+    public string TenderTitle { get; set; } = string.Empty;
+    public string SubmittedByUserId { get; set; } = string.Empty;
+    public string SubmittedByUserName { get; set; } = string.Empty;
+    public decimal OfferedPrice { get; set; }
+    public DateTime SubmittedAt { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public string? Proposal { get; set; }
+    public int? DeliveryDays { get; set; }
 }

@@ -148,7 +148,7 @@ builder.Services.AddCors(options => {
 
 // --- OVDE SE ZAKLJUČAVAJU SERVISI ---
 var app = builder.Build();
-app.UseMiddleware<GlobalExceptionMiddleware>();
+//app.UseMiddleware<GlobalExceptionMiddleware>();
 
 
 
