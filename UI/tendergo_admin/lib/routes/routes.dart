@@ -8,7 +8,6 @@ import 'package:tendergo_admin/screens/tender_shell_screen.dart';
 import 'package:tendergo_admin/screens/registration_screen.dart';
 import 'package:tendergo_admin/screens/reset_passsword.screen.dart';
 import 'package:tendergo_admin/screens/splash_screen.dart';
-import 'package:tendergo_admin/screens/tenders_list_screen.dart';
 import 'package:tendergo_admin/services/auth_service.dart';
 import 'package:tendergo_admin/services/dio_client.dart';
 import 'package:tendergo_admin/services/tender_service.dart';

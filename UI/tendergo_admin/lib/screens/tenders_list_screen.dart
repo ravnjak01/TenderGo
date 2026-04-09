@@ -28,7 +28,7 @@ class TenderListScreen extends StatefulWidget {
 
 class _TenderListScreenState extends State<TenderListScreen> {
   final Set<int> _savedIds = {};
-  String _selectedCategory = 'All';
+  final Set<String> selectedCategory = {'All'};
   final CategoryService _categoryService = CategoryService(DioClient.getDio());
   final List<String> _categories = ['All'];
 
@@ -200,15 +200,11 @@ class _TenderListScreenState extends State<TenderListScreen> {
             }
 
             final tenders = provider.tenders;
-            final filteredTenders = _selectedCategory == 'All'
+            final filteredTenders = selectedCategory.contains('All')
                 ? tenders
                 : tenders
-                    .where((t) => t.categoryName == _selectedCategory)
+                    .where((t) => selectedCategory.contains(t.categoryName))
                     .toList();
-
-            if (filteredTenders.isEmpty) {
-              return const Center(child: Text('No active tenders available.'));
-            }
 
             return SingleChildScrollView(
               padding: const EdgeInsets.all(16),
@@ -236,11 +232,26 @@ class _TenderListScreenState extends State<TenderListScreen> {
                                   children: _categories.map((cat) {
                                     return CategoryChipWidget(
                                       label: cat,
-                                      isSelected: _selectedCategory == cat,
+                                      isSelected: selectedCategory.contains(cat),
                                       onTap: () {
                                         setState(() {
-                                          _selectedCategory = cat;
-                                          // Ovdje možeš pozvati provider da filtrira listu
+                                          if (cat == 'All') {
+                                            selectedCategory.clear();
+                                            selectedCategory.add('All');
+                                          } else {
+                                            selectedCategory.remove('All');
+                                            
+                                            if (selectedCategory.contains(cat)) {
+                                              selectedCategory.remove(cat);
+                                            } else {
+                                              selectedCategory.add(cat);
+                                            }
+                                            
+                                            // Ako si sve odznačio, vrati na 'All'
+                                            if (selectedCategory.isEmpty) {
+                                              selectedCategory.add('All');
+                                            }
+                                          }
                                         });
                                       },
                                     );
@@ -295,62 +306,70 @@ class _TenderListScreenState extends State<TenderListScreen> {
                       ],
                     ),
                   ),
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      // Izračun broja kolona
-                      int crossAxisCount = 1;
-                      if (constraints.maxWidth >= 900) {
-                        crossAxisCount = 3;
-                      } else if (constraints.maxWidth >= 600) {
-                        crossAxisCount = 2;
-                      }
+                  if (filteredTenders.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 48),
+                      child: Center(
+                        child: Text('No tenders match the selected filters.'),
+                      ),
+                    )
+                  else
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        // Izračun broja kolona
+                        int crossAxisCount = 1;
+                        if (constraints.maxWidth >= 900) {
+                          crossAxisCount = 3;
+                        } else if (constraints.maxWidth >= 600) {
+                          crossAxisCount = 2;
+                        }
 
-                      final double spacing = 14.0;
-                      final cardWidth =
-                          (constraints.maxWidth -
-                              (spacing * (crossAxisCount - 1))) /
-                          crossAxisCount;
+                        final double spacing = 14.0;
+                        final cardWidth =
+                            (constraints.maxWidth -
+                                (spacing * (crossAxisCount - 1))) /
+                            crossAxisCount;
 
-                      return Wrap(
-                        spacing: spacing,
-                        runSpacing: spacing,
-                        children: filteredTenders.map((dto) {
-                          final model = dto.toCardModel(dto);
-                          return SizedBox(
-                            width: cardWidth,
-                            child: TenderCardWidget(
-                              tender: model,
-                              isSaved: _savedIds.contains(dto.id),
-                              onTap: () {
-                                if (widget.onTenderSelected != null) {
-                                  widget.onTenderSelected!(dto.id);
-                                  return;
-                                }
-
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => TenderDetailsScreen(
-                                      tenderService: widget.tenderService,
-                                      tenderId: dto.id,
-                                    ),
-                                  ),
-                                );
-                              },
-                              onSave: () {
-                                setState(() {
-                                  if (_savedIds.contains(dto.id)) {
-                                    _savedIds.remove(dto.id);
-                                  } else {
-                                    _savedIds.add(dto.id);
+                        return Wrap(
+                          spacing: spacing,
+                          runSpacing: spacing,
+                          children: filteredTenders.map((dto) {
+                            final model = dto.toCardModel(dto);
+                            return SizedBox(
+                              width: cardWidth,
+                              child: TenderCardWidget(
+                                tender: model,
+                                isSaved: _savedIds.contains(dto.id),
+                                onTap: () {
+                                  if (widget.onTenderSelected != null) {
+                                    widget.onTenderSelected!(dto.id);
+                                    return;
                                   }
-                                });
-                              },
-                            ),
-                          );
-                        }).toList(),
-                      );
-                    },
-                  ),
+
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => TenderDetailsScreen(
+                                        tenderService: widget.tenderService,
+                                        tenderId: dto.id,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                onSave: () {
+                                  setState(() {
+                                    if (_savedIds.contains(dto.id)) {
+                                      _savedIds.remove(dto.id);
+                                    } else {
+                                      _savedIds.add(dto.id);
+                                    }
+                                  });
+                                },
+                              ),
+                            );
+                          }).toList(),
+                        );
+                      },
+                    ),
                 ],
               ),
             );

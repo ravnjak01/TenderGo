@@ -24,7 +24,7 @@ class CategoryChipWidget extends StatelessWidget {
             width: 1,
           ),
           boxShadow: isSelected 
-            ? [BoxShadow(color: Colors.blue.withOpacity(0.1), blurRadius: 4, offset: const Offset(0, 2))]
+            ? [BoxShadow(color: Colors.blue.withValues(alpha:0.1), blurRadius: 4, offset: const Offset(0, 2))]
             : null,
         ),
         child: Text(
