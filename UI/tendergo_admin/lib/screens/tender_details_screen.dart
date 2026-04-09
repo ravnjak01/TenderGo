@@ -11,11 +11,13 @@ import 'package:tendergo_admin/services/tender_service.dart';
 class TenderDetailsScreen extends StatefulWidget {
   final TenderService tenderService;
   final int? tenderId;
+  final bool embedded;
 
   const TenderDetailsScreen({
     super.key,
     required this.tenderService,
     this.tenderId,
+    this.embedded = false,
   });
 
   @override
@@ -79,6 +81,62 @@ class _TenderDetailsScreenState extends State<TenderDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final content = _tenderFuture == null
+        ? const Center(child: Text('Missing tender id.'))
+        : FutureBuilder<TenderDto>(
+            future: _tenderFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (snapshot.hasError || !snapshot.hasData) {
+                return Center(child: Text('Error: ${snapshot.error}'));
+              }
+
+              final tender = snapshot.data!;
+              final imageUrls = _extractImageUrls(tender);
+
+              return LayoutBuilder(
+                builder: (context, constraints) {
+                  final bool isWide = constraints.maxWidth >= 980;
+
+                  return SingleChildScrollView(
+                    child: Container(
+                      color: AppColors.surface,
+                      padding: const EdgeInsets.all(24.0),
+                      child: isWide
+                          ? Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  flex: 2,
+                                  child: _buildTenderSection(tender, imageUrls),
+                                ),
+                                const SizedBox(width: 24),
+                                Expanded(
+                                  child: _buildBidSection(tender),
+                                ),
+                              ],
+                            )
+                          : Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildTenderSection(tender, imageUrls),
+                                const SizedBox(height: 24),
+                                _buildBidSection(tender),
+                              ],
+                            ),
+                    ),
+                  );
+                },
+              );
+            },
+          );
+
+    if (widget.embedded) {
+      return content;
+    }
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -88,57 +146,7 @@ class _TenderDetailsScreenState extends State<TenderDetailsScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
-      body: _tenderFuture == null
-          ? const Center(child: Text('Missing tender id.'))
-          : FutureBuilder<TenderDto>(
-              future: _tenderFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError || !snapshot.hasData) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
-                }
-
-                final tender = snapshot.data!;
-                final imageUrls = _extractImageUrls(tender);
-
-                return LayoutBuilder(
-                  builder: (context, constraints) {
-                    final bool isWide = constraints.maxWidth >= 980;
-
-                    return SingleChildScrollView(
-                      child: Container(
-                        color: AppColors.surface,
-                        padding: const EdgeInsets.all(24.0),
-                        child: isWide
-                            ? Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Expanded(
-                                    flex: 2,
-                                    child: _buildTenderSection(tender, imageUrls),
-                                  ),
-                                  const SizedBox(width: 24),
-                                  Expanded(
-                                    child: _buildBidSection(tender),
-                                  ),
-                                ],
-                              )
-                            : Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  _buildTenderSection(tender, imageUrls),
-                                  const SizedBox(height: 24),
-                                  _buildBidSection(tender),
-                                ],
-                              ),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
+      body: content,
     );
   }
 

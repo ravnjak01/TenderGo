@@ -12,8 +12,15 @@ import 'package:tendergo_admin/screens/tender_details_screen.dart';
 
 class TenderListScreen extends StatefulWidget {
   final TenderService tenderService;
+  final bool embedded;
+  final ValueChanged<int>? onTenderSelected;
 
-  const TenderListScreen({super.key, required this.tenderService});
+  const TenderListScreen({
+    super.key,
+    required this.tenderService,
+    this.embedded = false,
+    this.onTenderSelected,
+  });
 
   @override
   State<TenderListScreen> createState() => _TenderListScreenState();
@@ -78,6 +85,13 @@ class _TenderListScreenState extends State<TenderListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.embedded) {
+      return Container(
+        color: const Color(0xFFF4F2EB),
+        child: _buildBody(),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF4F2EB),
       appBar: AppBar(
@@ -170,7 +184,12 @@ class _TenderListScreenState extends State<TenderListScreen> {
             child: Container(height: 0.5, color: const Color(0xFFE5E3DC)),
           ),
         ),
-      body: Consumer<TenderProvider>(
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    return Consumer<TenderProvider>(
         builder: (context, provider, _) {
             if (provider.isLoading) {
               return const Center(child: CircularProgressIndicator());
@@ -302,14 +321,21 @@ class _TenderListScreenState extends State<TenderListScreen> {
                             child: TenderCardWidget(
                               tender: model,
                               isSaved: _savedIds.contains(dto.id),
-                              onTap: () => Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => TenderDetailsScreen(
-                                    tenderService: widget.tenderService,
-                                    tenderId: dto.id,
+                              onTap: () {
+                                if (widget.onTenderSelected != null) {
+                                  widget.onTenderSelected!(dto.id);
+                                  return;
+                                }
+
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => TenderDetailsScreen(
+                                      tenderService: widget.tenderService,
+                                      tenderId: dto.id,
+                                    ),
                                   ),
-                                ),
-                              ),
+                                );
+                              },
                               onSave: () {
                                 setState(() {
                                   if (_savedIds.contains(dto.id)) {
@@ -329,7 +355,6 @@ class _TenderListScreenState extends State<TenderListScreen> {
               ),
             );
           },
-        ),
-    );
+        );
   }
 }

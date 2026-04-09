@@ -4,6 +4,7 @@ import 'package:tendergo_admin/screens/home_screen.dart';
 import 'package:tendergo_admin/screens/login_screen.dart';
 import 'package:tendergo_admin/screens/tender_details_screen.dart';
 import 'package:tendergo_admin/screens/tender_post_screen.dart';
+import 'package:tendergo_admin/screens/tender_shell_screen.dart';
 import 'package:tendergo_admin/screens/registration_screen.dart';
 import 'package:tendergo_admin/screens/reset_passsword.screen.dart';
 import 'package:tendergo_admin/screens/splash_screen.dart';
@@ -37,7 +38,7 @@ class AppRoutes {
       registration: (context) => RegistrationScreen(authService: authService),
       forgotPassword: (context) => ForgotPasswordScreen(authService: authService),
       resetPassword: (context) => ResetPasswordScreen(authService: authService), 
-      tenderList: (context) => TenderListScreen(tenderService: tenderService),
+      tenderList: (context) => TenderShellScreen(tenderService: tenderService),
       tenderPost: (context) => TenderPostScreen(tenderService: tenderService),
       tenderDetails: (context) => TenderDetailsScreen(tenderService: tenderService),
 
