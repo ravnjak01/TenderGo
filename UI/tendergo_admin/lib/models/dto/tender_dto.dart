@@ -16,7 +16,26 @@ class TenderDto {
   final int categoryId;
   final String categoryName;
   final DateTime postedAt; 
-  final TenderImageDto? images;
+  final List<TenderImageDto> images;
+
+  TenderImageDto? get primaryImage {
+    if (images.isEmpty) return null;
+
+    for (final image in images) {
+      if (image.isPrimary && image.imageUrl.trim().isNotEmpty) {
+        return image;
+      }
+    }
+
+    for (final image in images) {
+      if (image.imageUrl.trim().isNotEmpty) {
+        return image;
+      }
+    }
+
+    return null;
+  }
+
   TenderDto({
     required this.id,
     required this.title,
@@ -80,6 +99,42 @@ class TenderDto {
     return 0;
   }
 
+  static List<TenderImageDto>? _readImages(Map<String, dynamic> json) {
+    final rawImages = json['images'];
+
+    try {
+      if (rawImages is List) {
+        final parsed = rawImages
+            .whereType<Map<String, dynamic>>()
+            .map(TenderImageDto.fromJson)
+            .where((image) => image.imageUrl.trim().isNotEmpty)
+            .toList();
+
+        return parsed;
+      }
+
+      if (rawImages is Map<String, dynamic>) {
+        final image = TenderImageDto.fromJson(rawImages);
+        if (image.imageUrl.trim().isNotEmpty) {
+          return [image];
+        }
+      }
+
+      final String? fallbackImageUrl = _firstNonEmptyString([
+        json['imageUrl'],
+        json['primaryImageUrl'],
+      ]);
+
+      if (fallbackImageUrl != null) {
+        return [TenderImageDto(imageUrl: fallbackImageUrl, isPrimary: true)];
+      }
+    } catch (_) {
+      // Keep tender parsing resilient even if image payload has invalid shape.
+    }
+
+    return null;
+  }
+
 
 
 factory TenderDto.fromJson(Map<String, dynamic> json) {
@@ -118,9 +173,7 @@ factory TenderDto.fromJson(Map<String, dynamic> json) {
       ]) ??
       'No category',
     postedAt: DateTime.parse(json['postedAt'] as String),
-   images: (json['images'] != null && (json['images'] as List).isNotEmpty)
-        ? TenderImageDto.fromJson(json['images'][0]) 
-        : null,
+    images: _readImages(json) ?? const [],
   );
 }
 
@@ -139,11 +192,13 @@ factory TenderDto.fromJson(Map<String, dynamic> json) {
         'categoryId': categoryId,
         'categoryName': categoryName,
         'postedAt': postedAt.toIso8601String(),
-        'images': images != null
-            ? {
-                'url': images!.imageUrl,
-                'isPrimary': images!.isPrimary,
-              }
-            : null,
+        'images': images
+            .map(
+              (image) => {
+                'imageUrl': image.imageUrl,
+                'isPrimary': image.isPrimary,
+              },
+            )
+            .toList(),
       };
 }

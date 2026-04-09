@@ -11,6 +11,7 @@ import 'package:tendergo_admin/models/enums/tenderstatus.dart';
 import 'package:tendergo_admin/widgets/category_chip_widget.dart';
 import 'package:tendergo_admin/widgets/tender_widget.dart';
 import 'package:tendergo_admin/screens/tender_post_screen.dart';
+import 'package:tendergo_admin/screens/tender_details_screen.dart';
 
 class TenderListScreen extends StatefulWidget {
   final TenderService tenderService;
@@ -108,7 +109,7 @@ class _TenderListScreenState extends State<TenderListScreen> {
 
       tags: [dto.locationName, dto.country],
 
-      imageUrl: dto.images?.imageUrl,
+      imageUrl: dto.primaryImage?.imageUrl,
       location: dto.locationName,
     );
   }
@@ -269,7 +270,7 @@ class _TenderListScreenState extends State<TenderListScreen> {
                             const SizedBox(width: 12),
                             TextButton.icon(
                               onPressed: () {
-                                //napraviti novi screen za ovaj dio
+                                
                                 _showLocationPicker(context);
                               },
                               icon: const Icon(
@@ -339,10 +340,13 @@ class _TenderListScreenState extends State<TenderListScreen> {
                             child: TenderCardWidget(
                               tender: model,
                               isSaved: _savedIds.contains(dto.id),
-                              onTap: () => Navigator.pushNamed(
-                                context,
-                                '/tender-detail',
-                                arguments: dto,
+                              onTap: () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => TenderDetailsScreen(
+                                    tenderService: widget.tenderService,
+                                    tenderId: dto.id,
+                                  ),
+                                ),
                               ),
                               onSave: () {
                                 setState(() {

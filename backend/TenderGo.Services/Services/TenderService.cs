@@ -36,6 +36,14 @@ namespace TenderGo.Services.Services
             _serviceProvider = serviceProvider;
         }
 
+        protected override IQueryable<Tender> AddIncludes(IQueryable<Tender> query)
+        {
+            return query
+                .Include(t => t.Category)
+                .Include(t => t.CreatedByUser)
+                .Include(t => t.Bids);
+        }
+
         public async Task<IEnumerable<TenderDTO>> GetActiveTenders()
         {
             var tenders = await _context.Tenders
@@ -112,7 +120,7 @@ namespace TenderGo.Services.Services
                 entity.Country = parts.Length >= 2 ? parts[1].Trim() : "Unknown";
             }
 
-            entity.Status = TenderStatus.Open;  // ✅ directly Open, no Draft step
+            entity.Status = TenderStatus.Open;  
             entity.PostedAt = DateTime.UtcNow;
             entity.CreatedAt = DateTime.UtcNow;
             entity.CreatedByUserId = _authService.GetCurrentUserId();
