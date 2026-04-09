@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:tendergo_admin/core/error/api_error_handler.dart';
+import 'package:tendergo_admin/core/error/bid_error_handler.dart';
 import 'package:tendergo_admin/core/network/constants/bid_api_endpoints.dart';
 import 'package:tendergo_admin/models/dto/bid_dto.dart';
 
@@ -24,79 +26,9 @@ class BidService {
 		);
 	}
 
-	BidDto _parseBid(dynamic data) {
-		if (data is Map<String, dynamic>) {
-			return BidDto.fromJson(data);
-		}
 
-		throw const FormatException('Invalid bid payload format.');
-	}
 
-	List<BidDto> _parseBidList(dynamic data) {
-		if (data is List) {
-			return data
-				.whereType<Map<String, dynamic>>()
-				.map(BidDto.fromJson)
-				.toList();
-		}
 
-		if (data is Map<String, dynamic>) {
-			final dynamic listLike = data['items'] ?? data['data'] ?? data['results'];
-			if (listLike is List) {
-				return listLike
-					.whereType<Map<String, dynamic>>()
-					.map(BidDto.fromJson)
-					.toList();
-			}
-		}
-
-		throw const FormatException('Invalid bids payload format.');
-	}
-
-	String? _extractErrorMessage(dynamic data) {
-  if (data == null) return null;
-
-  try {
-    // Tvoj backend šalje: {"errors": {"UserError": ["Poruka"], "ERROR": ["Poruka"]}}
-    if (data is Map<String, dynamic> && data.containsKey('errors')) {
-      var errors = data['errors'] as Map<String, dynamic>;
-
-      if (errors.isNotEmpty) {
-        // Uzimamo prvu listu grešaka (npr. UserError ili ERROR)
-        var firstKey = errors.keys.first;
-        var errorList = errors[firstKey] as List<dynamic>;
-
-        if (errorList.isNotEmpty) {
-          return errorList.first.toString();
-        }
-      }
-    }
-    
-    // Fallback ako je format drugačiji (npr. direktna poruka)
-    if (data is Map && data.containsKey('message')) {
-      return data['message'];
-    }
-  } catch (e) {
-    print("Greška pri parsiranju error poruke: $e");
-  }
-
-  return null;
-}
-bool _isDuplicateBidError(DioException e, String message) {
-  // Provjera preko sadržaja poruke koju smo dobili od UserException-a
-  final duplicatePhrases = [
-    'already sent a bid',
-    'već ste poslali ponudu',
-    'bid already exists'
-  ];
-
-  bool containsPhrase = duplicatePhrases.any(
-    (phrase) => message.toLowerCase().contains(phrase.toLowerCase())
-  );
-
-  // Provjera preko status koda (ErrorFilter šalje 400 za UserException)
-  return e.response?.statusCode == 400 && containsPhrase;
-}
 	// ===== GET ALL =====
 	Future<List<BidDto>> getAll({int page = 1, int pageSize = 10}) async {
 		try {
@@ -109,13 +41,16 @@ bool _isDuplicateBidError(DioException e, String message) {
 				options: await _options(),
 			);
 
-			return _parseBidList(response.data);
+			return BidDto.parseBidList(response.data);
 		} on DioException catch (e) {
-			final message = _extractErrorMessage(e.response?.data) ?? 'Error fetching bids';
-			throw BidServiceException(
-				message: message,
-				statusCode: e.response?.statusCode,
-			);
+			final message = ApiErrorHandler.extractErrorMessage(e.response?.data) ?? 'Error fetching bids';
+			if (BidErrorHandler.isDuplicateBidError(e, message)) {
+        throw BidAlreadyExistsException(message: message);
+      }
+      throw BidServiceException(
+        message: message,
+        statusCode: e.response?.statusCode,
+      );
 		}
 	}
 
@@ -127,9 +62,12 @@ bool _isDuplicateBidError(DioException e, String message) {
 				options: await _options(),
 			);
 
-			return _parseBid(response.data);
+			return BidDto.parseBid(response.data);
 		} on DioException catch (e) {
-			final message = _extractErrorMessage(e.response?.data) ?? 'Error fetching bid';
+			final message = ApiErrorHandler.extractErrorMessage(e.response?.data) ?? 'Error fetching bid';
+			if (BidErrorHandler.isDuplicateBidError(e, message)) {
+        throw BidAlreadyExistsException(message: message);
+      }
 			throw BidServiceException(
 				message: message,
 				statusCode: e.response?.statusCode,
@@ -146,13 +84,12 @@ bool _isDuplicateBidError(DioException e, String message) {
       options: await _options(),
     );
 
-    return _parseBid(response.data);
+    return BidDto.parseBid(response.data);
   } on DioException catch (e) {
-    // Ovde izvlačimo tačnu poruku sa servera
-    final message = _extractErrorMessage(e.response?.data) ?? 'Error creating bid';
+    final message = ApiErrorHandler.extractErrorMessage(e.response?.data) ?? 'Error creating bid';
 
     // Logika za specifične izuzetke
-    if (_isDuplicateBidError(e, message)) {
+    if (BidErrorHandler.isDuplicateBidError(e, message)) {
       throw BidAlreadyExistsException(message: message);
     }
 
@@ -216,7 +153,7 @@ bool _isDuplicateBidError(DioException e, String message) {
 				options: await _options(),
 			);
 
-			return _parseBidList(response.data);
+			return BidDto.parseBidList(response.data);
 		} on DioException catch (e) {
 			throw Exception(e.response?.data ?? 'Error fetching bids by tender');
 		}
@@ -237,19 +174,3 @@ bool _isDuplicateBidError(DioException e, String message) {
 	}
 }
 
-class BidServiceException implements Exception {
-	final String message;
-	final int? statusCode;
-
-	const BidServiceException({
-		required this.message,
-		this.statusCode,
-	});
-
-	@override
-	String toString() => message;
-}
-
-class BidAlreadyExistsException extends BidServiceException {
-	const BidAlreadyExistsException({required super.message});
-}

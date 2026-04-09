@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:tendergo_admin/core/error/bid_error_handler.dart';
 import 'package:tendergo_admin/core/theme/app_theme.dart';
 import 'package:tendergo_admin/models/dto/bid_dto.dart';
 import 'package:tendergo_admin/models/dto/tender_dto.dart';
@@ -356,9 +357,9 @@ class _TenderDetailsScreenState extends State<TenderDetailsScreen> {
       setState(() {
         _tenderFuture = _loadTender(tender.id);
       });
-    } on BidAlreadyExistsException catch (e) {   // ← add 'catch (e)'
+    } on BidAlreadyExistsException catch (e) {   
   setState(() {
-    _bidError = e.message;                  // ← use the actual backend message
+    _bidError = e.message;                  
   });
 } on BidServiceException catch (e) {
       if (!mounted) return;

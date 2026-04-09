@@ -74,6 +74,35 @@ class BidDto {
 		);
 	}
 
+   	static BidDto parseBid(dynamic data) {
+		if (data is Map<String, dynamic>) {
+			return BidDto.fromJson(data);
+		}
+
+		throw const FormatException('Invalid bid payload format.');
+	}
+
+	static List<BidDto> parseBidList(dynamic data) {
+		if (data is List) {
+			return data
+				.whereType<Map<String, dynamic>>()
+				.map(BidDto.fromJson)
+				.toList();
+		}
+
+		if (data is Map<String, dynamic>) {
+			final dynamic listLike = data['items'] ?? data['data'] ?? data['results'];
+			if (listLike is List) {
+				return listLike
+					.whereType<Map<String, dynamic>>()
+					.map(BidDto.fromJson)
+					.toList();
+			}
+		}
+
+		throw const FormatException('Invalid bids payload format.');
+	}
+
 	Map<String, dynamic> toJson() {
 		return {
 			'id': id,
@@ -88,6 +117,8 @@ class BidDto {
 			'deliveryDays': deliveryDays,
 		};
 	}
+
+  
 }
 
 class BidInsertRequest {
@@ -116,4 +147,7 @@ class BidInsertRequest {
 
 		return payload;
   }
+
+ 
+
 }

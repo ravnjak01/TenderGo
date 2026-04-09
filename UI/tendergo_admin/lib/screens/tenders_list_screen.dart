@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tendergo_admin/models/dto/category_dto.dart';
-import 'package:tendergo_admin/models/dto/tender_dto.dart';
-import 'package:tendergo_admin/models/ui/tendercardmodel.dart';
 import 'package:tendergo_admin/providers/tender_provider.dart';
 import 'package:tendergo_admin/services/category_service.dart';
 import 'package:tendergo_admin/services/dio_client.dart';
 import 'package:tendergo_admin/services/tender_service.dart';
-import 'package:tendergo_admin/models/enums/tenderstatus.dart';
 import 'package:tendergo_admin/widgets/category_chip_widget.dart';
 import 'package:tendergo_admin/widgets/tender_widget.dart';
 import 'package:tendergo_admin/screens/tender_post_screen.dart';
@@ -76,41 +73,6 @@ class _TenderListScreenState extends State<TenderListScreen> {
           ),
         );
       },
-    );
-  }
-
-  // Maps your existing TenderStatus enum → TenderCardWidget's TenderStatus enum
-  TenderStatus _mapStatus(TenderStatus status) {
-    switch (status) {
-      case TenderStatus.open:
-        return TenderStatus.open;
-      case TenderStatus.closed:
-        return TenderStatus.closed;
-      default:
-        return TenderStatus.open;
-    }
-  }
-
-  // Converts TenderDto → TenderModel expected by the card widget
-  TenderCardModel _toCardModel(TenderDto dto) {
-    return TenderCardModel(
-      id: dto.id.toString(),
-
-      title: dto.title,
-      category: dto.categoryName,
-
-      status: _mapStatus(dto.status),
-
-      valueKM: dto.maxBudget,
-
-      // Datumi
-      deadline: dto.deadline,
-      postedAt: dto.postedAt,
-
-      tags: [dto.locationName, dto.country],
-
-      imageUrl: dto.primaryImage?.imageUrl,
-      location: dto.locationName,
     );
   }
 
@@ -334,7 +296,7 @@ class _TenderListScreenState extends State<TenderListScreen> {
                         spacing: spacing,
                         runSpacing: spacing,
                         children: filteredTenders.map((dto) {
-                          final model = _toCardModel(dto);
+                          final model = dto.toCardModel(dto);
                           return SizedBox(
                             width: cardWidth,
                             child: TenderCardWidget(

@@ -1,5 +1,6 @@
 import 'package:tendergo_admin/models/enums/tenderstatus.dart';
 import 'package:tendergo_admin/models/dto/tender_image_dto.dart';
+import 'package:tendergo_admin/models/ui/tendercardmodel.dart';
 
 class TenderDto {
   final int id;
@@ -201,4 +202,41 @@ factory TenderDto.fromJson(Map<String, dynamic> json) {
             )
             .toList(),
       };
+
+      
+  // Maps your existing TenderStatus enum → TenderCardWidget's TenderStatus enum
+  TenderStatus mapStatus(TenderStatus status) {
+    switch (status) {
+      case TenderStatus.open:
+        return TenderStatus.open;
+      case TenderStatus.closed:
+        return TenderStatus.closed;
+      default:
+        return TenderStatus.open;
+    }
+  }
+
+  // Converts TenderDto → TenderModel expected by the card widget
+  TenderCardModel toCardModel(TenderDto dto) {
+    return TenderCardModel(
+      id: dto.id.toString(),
+
+      title: dto.title,
+      category: dto.categoryName,
+
+      status: mapStatus(dto.status),
+
+      valueKM: dto.maxBudget,
+
+      // Datumi
+      deadline: dto.deadline,
+      postedAt: dto.postedAt,
+
+      tags: [dto.locationName, dto.country],
+
+      imageUrl: dto.primaryImage?.imageUrl,
+      location: dto.locationName,
+    );
+  }
+
 }
