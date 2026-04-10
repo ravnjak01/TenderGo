@@ -91,7 +91,11 @@ class BidDto {
 		}
 
 		if (data is Map<String, dynamic>) {
-			final dynamic listLike = data['items'] ?? data['data'] ?? data['results'];
+			final dynamic listLike =
+        data['result'] ??   
+        data['items'] ??
+        data['data'] ??
+        data['results'];
 			if (listLike is List) {
 				return listLike
 					.whereType<Map<String, dynamic>>()

@@ -1,3 +1,4 @@
+import 'package:tendergo_admin/models/dto/bid_dto.dart';
 import 'package:tendergo_admin/models/enums/tenderstatus.dart';
 import 'package:tendergo_admin/models/dto/tender_image_dto.dart';
 import 'package:tendergo_admin/models/ui/tendercardmodel.dart';
@@ -148,7 +149,7 @@ factory TenderDto.fromJson(Map<String, dynamic> json) {
     createdByUserId: json['createdByUserId'] as String,
     createdByFullname: json['createdByFullname'] as String,
     status: TenderStatus.fromInt(json['status'] as int),
-    totalBids: json['totalBids'] as int,
+    totalBids: json['totalBids'] ?? 0,
     locationName: _firstNonEmptyString([
         json['locationName'],
         json['location'],
