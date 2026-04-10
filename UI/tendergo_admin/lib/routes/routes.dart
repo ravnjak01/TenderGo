@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:tendergo_admin/screens/forgot_password_screen.dart';
 import 'package:tendergo_admin/screens/home_screen.dart';
 import 'package:tendergo_admin/screens/login_screen.dart';
+import 'package:tendergo_admin/screens/mytenders_screen.dart';
 import 'package:tendergo_admin/screens/tender_details_screen.dart';
 import 'package:tendergo_admin/screens/tender_post_screen.dart';
 import 'package:tendergo_admin/screens/tender_shell_screen.dart';
@@ -25,6 +26,7 @@ class AppRoutes {
   static const String tenderPost='/tender-post';
   static const String tenderDetails='/tender-details';
   static const String userProfile='/user-profile';
+  static const String myTenders='/my-tenders';
   static Map<String, WidgetBuilder> getRoutes() {
     // Kreiramo Dio instancu
     final dio = DioClient.getDio(); 
@@ -43,6 +45,7 @@ class AppRoutes {
       tenderPost: (context) => TenderPostScreen(tenderService: tenderService),
       tenderDetails: (context) => TenderDetailsScreen(tenderService: tenderService),
         userProfile: (context) => UserProfileScreen(authService: authService),
+        myTenders: (context) => MyTendersScreen(tenderService: tenderService),
       home: (context) => const HomeScreen(),
     };
   }
