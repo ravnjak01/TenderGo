@@ -7,7 +7,7 @@ import 'package:tendergo_admin/models/ui/auth_result.dart';
 
 class AuthService {
   final Dio _dio;
-  static const _storage = const FlutterSecureStorage();
+  static const _storage =  FlutterSecureStorage();
 
   AuthService(this._dio);
 

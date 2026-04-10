@@ -1,7 +1,3 @@
-class AuthDto {
-
-  
-}
 
 class ResetPasswordRequest {
   final String email;
@@ -24,23 +20,23 @@ class ResetPasswordRequest {
 }
 
 class UserDto {
-  final String id;
   final String email;
   final String username;
   final AddressDto? address;
   final List<String> roles;
-
+final String firstName;
+final String lastName;
   UserDto({
-    required this.id,
     required this.email,
     required this.username,
     this.address,
     required this.roles,
+      required this.firstName,
+    required this.lastName,
   });
 
   factory UserDto.fromJson(Map<String, dynamic> json) {
     return UserDto(
-      id: json['id'] ?? '',
       email: json['email'] ?? '',
       username: json['username'] ?? '',
       address: json['address'] != null 
@@ -49,18 +45,30 @@ class UserDto {
       roles: json['roles'] != null 
           ? List<String>.from(json['roles']) 
           : [],
+      firstName: json['firstName'] ?? '',
+      lastName: json['lastName'] ?? '',
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
       'email': email,
       'username': username,
       'address': address?.toJson(),
       'roles': roles,
+      'firstName': firstName,
+      'lastName': lastName,
     };
   }
+
+
+  // metoda za dobijanje inicijala korisnika
+static String getInitials(UserDto user) {
+  String initials = "";
+  if (user.firstName.isNotEmpty) initials += user.firstName[0];
+  if (user.lastName.isNotEmpty) initials += user.lastName[0];
+  return initials.isEmpty ? user.username[0].toUpperCase() : initials.toUpperCase();
+}
 }
 
 class LoginRequest {
@@ -116,6 +124,7 @@ class AddressDto {
     required this.city,
     required this.street,
     required this.postalCode,
+  
   });
 
   // Koristi se kada primaš podatke sa API-ja
@@ -126,13 +135,13 @@ class AddressDto {
       city: json['city'] ?? '',
       street: json['street'] ?? '',
       postalCode: json['postalCode'] ?? '',
+     
     );
   }
 
   // Koristi se kada šalješ podatke na API
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
       'country': country,
       'city': city,
       'street': street,
