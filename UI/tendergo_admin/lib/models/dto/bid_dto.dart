@@ -83,7 +83,13 @@ class BidDto {
 	}
 
 	static List<BidDto> parseBidList(dynamic data) {
+
+    if(data == null) {
+      return [];
+    }
+
 		if (data is List) {
+       if (data.isEmpty) return [];
 			return data
 				.whereType<Map<String, dynamic>>()
 				.map(BidDto.fromJson)
@@ -96,6 +102,8 @@ class BidDto {
         data['items'] ??
         data['data'] ??
         data['results'];
+        if (listLike == null) return [];
+        
 			if (listLike is List) {
 				return listLike
 					.whereType<Map<String, dynamic>>()

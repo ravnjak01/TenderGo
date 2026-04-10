@@ -15,7 +15,7 @@ class TenderCardModel {
     required this.location
   });
 
-  final String id;
+  final int id;
   final String title;
   final String category;
   final TenderStatus status;
@@ -28,7 +28,7 @@ class TenderCardModel {
 
   factory TenderCardModel.fromDTO(TenderDto dto) {
     return TenderCardModel(
-      id: dto.id.toString(), // Pretvaraš int u String na jednom mjestu
+      id: int.tryParse(dto.id.toString()) ?? 0, 
       title: dto.title,
       category: dto.categoryName,
       valueKM: dto.maxBudget,

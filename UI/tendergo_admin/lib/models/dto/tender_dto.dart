@@ -1,4 +1,3 @@
-import 'package:tendergo_admin/models/dto/bid_dto.dart';
 import 'package:tendergo_admin/models/enums/tenderstatus.dart';
 import 'package:tendergo_admin/models/dto/tender_image_dto.dart';
 import 'package:tendergo_admin/models/ui/tendercardmodel.dart';
@@ -220,7 +219,7 @@ factory TenderDto.fromJson(Map<String, dynamic> json) {
   // Converts TenderDto → TenderModel expected by the card widget
   TenderCardModel toCardModel(TenderDto dto) {
     return TenderCardModel(
-      id: dto.id.toString(),
+      id: dto.id,
 
       title: dto.title,
       category: dto.categoryName,

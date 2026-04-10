@@ -152,9 +152,10 @@ class BidService {
 				BidApiEndpoints.getByTender(tenderId),
 				options: await _options(),
 			);
-
+     if (response.data == null) return [];
 			return BidDto.parseBidList(response.data);
 		} on DioException catch (e) {
+      if (e.response?.statusCode == 404) return [];
 			throw Exception(e.response?.data ?? 'Error fetching bids by tender');
 		}
 	}

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:tendergo_admin/models/dto/tender_dto.dart';
 import 'package:tendergo_admin/models/ui/tendercardmodel.dart';
 import 'package:tendergo_admin/models/enums/tenderstatus.dart';
+import 'package:tendergo_admin/screens/tender_bids_screen.dart';
 import 'package:tendergo_admin/services/tender_service.dart';
 // Import your service — adjust path as needed:
 // import 'package:tendergo_admin/services/tender_service.dart';
@@ -289,6 +290,30 @@ class _TenderCard extends StatelessWidget {
                   ),
                 ],
               ),
+                                Align(
+                    alignment: Alignment.centerRight,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => TenderBidsScreen(
+                              tenderId: model.id,
+                              tenderTitle: model.title,
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.gavel_rounded, size: 16),
+                      label: const Text('See bids'),
+                      style: OutlinedButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                  ),
             ],
           ),
         ),
