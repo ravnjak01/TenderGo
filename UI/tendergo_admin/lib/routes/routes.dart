@@ -8,6 +8,7 @@ import 'package:tendergo_admin/screens/tender_shell_screen.dart';
 import 'package:tendergo_admin/screens/registration_screen.dart';
 import 'package:tendergo_admin/screens/reset_passsword.screen.dart';
 import 'package:tendergo_admin/screens/splash_screen.dart';
+import 'package:tendergo_admin/screens/user_profile_screen.dart';
 import 'package:tendergo_admin/services/auth_service.dart';
 import 'package:tendergo_admin/services/dio_client.dart';
 import 'package:tendergo_admin/services/tender_service.dart';
@@ -23,6 +24,7 @@ class AppRoutes {
   static const String tenderList = '/tenders';
   static const String tenderPost='/tender-post';
   static const String tenderDetails='/tender-details';
+  static const String userProfile='/user-profile';
   static Map<String, WidgetBuilder> getRoutes() {
     // Kreiramo Dio instancu
     final dio = DioClient.getDio(); 
@@ -37,10 +39,10 @@ class AppRoutes {
       registration: (context) => RegistrationScreen(authService: authService),
       forgotPassword: (context) => ForgotPasswordScreen(authService: authService),
       resetPassword: (context) => ResetPasswordScreen(authService: authService), 
-      tenderList: (context) => TenderShellScreen(tenderService: tenderService),
+      tenderList: (context) => TenderShellScreen(tenderService: tenderService, authService: authService),
       tenderPost: (context) => TenderPostScreen(tenderService: tenderService),
       tenderDetails: (context) => TenderDetailsScreen(tenderService: tenderService),
-
+        userProfile: (context) => UserProfileScreen(authService: authService),
       home: (context) => const HomeScreen(),
     };
   }

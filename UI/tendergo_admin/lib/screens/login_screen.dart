@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tendergo_admin/core/theme/app_theme.dart';
+import 'package:tendergo_admin/models/dto/auth_dto.dart';
+import 'package:tendergo_admin/routes/routes.dart';
 import 'package:tendergo_admin/screens/tenders_list_screen.dart';
 import 'package:tendergo_admin/services/auth_service.dart';
 import 'package:provider/provider.dart';
@@ -31,20 +33,17 @@ class _LoginScreenState extends State<LoginScreen> {
     final tenderProvider = Provider.of<TenderProvider>(context, listen: false);
 
     bool success = await widget.authService.login(
-      _emailController.text.trim(),
-      _passwordController.text,
+      LoginRequest(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      ),
     );
 
     // 2. Provjeri mounted status
     if (!mounted) return;
 
     if (success) {
-      // Koristi spremljenu referencu na tenderProvider.service umjesto context-a ponovo
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => TenderListScreen(tenderService: tenderProvider.service),
-        ),
-      );
+      Navigator.of(context).pushReplacementNamed(AppRoutes.tenderList);
     } else {
       setState(() {
         _isLoading = false;

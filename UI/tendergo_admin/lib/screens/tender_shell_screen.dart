@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:tendergo_admin/core/theme/app_theme.dart';
+import 'package:tendergo_admin/models/dto/auth_dto.dart';
 import 'package:tendergo_admin/providers/tender_provider.dart';
+import 'package:tendergo_admin/routes/routes.dart';
 import 'package:tendergo_admin/screens/tender_details_screen.dart';
 import 'package:tendergo_admin/screens/tender_post_screen.dart';
 import 'package:tendergo_admin/screens/tenders_list_screen.dart';
+import 'package:tendergo_admin/screens/user_profile_screen.dart';
+import 'package:tendergo_admin/services/auth_service.dart';
 import 'package:tendergo_admin/services/tender_service.dart';
 
 class TenderShellScreen extends StatefulWidget {
   final TenderService tenderService;
-
+  final AuthService authService;
   const TenderShellScreen({
     super.key,
     required this.tenderService,
+    required this.authService,
   });
 
   @override
@@ -20,11 +26,34 @@ class TenderShellScreen extends StatefulWidget {
 
 class _TenderShellScreenState extends State<TenderShellScreen> {
   int? _selectedTenderId;
+UserDto? _currentUser;
+
+@override
+  void initState() {
+    super.initState();
+    _loadUser(); // Učitaj korisnika pri pokretanju
+  }
+
+  Future<void> _loadUser() async {
+    final result = await widget.authService.getCurrentUser();
+    if (result.success && mounted) {
+      setState(() {
+        _currentUser = result.data;
+      });
+    }
+  }
 
   void _openTenderListFromTopBar() {
     setState(() {
       _selectedTenderId = null;
     });
+  }
+  void _openUserProfile() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => UserProfileScreen(authService: widget.authService),
+      ),
+    );
   }
 
   Future<void> _openPostTender() async {
@@ -42,9 +71,9 @@ class _TenderShellScreenState extends State<TenderShellScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F2EB),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.surface,
         elevation: 0,
         automaticallyImplyLeading: false,
         titleSpacing: 16,
@@ -58,7 +87,7 @@ class _TenderShellScreenState extends State<TenderShellScreen> {
                 child: Text(
                   'TenderGo',
                   style: TextStyle(
-                    color: Color(0xFF185FA5),
+                    color: AppColors.primary,
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
                   ),
@@ -111,16 +140,22 @@ class _TenderShellScreenState extends State<TenderShellScreen> {
                   child: const Text('+ Post a tender'),
                 ),
                 const SizedBox(width: 16),
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFE5E3DC),
-                    shape: BoxShape.circle,
+                InkWell(
+                 onTap: _openUserProfile,
+                  mouseCursor: SystemMouseCursors.click,
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    width: 38,
+                    height: 38,
+                    decoration: const BoxDecoration(
+                      color: AppColors.infoSurface, // Tvoja svijetlo plava iz teme
+                      shape: BoxShape.circle,
                   ),
-                  child: const Center(
+                  child:  Center(
                     child: Text(
-                      'JD',
+                      _currentUser != null 
+                        ? UserDto.getInitials(_currentUser!) 
+                      : '',
                       style: TextStyle(
                         color: Color(0xFF185FA5),
                         fontWeight: FontWeight.bold,
@@ -128,6 +163,7 @@ class _TenderShellScreenState extends State<TenderShellScreen> {
                       ),
                     ),
                   ),
+                ),
                 ),
               ],
             ),
