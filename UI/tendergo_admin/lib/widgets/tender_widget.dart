@@ -162,7 +162,7 @@ class _CardBody extends StatelessWidget {
                   const Icon(Icons.pin_drop_outlined, size: 12, color: Color(0xFF185FA5)),
                   const SizedBox(width: 4),
                   Text(
-                    tender.location,
+                    tender.locationName,
                     style: const TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
@@ -258,7 +258,6 @@ class _Tag extends StatelessWidget {
   Widget build(BuildContext context) {
 
     final theme = themeForCategory(label);
-    
     
     const primaryColor = Color(0xFF185FA5);
     return Container(

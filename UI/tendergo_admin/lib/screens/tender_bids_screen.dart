@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:tendergo_admin/models/dto/bid_dto.dart';
+import 'package:tendergo_admin/models/dto/tender_dto.dart';
 import 'package:tendergo_admin/services/bid_service.dart';
 import 'package:tendergo_admin/services/dio_client.dart';
+import 'package:tendergo_admin/services/tender_service.dart';
 
 class TenderBidsScreen extends StatefulWidget {
   final int tenderId;
   final String? tenderTitle;
+    final TenderDto tenderDto;           
+  final TenderService tenderService;
 
   const TenderBidsScreen({
     super.key,
     required this.tenderId,
     this.tenderTitle,
+    required this.tenderDto,
+    required this.tenderService,
   });
 
   @override
@@ -149,6 +155,9 @@ class _TenderBidsScreenState extends State<TenderBidsScreen> {
                     return _BidCard(
                       bid: bid,
                       statusColor: _statusColor(bid.status),
+                      tenderDto: widget.tenderDto,           // ← add
+                      tenderService: widget.tenderService,   // ← add
+                      onAwarded: _refresh,  
                     );
                   },
                 ),
@@ -164,8 +173,55 @@ class _TenderBidsScreenState extends State<TenderBidsScreen> {
 class _BidCard extends StatelessWidget {
   final BidDto bid;
   final Color statusColor;
+  final TenderDto tenderDto;           
+  final TenderService tenderService;   
+  final VoidCallback onAwarded;
 
-  const _BidCard({required this.bid, required this.statusColor});
+  const _BidCard({required this.bid, required this.statusColor, required this.tenderDto, required this.tenderService, required this.onAwarded });
+
+ Future<void> _award(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Award tender'),
+        content: Text(
+          'Award this tender to ${bid.submittedByUserName}?\n\nThis action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Award'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    try {
+      await tenderService.award(tenderDto, bid.id);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Tender awarded to ${bid.submittedByUserName}'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      onAwarded(); // refresh the list
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to award: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -309,6 +365,27 @@ class _BidCard extends StatelessWidget {
                 ),
               ),
             ],
+
+              if (bid.status.toLowerCase() == 'pending') ...[
+      const SizedBox(height: 14),
+      const Divider(height: 1),
+      const SizedBox(height: 10),
+      Align(
+        alignment: Alignment.centerRight,
+        child: FilledButton.icon(
+          onPressed: () => _award(context),
+          icon: const Icon(Icons.emoji_events_rounded, size: 16),
+          label: const Text('Award'),
+          style: FilledButton.styleFrom(
+            visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        ),
+      ),
+    ],
           ],
         ),
       ),

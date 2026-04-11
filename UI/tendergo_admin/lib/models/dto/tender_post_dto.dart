@@ -1,7 +1,7 @@
 class TenderInsertRequest {
   final String title;
   final double maxBudget;
-  final String location;
+  final String locationName;
   final String? description;
   final int categoryId;
   final DateTime deadline;
@@ -10,7 +10,7 @@ class TenderInsertRequest {
   TenderInsertRequest({
     required this.title,
     required this.maxBudget,
-    required this.location,
+    required this.locationName,
     this.description,
     required this.categoryId,
     required this.deadline,
@@ -22,7 +22,7 @@ Map<String, dynamic> toJson() {
   return {
     'title': title,
     'maxBudget': maxBudget,
-    'location': location,
+    'locationName': locationName,
     'description': description,
     'categoryId': categoryId,
     'deadline': deadline.toIso8601String(),
@@ -35,7 +35,7 @@ Map<String, dynamic> toJson() {
     return TenderInsertRequest(
       title: json['title'] as String,
       maxBudget: (json['maxBudget'] as num).toDouble(),
-      location: json['location'] as String,
+      locationName: json['locationName'] as String,
       description: json['description'] as String?,
       categoryId: json['categoryId'] as int,
       deadline: DateTime.parse(json['deadline'] as String),

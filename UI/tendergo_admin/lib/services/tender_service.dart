@@ -174,6 +174,19 @@ class TenderService {
       throw Exception(e.response?.data ?? 'Error activating tender');
     }
   }
+// ===== AWARD =====
+  Future<TenderDto> award(TenderDto tender, int bidId) async {
+    try {
+      final response = await _dio.patch(
+        TenderApiEndpoints.award(tender, bidId),
+        options: await _options(),
+      );
+
+      return TenderDto.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data ?? 'Error awarding tender');
+    }
+  }
 
   // ===== CANCEL =====
   Future<dynamic> cancel(int id) async {

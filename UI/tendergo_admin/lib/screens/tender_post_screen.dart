@@ -147,7 +147,7 @@ class _TenderPostScreenState extends State<TenderPostScreen>
       final request = TenderInsertRequest(
         title: _titleCtrl.text.trim(),
         maxBudget: double.parse(_budgetCtrl.text.trim()),
-        location: _locationCtrl.text.trim(),
+        locationName: _locationCtrl.text.trim(),
         description:
             _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
         categoryId: _selectedCategoryId!,
@@ -191,7 +191,7 @@ class _TenderPostScreenState extends State<TenderPostScreen>
       final request = TenderInsertRequest(
         title: _titleCtrl.text.trim(),
         maxBudget: double.parse(_budgetCtrl.text.trim()),
-        location: _locationCtrl.text.trim(),
+        locationName: _locationCtrl.text.trim(),
         description:
             _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
         categoryId: _selectedCategoryId!,

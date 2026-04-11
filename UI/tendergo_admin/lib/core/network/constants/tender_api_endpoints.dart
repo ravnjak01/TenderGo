@@ -1,3 +1,5 @@
+import 'package:tendergo_admin/models/dto/tender_dto.dart';
+
 class TenderApiEndpoints {
   static const String _tenderBase = 'tender';
 
@@ -45,8 +47,8 @@ class TenderApiEndpoints {
   static String cancel(int id) => '$_tenderBase/$id/cancel';
 
   /// PATCH /api/tender/{id}/award/{bidId}
-  static String award(int id, int bidId) =>
-      '$_tenderBase/$id/award/$bidId';
+  static String award(TenderDto tender, int bidId) =>
+      '$_tenderBase/${tender.id}/award/$bidId';
 
   /// GET /api/tender/{id}/allowedActions
   static String allowedActions(int id) =>

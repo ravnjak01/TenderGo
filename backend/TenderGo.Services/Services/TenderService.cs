@@ -189,11 +189,18 @@ namespace TenderGo.Services.Services
 
         public async Task<TenderDTO> Award(int id, int bidId)
         {
-            var tender = await _context.Tenders.FindAsync(id)
-                         ?? throw new NotFoundException("Tender not found",new {Entity="Tender",Id=id});
+            var tender = await _context.Tenders
+        .Include(t => t.Bids)
+        .FirstOrDefaultAsync(t => t.Id == id)
+        ?? throw new NotFoundException("Tender not found", new { Entity = "Tender", Id = id });
 
             var state = CreateState(tender.Status);
-            return await state.Award(id, bidId);
+
+            var resultDto = await state.Award(tender, bidId);
+
+            await _context.SaveChangesAsync();
+
+            return resultDto;
         }
 
 

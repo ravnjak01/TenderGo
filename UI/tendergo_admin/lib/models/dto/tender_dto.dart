@@ -235,7 +235,7 @@ factory TenderDto.fromJson(Map<String, dynamic> json) {
       tags: [dto.locationName, dto.country],
 
       imageUrl: dto.primaryImage?.imageUrl,
-      location: dto.locationName,
+      locationName: dto.locationName,
     );
   }
 

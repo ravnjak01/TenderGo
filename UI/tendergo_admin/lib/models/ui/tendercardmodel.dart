@@ -12,7 +12,7 @@ class TenderCardModel {
     required this.postedAt,
     required this.tags,
     this.imageUrl,
-    required this.location
+    required this.locationName
   });
 
   final int id;
@@ -24,7 +24,7 @@ class TenderCardModel {
   final DateTime postedAt;
   final List<String> tags;
   final String? imageUrl; // null → show placeholder
-  final String location; 
+  final String locationName; 
 
   factory TenderCardModel.fromDTO(TenderDto dto) {
     return TenderCardModel(
@@ -37,7 +37,7 @@ class TenderCardModel {
       postedAt: dto.postedAt,
       tags: [], 
       imageUrl: dto.primaryImage?.imageUrl, 
-      location: dto.locationName,
+      locationName: dto.locationName,
     );
   }
 }

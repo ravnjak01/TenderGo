@@ -145,6 +145,8 @@ class BidService {
 		}
 	}
 
+//dosao do prikazavinja ponuda po tendera,radi prikazuje se ,sljedece dodati dugme 
+//biranja ponude
 	// ===== BY TENDER =====
 	Future<List<BidDto>> getByTender(int tenderId) async {
 		try {

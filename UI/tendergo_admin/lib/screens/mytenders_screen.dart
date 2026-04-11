@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:tendergo_admin/models/dto/tender_dto.dart';
-import 'package:tendergo_admin/models/ui/tendercardmodel.dart';
 import 'package:tendergo_admin/models/enums/tenderstatus.dart';
 import 'package:tendergo_admin/screens/tender_bids_screen.dart';
 import 'package:tendergo_admin/services/tender_service.dart';
-// Import your service — adjust path as needed:
-// import 'package:tendergo_admin/services/tender_service.dart';
 
 class MyTendersScreen extends StatefulWidget {
   final TenderService _tenderService;
   const MyTendersScreen({super.key, required TenderService tenderService})
-      : _tenderService = tenderService;
+    : _tenderService = tenderService;
 
   @override
   State<MyTendersScreen> createState() => _MyTendersScreenState();
@@ -18,7 +15,7 @@ class MyTendersScreen extends StatefulWidget {
 
 class _MyTendersScreenState extends State<MyTendersScreen> {
   // ── state ──────────────────────────────────────────────────────────────────
-  final List<TenderCardModel> _tenders = [];
+  final List<TenderDto> _tenders = [];
   bool _isLoading = false;
   bool _hasError = false;
   String _errorMessage = '';
@@ -28,9 +25,6 @@ class _MyTendersScreenState extends State<MyTendersScreen> {
   static const int _pageSize = 10;
 
   final ScrollController _scrollController = ScrollController();
-
-
-
 
   // ── lifecycle ──────────────────────────────────────────────────────────────
   @override
@@ -47,50 +41,45 @@ class _MyTendersScreenState extends State<MyTendersScreen> {
   }
 
   // ── data fetching ──────────────────────────────────────────────────────────
- Future<void> _fetchTenders({bool refresh = false}) async {
-  if (_isLoading) return;
-  if (refresh) {
-    setState(() {
-      _currentPage = 1;
-      _tenders.clear();
-      _hasMore = true;
-      _hasError = false;
-    });
-  }
+  Future<void> _fetchTenders({bool refresh = false}) async {
+    if (_isLoading) return;
+    if (refresh) {
+      setState(() {
+        _currentPage = 1;
+        _tenders.clear();
+        _hasMore = true;
+        _hasError = false;
+      });
+    }
 
-  setState(() => _isLoading = true);
+    setState(() => _isLoading = true);
 
-  try {
-    final List<TenderDto> fetchedDtos = await widget._tenderService.getAll(
-      page: _currentPage,
-      pageSize: _pageSize,
-    );
+    try {
+      final List<TenderDto> fetchedDtos = await widget._tenderService.getAll(
+        page: _currentPage,
+        pageSize: _pageSize,
+      );
 
-    // 2. Samo mapiramo DTO u tvoj CardModel
-    final fetched = fetchedDtos
-        .map((dto) => dto.toCardModel(dto))
-        .toList();
+      if (!mounted) return;
 
-    if (!mounted) return;
-
-    setState(() {
-      _tenders.addAll(fetched);
-      _hasMore = fetched.length == _pageSize;
-      _currentPage++;
-      _hasError = false;
-    });
-  } catch (e) {
-    if (!mounted) return;
-    setState(() {
-      _hasError = true;
-      _errorMessage = e.toString();
-    });
-  } finally {
-    if (mounted) {
-      setState(() => _isLoading = false);
+      setState(() {
+        _tenders.addAll(fetchedDtos);
+        _hasMore = fetchedDtos.length == _pageSize;
+        _currentPage++;
+        _hasError = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _hasError = true;
+        _errorMessage = e.toString();
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
-}
 
   void _onScroll() {
     if (_scrollController.position.pixels >=
@@ -167,7 +156,10 @@ class _MyTendersScreenState extends State<MyTendersScreen> {
               child: Center(child: CircularProgressIndicator()),
             );
           }
-          return _TenderCard(model: _tenders[index]);
+          return _TenderCard(
+            tender: _tenders[index],
+            tenderService: widget._tenderService,
+          );
         },
       ),
     );
@@ -179,12 +171,14 @@ class _MyTendersScreenState extends State<MyTendersScreen> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _TenderCard extends StatelessWidget {
-  const _TenderCard({required this.model});
+  const _TenderCard({required this.tender, required this.tenderService});
 
-  final TenderCardModel model;
+  final TenderDto tender;
+  final TenderService tenderService;
 
   @override
   Widget build(BuildContext context) {
+    final model = tender.toCardModel(tender);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isOpen = model.status == TenderStatus.open;
@@ -248,7 +242,7 @@ class _TenderCard extends StatelessWidget {
                 children: [
                   _MetaItem(
                     icon: Icons.location_on_rounded,
-                    label: model.location,
+                    label: model.locationName,
                   ),
                   const SizedBox(width: 16),
                   _MetaItem(
@@ -290,30 +284,35 @@ class _TenderCard extends StatelessWidget {
                   ),
                 ],
               ),
-                                Align(
-                    alignment: Alignment.centerRight,
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => TenderBidsScreen(
-                              tenderId: model.id,
-                              tenderTitle: model.title,
-                            ),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.gavel_rounded, size: 16),
-                      label: const Text('See bids'),
-                      style: OutlinedButton.styleFrom(
-                        visualDensity: VisualDensity.compact,
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+              Align(
+                alignment: Alignment.centerRight,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => TenderBidsScreen(
+                          tenderId: model.id,
+                          tenderTitle: model.title,
+                          tenderDto: tender,
+                          tenderService: tenderService,
                         ),
                       ),
+                    );
+                  },
+                  icon: const Icon(Icons.gavel_rounded, size: 16),
+                  label: const Text('See bids'),
+                  style: OutlinedButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
                     ),
                   ),
+                ),
+              ),
             ],
           ),
         ),
@@ -336,9 +335,6 @@ class _TenderCard extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // Sub-widgets
 // ─────────────────────────────────────────────────────────────────────────────
-
-
-
 
 class _StatusChip extends StatelessWidget {
   const _StatusChip({required this.isOpen});
@@ -393,9 +389,9 @@ class _MetaItem extends StatelessWidget {
         const SizedBox(width: 4),
         Text(
           label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
         ),
       ],
     );
@@ -419,21 +415,25 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.inbox_rounded, size: 72, color: colorScheme.outlineVariant),
+          Icon(
+            Icons.inbox_rounded,
+            size: 72,
+            color: colorScheme.outlineVariant,
+          ),
           const SizedBox(height: 16),
           Text(
             'No tenders yet',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w600,
-                ),
+              color: colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             'Your published tenders will appear here.',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: colorScheme.outlineVariant,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: colorScheme.outlineVariant),
           ),
           const SizedBox(height: 24),
           FilledButton.tonal(
@@ -462,22 +462,25 @@ class _ErrorState extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline_rounded,
-                size: 64, color: colorScheme.error),
+            Icon(
+              Icons.error_outline_rounded,
+              size: 64,
+              color: colorScheme.error,
+            ),
             const SizedBox(height: 16),
             Text(
               'Something went wrong',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             Text(
               message,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
+                color: colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 24),
             FilledButton.icon(
