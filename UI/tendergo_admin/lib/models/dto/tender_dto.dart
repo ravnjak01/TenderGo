@@ -148,7 +148,7 @@ factory TenderDto.fromJson(Map<String, dynamic> json) {
     createdByUserId: json['createdByUserId'] as String,
     createdByFullname: json['createdByFullname'] as String,
     status: TenderStatus.fromInt(json['status'] as int),
-    totalBids: json['totalBids'] as int,
+    totalBids: json['totalBids'] ?? 0,
     locationName: _firstNonEmptyString([
         json['locationName'],
         json['location'],
@@ -219,7 +219,7 @@ factory TenderDto.fromJson(Map<String, dynamic> json) {
   // Converts TenderDto → TenderModel expected by the card widget
   TenderCardModel toCardModel(TenderDto dto) {
     return TenderCardModel(
-      id: dto.id.toString(),
+      id: dto.id,
 
       title: dto.title,
       category: dto.categoryName,
@@ -235,7 +235,7 @@ factory TenderDto.fromJson(Map<String, dynamic> json) {
       tags: [dto.locationName, dto.country],
 
       imageUrl: dto.primaryImage?.imageUrl,
-      location: dto.locationName,
+      locationName: dto.locationName,
     );
   }
 

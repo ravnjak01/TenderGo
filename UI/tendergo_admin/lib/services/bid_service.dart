@@ -145,6 +145,8 @@ class BidService {
 		}
 	}
 
+//dosao do prikazavinja ponuda po tendera,radi prikazuje se ,sljedece dodati dugme 
+//biranja ponude
 	// ===== BY TENDER =====
 	Future<List<BidDto>> getByTender(int tenderId) async {
 		try {
@@ -152,9 +154,10 @@ class BidService {
 				BidApiEndpoints.getByTender(tenderId),
 				options: await _options(),
 			);
-
+     if (response.data == null) return [];
 			return BidDto.parseBidList(response.data);
 		} on DioException catch (e) {
+      if (e.response?.statusCode == 404) return [];
 			throw Exception(e.response?.data ?? 'Error fetching bids by tender');
 		}
 	}

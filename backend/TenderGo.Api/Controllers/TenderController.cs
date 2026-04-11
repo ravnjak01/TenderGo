@@ -81,9 +81,8 @@ public class TenderController
     public async Task<ActionResult<TenderDTO>> Award(int id, int bidId)
     {
 
-        throw new UserException("Testna greska");
-        //var result = await _tenderService.Award(id, bidId);
-        //return Ok(result);
+        var result = await _tenderService.Award(id, bidId);
+        return Ok(result);
     }
 
     [HttpGet("{id}/allowedActions")]

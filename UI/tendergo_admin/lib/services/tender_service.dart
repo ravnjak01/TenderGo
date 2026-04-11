@@ -26,7 +26,7 @@ class TenderService {
   }
 
   // ===== GET ALL =====
-  Future<dynamic> getAll({int page = 1, int pageSize = 10}) async {
+  Future<List<TenderDto>> getAll({int page = 1, int pageSize = 10}) async {
     try {
       final response = await _dio.get(
         TenderApiEndpoints.getAll,
@@ -37,21 +37,24 @@ class TenderService {
         options: await _options(),
       );
 
-      return response.data;
+    final List<dynamic> data = response.data['result'] ?? [];
+
+    return data.map((x) => TenderDto.fromJson(x as Map<String, dynamic>)).toList();
+
     } on DioException catch (e) {
       throw Exception(e.response?.data ?? 'Error fetching tenders');
     }
   }
 
   // ===== GET BY ID =====
-  Future<dynamic> getById(int id) async {
+  Future<TenderDto> getById(int id) async {
     try {
       final response = await _dio.get(
         TenderApiEndpoints.getById(id),
         options: await _options(),
       );
 
-      return response.data;
+      return TenderDto.fromJson(response.data);
     } on DioException catch (e) {
       throw Exception(e.response?.data ?? 'Error fetching tender');
     }
@@ -169,6 +172,19 @@ class TenderService {
       return response.data;
     } on DioException catch (e) {
       throw Exception(e.response?.data ?? 'Error activating tender');
+    }
+  }
+// ===== AWARD =====
+  Future<TenderDto> award(TenderDto tender, int bidId) async {
+    try {
+      final response = await _dio.patch(
+        TenderApiEndpoints.award(tender, bidId),
+        options: await _options(),
+      );
+
+      return TenderDto.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data ?? 'Error awarding tender');
     }
   }
 

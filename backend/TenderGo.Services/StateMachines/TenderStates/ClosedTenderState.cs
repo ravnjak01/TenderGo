@@ -26,14 +26,9 @@ namespace TenderGo.Services.StateMachines.TenderStates
         }
 
 
-        public override async Task<TenderDTO> Award(int id, int bidId)
+        public override async Task<TenderDTO> Award(Tender tender, int bidId)
         {
-            
-            var tender = await _context.Tenders
-                .Include(t => t.Bids)
-                .FirstOrDefaultAsync(t => t.Id == id)
-                  ?? throw new NotFoundException("Tender not found", new { Entity = "Tender", Id = id });
-
+           
 
             var authService = _serviceProvider.GetRequiredService<IAuthService>();
             if (tender.CreatedByUserId != authService.GetCurrentUserId())
@@ -42,7 +37,7 @@ namespace TenderGo.Services.StateMachines.TenderStates
             var winningBid = tender.Bids.FirstOrDefault(b => b.Id == bidId)
                 ?? throw new UserException("Bid not found or does not belong to this tender");
 
-            _logger.LogInformation("Awarding tender {Id} to bid {BidId}", id, bidId);
+            _logger.LogInformation("Awarding tender {Id} to bid {BidId}", tender.Id, bidId);
 
             tender.Status = TenderStatus.Awarded;
             tender.WinningBidId = bidId;

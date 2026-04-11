@@ -56,6 +56,14 @@ UserDto? _currentUser;
     );
   }
 
+  void _openMyTenders() {
+    Navigator.of(context).pushNamed(AppRoutes.myTenders);
+  }
+
+   void _openMyBids() {
+    Navigator.of(context).pushNamed(AppRoutes.myBids);
+  }
+
   Future<void> _openPostTender() async {
     final result = await Navigator.of(context).push(
       MaterialPageRoute(
@@ -110,6 +118,39 @@ UserDto? _currentUser;
                 ),
               ),
             ),
+            const SizedBox(width: 8), 
+            TextButton.icon(
+              onPressed: _openMyTenders,
+              icon: const Icon(
+                Icons.assignment_outlined,
+                size: 20,
+                color: Colors.black87,
+              ),
+              label: const Text(
+                'My Tenders',
+                style: TextStyle(
+                  color: Colors.black87,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8), 
+            TextButton.icon(
+              onPressed: _openMyBids,
+              icon: const Icon(
+                Icons.assignment_outlined,
+                size: 20,
+                color: Colors.black87,
+              ),
+              label: const Text(
+                'My Bids',
+                style: TextStyle(
+                  color: Colors.black87,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ),
+            
             if (_selectedTenderId != null)
               TextButton(
                 onPressed: () {

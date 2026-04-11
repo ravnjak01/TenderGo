@@ -12,10 +12,10 @@ class TenderCardModel {
     required this.postedAt,
     required this.tags,
     this.imageUrl,
-    required this.location
+    required this.locationName
   });
 
-  final String id;
+  final int id;
   final String title;
   final String category;
   final TenderStatus status;
@@ -24,11 +24,11 @@ class TenderCardModel {
   final DateTime postedAt;
   final List<String> tags;
   final String? imageUrl; // null → show placeholder
-  final String location; 
+  final String locationName; 
 
   factory TenderCardModel.fromDTO(TenderDto dto) {
     return TenderCardModel(
-      id: dto.id.toString(), // Pretvaraš int u String na jednom mjestu
+      id: int.tryParse(dto.id.toString()) ?? 0, 
       title: dto.title,
       category: dto.categoryName,
       valueKM: dto.maxBudget,
@@ -37,7 +37,7 @@ class TenderCardModel {
       postedAt: dto.postedAt,
       tags: [], 
       imageUrl: dto.primaryImage?.imageUrl, 
-      location: dto.locationName,
+      locationName: dto.locationName,
     );
   }
 }
