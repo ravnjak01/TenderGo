@@ -8,8 +8,11 @@ import 'package:tendergo_admin/providers/tender_provider.dart';
 import 'package:tendergo_admin/services/category_service.dart';
 import 'package:tendergo_admin/services/dio_client.dart';
 import 'package:tendergo_admin/services/tender_service.dart';
+import 'package:tendergo_admin/widgets/category_chip_widget.dart';
 import 'package:tendergo_admin/widgets/datepicker_widget.dart';
 import 'package:tendergo_admin/widgets/error_banner.widget.dart';
+import 'package:tendergo_admin/widgets/common/app_card.dart';
+import 'package:tendergo_admin/widgets/common/app_icon.dart';
 
 class TenderPostScreen extends StatefulWidget {
   final TenderService tenderService;
@@ -126,25 +129,8 @@ class _TenderPostScreenState extends State<TenderPostScreen>
   void _removeImageUrl(int index) =>
       setState(() => _imageUrls.removeAt(index));
 
-  // ── Submit ─────────────────────────────────────────────────────
-  Future<void> _submit() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
-    if (_deadline == null) {
-      setState(() => _errorMessage = 'Please select a deadline date.');
-      return;
-    }
-    if (_selectedCategoryId == null) {
-      setState(() => _errorMessage = 'Please select a category.');
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final request = TenderInsertRequest(
+  // ── Shared helpers ─────────────────────────────────────────────
+  TenderInsertRequest _buildRequest() => TenderInsertRequest(
         title: _titleCtrl.text.trim(),
         maxBudget: double.parse(_budgetCtrl.text.trim()),
         locationName: _locationCtrl.text.trim(),
@@ -155,16 +141,34 @@ class _TenderPostScreenState extends State<TenderPostScreen>
         imageUrls: _imageUrls.isEmpty ? null : List.from(_imageUrls),
       );
 
-      await context.read<TenderProvider>().createTender(request);
+  bool _validateExtra() {
+    if (_deadline == null) {
+      setState(() => _errorMessage = 'Please select a deadline date.');
+      return false;
+    }
+    if (_selectedCategoryId == null) {
+      setState(() => _errorMessage = 'Please select a category.');
+      return false;
+    }
+    return true;
+  }
 
+  // ── Submit ─────────────────────────────────────────────────────
+  Future<void> _submit() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    if (!_validateExtra()) return;
+
+    setState(() { _isLoading = true; _errorMessage = null; });
+
+    try {
+      await context.read<TenderProvider>().createTender(_buildRequest());
       if (!mounted) return;
       _showSnack('Tender published successfully!');
       await Future.delayed(const Duration(milliseconds: 900));
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) return;
-      setState(
-          () => _errorMessage = e.toString().replaceFirst('Exception: ', ''));
+      setState(() => _errorMessage = e.toString().replaceFirst('Exception: ', ''));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -173,42 +177,19 @@ class _TenderPostScreenState extends State<TenderPostScreen>
   // ── Save Draft ─────────────────────────────────────────────────
   Future<void> _saveDraft() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    if (_deadline == null) {
-      setState(() => _errorMessage = 'Please select a deadline date.');
-      return;
-    }
-    if (_selectedCategoryId == null) {
-      setState(() => _errorMessage = 'Please select a category.');
-      return;
-    }
+    if (!_validateExtra()) return;
 
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+    setState(() { _isLoading = true; _errorMessage = null; });
 
     try {
-      final request = TenderInsertRequest(
-        title: _titleCtrl.text.trim(),
-        maxBudget: double.parse(_budgetCtrl.text.trim()),
-        locationName: _locationCtrl.text.trim(),
-        description:
-            _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
-        categoryId: _selectedCategoryId!,
-        deadline: _deadline!,
-        imageUrls: _imageUrls.isEmpty ? null : List.from(_imageUrls),
-      );
-
-      await _tenderService.createDraft(request);
-
+      await _tenderService.createDraft(_buildRequest());
       if (!mounted) return;
       _showSnack('Draft saved successfully!');
       await Future.delayed(const Duration(milliseconds: 900));
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) return;
-      setState(
-          () => _errorMessage = e.toString().replaceFirst('Exception: ', ''));
+      setState(() => _errorMessage = e.toString().replaceFirst('Exception: ', ''));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -284,26 +265,9 @@ class _TenderPostScreenState extends State<TenderPostScreen>
         errorStyle: const TextStyle(color: AppColors.error, fontSize: 11),
       );
 
-  // ── Section label ──────────────────────────────────────────────
-  Widget _sectionLabel(String text, IconData icon) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Row(
-          children: [
-            Icon(icon, size: 13, color: AppColors.primary),
-            const SizedBox(width: 6),
-            Text(
-              text.toUpperCase(),
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.7,
-              ),
-            ),
-          ],
-        ),
-      );
-
+  // ── Card field padding helper ──────────────────────────────────
+  Widget _cardField(Widget child) =>
+      Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 0), child: child);
 
   @override
   Widget build(BuildContext context) {
@@ -320,91 +284,84 @@ class _TenderPostScreenState extends State<TenderPostScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _banner(),
-                const SizedBox(height: 28),
-
-                // Title
-                _sectionLabel('Title *', Icons.title_rounded),
-                TextFormField(
-                  controller: _titleCtrl,
-                  style: const TextStyle(
-                      color: AppColors.textPrimary, fontSize: 14),
-                  decoration: _dec(
-                    'Tender title',
-                    hint: 'e.g. Road Construction — Phase 2',
-                    prefix: const Icon(Icons.edit_outlined,
-                        size: 18, color: AppColors.textSecondary),
-                  ),
-                  validator: (v) => (v == null || v.trim().isEmpty)
-                      ? 'Title is required'
-                      : null,
-                ),
-
                 const SizedBox(height: 20),
 
-                // Budget + Category
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                // ── Tender Details ──────────────────────────────
+                AppCard(
+                  title: 'TENDER DETAILS',
+                  icon: Icons.edit_outlined,
                   children: [
-                    Expanded(child: _budgetField()),
-                    const SizedBox(width: 14),
-                    Expanded(child: _categoryField()),
+                    _cardField(TextFormField(
+                      controller: _titleCtrl,
+                      style: const TextStyle(
+                          color: AppColors.textPrimary, fontSize: 14),
+                      decoration: _dec(
+                        'Title *',
+                        hint: 'e.g. Road Construction — Phase 2',
+                        prefix: const Icon(Icons.edit_outlined,
+                            size: 18, color: AppColors.textSecondary),
+                      ),
+                      validator: (v) => (v == null || v.trim().isEmpty)
+                          ? 'Title is required'
+                          : null,
+                    )),
+                    _cardField(_budgetField()),
+                    _cardField(_categorySection()),
+                    _cardField(TextFormField(
+                      controller: _locationCtrl,
+                      style: const TextStyle(
+                          color: AppColors.textPrimary, fontSize: 14),
+                      decoration: _dec(
+                        'Location *',
+                        hint: 'e.g. Sarajevo, Bosnia',
+                        prefix: const Icon(Icons.place_outlined,
+                            size: 18, color: AppColors.textSecondary),
+                      ),
+                      validator: (v) => (v == null || v.trim().isEmpty)
+                          ? 'Location is required'
+                          : null,
+                    )),
+                    const SizedBox(height: 4),
                   ],
                 ),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
 
-                // Location
-                _sectionLabel('Location *', Icons.location_on_outlined),
-                TextFormField(
-                  controller: _locationCtrl,
-                  style: const TextStyle(
-                      color: AppColors.textPrimary, fontSize: 14),
-                  decoration: _dec(
-                    'City, Country',
-                    hint: 'e.g. Sarajevo, Bosnia',
-                    prefix: const Icon(Icons.place_outlined,
-                        size: 18, color: AppColors.textSecondary),
-                  ),
-                  validator: (v) => (v == null || v.trim().isEmpty)
-                      ? 'Location is required'
-                      : null,
+                // ── Deadline & Description ──────────────────────
+                AppCard(
+                  title: 'DEADLINE & DESCRIPTION',
+                  icon: Icons.event_outlined,
+                  children: [
+                    _cardField(DatepickerWidget(
+                      deadline: _deadline,
+                      onTap: _pickDeadline,
+                    )),
+                    _cardField(TextFormField(
+                      controller: _descCtrl,
+                      style: const TextStyle(
+                          color: AppColors.textPrimary, fontSize: 14),
+                      maxLines: 5,
+                      decoration: _dec(
+                          'Description (optional)',
+                          hint: 'Describe scope, requirements, evaluation criteria…'),
+                    )),
+                    const SizedBox(height: 4),
+                  ],
                 ),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
 
-                // Deadline
-                _sectionLabel('Deadline *', Icons.event_outlined),
-                DatepickerWidget(
-                  deadline: _deadline,
-                  onTap: _pickDeadline,
+                // ── Media ───────────────────────────────────────
+                AppCard(
+                  title: 'IMAGE URLS (OPTIONAL)',
+                  icon: Icons.image_outlined,
+                  children: [
+                    _cardField(_imageUrlRow()),
+                    if (_imageUrls.isNotEmpty) _cardField(_imageChips()),
+                    const SizedBox(height: 4),
+                  ],
                 ),
 
-                const SizedBox(height: 20),
-
-                // Description
-                _sectionLabel(
-                    'Description (optional)', Icons.notes_rounded),
-                TextFormField(
-                  controller: _descCtrl,
-                  style: const TextStyle(
-                      color: AppColors.textPrimary, fontSize: 14),
-                  maxLines: 5,
-                  decoration: _dec(
-                      'Describe scope, requirements, evaluation criteria…'),
-                ),
-
-                const SizedBox(height: 20),
-
-                // Image URLs
-                _sectionLabel(
-                    'Image URLs (optional)', Icons.image_outlined),
-                _imageUrlRow(),
-                if (_imageUrls.isNotEmpty) ...[
-                  const SizedBox(height: 10),
-                  _imageChips(),
-                ],
-
-                // Error
                 if (_errorMessage != null) ...[
                   const SizedBox(height: 16),
                   ErrorBannerWidget(
@@ -510,83 +467,71 @@ class _TenderPostScreenState extends State<TenderPostScreen>
       );
 
   // ── Budget field ───────────────────────────────────────────────
-  Widget _budgetField() => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _sectionLabel('Max Budget *', Icons.attach_money_rounded),
-          TextFormField(
-            controller: _budgetCtrl,
-            style: const TextStyle(
-                color: AppColors.textPrimary, fontSize: 14),
-            keyboardType:
-                const TextInputType.numberWithOptions(decimal: true),
-            inputFormatters: [
-              FilteringTextInputFormatter.deny(RegExp(r'-')),
-              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*$')),
-            ],
-            decoration: _dec(
-              'Amount',
-              hint: '0.00',
-              prefix: const Padding(
-                padding: EdgeInsets.only(left: 12, right: 4),
-                child: Text('\$',
-                    style: TextStyle(
-                        color: AppColors.textSecondary, fontSize: 16)),
-              ),
-            ),
-            validator: (v) {
-              if (v == null || v.trim().isEmpty) return 'Required';
-              final d = double.tryParse(v.trim());
-              if (d == null || d <= 0) return 'Invalid amount';
-              return null;
-            },
-          ),
+  Widget _budgetField() => TextFormField(
+        controller: _budgetCtrl,
+        style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        inputFormatters: [
+          FilteringTextInputFormatter.deny(RegExp(r'-')),
+          FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*$')),
         ],
+        decoration: _dec(
+          'Max Budget *',
+          hint: '0.00',
+          prefix: const Padding(
+            padding: EdgeInsets.only(left: 12, right: 4),
+            child: Text('\$',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 16)),
+          ),
+        ),
+        validator: (v) {
+          if (v == null || v.trim().isEmpty) return 'Required';
+          final d = double.tryParse(v.trim());
+          if (d == null || d <= 0) return 'Invalid amount';
+          return null;
+        },
       );
 
-  // ── Category dropdown ──────────────────────────────────────────
-  Widget _categoryField() => Column(
+  // ── Category chip picker ───────────────────────────────────────
+  Widget _categorySection() => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _sectionLabel('Category *', Icons.category_outlined),
-          DropdownButtonFormField<int>(
-            value: _selectedCategoryId,
-            dropdownColor: AppColors.surface,
-            style: const TextStyle(
-                color: AppColors.textPrimary, fontSize: 14),
-            icon: const Icon(Icons.keyboard_arrow_down_rounded,
-                color: AppColors.textSecondary, size: 20),
-            decoration: _dec(
-              _isCategoryLoading
-                  ? 'Loading categories...'
-                  : _categories.isEmpty
-                      ? 'No categories available'
-                      : 'Select',
+          const Text(
+            'CATEGORY *',
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.7,
             ),
-            items: _categories
-                .map((c) =>
-                    DropdownMenuItem(value: c.id, child: Text(c.name)))
-                .toList(),
-            onChanged: (_isCategoryLoading || _categories.isEmpty)
-                ? null
-                : (v) => setState(() => _selectedCategoryId = v),
-            validator: (v) {
-              if (_isCategoryLoading) return 'Categories are loading';
-              if (_categories.isEmpty || _categoryLoadError != null) {
-                return 'Categories unavailable';
-              }
-              return v == null ? 'Required' : null;
-            },
           ),
-          if (_categoryLoadError != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: Text(
-                _categoryLoadError!,
-                style: const TextStyle(
-                  color: AppColors.error,
-                  fontSize: 11,
-                ),
+          const SizedBox(height: 8),
+          if (_isCategoryLoading)
+            const Center(
+              child: SizedBox(
+                height: 24,
+                width: 24,
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: AppColors.primary),
+              ),
+            )
+          else if (_categoryLoadError != null)
+            Text(
+              _categoryLoadError!,
+              style: const TextStyle(color: AppColors.error, fontSize: 12),
+            )
+          else
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: _categories
+                    .map((c) => CategoryChipWidget(
+                          label: c.name,
+                          isSelected: _selectedCategoryId == c.id,
+                          onTap: () =>
+                              setState(() => _selectedCategoryId = c.id),
+                        ))
+                    .toList(),
               ),
             ),
         ],
@@ -611,21 +556,7 @@ class _TenderPostScreenState extends State<TenderPostScreen>
             ),
           ),
           const SizedBox(width: 10),
-          GestureDetector(
-            onTap: _addImageUrl,
-            child: Container(
-              height: 50,
-              width: 50,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                    color: AppColors.primary.withOpacity(0.3)),
-              ),
-              child: const Icon(Icons.add_rounded,
-                  color: AppColors.primary, size: 22),
-            ),
-          ),
+          AppIconButton(icon: Icons.add_rounded, onTap: _addImageUrl),
         ],
       );
 

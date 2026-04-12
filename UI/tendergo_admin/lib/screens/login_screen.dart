@@ -28,7 +28,6 @@ class _LoginScreenState extends State<LoginScreen> {
       _errorMessage = null;
     });
 
-    // 1. Izvuci servis PRIJE await-a ili odmah nakon, dok si siguran u context
     final tenderProvider = Provider.of<TenderProvider>(context, listen: false);
 
     bool success = await widget.authService.login(
