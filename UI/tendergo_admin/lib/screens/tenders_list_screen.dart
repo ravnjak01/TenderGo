@@ -5,6 +5,7 @@ import 'package:tendergo_admin/services/tender_service.dart';
 import 'package:tendergo_admin/widgets/tender_filter_bar.dart';
 import 'package:tendergo_admin/widgets/tender_grid.dart';
 import 'package:tendergo_admin/screens/tender_post_screen.dart';
+import 'package:tendergo_admin/widgets/common/screen_state_widgets.dart';
 
 class TenderListScreen extends StatefulWidget {
   final TenderService tenderService;
@@ -125,11 +126,14 @@ class _TenderListScreenState extends State<TenderListScreen> {
     return Consumer<TenderProvider>(
       builder: (context, provider, _) {
         if (provider.isLoading) {
-          return const Center(child: CircularProgressIndicator());
+          return const ScreenLoadingState();
         }
 
         if (provider.error != null) {
-          return Center(child: Text('Error: ${provider.error}'));
+          return ScreenErrorState(
+            message: provider.error!,
+            onRetry: () => context.read<TenderProvider>().fetchActiveTenders(),
+          );
         }
 
         return SingleChildScrollView(

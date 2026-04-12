@@ -5,6 +5,8 @@ import 'package:tendergo_admin/models/dto/tender_dto.dart';
 import 'package:tendergo_admin/services/bid_service.dart';
 import 'package:tendergo_admin/services/dio_client.dart';
 import 'package:tendergo_admin/services/tender_service.dart';
+import 'package:tendergo_admin/widgets/common/app_dialogs.dart';
+import 'package:tendergo_admin/widgets/common/screen_state_widgets.dart';
 
 class TenderBidsScreen extends StatefulWidget {
   final int tenderId;
@@ -79,54 +81,24 @@ class _TenderBidsScreenState extends State<TenderBidsScreen> {
         future: _bidsFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const ScreenLoadingState();
           }
 
           if (snapshot.hasError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Failed to load bids',
-                      style: theme.textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      snapshot.error.toString(),
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.error,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    FilledButton.icon(
-                      onPressed: _refresh,
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Try again'),
-                    ),
-                  ],
-                ),
-              ),
+            return ScreenErrorState(
+              message: snapshot.error.toString(),
+              onRetry: _refresh,
             );
           }
 
           final bids = snapshot.data ?? [];
 
           if (bids.isEmpty) {
-            return const Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.inbox_outlined, size: 48, color: Colors.grey),
-                  SizedBox(height: 16),
-                  Text('No bids found for this tender.'),
-                ],
-              ),
+            return ScreenEmptyState(
+              icon: Icons.inbox_outlined,
+              title: 'No bids found',
+              description: 'No bids found for this tender.',
+              onAction: _refresh,
             );
           }
 
@@ -180,27 +152,16 @@ class _BidCard extends StatelessWidget {
   const _BidCard({required this.bid, required this.statusColor, required this.tenderDto, required this.tenderService, required this.onAwarded });
 
  Future<void> _award(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await AppDialogs.showConfirm(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Award tender'),
-        content: Text(
+      title: 'Award tender',
+      content:
           'Award this tender to ${bid.submittedByUserName}?\n\nThis action cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Award'),
-          ),
-        ],
-      ),
+      confirmLabel: 'Award',
+      isDestructive: true,
     );
 
-    if (confirmed != true || !context.mounted) return;
+    if (!confirmed || !context.mounted) return;
 
     try {
       await tenderService.award(tenderDto, bid.id);
