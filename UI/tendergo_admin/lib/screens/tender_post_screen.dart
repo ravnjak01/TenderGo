@@ -14,7 +14,6 @@ import 'package:tendergo_admin/widgets/error_banner.widget.dart';
 import 'package:tendergo_admin/widgets/common/app_card.dart';
 import 'package:tendergo_admin/widgets/common/app_icon.dart';
 import 'package:tendergo_admin/widgets/common/app_text_field.dart';
-import 'package:tendergo_admin/widgets/common/screen_state_widgets.dart';
 
 class TenderPostScreen extends StatefulWidget {
   final TenderService tenderService;

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tendergo_admin/providers/tender_provider.dart';
@@ -24,6 +25,9 @@ class TenderListScreen extends StatefulWidget {
 }
 
 class _TenderListScreenState extends State<TenderListScreen> {
+  Timer? _pollingTimer;
+  static const _pollingInterval = Duration(minutes: 5);
+
   @override
   void initState() {
     super.initState();
@@ -32,7 +36,21 @@ class _TenderListScreenState extends State<TenderListScreen> {
       final provider = context.read<TenderProvider>();
       provider.fetchActiveTenders();
       provider.fetchCategories();
+      _startPolling();
     });
+  }
+
+  void _startPolling() {
+    _pollingTimer = Timer.periodic(_pollingInterval, (_) {
+      if (!mounted) return;
+      context.read<TenderProvider>().fetchActiveTenders();
+    });
+  }
+
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    super.dispose();
   }
 
   @override

@@ -6,8 +6,7 @@ enum TenderStatus {
   open(2),
   closed(3),
   award(4),
-  cancelled(5),
-  archived(6);
+  cancelled(5);
 
   final int value;
   const TenderStatus(this.value);
@@ -30,7 +29,6 @@ extension TenderStatusX on TenderStatus {
       case TenderStatus.closed:    return 'Closed';
       case TenderStatus.award:     return 'Awarded';
       case TenderStatus.cancelled: return 'Cancelled';
-      case TenderStatus.archived:  return 'Archived';
     }
   }
 
@@ -40,8 +38,7 @@ extension TenderStatusX on TenderStatus {
       case TenderStatus.draft:     return const Color(0xFFE8F4FD); // Plava
       case TenderStatus.award:     return const Color(0xFFF1F8E9); // Svijetlo zelena
       case TenderStatus.closed:    
-      case TenderStatus.cancelled: 
-      case TenderStatus.archived:  return const Color(0xFFF1EFE8); // Siva
+      case TenderStatus.cancelled: return const Color(0xFFFFEBEE); 
     }
   }
 
@@ -51,8 +48,7 @@ extension TenderStatusX on TenderStatus {
       case TenderStatus.draft:     return const Color(0xFF1976D2); // Tamno plava
       case TenderStatus.award:     return const Color(0xFF2E7D32); // Forbes zelena
       case TenderStatus.closed:    
-      case TenderStatus.cancelled: 
-      case TenderStatus.archived:  return const Color(0xFF5F5E5A); // Tamno siva
+      case TenderStatus.cancelled: return const Color(0xFFD32F2F); 
     }
   }
 }

@@ -48,7 +48,6 @@ namespace TenderGo.Services.StateMachines.TenderStates
 
         public virtual Task<TenderDTO> Award(Tender tender, int bidId) => throw new UserException("Not allowed in this state");
 
-        public virtual Task<TenderDTO> Archive(int id) => throw new UserException("Not allowed in this state");
         public virtual Task<List<string>> AllowedActions(Tender entity) => Task.FromResult(new List<string>());
     }
 }

@@ -227,7 +227,6 @@ namespace TenderGo.Services.Services
                 TenderStatus.Closed => _serviceProvider.GetRequiredService<ClosedTenderState>(),
                 TenderStatus.Awarded => _serviceProvider.GetRequiredService<AwardedTenderState>(),
                 TenderStatus.Cancelled => _serviceProvider.GetRequiredService<CancelledTenderState>(),
-                TenderStatus.Archived => _serviceProvider.GetRequiredService<ArchivedTenderState>(),
                 _ => throw new UserException("Invalid tender status")
             };
         }
