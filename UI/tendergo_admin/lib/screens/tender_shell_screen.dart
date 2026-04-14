@@ -26,9 +26,14 @@ class TenderShellScreen extends StatefulWidget {
 
 class _TenderShellScreenState extends State<TenderShellScreen> {
   int? _selectedTenderId;
-UserDto? _currentUser;
+  UserDto? _currentUser;
 
-@override
+  bool get _isAdmin {
+    final roles = _currentUser?.roles ?? const <String>[];
+    return roles.any((role) => role.toLowerCase() == 'admin');
+  }
+
+  @override
   void initState() {
     super.initState();
     _loadUser(); // Učitaj korisnika pri pokretanju
@@ -48,6 +53,7 @@ UserDto? _currentUser;
       _selectedTenderId = null;
     });
   }
+
   void _openUserProfile() {
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -60,8 +66,12 @@ UserDto? _currentUser;
     Navigator.of(context).pushNamed(AppRoutes.myTenders);
   }
 
-   void _openMyBids() {
+  void _openMyBids() {
     Navigator.of(context).pushNamed(AppRoutes.myBids);
+  }
+
+  void _openAdmin() {
+    Navigator.of(context).pushNamed(AppRoutes.admin);
   }
 
   Future<void> _openPostTender() async {
@@ -118,7 +128,7 @@ UserDto? _currentUser;
                 ),
               ),
             ),
-            const SizedBox(width: 8), 
+            const SizedBox(width: 8),
             TextButton.icon(
               onPressed: _openMyTenders,
               icon: const Icon(
@@ -134,7 +144,7 @@ UserDto? _currentUser;
                 ),
               ),
             ),
-            const SizedBox(width: 8), 
+            const SizedBox(width: 8),
             TextButton.icon(
               onPressed: _openMyBids,
               icon: const Icon(
@@ -150,7 +160,25 @@ UserDto? _currentUser;
                 ),
               ),
             ),
-            
+            if (_isAdmin) ...[
+              const SizedBox(width: 8),
+              TextButton.icon(
+                onPressed: _openAdmin,
+                icon: const Icon(
+                  Icons.admin_panel_settings_outlined,
+                  size: 20,
+                  color: Colors.black87,
+                ),
+                label: const Text(
+                  'Admin',
+                  style: TextStyle(
+                    color: Colors.black87,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ),
+            ],
+
             if (_selectedTenderId != null)
               TextButton(
                 onPressed: () {
@@ -182,29 +210,30 @@ UserDto? _currentUser;
                 ),
                 const SizedBox(width: 16),
                 InkWell(
-                 onTap: _openUserProfile,
+                  onTap: _openUserProfile,
                   mouseCursor: SystemMouseCursors.click,
                   borderRadius: BorderRadius.circular(20),
                   child: Container(
                     width: 38,
                     height: 38,
                     decoration: const BoxDecoration(
-                      color: AppColors.infoSurface, // Tvoja svijetlo plava iz teme
+                      color:
+                          AppColors.infoSurface, // Tvoja svijetlo plava iz teme
                       shape: BoxShape.circle,
-                  ),
-                  child:  Center(
-                    child: Text(
-                      _currentUser != null 
-                        ? UserDto.getInitials(_currentUser!) 
-                      : '',
-                      style: TextStyle(
-                        color: Color(0xFF185FA5),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
+                    ),
+                    child: Center(
+                      child: Text(
+                        _currentUser != null
+                            ? UserDto.getInitials(_currentUser!)
+                            : '',
+                        style: TextStyle(
+                          color: Color(0xFF185FA5),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
                       ),
                     ),
                   ),
-                ),
                 ),
               ],
             ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tendergo_admin/screens/admin_screen.dart';
 import 'package:tendergo_admin/screens/forgot_password_screen.dart';
 import 'package:tendergo_admin/screens/home_screen.dart';
 import 'package:tendergo_admin/screens/login_screen.dart';
@@ -11,6 +12,7 @@ import 'package:tendergo_admin/screens/registration_screen.dart';
 import 'package:tendergo_admin/screens/reset_passsword.screen.dart';
 import 'package:tendergo_admin/screens/splash_screen.dart';
 import 'package:tendergo_admin/screens/user_profile_screen.dart';
+import 'package:tendergo_admin/services/admin_service.dart';
 import 'package:tendergo_admin/services/auth_service.dart';
 import 'package:tendergo_admin/services/bid_service.dart';
 import 'package:tendergo_admin/services/dio_client.dart';
@@ -26,33 +28,45 @@ class AppRoutes {
   static const String forgotPassword = '/forgot-password';
   static const String resetPassword = '/reset-password';
   static const String tenderList = '/tenders';
-  static const String tenderPost='/tender-post';
-  static const String tenderDetails='/tender-details';
-  static const String userProfile='/user-profile';
-  static const String myTenders='/my-tenders';
-  static const String myBids='/my-bids';
+  static const String tenderPost = '/tender-post';
+  static const String tenderDetails = '/tender-details';
+  static const String userProfile = '/user-profile';
+  static const String myTenders = '/my-tenders';
+  static const String myBids = '/my-bids';
+  static const String admin = '/admin';
   static Map<String, WidgetBuilder> getRoutes() {
     // Kreiramo Dio instancu
-    final dio = DioClient.getDio(); 
-    
+    final dio = DioClient.getDio();
+
     // Kreiramo AuthService sa tom instancom
     final authService = AuthService(dio);
+    final adminService = AdminService(dio);
     final imageService = ImageService(dio);
-    final tenderService=TenderService(dio, imageService);
-    final bidService=BidService(dio);
+    final tenderService = TenderService(dio, imageService);
+    final bidService = BidService(dio);
     return {
       splash: (context) => const SplashScreen(),
-      login: (context) => LoginScreen(authService: authService), 
+      login: (context) => LoginScreen(authService: authService),
       registration: (context) => RegistrationScreen(authService: authService),
-      forgotPassword: (context) => ForgotPasswordScreen(authService: authService),
-      resetPassword: (context) => ResetPasswordScreen(authService: authService), 
-      tenderList: (context) => TenderShellScreen(tenderService: tenderService, authService: authService),
+      forgotPassword: (context) =>
+          ForgotPasswordScreen(authService: authService),
+      resetPassword: (context) => ResetPasswordScreen(authService: authService),
+      tenderList: (context) => TenderShellScreen(
+        tenderService: tenderService,
+        authService: authService,
+      ),
       tenderPost: (context) => TenderPostScreen(tenderService: tenderService),
-      tenderDetails: (context) => TenderDetailsScreen(tenderService: tenderService),
-        userProfile: (context) => UserProfileScreen(authService: authService),
-        myTenders: (context) => MyTendersScreen(tenderService: tenderService),
-        myBids: (context) => MyBidsScreen(bidService: bidService),
+      tenderDetails: (context) =>
+          TenderDetailsScreen(tenderService: tenderService),
+      userProfile: (context) => UserProfileScreen(authService: authService),
+      myTenders: (context) => MyTendersScreen(tenderService: tenderService),
+      myBids: (context) => MyBidsScreen(bidService: bidService),
+      admin: (context) => AdminScreen(
+        adminService: adminService,
+        authService: authService,
+        tenderService: tenderService,
+      ),
       home: (context) => const HomeScreen(),
     };
   }
-} 
+}

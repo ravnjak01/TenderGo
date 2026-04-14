@@ -188,9 +188,12 @@ using (var scope = app.Services.CreateScope())
         {
             var context = services.GetRequiredService<TenderGoContext>();
             context.Database.Migrate();
-            await IdentitySeeder.SeedRolesAsync(services);
+
+            // Pozivamo novu metodu koja radi i role i admina
+            await IdentitySeeder.SeedRolesAndAdminAsync(services);
+
             logger.LogInformation("Database migrated and seeded successfully.");
-            break; 
+            break;
         }
         catch (Exception ex)
         {
