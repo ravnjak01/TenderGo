@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tendergo_admin/models/dto/auth_dto.dart';
 import '../services/auth_service.dart';
+import 'package:tendergo_admin/widgets/common/app_text_field.dart';
 
 class RegistrationScreen extends StatefulWidget {
   final AuthService authService;
@@ -109,54 +110,57 @@ void _showSnack(String msg, {bool isError = false}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF374151))),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF374151),
+          ),
+        ),
         const SizedBox(height: 6),
-        TextFormField(
-          controller: controller,
-          obscureText: obscure,
-          keyboardType: keyboardType,
-          validator: validator,
-          style: const TextStyle(fontSize: 14, color: Color(0xFF111827)),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle:
-                const TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide:
-                  const BorderSide(color: Color(0xFFD1D5DB), width: 1),
+        Theme(
+          data: Theme.of(context).copyWith(
+            inputDecorationTheme: InputDecorationTheme(
+              hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              filled: true,
+              fillColor: Colors.white,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Color(0xFFD1D5DB), width: 1),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Color(0xFFD1D5DB), width: 1),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: _midBlue, width: 1.5),
+              ),
+              errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Colors.redAccent, width: 1),
+              ),
             ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide:
-                  const BorderSide(color: Color(0xFFD1D5DB), width: 1),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide:
-                  const BorderSide(color: _midBlue, width: 1.5),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide:
-                  const BorderSide(color: Colors.redAccent, width: 1),
-            ),
-            suffixIcon: showToggle == true
+          ),
+          child: AppTextField(
+            controller: controller,
+            label: label,
+            hint: hint,
+            keyboardType: keyboardType,
+            obscureText: obscure,
+            validator: validator,
+            suffix: showToggle == true
                 ? IconButton(
                     icon: Icon(
-                        obscure
-                            ? Icons.visibility_off_outlined
-                            : Icons.visibility_outlined,
-                        size: 18,
-                        color: const Color(0xFF9CA3AF)),
+                      obscure
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                      size: 18,
+                      color: const Color(0xFF9CA3AF),
+                    ),
                     onPressed: onToggle,
                   )
                 : null,

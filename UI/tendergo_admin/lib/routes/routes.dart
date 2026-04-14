@@ -14,6 +14,7 @@ import 'package:tendergo_admin/screens/user_profile_screen.dart';
 import 'package:tendergo_admin/services/auth_service.dart';
 import 'package:tendergo_admin/services/bid_service.dart';
 import 'package:tendergo_admin/services/dio_client.dart';
+import 'package:tendergo_admin/services/image_service.dart';
 import 'package:tendergo_admin/services/tender_service.dart';
 
 class AppRoutes {
@@ -36,7 +37,8 @@ class AppRoutes {
     
     // Kreiramo AuthService sa tom instancom
     final authService = AuthService(dio);
-    final tenderService=TenderService(  dio);
+    final imageService = ImageService(dio);
+    final tenderService=TenderService(dio, imageService);
     final bidService=BidService(dio);
     return {
       splash: (context) => const SplashScreen(),

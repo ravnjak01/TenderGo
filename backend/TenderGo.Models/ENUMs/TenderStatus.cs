@@ -12,7 +12,6 @@ namespace TenderGo.Models.ENUMs
         Open = 2,      
         Closed = 3,     
         Awarded = 4,   
-        Cancelled = 5,  
-        Archived = 6
+        Cancelled = 5
     }
 }

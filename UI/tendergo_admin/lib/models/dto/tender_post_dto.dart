@@ -18,17 +18,28 @@ class TenderInsertRequest {
   });
 
   /// Convert TenderInsertRequest to JSON
-Map<String, dynamic> toJson() {
-  return {
-    'title': title,
-    'maxBudget': maxBudget,
-    'locationName': locationName,
-    'description': description,
-    'categoryId': categoryId,
-    'deadline': deadline.toIso8601String(),
-    'imageUrls': imageUrls ?? [],
-  };
-}
+  Map<String, dynamic> toJson() {
+    final normalizedImageUrls =
+        imageUrls
+            ?.map((url) => url.trim())
+            .where((url) => url.isNotEmpty)
+            .toList() ??
+        const <String>[];
+
+    return {
+      'title': title,
+      'maxBudget': maxBudget,
+      'locationName': locationName,
+      'description': description,
+      'categoryId': categoryId,
+      'deadline': deadline.toIso8601String(),
+      // Keep both for backend variants that expect either one string or many.
+      'imageUrl': normalizedImageUrls.isEmpty
+          ? null
+          : normalizedImageUrls.first,
+      'imageUrls': normalizedImageUrls,
+    };
+  }
 
   /// Create TenderInsertRequest from JSON
   factory TenderInsertRequest.fromJson(Map<String, dynamic> json) {

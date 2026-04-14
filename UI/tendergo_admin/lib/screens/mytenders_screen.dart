@@ -3,6 +3,7 @@ import 'package:tendergo_admin/models/dto/tender_dto.dart';
 import 'package:tendergo_admin/models/enums/tenderstatus.dart';
 import 'package:tendergo_admin/screens/tender_bids_screen.dart';
 import 'package:tendergo_admin/services/tender_service.dart';
+import 'package:tendergo_admin/widgets/common/screen_state_widgets.dart';
 
 class MyTendersScreen extends StatefulWidget {
   final TenderService _tenderService;
@@ -125,7 +126,7 @@ class _MyTendersScreenState extends State<MyTendersScreen> {
   Widget _buildBody(ColorScheme colorScheme) {
     // ── initial load error ──────────────────────────────────────────────────
     if (_hasError && _tenders.isEmpty) {
-      return _ErrorState(
+      return ScreenErrorState(
         message: _errorMessage,
         onRetry: () => _fetchTenders(refresh: true),
       );
@@ -133,12 +134,17 @@ class _MyTendersScreenState extends State<MyTendersScreen> {
 
     // ── initial loading ─────────────────────────────────────────────────────
     if (_isLoading && _tenders.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return const ScreenLoadingState();
     }
 
     // ── empty state ─────────────────────────────────────────────────────────
     if (_tenders.isEmpty) {
-      return _EmptyState(onRefresh: () => _fetchTenders(refresh: true));
+      return ScreenEmptyState(
+        icon: Icons.inbox_rounded,
+        title: 'No tenders yet',
+        description: 'Your published tenders will appear here.',
+        onAction: () => _fetchTenders(refresh: true),
+      );
     }
 
     // ── list ────────────────────────────────────────────────────────────────
@@ -394,103 +400,6 @@ class _MetaItem extends StatelessWidget {
           ).textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
         ),
       ],
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Empty / Error states
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState({required this.onRefresh});
-
-  final VoidCallback onRefresh;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.inbox_rounded,
-            size: 72,
-            color: colorScheme.outlineVariant,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No tenders yet',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Your published tenders will appear here.',
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: colorScheme.outlineVariant),
-          ),
-          const SizedBox(height: 24),
-          FilledButton.tonal(
-            onPressed: onRefresh,
-            child: const Text('Refresh'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ErrorState extends StatelessWidget {
-  const _ErrorState({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline_rounded,
-              size: 64,
-              color: colorScheme.error,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Something went wrong',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Try again'),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

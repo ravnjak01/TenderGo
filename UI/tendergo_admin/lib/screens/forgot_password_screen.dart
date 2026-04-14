@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:tendergo_admin/services/auth_service.dart'; // Prilagodi putanju
 import 'package:tendergo_admin/models/ui/auth_result.dart';   // Prilagodi putanju
+import 'package:tendergo_admin/widgets/common/app_text_field.dart';
+import 'package:tendergo_admin/widgets/common/auth_scaffold.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   final AuthService authService;
@@ -64,105 +66,72 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF1A3A6B), Color(0xFF1E4DB7)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+    return AuthScaffold(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Forgot Password',
+            style: TextStyle(
+              fontSize: 26,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-        ),
-        child: Center(
-          child: SingleChildScrollView(
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 400),
-              padding: const EdgeInsets.all(30),
-              margin: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: const [
-                  BoxShadow(
-                    blurRadius: 20,
-                    color: Colors.black26,
-                    offset: Offset(0, 10),
-                  )
-                ],
+          const SizedBox(height: 10),
+          const Text(
+            'Enter your email and we will send you a link to reset your password.',
+            style: TextStyle(color: Colors.grey),
+          ),
+          const SizedBox(height: 25),
+          AppTextField(
+            controller: _emailController,
+            label: 'Email',
+            hint: 'Enter your email',
+            keyboardType: TextInputType.emailAddress,
+            prefixIcon: Icons.email_outlined,
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _isLoading ? null : _handleForgotPassword,
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                backgroundColor: const Color(0xFF2a5298),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Forgot Password",
-                    style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    "Enter your email and we will send you a link to reset your password.",
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                  const SizedBox(height: 25),
-                  TextField(
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: InputDecoration(
-                      labelText: "Email",
-                      hintText: "Enter your email",
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
+              child: _isLoading
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _handleForgotPassword,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        backgroundColor: const Color(0xFF2a5298),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: _isLoading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : const Text("Send Reset Link"),
-                    ),
-                  ),
-                  const SizedBox(height: 15),
-                  Center(
-                    child: GestureDetector(
-                      onTap: () {
-                        Navigator.pushReplacementNamed(context, '/login');
-                      },
-                      child: const Text(
-                        "Back to Login",
-                        style: TextStyle(
-                          color: Color(0xFF2a5298),
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                    )
+                  : const Text('Send Reset Link'),
+            ),
+          ),
+          const SizedBox(height: 15),
+          Center(
+            child: GestureDetector(
+              onTap: () {
+                Navigator.pushReplacementNamed(context, '/login');
+              },
+              child: const Text(
+                'Back to Login',
+                style: TextStyle(
+                  color: Color(0xFF2a5298),
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }

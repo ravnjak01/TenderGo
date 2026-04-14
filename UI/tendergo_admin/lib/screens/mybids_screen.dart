@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tendergo_admin/models/dto/bid_dto.dart';
 import 'package:tendergo_admin/services/bid_service.dart';
+import 'package:tendergo_admin/widgets/common/screen_state_widgets.dart';
 
 class MyBidsScreen extends StatefulWidget {
   final BidService _bidService; 
@@ -118,18 +119,23 @@ class _MyBidsScreenState extends State<MyBidsScreen> {
 
   Widget _buildBody(ColorScheme colorScheme) {
     if (_hasError && _bids.isEmpty) {
-      return _ErrorState(
+      return ScreenErrorState(
         message: _errorMessage,
         onRetry: () => _fetchBids(refresh: true),
       );
     }
 
     if (_isLoading && _bids.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return const ScreenLoadingState();
     }
 
     if (_bids.isEmpty) {
-      return _EmptyState(onRefresh: () => _fetchBids(refresh: true));
+      return ScreenEmptyState(
+        icon: Icons.gavel_rounded,
+        title: 'No bids yet',
+        description: 'Bids you submit will appear here.',
+        onAction: () => _fetchBids(refresh: true),
+      );
     }
 
     return RefreshIndicator(
@@ -404,95 +410,6 @@ class _MetaItem extends StatelessWidget {
               ),
         ),
       ],
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Empty / Error states
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState({required this.onRefresh});
-
-  final VoidCallback onRefresh;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.gavel_rounded, size: 72, color: colorScheme.outlineVariant),
-          const SizedBox(height: 16),
-          Text(
-            'No bids yet',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Bids you submit will appear here.',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: colorScheme.outlineVariant,
-                ),
-          ),
-          const SizedBox(height: 24),
-          FilledButton.tonal(
-            onPressed: onRefresh,
-            child: const Text('Refresh'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ErrorState extends StatelessWidget {
-  const _ErrorState({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline_rounded, size: 64, color: colorScheme.error),
-            const SizedBox(height: 16),
-            Text(
-              'Something went wrong',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-            ),
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Try again'),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

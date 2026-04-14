@@ -7,6 +7,7 @@ import 'package:tendergo_admin/models/dto/tender_dto.dart';
 import 'package:tendergo_admin/services/bid_service.dart';
 import 'package:tendergo_admin/services/dio_client.dart';
 import 'package:tendergo_admin/services/tender_service.dart';
+import 'package:tendergo_admin/widgets/common/screen_state_widgets.dart';
 
 class TenderDetailsScreen extends StatefulWidget {
   final TenderService tenderService;
@@ -27,6 +28,7 @@ class TenderDetailsScreen extends StatefulWidget {
 class _TenderDetailsScreenState extends State<TenderDetailsScreen> {
   Future<TenderDto>? _tenderFuture;
   bool _initialized = false;
+  int? _resolvedTenderId;
   int _activeImageIndex = 0;
   final _bidFormKey = GlobalKey<FormState>();
   late final BidService _bidService;
@@ -68,6 +70,7 @@ class _TenderDetailsScreenState extends State<TenderDetailsScreen> {
     }
 
     if (resolvedId != null) {
+      _resolvedTenderId = resolvedId;
       _tenderFuture = _loadTender(resolvedId);
     }
   }
@@ -87,10 +90,17 @@ class _TenderDetailsScreenState extends State<TenderDetailsScreen> {
             future: _tenderFuture,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
+                return const ScreenLoadingState();
               }
               if (snapshot.hasError || !snapshot.hasData) {
-                return Center(child: Text('Error: ${snapshot.error}'));
+                return ScreenErrorState(
+                  message: snapshot.error?.toString() ?? 'Could not load tender details.',
+                  onRetry: () {
+                    final id = _resolvedTenderId;
+                    if (id == null) return;
+                    setState(() => _tenderFuture = _loadTender(id));
+                  },
+                );
               }
 
               final tender = snapshot.data!;
@@ -406,8 +416,9 @@ class _TenderDetailsScreenState extends State<TenderDetailsScreen> {
       children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(12),
-          child: AspectRatio(
-            aspectRatio: 16 / 9,
+          child: SizedBox (
+            height: 320,
+            width: 600,
             child: PageView.builder(
               itemCount: imageUrls.length,
               onPageChanged: (i) => setState(() => _activeImageIndex = i),
@@ -445,7 +456,14 @@ class _TenderDetailsScreenState extends State<TenderDetailsScreen> {
   }
 
   List<String> _extractImageUrls(TenderDto tender) {
-    return tender.images.map((img) => img.imageUrl.trim()).where((url) => url.isNotEmpty).toList();
+     final urls = tender.images
+      .map((img) => DioClient.resolveImageUrl(img.imageUrl.trim()))
+      .whereType<String>()
+      .where((url) => url.isNotEmpty)
+      .toList();
+  
+  debugPrint('Image URLs: $urls'); // ← dodaj ovo
+  return urls;
   }
 
   String _formatDate(DateTime date) => "${date.day} ${_months[date.month - 1]} ${date.year}";

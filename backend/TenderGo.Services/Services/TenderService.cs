@@ -41,7 +41,8 @@ namespace TenderGo.Services.Services
             return query
                 .Include(t => t.Category)
                 .Include(t => t.CreatedByUser)
-                .Include(t => t.Bids);
+                .Include(t => t.Bids)
+                .Include(t => t.Images);
         }
 
         public async Task<IEnumerable<TenderDTO>> GetActiveTenders()
@@ -111,30 +112,48 @@ namespace TenderGo.Services.Services
             if (request.Deadline <= DateTime.UtcNow)
                 throw new UserException("Deadline must be in the future");
 
-            var entity = _mapper.Map<Tender>(request);
-
-            if (!string.IsNullOrWhiteSpace(request.LocationName))
+            try  // 
             {
-                var parts = request.LocationName.Split(',');
-                entity.LocationName = parts.Length >= 2 ? parts[0].Trim() : request.LocationName.Trim();
-                entity.Country = parts.Length >= 2 ? parts[1].Trim() : "Unknown";
+                var entity = _mapper.Map<Tender>(request);
+                _logger.LogInformation("ImageUrls in request: {Count}", request.ImageUrls?.Count ?? 0);
+                _logger.LogInformation("Images mapped to entity: {Count}", entity.Images?.Count ?? 0);
+
+                if (!string.IsNullOrWhiteSpace(request.LocationName))
+                {
+                    var parts = request.LocationName.Split(',');
+                    entity.LocationName = parts.Length >= 2 ? parts[0].Trim() : request.LocationName.Trim();
+                    entity.Country = parts.Length >= 2 ? parts[1].Trim() : "Unknown";
+                }
+
+                entity.Status = TenderStatus.Open;
+                entity.PostedAt = DateTime.UtcNow;
+                entity.CreatedAt = DateTime.UtcNow;
+                entity.CreatedByUserId = _authService.GetCurrentUserId();
+
+                var images = entity.Images.ToList();
+                for (int i = 0; i < images.Count; i++)
+                {
+                    images[i].IsPrimary = (i == 0);
+                    images[i].Tender = entity;
+                }
+
+                _context.Tenders.Add(entity);
+                await _context.SaveChangesAsync();
+
+                var saved = await _context.Tenders
+                    .Include(t => t.CreatedByUser)
+                    .Include(t => t.Category)
+                    .Include(t => t.Images)
+                    .Include(t => t.Bids)
+                    .FirstAsync(t => t.Id == entity.Id);
+
+                return _mapper.Map<TenderDTO>(saved);
             }
-
-            entity.Status = TenderStatus.Open;  
-            entity.PostedAt = DateTime.UtcNow;
-            entity.CreatedAt = DateTime.UtcNow;
-            entity.CreatedByUserId = _authService.GetCurrentUserId();
-
-            _context.Tenders.Add(entity);
-            await _context.SaveChangesAsync();
-
-            var saved = await _context.Tenders
-                .Include(t => t.CreatedByUser)
-                .Include(t => t.Category)
-                .Include(t => t.Images)
-                .Include(t => t.Bids)
-                .FirstAsync(t => t.Id == entity.Id);
-            return _mapper.Map<TenderDTO>(saved);
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error inserting tender: {Message}", ex.Message);
+                throw; 
+            }
         }
 
 
@@ -227,7 +246,6 @@ namespace TenderGo.Services.Services
                 TenderStatus.Closed => _serviceProvider.GetRequiredService<ClosedTenderState>(),
                 TenderStatus.Awarded => _serviceProvider.GetRequiredService<AwardedTenderState>(),
                 TenderStatus.Cancelled => _serviceProvider.GetRequiredService<CancelledTenderState>(),
-                TenderStatus.Archived => _serviceProvider.GetRequiredService<ArchivedTenderState>(),
                 _ => throw new UserException("Invalid tender status")
             };
         }

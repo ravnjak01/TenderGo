@@ -20,14 +20,5 @@ namespace TenderGo.Services.StateMachines.TenderStates
             
         }
 
-        public override async Task<TenderDTO> Archive(int id)
-        {
-            var tender = await _context.Tenders.FindAsync(id)
-                ?? throw new NotFoundException("Tender not found", new { Entity = "Tender", Id = id });
-
-            tender.Status = TenderStatus.Archived;
-            await _context.SaveChangesAsync();
-            return _mapper.Map<TenderDTO>(tender);
-        }
     }
 }

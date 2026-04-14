@@ -116,6 +116,8 @@ builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddTransient<ICategoryService, CategoryService>();
+builder.Services.AddHostedService<TenderExpiryJob>();
+builder.Services.AddScoped<IImageService, ImageService>();
 
 builder.Services.AddTransient<BaseState>();
 builder.Services.AddTransient < InitialTenderState>() ;
@@ -123,7 +125,6 @@ builder.Services.AddTransient<OpenTenderState>();
 builder.Services.AddTransient<ClosedTenderState>();
 builder.Services.AddTransient<AwardedTenderState>();
 builder.Services.AddTransient<CancelledTenderState>();
-builder.Services.AddTransient<ArchivedTenderState>();
 
 
 builder.Services.AddScoped<OpenBidState>();
@@ -150,9 +151,10 @@ builder.Services.AddCors(options => {
 var app = builder.Build();
 //app.UseMiddleware<GlobalExceptionMiddleware>();
 
+app.UseStaticFiles(); 
 
 
-    app.UseSwagger();
+app.UseSwagger();
 app.UseSwaggerUI(c => {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "TenderGo API V1");
     c.RoutePrefix = "swagger"; 
