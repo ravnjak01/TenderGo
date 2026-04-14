@@ -35,7 +35,7 @@ class _AdminScreenState extends State<AdminScreen> {
   List<TenderDto> _allTenders = const [];
   List<TenderDto> _activeTenders = const [];
   List<TenderDto> _closedTenders = const [];
-  List<TenderDto> _draftTenders = const [];
+  List<TenderDto> _cancelledTenders = const [];
   _TenderBucket _selectedBucket = _TenderBucket.all;
 
   bool get _isAdmin {
@@ -45,15 +45,24 @@ class _AdminScreenState extends State<AdminScreen> {
 
   List<TenderDto> get _visibleTenders {
     switch (_selectedBucket) {
-      case _TenderBucket.all:
-        return _allTenders;
-      case _TenderBucket.active:
-        return _activeTenders;
-      case _TenderBucket.closed:
-        return _closedTenders;
-      case _TenderBucket.drafts:
-        return _draftTenders;
-    }
+    case _TenderBucket.all:
+      return _allTenders;
+
+    case _TenderBucket.active:
+      return _allTenders
+          .where((t) => t.status.name.toLowerCase() == 'open')
+          .toList();
+
+    case _TenderBucket.closed:
+      return _allTenders
+          .where((t) => t.status.name.toLowerCase() == 'closed')
+          .toList();
+
+    case _TenderBucket.cancelled:
+      return _allTenders
+          .where((t) => t.status.name.toLowerCase() == 'cancelled')
+          .toList();
+  }
   }
 
   @override
@@ -61,6 +70,52 @@ class _AdminScreenState extends State<AdminScreen> {
     super.initState();
     _loadAdminData();
   }
+
+ Future<void> _handleDeleteTender(TenderDto tender) async {
+  final confirm = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) {
+      return AlertDialog(
+        title: const Text('Delete tender'),
+        content: Text(
+          'Are you sure you want to delete "${tender.title}"?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.error,
+            ),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      );
+    },
+  );
+
+  if (confirm != true) return;
+
+  setState(() => _isSubmitting = true);
+
+  final result = await widget.adminService.deleteTender(tender.id);
+
+  if (!mounted) return;
+
+  setState(() => _isSubmitting = false);
+
+  _showSnackBar(result.message);
+
+  if (result.success) {
+    setState(() {
+      _allTenders.removeWhere((t) => t.id == tender.id);
+      _activeTenders.removeWhere((t) => t.id == tender.id);
+    });
+  }
+}
 
   Future<void> _loadAdminData({bool showLoader = true}) async {
     if (showLoader) {
@@ -90,7 +145,7 @@ class _AdminScreenState extends State<AdminScreen> {
           _allTenders = const [];
           _activeTenders = const [];
           _closedTenders = const [];
-          _draftTenders = const [];
+          _cancelledTenders = const [];
           _isLoading = false;
           _errorMessage = null;
         });
@@ -102,7 +157,7 @@ class _AdminScreenState extends State<AdminScreen> {
         widget.tenderService.getAll(page: 1, pageSize: 100),
         widget.tenderService.getActive(),
         widget.tenderService.getClosed(),
-        widget.tenderService.getDrafts(),
+        //widget.tenderService.getCancelled(),
       ]);
 
       final usersResult = results[0] as AuthResult;
@@ -117,7 +172,7 @@ class _AdminScreenState extends State<AdminScreen> {
         _allTenders = results[1] as List<TenderDto>;
         _activeTenders = results[2] as List<TenderDto>;
         _closedTenders = results[3] as List<TenderDto>;
-        _draftTenders = results[4] as List<TenderDto>;
+       // _cancelledTenders = results[4] as List<TenderDto>;
         _isLoading = false;
         _errorMessage = null;
       });
@@ -358,9 +413,9 @@ class _AdminScreenState extends State<AdminScreen> {
               icon: Icons.event_busy_rounded,
             ),
             _StatCard(
-              label: 'Drafts',
-              value: _draftTenders.length.toString(),
-              icon: Icons.edit_note_rounded,
+              label: 'Cancelled',
+              value: _cancelledTenders.length.toString(),
+              icon: Icons.cancel_outlined,
             ),
           ],
         ),
@@ -537,9 +592,9 @@ class _AdminScreenState extends State<AdminScreen> {
                 icon: Icon(Icons.event_busy_outlined),
               ),
               ButtonSegment<_TenderBucket>(
-                value: _TenderBucket.drafts,
-                label: Text('Drafts'),
-                icon: Icon(Icons.edit_note_outlined),
+                value: _TenderBucket.cancelled,
+                label: Text('Cancelled'),
+                icon: Icon(Icons.cancel_outlined),
               ),
             ],
             selected: {_selectedBucket},
@@ -598,7 +653,23 @@ class _AdminScreenState extends State<AdminScreen> {
                         '${tender.categoryName} • ${tender.locationName}, ${tender.country}',
                         style: theme.textTheme.bodySmall,
                       ),
+                      const SizedBox(height: 12),
+
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton.icon(
+                          onPressed: _isSubmitting
+                              ? null
+                              : () => _handleDeleteTender(tender),
+                          icon: const Icon(Icons.delete_outline_rounded),
+                          label: const Text('Delete'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppColors.error,
+                          ),
+                        ),
+                      ),
                     ],
+                    
                   ),
                 ),
                 Container(
@@ -615,6 +686,7 @@ class _AdminScreenState extends State<AdminScreen> {
                     style: theme.textTheme.labelMedium?.copyWith(
                       color: AppColors.primaryDark,
                       fontWeight: FontWeight.w700,
+                      
                     ),
                   ),
                 ),
@@ -656,7 +728,7 @@ class _AdminScreenState extends State<AdminScreen> {
   }
 }
 
-enum _TenderBucket { all, active, closed, drafts }
+enum _TenderBucket { all, active, closed,cancelled }
 
 class _AdminUserRecord {
   final String id;

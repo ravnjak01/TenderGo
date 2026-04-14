@@ -76,4 +76,19 @@ class CategoryService {
       throw Exception(e.response?.data ?? 'Error deleting category');
     }
   }
+
+    Future<bool> update(int id) async {
+    try {
+      final response = await _dio.put(
+        CategoryApiEndpoints.update(id),
+        options: await _options(),
+      );
+
+      return response.statusCode != null &&
+          response.statusCode! >= 200 &&
+          response.statusCode! < 300;
+    } on DioException catch (e) {
+      throw Exception(e.response?.data ?? 'Error updating category');
+    }
+  }
 }

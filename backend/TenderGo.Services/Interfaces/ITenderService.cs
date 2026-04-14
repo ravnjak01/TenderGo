@@ -16,6 +16,8 @@ namespace TenderGo.Services.Interfaces
        Task<IEnumerable<TenderDTO>> GetClosedTenders();
         Task<IEnumerable<TenderDTO>> GetActiveTenders();
         Task<IEnumerable<TenderDTO>> GetDraftTenders();
+        Task<IEnumerable<TenderDTO>> GetCancelledTenders();
+
         Task<List<TenderDTO>> GetTendersByUser(string userId);
 
         Task<TenderDTO> Cancel(int tenderId);

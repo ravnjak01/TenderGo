@@ -34,6 +34,8 @@ class TenderApiEndpoints {
   /// GET /api/tender/drafts
   static const String getDrafts = '$_tenderBase/drafts';
 
+  static const String getCancelled = '$_tenderBase/cancelled';
+
   /// GET /api/tender/category/{id}
   static String getByCategory(int id) => '$_tenderBase/category/$id';
 

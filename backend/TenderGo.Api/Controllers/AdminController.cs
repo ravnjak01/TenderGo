@@ -49,5 +49,18 @@ namespace TenderGo.Api.Controllers
 
             return Ok(new { message = $"User {userId} has been unbanned." });
         }
+
+        [HttpDelete("tender/{id}")]
+        public async Task<IActionResult> DeleteTender(int id)
+        {
+            var success = await _adminService.DeleteTenderAsync(id);
+
+            if (!success)
+                return NotFound();
+
+            return Ok(new { message = "Tender removed successfully" });
+        }
     }
+
+
 }

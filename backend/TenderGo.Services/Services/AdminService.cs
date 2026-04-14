@@ -1,7 +1,10 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Azure.Core;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using TenderGo.Api.Database;
 using TenderGo.Models.DTOs;
 using TenderGo.Models.Entities;
+using TenderGo.Models.ENUMs;
 using TenderGo.Models.Requests;
 using TenderGo.Services.Interfaces;
 
@@ -10,10 +13,12 @@ namespace TenderGo.Services.Services
     public class AdminService : IAdminService
     {
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly TenderGoContext _context;
 
-        public AdminService(UserManager<ApplicationUser> userManager)
+        public AdminService(UserManager<ApplicationUser> userManager,TenderGoContext context)
         {
             _userManager = userManager;
+            _context = context;
         }
 
         public async Task<IEnumerable<UserDTO>> GetAllUsersAsync()
@@ -81,6 +86,21 @@ namespace TenderGo.Services.Services
 
             var result = await _userManager.UpdateAsync(user);
             return result.Succeeded;
+        }
+
+        public async Task<bool> DeleteTenderAsync(int tenderId)
+        {
+            var tender = await _context.Tenders.FindAsync(tenderId);
+
+            if (tender == null || tender.IsDeleted)
+                return false;
+
+            tender.IsDeleted = true;
+            tender.Status = TenderStatus.Cancelled;
+
+            await _context.SaveChangesAsync();
+
+            return true;
         }
     }
 }

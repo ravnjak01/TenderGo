@@ -112,6 +112,31 @@ class AdminService {
     }
   }
 
+  Future<AuthResult> deleteTender(int tenderId) async {
+  try {
+    await _dio.delete(
+      AdminEndpoints.deleteTender(tenderId),
+      options: await _options(),
+    );
+
+    return const AuthResult(
+      success: true,
+      message: 'Tender deleted successfully.',
+    );
+  } on DioException catch (e) {
+    final data = e.response?.data;
+
+    final message = (data is Map)
+        ? (data['message']?.toString() ?? 'Something went wrong.')
+        : 'Something went wrong.';
+
+    return AuthResult(
+      success: false,
+      message: message,
+    );
+  }
+}
+
   // 🔐 Shared options (Authorization header)
   Future<Options> _options() async {
     final token = await _storage.read(key: 'jwt_token');
