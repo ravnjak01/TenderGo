@@ -1,3 +1,5 @@
+import 'package:dio/dio.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -27,8 +29,9 @@ class TenderPostScreen extends StatefulWidget {
 class _TenderPostScreenState extends State<TenderPostScreen>
     with SingleTickerProviderStateMixin {
   late final TenderService _tenderService = widget.tenderService;
-  late final CategoryService _categoryService =
-      CategoryService(DioClient.getDio());
+  late final CategoryService _categoryService = CategoryService(
+    DioClient.getDio(),
+  );
 
   final _formKey = GlobalKey<FormState>();
   final _titleCtrl = TextEditingController();
@@ -40,6 +43,7 @@ class _TenderPostScreenState extends State<TenderPostScreen>
   int? _selectedCategoryId;
   DateTime? _deadline;
   final List<String> _imageUrls = [];
+  final List<PlatformFile> _imageFiles = [];
   List<CategoryDto> _categories = [];
   bool _isCategoryLoading = true;
   String? _categoryLoadError;
@@ -50,8 +54,10 @@ class _TenderPostScreenState extends State<TenderPostScreen>
     vsync: this,
     duration: const Duration(milliseconds: 540),
   )..forward();
-  late final Animation<double> _fadeAni =
-      CurvedAnimation(parent: _aniCtrl, curve: Curves.easeOut);
+  late final Animation<double> _fadeAni = CurvedAnimation(
+    parent: _aniCtrl,
+    curve: Curves.easeOut,
+  );
 
   @override
   void initState() {
@@ -75,7 +81,10 @@ class _TenderPostScreenState extends State<TenderPostScreen>
       if (!mounted) return;
       setState(() {
         _isCategoryLoading = false;
-        _categoryLoadError = e.toString().replaceFirst('Exception: ', '').trim();
+        _categoryLoadError = e
+            .toString()
+            .replaceFirst('Exception: ', '')
+            .trim();
       });
     }
   }
@@ -100,9 +109,16 @@ class _TenderPostScreenState extends State<TenderPostScreen>
       lastDate: now.add(const Duration(days: 730)),
     );
     if (picked != null) {
-      setState(() => _deadline = DateTime(
-            picked.year, picked.month, picked.day, 23, 59, 59,
-          ));
+      setState(
+        () => _deadline = DateTime(
+          picked.year,
+          picked.month,
+          picked.day,
+          23,
+          59,
+          59,
+        ),
+      );
     }
   }
 
@@ -118,18 +134,52 @@ class _TenderPostScreenState extends State<TenderPostScreen>
     _imageUrlCtrl.clear();
   }
 
+  Future<void> _pickImagesFromDisk() async {
+    try {
+      final picked = await FilePicker.pickFiles(
+        type: FileType.image,
+        allowMultiple: true,
+        withData: true,
+      );
+
+      if (picked == null || picked.files.isEmpty) return;
+
+      final newFiles = <PlatformFile>[];
+      for (final file in picked.files) {
+        final key = '${file.path ?? file.name}:${file.size}';
+        final exists = _imageFiles.any(
+          (f) => '${f.path ?? f.name}:${f.size}' == key,
+        );
+        if (!exists) {
+          newFiles.add(file);
+        }
+      }
+
+      if (newFiles.isEmpty) {
+        _showSnack('Selected files are already added.', isError: true);
+        return;
+      }
+
+      setState(() => _imageFiles.addAll(newFiles));
+    } catch (e) {
+      _showSnack(e.toString().replaceFirst('Exception: ', ''), isError: true);
+    }
+  }
+
   void _removeImageUrl(int index) => setState(() => _imageUrls.removeAt(index));
 
+  void _removeImageFile(int index) =>
+      setState(() => _imageFiles.removeAt(index));
+
   TenderInsertRequest _buildRequest() => TenderInsertRequest(
-        title: _titleCtrl.text.trim(),
-        maxBudget: double.parse(_budgetCtrl.text.trim()),
-        locationName: _locationCtrl.text.trim(),
-        description:
-            _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
-        categoryId: _selectedCategoryId!,
-        deadline: _deadline!,
-        imageUrls: _imageUrls.isEmpty ? null : List.from(_imageUrls),
-      );
+    title: _titleCtrl.text.trim(),
+    maxBudget: double.parse(_budgetCtrl.text.trim()),
+    locationName: _locationCtrl.text.trim(),
+    description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
+    categoryId: _selectedCategoryId!,
+    deadline: _deadline!,
+    imageUrls: _imageUrls.isEmpty ? null : List.from(_imageUrls),
+  );
 
   bool _validateExtra() {
     if (_deadline == null) {
@@ -143,39 +193,102 @@ class _TenderPostScreenState extends State<TenderPostScreen>
     return true;
   }
 
-  Future<void> _submit() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
-    if (!_validateExtra()) return;
-    setState(() { _isLoading = true; _errorMessage = null; });
-    try {
-      await context.read<TenderProvider>().createTender(_buildRequest());
-      if (!mounted) return;
-      _showSnack('Tender published successfully!');
-      await Future.delayed(const Duration(milliseconds: 900));
-      if (mounted) Navigator.pop(context, true);
-    } catch (e) {
-      if (!mounted) return;
-      setState(() =>
-          _errorMessage = e.toString().replaceFirst('Exception: ', ''));
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+  Future<void> _submitTender() async {
+  if (!_formKey.currentState!.validate()) return;
+  if (_deadline == null) {
+    _showSnack('Please select a deadline', isError: true);
+    return;
+  }
+
+  setState(() => _isLoading = true);
+
+  try {
+    // KORAK 1: Uploadaj lokalne fajlove, dobij URL-ove
+    final uploadedUrls = await _uploadLocalImages(_imageFiles);
+
+    // KORAK 2: Kombiniraj sa ručno unesenim URL-ovima
+    final allImageUrls = [..._imageUrls, ...uploadedUrls];
+
+    // KORAK 3: Kreiraj tender sa svim URL-ovima kao JSON
+    final request = TenderInsertRequest(
+      title: _titleCtrl.text.trim(),
+      maxBudget: double.parse(_budgetCtrl.text.trim()),
+      locationName: _locationCtrl.text.trim(),
+      description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
+      categoryId: _selectedCategoryId!,
+      deadline: _deadline!,
+      imageUrls: allImageUrls,
+    );
+
+    await widget.tenderService.create(request);
+    if (!mounted) return;
+    Navigator.pop(context, true);
+  } catch (e) {
+    _showSnack(e.toString().replaceFirst('Exception: ', ''), isError: true);
+  } finally {
+    if (mounted) setState(() => _isLoading = false);
+  }
+  }
+
+// Upload lokalnih fajlova na images endpoint
+Future<List<String>> _uploadLocalImages(List<PlatformFile> files) async {
+  if (files.isEmpty) return [];
+  
+  final urls = <String>[];
+  
+  for (final file in files) {
+    final formData = FormData();
+    
+    if (file.path != null && file.path!.isNotEmpty) {
+      formData.files.add(MapEntry(
+        'file',
+        await MultipartFile.fromFile(file.path!, filename: file.name),
+      ));
+    } else if (file.bytes != null) {
+      formData.files.add(MapEntry(
+        'file',
+        MultipartFile.fromBytes(file.bytes!, filename: file.name),
+      ));
+    } else {
+      continue; // preskoči ako nema ni path ni bytes
+    }
+
+    final response = await DioClient.getDio().post(
+      '/images/upload',
+      data: formData,
+    );
+
+    // ImageService vraća TenderImageDTO
+    final imageUrl = response.data['imageUrl'] as String?;
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      urls.add(imageUrl);
     }
   }
+  
+  return urls;
+}
 
   Future<void> _saveDraft() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     if (!_validateExtra()) return;
-    setState(() { _isLoading = true; _errorMessage = null; });
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
     try {
-      await _tenderService.createDraft(_buildRequest());
+      await _tenderService.createDraft(
+        _buildRequest(),
+        imageFiles: _imageFiles,
+      );
       if (!mounted) return;
       _showSnack('Draft saved successfully!');
       await Future.delayed(const Duration(milliseconds: 900));
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) return;
-      setState(() =>
-          _errorMessage = e.toString().replaceFirst('Exception: ', ''));
+      setState(
+        () => _errorMessage = e.toString().replaceFirst('Exception: ', ''),
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -193,9 +306,13 @@ class _TenderPostScreenState extends State<TenderPostScreen>
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: Text(msg,
-                  style: const TextStyle(
-                      color: AppColors.textPrimary, fontSize: 13)),
+              child: Text(
+                msg,
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 13,
+                ),
+              ),
             ),
           ],
         ),
@@ -239,26 +356,30 @@ class _TenderPostScreenState extends State<TenderPostScreen>
                   title: 'TENDER DETAILS',
                   icon: Icons.edit_outlined,
                   children: [
-                    _cardField(AppTextField(
-                      controller: _titleCtrl,
-                      label: 'Title *',
-                      hint: 'e.g. Road Construction — Phase 2',
-                      prefixIcon: Icons.edit_outlined,
-                      validator: (v) => (v == null || v.trim().isEmpty)
-                          ? 'Title is required'
-                          : null,
-                    )),
+                    _cardField(
+                      AppTextField(
+                        controller: _titleCtrl,
+                        label: 'Title *',
+                        hint: 'e.g. Road Construction — Phase 2',
+                        prefixIcon: Icons.edit_outlined,
+                        validator: (v) => (v == null || v.trim().isEmpty)
+                            ? 'Title is required'
+                            : null,
+                      ),
+                    ),
                     _cardField(_buildBudgetField()),
                     _cardField(_buildCategorySection()),
-                    _cardField(AppTextField(
-                      controller: _locationCtrl,
-                      label: 'Location *',
-                      hint: 'e.g. Sarajevo, Bosnia',
-                      prefixIcon: Icons.place_outlined,
-                      validator: (v) => (v == null || v.trim().isEmpty)
-                          ? 'Location is required'
-                          : null,
-                    )),
+                    _cardField(
+                      AppTextField(
+                        controller: _locationCtrl,
+                        label: 'Location *',
+                        hint: 'e.g. Sarajevo, Bosnia',
+                        prefixIcon: Icons.place_outlined,
+                        validator: (v) => (v == null || v.trim().isEmpty)
+                            ? 'Location is required'
+                            : null,
+                      ),
+                    ),
                     const SizedBox(height: 4),
                   ],
                 ),
@@ -270,17 +391,22 @@ class _TenderPostScreenState extends State<TenderPostScreen>
                   title: 'DEADLINE & DESCRIPTION',
                   icon: Icons.event_outlined,
                   children: [
-                    _cardField(DatepickerWidget(
-                      deadline: _deadline,
-                      onTap: _pickDeadline,
-                    )),
-                    _cardField(AppTextField(
-                      controller: _descCtrl,
-                      label: 'Description (optional)',
-                      hint: 'Describe scope, requirements, evaluation criteria…',
-                      minLines: 5,
-                      maxLines: 5,
-                    )),
+                    _cardField(
+                      DatepickerWidget(
+                        deadline: _deadline,
+                        onTap: _pickDeadline,
+                      ),
+                    ),
+                    _cardField(
+                      AppTextField(
+                        controller: _descCtrl,
+                        label: 'Description (optional)',
+                        hint:
+                            'Describe scope, requirements, evaluation criteria…',
+                        minLines: 5,
+                        maxLines: 5,
+                      ),
+                    ),
                     const SizedBox(height: 4),
                   ],
                 ),
@@ -289,10 +415,12 @@ class _TenderPostScreenState extends State<TenderPostScreen>
 
                 // ── Media ─────────────────────────────────────────
                 AppCard(
-                  title: 'IMAGE URLS (OPTIONAL)',
+                  title: 'IMAGES (OPTIONAL)',
                   icon: Icons.image_outlined,
                   children: [
                     _cardField(_buildImageUrlRow()),
+                    if (_imageFiles.isNotEmpty)
+                      _cardField(_buildImageFileChips()),
                     if (_imageUrls.isNotEmpty) _cardField(_buildImageChips()),
                     const SizedBox(height: 4),
                   ],
@@ -317,345 +445,442 @@ class _TenderPostScreenState extends State<TenderPostScreen>
   }
 
   PreferredSizeWidget _buildAppBar() => AppBar(
-        backgroundColor: AppColors.surface,
-        elevation: 0,
-        centerTitle: false,
-        systemOverlayStyle: SystemUiOverlayStyle.dark,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded,
-              size: 17, color: AppColors.textSecondary),
-          onPressed: () => Navigator.pop(context),
+    backgroundColor: AppColors.surface,
+    elevation: 0,
+    centerTitle: false,
+    systemOverlayStyle: SystemUiOverlayStyle.dark,
+    leading: IconButton(
+      icon: const Icon(
+        Icons.arrow_back_ios_new_rounded,
+        size: 17,
+        color: AppColors.textSecondary,
+      ),
+      onPressed: () => Navigator.pop(context),
+    ),
+    title: Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(7),
+          ),
+          child: const Icon(
+            Icons.post_add_rounded,
+            color: AppColors.primary,
+            size: 16,
+          ),
         ),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(7),
-              ),
-              child: const Icon(Icons.post_add_rounded,
-                  color: AppColors.primary, size: 16),
-            ),
-            const SizedBox(width: 10),
-            const Text(
-              'Post Tender',
-              style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600),
-            ),
-          ],
+        const SizedBox(width: 10),
+        const Text(
+          'Post Tender',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
         ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(height: 1, color: AppColors.outline),
-        ),
-      );
+      ],
+    ),
+    bottom: PreferredSize(
+      preferredSize: const Size.fromHeight(1),
+      child: Container(height: 1, color: AppColors.outline),
+    ),
+  );
 
   Widget _buildBanner() => Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(colors: [
-            AppColors.primary.withValues(alpha: 0.08),
-            AppColors.primary.withValues(alpha: 0.03),
-          ]),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        colors: [
+          AppColors.primary.withValues(alpha: 0.08),
+          AppColors.primary.withValues(alpha: 0.03),
+        ],
+      ),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+    ),
+    child: Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: const Icon(
+            Icons.description_outlined,
+            color: AppColors.primary,
+            size: 22,
+          ),
         ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
+        const SizedBox(width: 14),
+        const Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Create a New Tender',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
               ),
-              child: const Icon(Icons.description_outlined,
-                  color: AppColors.primary, size: 22),
-            ),
-            const SizedBox(width: 14),
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Create a New Tender',
-                    style: TextStyle(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14),
-                  ),
-                  SizedBox(height: 3),
-                  Text(
-                    'Fill in the details below. Fields marked * are required.',
-                    style:
-                        TextStyle(color: AppColors.textSecondary, fontSize: 12),
-                  ),
-                ],
+              SizedBox(height: 3),
+              Text(
+                'Fill in the details below. Fields marked * are required.',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      );
+      ],
+    ),
+  );
 
   // Budget stays as raw TextFormField — needs inputFormatters which AppTextField doesn't support
   Widget _buildBudgetField() => TextFormField(
-        controller: _budgetCtrl,
-        style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        inputFormatters: [
-          FilteringTextInputFormatter.deny(RegExp(r'-')),
-          FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*$')),
-        ],
-        decoration: InputDecoration(
-          labelText: 'Max Budget *',
-          hintText: '0.00',
-          prefixIcon: const Padding(
-            padding: EdgeInsets.only(left: 12, right: 4),
-            child: Text('\$',
-                style:
-                    TextStyle(color: AppColors.textSecondary, fontSize: 16)),
-          ),
-          prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
-          filled: true,
-          fillColor: AppColors.surfaceVariant,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: AppColors.outline),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide:
-                const BorderSide(color: AppColors.primary, width: 1.5),
-          ),
-          errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: AppColors.error),
-          ),
-          focusedErrorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide:
-                const BorderSide(color: AppColors.error, width: 1.5),
-          ),
+    controller: _budgetCtrl,
+    style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+    inputFormatters: [
+      FilteringTextInputFormatter.deny(RegExp(r'-')),
+      FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*$')),
+    ],
+    decoration: InputDecoration(
+      labelText: 'Max Budget *',
+      hintText: '0.00',
+      prefixIcon: const Padding(
+        padding: EdgeInsets.only(left: 12, right: 4),
+        child: Text(
+          '\$',
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 16),
         ),
-        validator: (v) {
-          if (v == null || v.trim().isEmpty) return 'Required';
-          final d = double.tryParse(v.trim());
-          if (d == null || d <= 0) return 'Invalid amount';
-          return null;
-        },
-      );
+      ),
+      prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+      filled: true,
+      fillColor: AppColors.surfaceVariant,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: AppColors.outline),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: AppColors.error),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: AppColors.error, width: 1.5),
+      ),
+    ),
+    validator: (v) {
+      if (v == null || v.trim().isEmpty) return 'Required';
+      final d = double.tryParse(v.trim());
+      if (d == null || d <= 0) return 'Invalid amount';
+      return null;
+    },
+  );
 
   Widget _buildCategorySection() => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'CATEGORY *',
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.7,
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const Text(
+        'CATEGORY *',
+        style: TextStyle(
+          color: AppColors.textSecondary,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.7,
+        ),
+      ),
+      const SizedBox(height: 8),
+      if (_isCategoryLoading)
+        // Small inline spinner — ScreenLoadingState is a full-screen widget
+        const Center(
+          child: SizedBox(
+            height: 24,
+            width: 24,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: AppColors.primary,
             ),
           ),
-          const SizedBox(height: 8),
-          if (_isCategoryLoading)
-            // Small inline spinner — ScreenLoadingState is a full-screen widget
-            const Center(
-              child: SizedBox(
-                height: 24,
-                width: 24,
-                child: CircularProgressIndicator(
-                    strokeWidth: 2, color: AppColors.primary),
-              ),
-            )
-          else if (_categoryLoadError != null)
-            // ScreenErrorState is full-screen too, so use a compact inline version
-            Row(
-              children: [
-                const Icon(Icons.error_outline,
-                    size: 14, color: AppColors.error),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    _categoryLoadError!,
-                    style: const TextStyle(
-                        color: AppColors.error, fontSize: 12),
-                  ),
-                ),
-                TextButton(
-                  onPressed: _loadCategories,
-                  style: TextButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: const Text('Retry',
-                      style: TextStyle(
-                          fontSize: 12, color: AppColors.primary)),
-                ),
-              ],
-            )
-          else
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: _categories
-                    .map((c) => CategoryChipWidget(
-                          label: c.name,
-                          isSelected: _selectedCategoryId == c.id,
-                          onTap: () =>
-                              setState(() => _selectedCategoryId = c.id),
-                        ))
-                    .toList(),
+        )
+      else if (_categoryLoadError != null)
+        // ScreenErrorState is full-screen too, so use a compact inline version
+        Row(
+          children: [
+            const Icon(Icons.error_outline, size: 14, color: AppColors.error),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                _categoryLoadError!,
+                style: const TextStyle(color: AppColors.error, fontSize: 12),
               ),
             ),
-        ],
-      );
+            TextButton(
+              onPressed: _loadCategories,
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.zero,
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: const Text(
+                'Retry',
+                style: TextStyle(fontSize: 12, color: AppColors.primary),
+              ),
+            ),
+          ],
+        )
+      else
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: _categories
+                .map(
+                  (c) => CategoryChipWidget(
+                    label: c.name,
+                    isSelected: _selectedCategoryId == c.id,
+                    onTap: () => setState(() => _selectedCategoryId = c.id),
+                  ),
+                )
+                .toList(),
+          ),
+        ),
+    ],
+  );
 
-  Widget _buildImageUrlRow() => Row(
+  Widget _buildImageUrlRow() => Column(
+    children: [
+      SizedBox(
+        width: double.infinity,
+        child: FilledButton.icon(
+          onPressed: _pickImagesFromDisk,
+          icon: const Icon(Icons.upload_file_rounded, size: 18),
+          label: const Text('Upload from disk'),
+          style: FilledButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            minimumSize: const Size.fromHeight(48),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        ),
+      ),
+      const SizedBox(height: 10),
+      Row(
         children: [
           Expanded(
             child: AppTextField(
               controller: _imageUrlCtrl,
-              label: 'Paste image URL…',
+              label: 'Or paste image URL',
               prefixIcon: Icons.link_rounded,
             ),
           ),
           const SizedBox(width: 10),
           AppIconButton(icon: Icons.add_rounded, onTap: _addImageUrl),
         ],
-      );
+      ),
+    ],
+  );
+
+  Widget _buildImageFileChips() => Wrap(
+    spacing: 8,
+    runSpacing: 8,
+    children: List.generate(
+      _imageFiles.length,
+      (i) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceVariant,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.outline),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.upload_file_rounded,
+              size: 13,
+              color: AppColors.textSecondary,
+            ),
+            const SizedBox(width: 5),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 160),
+              child: Text(
+                _imageFiles[i].name,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+            GestureDetector(
+              onTap: () => _removeImageFile(i),
+              child: const Icon(
+                Icons.close_rounded,
+                size: 13,
+                color: AppColors.error,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 
   Widget _buildImageChips() => Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: List.generate(
-          _imageUrls.length,
-          (i) => Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppColors.surfaceVariant,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.outline),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.image_outlined,
-                    size: 13, color: AppColors.textSecondary),
-                const SizedBox(width: 5),
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 160),
-                  child: Text(
-                    _imageUrls[i],
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        color: AppColors.textSecondary, fontSize: 12),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                GestureDetector(
-                  onTap: () => _removeImageUrl(i),
-                  child: const Icon(Icons.close_rounded,
-                      size: 13, color: AppColors.error),
-                ),
-              ],
-            ),
-          ),
+    spacing: 8,
+    runSpacing: 8,
+    children: List.generate(
+      _imageUrls.length,
+      (i) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceVariant,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.outline),
         ),
-      );
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.image_outlined,
+              size: 13,
+              color: AppColors.textSecondary,
+            ),
+            const SizedBox(width: 5),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 160),
+              child: Text(
+                _imageUrls[i],
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+            GestureDetector(
+              onTap: () => _removeImageUrl(i),
+              child: const Icon(
+                Icons.close_rounded,
+                size: 13,
+                color: AppColors.error,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 
   // ActionButton doesn't support icons or loading state, so the submit
   // row keeps full ElevatedButton/OutlinedButton implementations
   Widget _buildSubmitRow() => Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SizedBox(
-            width: 146,
-            height: 52,
-            child: OutlinedButton(
-              onPressed: _isLoading ? null : _saveDraft,
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: AppColors.primary),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                child: _isLoading
-                    ? const SizedBox(
-                        key: ValueKey('loader_draft'),
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2.5, color: AppColors.primary),
-                      )
-                    : const Row(
-                        key: ValueKey('label_draft'),
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.drafts,
-                              color: AppColors.primary, size: 19),
-                          SizedBox(width: 8),
-                          Text(
-                            'Save Draft',
-                            style: TextStyle(
-                                color: AppColors.primary,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600),
-                          ),
-                        ],
-                      ),
-              ),
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      SizedBox(
+        width: 146,
+        height: 52,
+        child: OutlinedButton(
+          onPressed: _isLoading ? null : _saveDraft,
+          style: OutlinedButton.styleFrom(
+            side: const BorderSide(color: AppColors.primary),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
           ),
-          const SizedBox(width: 12),
-          SizedBox(
-            width: 180,
-            height: 52,
-            child: ElevatedButton(
-              onPressed: _isLoading ? null : _submit,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                disabledBackgroundColor: AppColors.textDisabled,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                elevation: 0,
-              ),
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                child: _isLoading
-                    ? const SizedBox(
-                        key: ValueKey('loader'),
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2.5, color: Colors.white),
-                      )
-                    : const Row(
-                        key: ValueKey('label'),
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.publish_rounded,
-                              color: Colors.white, size: 19),
-                          SizedBox(width: 8),
-                          Text(
-                            'Publish Tender',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600),
-                          ),
-                        ],
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            child: _isLoading
+                ? const SizedBox(
+                    key: ValueKey('loader_draft'),
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: AppColors.primary,
+                    ),
+                  )
+                : const Row(
+                    key: ValueKey('label_draft'),
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.drafts, color: AppColors.primary, size: 19),
+                      SizedBox(width: 8),
+                      Text(
+                        'Save Draft',
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-              ),
-            ),
+                    ],
+                  ),
           ),
-        ],
-      );
+        ),
+      ),
+      const SizedBox(width: 12),
+      SizedBox(
+        width: 180,
+        height: 52,
+        child: ElevatedButton(
+          onPressed: _isLoading ? null : _submitTender,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            disabledBackgroundColor: AppColors.textDisabled,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            elevation: 0,
+          ),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            child: _isLoading
+                ? const SizedBox(
+                    key: ValueKey('loader'),
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Row(
+                    key: ValueKey('label'),
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.publish_rounded,
+                        color: Colors.white,
+                        size: 19,
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        'Publish Tender',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+        ),
+      ),
+    ],
+  );
 }

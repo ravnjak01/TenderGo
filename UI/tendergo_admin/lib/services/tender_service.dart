@@ -1,18 +1,23 @@
 import 'package:dio/dio.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:tendergo_admin/core/network/constants/tender_api_endpoints.dart';
 import 'package:tendergo_admin/models/dto/tender_dto.dart';
 import 'package:tendergo_admin/models/dto/tender_post_dto.dart';
+import 'package:tendergo_admin/services/image_service.dart';
 
 class TenderService {
   final Dio _dio;
+  final ImageService _imageService;
   static const _storage = FlutterSecureStorage();
 
-  TenderService(this._dio);
+  TenderService(this._dio, this._imageService);
 
   Future<String?> _getToken() async {
     return await _storage.read(key: 'jwt_token');
   }
+
+  //NE RADI PRIKAZIVANJE SLIKA U TENDER_DETAILS_SCREEN, PROVJERITI KASNIJE
 
   Future<Options> _options() async {
     final token = await _getToken();
@@ -30,17 +35,15 @@ class TenderService {
     try {
       final response = await _dio.get(
         TenderApiEndpoints.getAll,
-        queryParameters: {
-          'page': page,
-          'pageSize': pageSize,
-        },
+        queryParameters: {'page': page, 'pageSize': pageSize},
         options: await _options(),
       );
 
-    final List<dynamic> data = response.data['result'] ?? [];
+      final List<dynamic> data = response.data['result'] ?? [];
 
-    return data.map((x) => TenderDto.fromJson(x as Map<String, dynamic>)).toList();
-
+      return data
+          .map((x) => TenderDto.fromJson(x as Map<String, dynamic>))
+          .toList();
     } on DioException catch (e) {
       throw Exception(e.response?.data ?? 'Error fetching tenders');
     }
@@ -68,7 +71,9 @@ class TenderService {
         options: await _options(),
       );
 
-      return List<TenderDto>.from(response.data.map((x) => TenderDto.fromJson(x)));
+      return List<TenderDto>.from(
+        response.data.map((x) => TenderDto.fromJson(x)),
+      );
     } on DioException catch (e) {
       throw Exception(e.response?.data ?? 'Error fetching active tenders');
     }
@@ -82,7 +87,9 @@ class TenderService {
         options: await _options(),
       );
 
-      return List<TenderDto>.from(response.data.map((x) => TenderDto.fromJson(x)));
+      return List<TenderDto>.from(
+        response.data.map((x) => TenderDto.fromJson(x)),
+      );
     } on DioException catch (e) {
       throw Exception(e.response?.data ?? 'Error fetching closed tenders');
     }
@@ -96,37 +103,51 @@ class TenderService {
         options: await _options(),
       );
 
-      return List<TenderDto>.from(response.data.map((x) => TenderDto.fromJson(x)));
+      return List<TenderDto>.from(
+        response.data.map((x) => TenderDto.fromJson(x)),
+      );
     } on DioException catch (e) {
       throw Exception(e.response?.data ?? 'Error fetching draft tenders');
     }
   }
 
   // ===== CREATE =====
-  Future<TenderDto> create(TenderInsertRequest data ) async {
+  Future<TenderDto> create(
+    TenderInsertRequest data, {
+    List<PlatformFile>? imageFiles,
+  }) async {
     try {
       final response = await _dio.post(
         TenderApiEndpoints.insert,
         data: data.toJson(),
         options: await _options(),
       );
-
-      return TenderDto.fromJson(response.data);
+      final created = TenderDto.fromJson(response.data);
+      if (imageFiles != null && imageFiles.isNotEmpty) {
+        await _imageService.uploadAllForTender(created.id!, imageFiles);
+      }
+      return created;
     } on DioException catch (e) {
       throw Exception(e.response?.data ?? 'Error creating tender');
     }
   }
 
   // ===== CREATE DRAFT =====
-  Future<TenderDto> createDraft(TenderInsertRequest data) async {
+  Future<TenderDto> createDraft(
+    TenderInsertRequest data, {
+    List<PlatformFile>? imageFiles,
+  }) async {
     try {
       final response = await _dio.post(
         TenderApiEndpoints.insertDraft,
         data: data.toJson(),
         options: await _options(),
       );
-
-      return TenderDto.fromJson(response.data);
+      final created = TenderDto.fromJson(response.data);
+      if (imageFiles != null && imageFiles.isNotEmpty) {
+        await _imageService.uploadAllForTender(created.id!, imageFiles);
+      }
+      return created;
     } on DioException catch (e) {
       throw Exception(e.response?.data ?? 'Error creating draft tender');
     }
@@ -174,7 +195,8 @@ class TenderService {
       throw Exception(e.response?.data ?? 'Error activating tender');
     }
   }
-// ===== AWARD =====
+
+  // ===== AWARD =====
   Future<TenderDto> award(TenderDto tender, int bidId) async {
     try {
       final response = await _dio.patch(

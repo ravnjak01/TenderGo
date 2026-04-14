@@ -9,4 +9,11 @@ class ApiEndpoints {
   static const String  me = '/auth/me';
 
 
+  //IMAGES
+
+  static String uploadImage='Images/upload';
+  static String deleteImage='Images';
+
+
+
 }

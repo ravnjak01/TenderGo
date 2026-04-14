@@ -416,8 +416,9 @@ class _TenderDetailsScreenState extends State<TenderDetailsScreen> {
       children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(12),
-          child: AspectRatio(
-            aspectRatio: 16 / 9,
+          child: SizedBox (
+            height: 320,
+            width: 600,
             child: PageView.builder(
               itemCount: imageUrls.length,
               onPageChanged: (i) => setState(() => _activeImageIndex = i),
@@ -455,7 +456,14 @@ class _TenderDetailsScreenState extends State<TenderDetailsScreen> {
   }
 
   List<String> _extractImageUrls(TenderDto tender) {
-    return tender.images.map((img) => img.imageUrl.trim()).where((url) => url.isNotEmpty).toList();
+     final urls = tender.images
+      .map((img) => DioClient.resolveImageUrl(img.imageUrl.trim()))
+      .whereType<String>()
+      .where((url) => url.isNotEmpty)
+      .toList();
+  
+  debugPrint('Image URLs: $urls'); // ← dodaj ovo
+  return urls;
   }
 
   String _formatDate(DateTime date) => "${date.day} ${_months[date.month - 1]} ${date.year}";

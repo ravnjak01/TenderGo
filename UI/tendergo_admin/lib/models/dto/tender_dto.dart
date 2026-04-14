@@ -1,6 +1,7 @@
 import 'package:tendergo_admin/models/enums/tenderstatus.dart';
 import 'package:tendergo_admin/models/dto/tender_image_dto.dart';
 import 'package:tendergo_admin/models/ui/tendercardmodel.dart';
+import 'package:tendergo_admin/services/dio_client.dart';
 
 class TenderDto {
   final int id;
@@ -234,7 +235,7 @@ factory TenderDto.fromJson(Map<String, dynamic> json) {
 
       tags: [dto.locationName, dto.country],
 
-      imageUrl: dto.primaryImage?.imageUrl,
+      imageUrl: DioClient.resolveImageUrl(dto.primaryImage?.imageUrl),
       locationName: dto.locationName,
     );
   }

@@ -6,9 +6,31 @@ import 'package:tendergo_admin/core/network/interceptors/auth_interceptor.dart';
 class DioClient {
 
   static const String _baseUrl = String.fromEnvironment(
-    'BASE_URL',defaultValue: 'http://localhost:5179/api/'
+    'BASE_URL',defaultValue: 'http://localhost:5180/api/'
   );
 
+  /// Server origin without the /api/ suffix, e.g. "http://localhost:5180".
+  /// Used to resolve relative image paths returned by the backend.
+  static String get baseOrigin {
+    final uri = Uri.tryParse(_baseUrl);
+    if (uri == null) return '';
+    return '${uri.scheme}://${uri.host}:${uri.port}';
+  }
+
+  /// Resolves a raw image path/URL from the backend into a full URL.
+  /// Returns null when [raw] is null or empty.
+  static String? resolveImageUrl(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return null;
+    final trimmed = raw.trim();
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      return trimmed;
+    }
+    final origin = baseOrigin;
+    if (origin.isEmpty) return trimmed;
+    return trimmed.startsWith('/')
+        ? '$origin$trimmed'
+        : '$origin/$trimmed';
+  }
 
   static Dio getDio() {
     String finalUrl = _baseUrl;

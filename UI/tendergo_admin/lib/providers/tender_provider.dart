@@ -1,5 +1,6 @@
 // lib/providers/tender_provider.dart
 
+import 'package:file_picker/file_picker.dart';
 import 'package:tendergo_admin/services/category_service.dart';
 
 import '../models/dto/tender_dto.dart';
@@ -10,7 +11,7 @@ import 'package:flutter/material.dart';
 
 class TenderProvider extends ChangeNotifier {
   final TenderService _service;
-  final CategoryService _categoryService; 
+  final CategoryService _categoryService;
 
   TenderProvider(this._service, this._categoryService);
 
@@ -18,7 +19,7 @@ class TenderProvider extends ChangeNotifier {
   List<TenderDto> _tenders = [];
   List<String> _categories = ['All'];
   final Set<String> _selectedCategories = {'All'}; // Set za lakše filtriranje
-  
+
   bool _isLoading = false;
   String? _error;
 
@@ -34,10 +35,10 @@ class TenderProvider extends ChangeNotifier {
     if (_selectedCategories.contains('All') || _selectedCategories.isEmpty) {
       return _tenders;
     }
-    return _tenders.where((t) => _selectedCategories.contains(t.categoryName)).toList();
+    return _tenders
+        .where((t) => _selectedCategories.contains(t.categoryName))
+        .toList();
   }
-
-  
 
   // --- Actions ---
 
@@ -59,7 +60,7 @@ class TenderProvider extends ChangeNotifier {
       _selectedCategories.add('All');
     } else {
       _selectedCategories.remove('All');
-      
+
       if (_selectedCategories.contains(category)) {
         _selectedCategories.remove(category);
       } else {
@@ -73,6 +74,7 @@ class TenderProvider extends ChangeNotifier {
     }
     notifyListeners();
   }
+
   // Metoda koja setuje loading i obavještava UI
   void _setLoading(bool value) {
     _isLoading = value;
@@ -83,7 +85,7 @@ class TenderProvider extends ChangeNotifier {
   Future<void> fetchActiveTenders() async {
     _setLoading(true);
     try {
-      _tenders = await _service.getActive(); 
+      _tenders = await _service.getActive();
       _error = null;
     } catch (e) {
       _error = e.toString().replaceFirst('Exception: ', '');
@@ -105,12 +107,20 @@ class TenderProvider extends ChangeNotifier {
     }
   }
 
-  Future<TenderDto> createTender(TenderInsertRequest request) async {
-    final createdTender = await _service.create(request);
+  Future<TenderDto> createTender(
+    TenderInsertRequest request, {
+    List<PlatformFile>? imageFiles,
+  }) async {
+    final createdTender = await _service.create(
+      request,
+      imageFiles: imageFiles,
+    );
     _error = null;
 
     if (createdTender.status == TenderStatus.open) {
-      final existingIndex = _tenders.indexWhere((t) => t.id == createdTender.id);
+      final existingIndex = _tenders.indexWhere(
+        (t) => t.id == createdTender.id,
+      );
       if (existingIndex >= 0) {
         _tenders[existingIndex] = createdTender;
       } else {
@@ -132,6 +142,4 @@ class TenderProvider extends ChangeNotifier {
       return false;
     }
   }
-
-
 }
