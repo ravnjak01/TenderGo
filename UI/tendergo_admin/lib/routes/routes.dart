@@ -15,7 +15,7 @@ import 'package:tendergo_admin/screens/user_profile_screen.dart';
 import 'package:tendergo_admin/services/admin_service.dart';
 import 'package:tendergo_admin/services/auth_service.dart';
 import 'package:tendergo_admin/services/bid_service.dart';
-import 'package:tendergo_admin/services/dio_client.dart';
+import 'package:tendergo_admin/services/category_service.dart';
 import 'package:tendergo_admin/services/image_service.dart';
 import 'package:tendergo_admin/services/tender_service.dart';
 
@@ -34,16 +34,14 @@ class AppRoutes {
   static const String myTenders = '/my-tenders';
   static const String myBids = '/my-bids';
   static const String admin = '/admin';
-  static Map<String, WidgetBuilder> getRoutes() {
-    // Kreiramo Dio instancu
-    final dio = DioClient.getDio();
-
-    // Kreiramo AuthService sa tom instancom
-    final authService = AuthService(dio);
-    final adminService = AdminService(dio);
-    final imageService = ImageService(dio);
-    final tenderService = TenderService(dio, imageService);
-    final bidService = BidService(dio);
+  static Map<String, WidgetBuilder> getRoutes({
+    required AuthService authService,
+    required AdminService adminService,
+    required CategoryService categoryService,
+    required ImageService imageService,
+    required TenderService tenderService,
+    required BidService bidService,
+  }) {
     return {
       splash: (context) => const SplashScreen(),
       login: (context) => LoginScreen(authService: authService),
@@ -65,6 +63,7 @@ class AppRoutes {
         adminService: adminService,
         authService: authService,
         tenderService: tenderService,
+        categoryService: categoryService,
       ),
       home: (context) => const HomeScreen(),
     };

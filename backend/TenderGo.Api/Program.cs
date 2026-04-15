@@ -18,6 +18,8 @@ using TenderGo.Services.StateMachines.BidStates;
 using TenderGo.Services.StateMachines.TenderStates;
 using DotNetEnv;
 using static System.Runtime.InteropServices.JavaScript.JSType;
+using TenderGo.Services.Mapping;
+using AutoMapper;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -107,7 +109,7 @@ builder.Services.AddSwaggerGen(opt =>
 builder.Services.AddHttpContextAccessor();
 //  custom servisi
 builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+builder.Services.AddAutoMapper(typeof(MappingProfile));
 builder.Services.AddScoped<ITenderService, TenderService>();
 builder.Services.AddScoped<IBidService, BidService>();
 builder.Services.AddScoped(typeof(IBaseService<,,,>), typeof(BaseService<,,,>));

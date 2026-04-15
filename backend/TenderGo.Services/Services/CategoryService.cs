@@ -9,11 +9,12 @@ using System.Threading.Tasks;
 using TenderGo.Api.Database;
 using TenderGo.Models.DTOs;
 using TenderGo.Models.Entities;
+using TenderGo.Models.Requests;
 using TenderGo.Services.Interfaces;
 
 namespace TenderGo.Services.Services
 {
-    public class CategoryService:BaseService<CategoryDTO,Category,CategoryDTO,CategoryDTO>,ICategoryService
+    public class CategoryService:BaseService<CategoryDTO,Category,CategoryDTO,CategoryUpdateRequest>,ICategoryService
     {
 
         private readonly IAuthService _authService;

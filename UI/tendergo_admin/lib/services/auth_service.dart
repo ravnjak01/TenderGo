@@ -7,14 +7,17 @@ import 'package:tendergo_admin/models/ui/auth_result.dart';
 
 class AuthService {
   final Dio _dio;
-  static const _storage =  FlutterSecureStorage();
+  static const _storage = FlutterSecureStorage();
 
   AuthService(this._dio);
 
   // 1. Prijava (Login)
   Future<bool> login(LoginRequest request) async {
     try {
-      final response = await _dio.post(ApiEndpoints.login, data: request.toJson());
+      final response = await _dio.post(
+        ApiEndpoints.login,
+        data: request.toJson(),
+      );
 
       if (response.statusCode == 200) {
         String? token = response.data['token'];
@@ -37,7 +40,7 @@ class AuthService {
     await _storage.delete(key: 'jwt_token');
   }
 
-  // 3. Provera da li je korisnik ulogovan 
+  // 3. Provera da li je korisnik ulogovan
   static Future<bool> isLoggedIn() async {
     String? token = await _storage.read(key: 'jwt_token');
 
@@ -58,15 +61,20 @@ class AuthService {
   //4.Registracija (Registration)
   Future<bool> register(RegisterRequest request) async {
     try {
-      final response = await _dio.post(ApiEndpoints.register, data: request.toJson());
+      final response = await _dio.post(
+        ApiEndpoints.register,
+        data: request.toJson(),
+      );
 
-      return response.statusCode != null && response.statusCode! >= 200 && response.statusCode! < 300;
+      return response.statusCode != null &&
+          response.statusCode! >= 200 &&
+          response.statusCode! < 300;
     } on DioException catch (_) {
       return false;
     }
   }
 
-// 5. Forgot Password
+  // 5. Forgot Password
   Future<AuthResult> forgotPassword(String email) async {
     try {
       await _dio.post(ApiEndpoints.forgotPassword, data: {'email': email});
@@ -102,13 +110,25 @@ class AuthService {
 
   Future<AuthResult> getCurrentUser() async {
     try {
-      final response = await _dio.get(ApiEndpoints.me, options: await _options());
+      final response = await _dio.get(
+        ApiEndpoints.me,
+        options: await _options(),
+      );
       final data = response.data;
-      final user = data is Map<String, dynamic> ? UserDto.fromJson(data) : null;
+      final payload = data is Map<String, dynamic>
+          ? (data['result'] is Map<String, dynamic>
+                ? data['result'] as Map<String, dynamic>
+                : data['data'] is Map<String, dynamic>
+                ? data['data'] as Map<String, dynamic>
+                : data)
+          : null;
+      final user = payload != null ? UserDto.fromJson(payload) : null;
 
       return AuthResult(
         success: user != null,
-        message: user != null ? 'User data retrieved successfully.' : 'Invalid user payload.',
+        message: user != null
+            ? 'User data retrieved successfully.'
+            : 'Invalid user payload.',
         data: user,
       );
     } on DioException catch (e) {

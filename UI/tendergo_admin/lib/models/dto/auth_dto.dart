@@ -1,4 +1,3 @@
-
 class ResetPasswordRequest {
   final String email;
   final String token;
@@ -11,11 +10,7 @@ class ResetPasswordRequest {
   });
 
   Map<String, dynamic> toJson() {
-    return {
-      'email': email,
-      'token': token,
-      'newPassword': newPassword,
-    };
+    return {'email': email, 'token': token, 'newPassword': newPassword};
   }
 }
 
@@ -24,26 +19,53 @@ class UserDto {
   final String username;
   final AddressDto? address;
   final List<String> roles;
-final String firstName;
-final String lastName;
+  final String firstName;
+  final String lastName;
   UserDto({
     required this.email,
     required this.username,
     this.address,
     required this.roles,
-      required this.firstName,
+    required this.firstName,
     required this.lastName,
   });
 
   factory UserDto.fromJson(Map<String, dynamic> json) {
+    final rawRoles = json['roles'];
+
     return UserDto(
       email: json['email'] ?? '',
-      username: json['username'] ?? '',
-      address: json['address'] != null 
-          ? AddressDto.fromJson(json['address']) 
+      username: (json['username'] ?? json['userName'] ?? '').toString(),
+      address: json['address'] != null
+          ? AddressDto.fromJson(json['address'])
           : null,
-      roles: json['roles'] != null 
-          ? List<String>.from(json['roles']) 
+      roles: rawRoles is List
+          ? rawRoles
+                .map((role) {
+                  if (role is String) {
+                    return role;
+                  }
+
+                  if (role is Map<String, dynamic>) {
+                    return (role['name'] ??
+                            role['roleName'] ??
+                            role['value'] ??
+                            '')
+                        .toString();
+                  }
+
+                  if (role is Map) {
+                    return (role['name'] ??
+                            role['roleName'] ??
+                            role['value'] ??
+                            '')
+                        .toString();
+                  }
+
+                  return role.toString();
+                })
+                .where((role) => role.trim().isNotEmpty)
+                .toList()
           : [],
       firstName: json['firstName'] ?? '',
       lastName: json['lastName'] ?? '',
@@ -61,34 +83,29 @@ final String lastName;
     };
   }
 
-
   // metoda za dobijanje inicijala korisnika
-static String getInitials(UserDto user) {
-  String initials = "";
-  if (user.firstName.isNotEmpty) initials += user.firstName[0];
-  if (user.lastName.isNotEmpty) initials += user.lastName[0];
-  return initials.isEmpty ? user.username[0].toUpperCase() : initials.toUpperCase();
-}
+  static String getInitials(UserDto user) {
+    String initials = "";
+    if (user.firstName.isNotEmpty) initials += user.firstName[0];
+    if (user.lastName.isNotEmpty) initials += user.lastName[0];
+    return initials.isEmpty
+        ? user.username[0].toUpperCase()
+        : initials.toUpperCase();
+  }
 }
 
 class LoginRequest {
   final String email;
   final String password;
 
-  LoginRequest({
-    required this.email,
-    required this.password,
-  });
+  LoginRequest({required this.email, required this.password});
 
   Map<String, dynamic> toJson() {
-    return {
-      'email': email,
-      'password': password,
-    };
+    return {'email': email, 'password': password};
   }
-  }
+}
 
-  class RegisterRequest {
+class RegisterRequest {
   final String email;
   final String password;
   final String firstName;
@@ -124,7 +141,6 @@ class AddressDto {
     required this.city,
     required this.street,
     required this.postalCode,
-  
   });
 
   // Koristi se kada primaš podatke sa API-ja
@@ -135,7 +151,6 @@ class AddressDto {
       city: json['city'] ?? '',
       street: json['street'] ?? '',
       postalCode: json['postalCode'] ?? '',
-     
     );
   }
 

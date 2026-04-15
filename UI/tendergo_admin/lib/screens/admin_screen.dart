@@ -7,6 +7,8 @@ import 'package:tendergo_admin/models/ui/auth_result.dart';
 import 'package:tendergo_admin/routes/routes.dart';
 import 'package:tendergo_admin/services/admin_service.dart';
 import 'package:tendergo_admin/services/auth_service.dart';
+import 'package:tendergo_admin/models/dto/category_dto.dart';
+import 'package:tendergo_admin/services/category_service.dart';
 import 'package:tendergo_admin/services/tender_service.dart';
 import 'package:tendergo_admin/widgets/common/screen_state_widgets.dart';
 
@@ -14,12 +16,14 @@ class AdminScreen extends StatefulWidget {
   final AdminService adminService;
   final AuthService authService;
   final TenderService tenderService;
+  final CategoryService categoryService;
 
   const AdminScreen({
     super.key,
     required this.adminService,
     required this.authService,
     required this.tenderService,
+    required this.categoryService,
   });
 
   @override
@@ -36,6 +40,7 @@ class _AdminScreenState extends State<AdminScreen> {
   List<TenderDto> _activeTenders = const [];
   List<TenderDto> _closedTenders = const [];
   List<TenderDto> _cancelledTenders = const [];
+  List<CategoryDto> _categories = const [];
   _TenderBucket _selectedBucket = _TenderBucket.all;
 
   bool get _isAdmin {
@@ -45,24 +50,24 @@ class _AdminScreenState extends State<AdminScreen> {
 
   List<TenderDto> get _visibleTenders {
     switch (_selectedBucket) {
-    case _TenderBucket.all:
-      return _allTenders;
+      case _TenderBucket.all:
+        return _allTenders;
 
-    case _TenderBucket.active:
-      return _allTenders
-          .where((t) => t.status.name.toLowerCase() == 'open')
-          .toList();
+      case _TenderBucket.active:
+        return _allTenders
+            .where((t) => t.status.name.toLowerCase() == 'open')
+            .toList();
 
-    case _TenderBucket.closed:
-      return _allTenders
-          .where((t) => t.status.name.toLowerCase() == 'closed')
-          .toList();
+      case _TenderBucket.closed:
+        return _allTenders
+            .where((t) => t.status.name.toLowerCase() == 'closed')
+            .toList();
 
-    case _TenderBucket.cancelled:
-      return _allTenders
-          .where((t) => t.status.name.toLowerCase() == 'cancelled')
-          .toList();
-  }
+      case _TenderBucket.cancelled:
+        return _allTenders
+            .where((t) => t.status.name.toLowerCase() == 'cancelled')
+            .toList();
+    }
   }
 
   @override
@@ -71,51 +76,200 @@ class _AdminScreenState extends State<AdminScreen> {
     _loadAdminData();
   }
 
- Future<void> _handleDeleteTender(TenderDto tender) async {
-  final confirm = await showDialog<bool>(
-    context: context,
-    builder: (dialogContext) {
-      return AlertDialog(
-        title: const Text('Delete tender'),
-        content: Text(
-          'Are you sure you want to delete "${tender.title}"?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.error,
+  Future<void> _handleDeleteTender(TenderDto tender) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Delete tender'),
+          content: Text('Are you sure you want to delete "${tender.title}"?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancel'),
             ),
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Delete'),
-          ),
-        ],
-      );
-    },
-  );
+            FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
 
-  if (confirm != true) return;
+    if (confirm != true) return;
 
-  setState(() => _isSubmitting = true);
+    setState(() => _isSubmitting = true);
 
-  final result = await widget.adminService.deleteTender(tender.id);
+    final result = await widget.adminService.deleteTender(tender.id);
 
-  if (!mounted) return;
+    if (!mounted) return;
 
-  setState(() => _isSubmitting = false);
+    setState(() => _isSubmitting = false);
 
-  _showSnackBar(result.message);
+    _showSnackBar(result.message);
 
-  if (result.success) {
-    setState(() {
-      _allTenders.removeWhere((t) => t.id == tender.id);
-      _activeTenders.removeWhere((t) => t.id == tender.id);
-    });
+    if (result.success) {
+      setState(() {
+        _allTenders.removeWhere((t) => t.id == tender.id);
+        _activeTenders.removeWhere((t) => t.id == tender.id);
+      });
+    }
   }
-}
+
+  Future<void> _handleAddCategory() async {
+    final name = await _showCategoryDialog();
+    if (name == null || name.isEmpty) {
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      final created = await widget.categoryService.insert(
+        CategoryDto(id: 0, name: name),
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _categories = [
+          ..._categories,
+          created,
+        ]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        _isSubmitting = false;
+      });
+      _showSnackBar('Category created successfully.');
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      _showSnackBar(error.toString().replaceFirst('Exception: ', ''));
+    }
+  }
+
+  Future<void> _handleEditCategory(CategoryDto category) async {
+    final name = await _showCategoryDialog(initialValue: category.name);
+    if (name == null || name.isEmpty || name == category.name) {
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      await widget.categoryService.update(
+        category.id,
+        CategoryDto(id: category.id, name: name),
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _categories =
+            _categories
+                .map(
+                  (c) => c.id == category.id
+                      ? CategoryDto(id: c.id, name: name)
+                      : c,
+                )
+                .toList()
+              ..sort(
+                (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+              );
+        _isSubmitting = false;
+      });
+      _showSnackBar('Category updated successfully.');
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      _showSnackBar(error.toString().replaceFirst('Exception: ', ''));
+    }
+  }
+
+  Future<void> _handleDeleteCategory(CategoryDto category) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Delete category'),
+          content: Text('Are you sure you want to delete "${category.name}"?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm != true) return;
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      final success = await widget.categoryService.delete(category.id);
+
+      if (!mounted) return;
+      setState(() {
+        if (success) {
+          _categories = _categories.where((c) => c.id != category.id).toList();
+        }
+        _isSubmitting = false;
+      });
+
+      _showSnackBar(
+        success
+            ? 'Category deleted successfully.'
+            : 'Failed to delete category.',
+      );
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      _showSnackBar(error.toString().replaceFirst('Exception: ', ''));
+    }
+  }
+
+  Future<String?> _showCategoryDialog({String? initialValue}) async {
+    final controller = TextEditingController(text: initialValue ?? '');
+
+    final result = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(initialValue == null ? 'Add category' : 'Edit category'),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            textInputAction: TextInputAction.done,
+            decoration: const InputDecoration(
+              labelText: 'Category name',
+              hintText: 'Enter category name',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final value = controller.text.trim();
+                Navigator.of(dialogContext).pop(value);
+              },
+              child: Text(initialValue == null ? 'Create' : 'Save'),
+            ),
+          ],
+        );
+      },
+    );
+
+    controller.dispose();
+    return result;
+  }
 
   Future<void> _loadAdminData({bool showLoader = true}) async {
     if (showLoader) {
@@ -133,6 +287,8 @@ class _AdminScreenState extends State<AdminScreen> {
         throw Exception(currentUserResult.message);
       }
 
+      _currentUser = currentUser;
+
       final isAdmin = currentUser.roles.any(
         (role) => role.toLowerCase() == 'admin',
       );
@@ -146,6 +302,7 @@ class _AdminScreenState extends State<AdminScreen> {
           _activeTenders = const [];
           _closedTenders = const [];
           _cancelledTenders = const [];
+          _categories = const [];
           _isLoading = false;
           _errorMessage = null;
         });
@@ -158,6 +315,7 @@ class _AdminScreenState extends State<AdminScreen> {
         widget.tenderService.getActive(),
         widget.tenderService.getClosed(),
         //widget.tenderService.getCancelled(),
+        widget.categoryService.getAll(),
       ]);
 
       final usersResult = results[0] as AuthResult;
@@ -172,7 +330,11 @@ class _AdminScreenState extends State<AdminScreen> {
         _allTenders = results[1] as List<TenderDto>;
         _activeTenders = results[2] as List<TenderDto>;
         _closedTenders = results[3] as List<TenderDto>;
-       // _cancelledTenders = results[4] as List<TenderDto>;
+        _categories = (results[4] as List<CategoryDto>)
+          ..sort(
+            (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+          );
+        // _cancelledTenders = results[4] as List<TenderDto>;
         _isLoading = false;
         _errorMessage = null;
       });
@@ -196,27 +358,30 @@ class _AdminScreenState extends State<AdminScreen> {
     }
 
     setState(() => _isSubmitting = true);
-    final result = await widget.adminService.banUser(user.id, BanRequest(reason: reason));
+    final result = await widget.adminService.banUser(
+      user.id,
+      BanRequest(reason: reason),
+    );
     if (!mounted) return;
 
     setState(() => _isSubmitting = false);
     _showSnackBar(result.message);
     if (result.success) {
-  setState(() {
-    _users = _users.map((u) {
-      if (u.id == user.id) {
-        return _AdminUserRecord(
-          id: u.id,
-          username: u.username,
-          email: u.email,
-          roles: u.roles,
-          isBanned: true,
-        );
-      }
-      return u;
-    }).toList();
-  });
-}
+      setState(() {
+        _users = _users.map((u) {
+          if (u.id == user.id) {
+            return _AdminUserRecord(
+              id: u.id,
+              username: u.username,
+              email: u.email,
+              roles: u.roles,
+              isBanned: true,
+            );
+          }
+          return u;
+        }).toList();
+      });
+    }
   }
 
   Future<void> _handleUnbanUser(_AdminUserRecord user) async {
@@ -227,21 +392,21 @@ class _AdminScreenState extends State<AdminScreen> {
     setState(() => _isSubmitting = false);
     _showSnackBar(result.message);
     if (result.success) {
-  setState(() {
-    _users = _users.map((u) {
-      if (u.id == user.id) {
-        return _AdminUserRecord(
-          id: u.id,
-          username: u.username,
-          email: u.email,
-          roles: u.roles,
-          isBanned: false,
-        );
-      }
-      return u;
-    }).toList();
-  });
-}
+      setState(() {
+        _users = _users.map((u) {
+          if (u.id == user.id) {
+            return _AdminUserRecord(
+              id: u.id,
+              username: u.username,
+              email: u.email,
+              roles: u.roles,
+              isBanned: false,
+            );
+          }
+          return u;
+        }).toList();
+      });
+    }
   }
 
   Future<String?> _showBanDialog(_AdminUserRecord user) async {
@@ -345,6 +510,10 @@ class _AdminScreenState extends State<AdminScreen> {
       return const ScreenLoadingState(message: 'Loading admin data...');
     }
 
+    if (_errorMessage != null) {
+      return ScreenErrorState(message: _errorMessage!, onRetry: _loadAdminData);
+    }
+
     if (!_isAdmin) {
       return ScreenEmptyState(
         icon: Icons.admin_panel_settings_outlined,
@@ -356,10 +525,6 @@ class _AdminScreenState extends State<AdminScreen> {
       );
     }
 
-    if (_errorMessage != null) {
-      return ScreenErrorState(message: _errorMessage!, onRetry: _loadAdminData);
-    }
-
     return RefreshIndicator(
       onRefresh: _refresh,
       child: ListView(
@@ -369,8 +534,93 @@ class _AdminScreenState extends State<AdminScreen> {
           const SizedBox(height: 24),
           _buildUsersSection(),
           const SizedBox(height: 24),
+          _buildCategoriesSection(),
+          const SizedBox(height: 24),
           _buildTenderSection(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCategoriesSection() {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Category management',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            FilledButton.icon(
+              onPressed: _isSubmitting ? null : _handleAddCategory,
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Add category'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (_categories.isEmpty)
+          ScreenEmptyState(
+            icon: Icons.category_outlined,
+            title: 'No categories found',
+            description: 'Create a category to start organizing tenders.',
+            actionLabel: 'Add category',
+            onAction: _handleAddCategory,
+          )
+        else
+          ..._categories.map(_buildCategoryCard),
+      ],
+    );
+  }
+
+  Widget _buildCategoryCard(CategoryDto category) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                category.name,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            TextButton.icon(
+              onPressed: _isSubmitting
+                  ? null
+                  : () => _handleEditCategory(category),
+              icon: const Icon(Icons.edit_outlined),
+              label: const Text('Edit'),
+            ),
+            const SizedBox(width: 8),
+            TextButton.icon(
+              onPressed: _isSubmitting
+                  ? null
+                  : () => _handleDeleteCategory(category),
+              icon: const Icon(Icons.delete_outline_rounded),
+              label: const Text('Delete'),
+              style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -416,6 +666,11 @@ class _AdminScreenState extends State<AdminScreen> {
               label: 'Cancelled',
               value: _cancelledTenders.length.toString(),
               icon: Icons.cancel_outlined,
+            ),
+            _StatCard(
+              label: 'Categories',
+              value: _categories.length.toString(),
+              icon: Icons.category_outlined,
             ),
           ],
         ),
@@ -669,7 +924,6 @@ class _AdminScreenState extends State<AdminScreen> {
                         ),
                       ),
                     ],
-                    
                   ),
                 ),
                 Container(
@@ -686,7 +940,6 @@ class _AdminScreenState extends State<AdminScreen> {
                     style: theme.textTheme.labelMedium?.copyWith(
                       color: AppColors.primaryDark,
                       fontWeight: FontWeight.w700,
-                      
                     ),
                   ),
                 ),
@@ -728,7 +981,7 @@ class _AdminScreenState extends State<AdminScreen> {
   }
 }
 
-enum _TenderBucket { all, active, closed,cancelled }
+enum _TenderBucket { all, active, closed, cancelled }
 
 class _AdminUserRecord {
   final String id;

@@ -13,10 +13,13 @@ class AuthInterceptor extends Interceptor {
     }
 
     // 2. Čitanje tokena
-    String? token = await _secureStorage.read(key: 'jwt_token');
+    final token = await _secureStorage.read(key: 'jwt_token');
+
+    print("REQUEST: ${options.method} ${options.path}");
+    print("TOKEN: $token");
 
     // 3. Dodavanje u header
-    if (token != null) {
+      if (token != null && token.isNotEmpty) {
       options.headers['Authorization'] = 'Bearer $token';
     }
 
@@ -26,13 +29,14 @@ class AuthInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
     // Ako backend vrati 401, to znači da je token istekao ili je nevažeći
-    if (err.response?.statusCode == 401) {
-      print("Token više nije validan. Korisnik treba biti odjavljen.");
+      if (err.response?.statusCode == 401) {
+      print("❌ UNAUTHORIZED - token invalid or expired");
+    }
       
       // OVDE MOŽEŠ DODATI:
       // - Brisanje tokena: _secureStorage.delete(key: 'jwt_token');
       // - Navigaciju na Login ekran
-    }
+    
     return handler.next(err);
   }
 }

@@ -15,27 +15,20 @@ class CategoryService {
 
   Future<Options> _options() async {
     final token = await _getToken();
-    final headers = <String, String>{
-      'Content-Type': 'application/json',
-    };
+    final headers = <String, String>{'Content-Type': 'application/json'};
 
     if (token != null && token.isNotEmpty) {
       headers['Authorization'] = 'Bearer $token';
     }
 
-    return Options(
-      headers: headers,
-    );
+    return Options(headers: headers);
   }
 
   Future<List<CategoryDto>> getAll() async {
     try {
       final response = await _dio.get(
         CategoryApiEndpoints.getAll,
-        queryParameters: {
-          'page': 1,
-          'pageSize': 100,
-        },
+        queryParameters: {'page': 1, 'pageSize': 100},
         options: await _options(),
       );
 
@@ -52,11 +45,18 @@ class CategoryService {
     try {
       final response = await _dio.post(
         CategoryApiEndpoints.insert,
-        data: data.toJson(),
+        data: {'name': data.name},
         options: await _options(),
       );
 
-      return CategoryDto.fromJson(response.data);
+      final raw = response.data;
+      final payload = raw is Map<String, dynamic>
+          ? (raw['result'] is Map<String, dynamic>
+                ? raw['result'] as Map<String, dynamic>
+                : raw)
+          : const <String, dynamic>{};
+
+      return CategoryDto.fromJson(payload);
     } on DioException catch (e) {
       throw Exception(e.response?.data ?? 'Error creating category');
     }
@@ -77,10 +77,11 @@ class CategoryService {
     }
   }
 
-    Future<bool> update(int id) async {
+  Future<bool> update(int id, CategoryDto data) async {
     try {
-      final response = await _dio.put(
+      final response = await _dio.patch(
         CategoryApiEndpoints.update(id),
+        data: {'name': data.name},
         options: await _options(),
       );
 

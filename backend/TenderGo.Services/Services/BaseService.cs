@@ -82,7 +82,7 @@ namespace TenderGo.Services.Services
         public virtual async Task Update(int id, TUpdate request)
         {
             var entity = await _context.Set<TDb>().FindAsync(id)
-       ?? throw new UserException($"{typeof(TDb).Name} not found");
+                 ?? throw new UserException($"{typeof(TDb).Name} not found");
 
             _mapper.Map(request, entity);
             await _context.SaveChangesAsync();
