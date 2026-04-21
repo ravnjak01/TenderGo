@@ -10,7 +10,7 @@ namespace TenderGo.Api.Controllers
 {
 
     [Route("api/bid")]
-    [Authorize(Roles = "User")]
+    [Authorize(Roles = "User,Admin")]
     public class BidController : BaseController<BidDTO, Bid, BidInsertRequest, BidUpdateRequest>
     {
         private readonly IBidService _bidService;
@@ -21,6 +21,8 @@ namespace TenderGo.Api.Controllers
             _bidService = bidService;
         }
 
+
+        //DOSAO KOD PROVJERE DA LI ISPISUJE KAD SE POSALJE PONUDA NA TENDER ,TESTIRAM PREKO SWAGGERA
 
 
 

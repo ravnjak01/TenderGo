@@ -7,6 +7,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<ProjectReference Include="..\TenderGo.Contracts\TenderGo.Contracts.csproj" />
 		<ProjectReference Include="..\TenderGo.Models\TenderGo.Models.csproj" />
 	</ItemGroup>
 

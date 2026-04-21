@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:tendergo_admin/models/dto/tender_dto.dart';
 import 'package:tendergo_admin/models/enums/tenderstatus.dart';
 import 'package:tendergo_admin/screens/tender_bids_screen.dart';
+import 'package:tendergo_admin/services/auth_service.dart';
 import 'package:tendergo_admin/services/tender_service.dart';
 import 'package:tendergo_admin/widgets/common/screen_state_widgets.dart';
 
@@ -56,17 +57,29 @@ class _MyTendersScreenState extends State<MyTendersScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final List<TenderDto> fetchedDtos = await widget._tenderService.getAll(
-        page: _currentPage,
-        pageSize: _pageSize,
-      );
+      final currentUserId = await AuthService.getCurrentUserId();
+      if (currentUserId == null || currentUserId.isEmpty) {
+        throw Exception('Could not resolve the current user from the session.');
+      }
+
+      final fetchedRaw = await widget._tenderService.getByUser(currentUserId);
+      final fetchedDtos = fetchedRaw
+          .whereType<Map<String, dynamic>>()
+          .map(TenderDto.fromJson)
+          .toList();
 
       if (!mounted) return;
 
       setState(() {
-        _tenders.addAll(fetchedDtos);
-        _hasMore = fetchedDtos.length == _pageSize;
-        _currentPage++;
+        if (refresh) {
+          _tenders
+            ..clear()
+            ..addAll(fetchedDtos);
+        } else {
+          _tenders.addAll(fetchedDtos);
+        }
+        _hasMore = false;
+        _currentPage = 2;
         _hasError = false;
       });
     } catch (e) {

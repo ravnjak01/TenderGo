@@ -58,6 +58,34 @@ class AuthService {
     return true;
   }
 
+  static Future<String?> getCurrentUserId() async {
+    final token = await _storage.read(key: 'jwt_token');
+    if (token == null || token.isEmpty || JwtDecoder.isExpired(token)) {
+      return null;
+    }
+
+    final claims = JwtDecoder.decode(token);
+    const candidateKeys = <String>[
+      'nameid',
+      'sub',
+      'userId',
+      'userid',
+      'id',
+      'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier',
+    ];
+
+    for (final key in candidateKeys) {
+      final value = claims[key];
+      if (value == null) continue;
+      final normalized = value.toString().trim();
+      if (normalized.isNotEmpty) {
+        return normalized;
+      }
+    }
+
+    return null;
+  }
+
   //4.Registracija (Registration)
   Future<bool> register(RegisterRequest request) async {
     try {

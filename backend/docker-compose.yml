@@ -49,9 +49,11 @@ services:
       - RabbitMQ__Password=${RABBITMQ_PASS}
     ports:
       - "8080:8080"
-    depends_on:
-      - tendergo-sql
-      - tendergo-rabbitmq
+    depends_on:                      
+      tendergo-sql:
+        condition: service_healthy
+      tendergo-rabbitmq:
+        condition: service_started
     networks:
       - tendergo-network
 

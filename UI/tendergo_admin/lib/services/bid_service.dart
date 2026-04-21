@@ -158,6 +158,11 @@ class BidService {
 			return BidDto.parseBidList(response.data);
 		} on DioException catch (e) {
       if (e.response?.statusCode == 404) return [];
+      if (e.response?.statusCode == 403) {
+        throw Exception(
+          'You are not allowed to view bids for this tender.',
+        );
+      }
 			throw Exception(e.response?.data ?? 'Error fetching bids by tender');
 		}
 	}

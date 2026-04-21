@@ -1,13 +1,15 @@
 ﻿using AutoMapper;
+using EasyNetQ;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using TenderGo.Api.Database;
-using TenderGo.Models.DTOs;
+using TenderGo.Contracts;
 using TenderGo.Models.Entities;
 using TenderGo.Models.ENUMs;
 using TenderGo.Models.Requests;
@@ -18,8 +20,9 @@ namespace TenderGo.Services.StateMachines.BidStates
 {
     public class OpenBidState : BaseBidState
     {
-        public OpenBidState(IServiceProvider serviceProvider, TenderGoContext context, IMapper mapper)
-            : base(serviceProvider, context, mapper) { }
+        private readonly IPubSub _pubSub;
+        public OpenBidState(IServiceProvider serviceProvider, TenderGoContext context, IMapper mapper, IPubSub pubSub)
+            : base(serviceProvider, context, mapper) { _pubSub = pubSub; }
 
 
         public override async Task<BidDTO> Insert(BidInsertRequest request)
@@ -49,6 +52,14 @@ namespace TenderGo.Services.StateMachines.BidStates
             _context.Bids.Add(entity);
             await _context.SaveChangesAsync();
 
+            await _pubSub.PublishAsync(new BidCreatedEvent
+            {
+                TenderId = entity.TenderId,
+                OwnerUserId = tender.CreatedByUserId,
+                OfferedPrice = entity.OfferedPrice
+            }, cfg => cfg.WithTopic("bid_created"));
+
+
             return _mapper.Map<BidDTO>(entity);
         }
 
@@ -70,6 +81,8 @@ namespace TenderGo.Services.StateMachines.BidStates
 
             _mapper.Map(request, bid);
             await _context.SaveChangesAsync();
+          
+
             return _mapper.Map<BidDTO>(bid);
         }
 

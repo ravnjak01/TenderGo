@@ -20,7 +20,7 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
     public virtual DbSet<Rating> Ratings { get; set; }
     public virtual DbSet<TenderImage> TenderImages { get; set; }
     public virtual DbSet<RefreshToken> RefreshTokens { get; set; }
-
+    public DbSet<Notification> Notifications { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {

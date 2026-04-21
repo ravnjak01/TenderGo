@@ -1,30 +1,30 @@
 ﻿using Microsoft.Extensions.Hosting;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using Microsoft.Extensions.Logging;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace TenderGo.Subscriber
 {
-    public class Worker:BackgroundService
+    public class Worker : BackgroundService
     {
         private readonly TenderSubscriber _subscriber;
-        public Worker(TenderSubscriber subscriber)
+        private readonly ILogger<Worker> _logger;
+
+        public Worker(TenderSubscriber subscriber,ILogger<Worker>logger)
         {
+            _logger = logger;   
             _subscriber = subscriber;
         }
+
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-
-            Console.WriteLine("Provide subscription ID: ");
-            var subscriptionId = Console.ReadLine();
-
+            var subscriptionId = "notification-service";
 
             await _subscriber.SubscribeAsync(subscriptionId);
 
-            Console.WriteLine($"Listening with ID: {subscriptionId}");
+            _logger.LogInformation("RabbitMQ subscriber started with ID: {Id}", subscriptionId);
 
+            // drži servis živim dok se ne ugasi
             await Task.Delay(Timeout.Infinite, stoppingToken);
         }
     }
