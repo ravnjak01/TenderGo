@@ -4,8 +4,11 @@ import 'package:provider/provider.dart';
 import 'package:tendergo/mobile/routes/routes.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
 import 'package:tendergo/shared/providers/auth_provider.dart';
+import 'package:tendergo/shared/providers/tender_provider.dart';
 import 'package:tendergo/shared/routes/routes.dart';
 import 'package:tendergo/shared/services/auth_service.dart';
+import 'package:tendergo/shared/services/category_service.dart';
+import 'package:tendergo/shared/services/dio_client.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
 
 class MobileApp extends StatelessWidget {
@@ -20,8 +23,16 @@ class MobileApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => AuthProvider(authService),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider(authService)),
+        ChangeNotifierProvider(
+          create: (_) => TenderProvider(
+            tenderService,
+            CategoryService(DioClient.getDio()),
+          ),
+        ),
+      ],
       child: MaterialApp(
         title: 'TenderGo',
         debugShowCheckedModeBanner: false,

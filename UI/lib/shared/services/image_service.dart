@@ -11,10 +11,10 @@ class ImageService {
 
   Future<String?> _getToken() async => _storage.read(key: 'jwt_token');
 
-  /// Uploads [file] and associates it with [tenderId].
+  /// Uploads [file] and optionally associates it with [tenderId].
   /// Returns the stored image URL/path string from the backend.
   /// Throws [Exception] on failure.
-  Future<String> uploadForTender(int tenderId, PlatformFile file) async {
+  Future<String> uploadFile(PlatformFile file, {int? tenderId}) async {
     final MultipartFile multipartFile;
     if (file.path != null && file.path!.isNotEmpty) {
       multipartFile =
@@ -25,10 +25,13 @@ class ImageService {
       throw Exception('File "${file.name}" has no readable data.');
     }
 
-    final formData = FormData.fromMap({
-      'file': multipartFile,
-      'tenderId': tenderId,
-    });
+    final payload = <String, dynamic>{'file': multipartFile};
+    if (tenderId != null) {
+      payload['tenderId'] = tenderId;
+      payload['TenderId'] = tenderId;
+      payload['tenderID'] = tenderId;
+    }
+    final formData = FormData.fromMap(payload);
 
     try {
       final token = await _getToken();
@@ -58,6 +61,33 @@ class ImageService {
     }
   }
 
+  /// Backward-compatible alias for older call sites that associate upload
+  /// directly with a tender.
+  Future<String> uploadForTender(int tenderId, PlatformFile file) {
+    return uploadFile(file, tenderId: tenderId);
+  }
+
+  /// Uploads files without tender association and returns URL/path strings.
+  Future<List<String>> uploadAll(List<PlatformFile> files) async {
+    final results = <String>[];
+    final errors = <String>[];
+
+    for (final file in files) {
+      try {
+        final path = await uploadFile(file);
+        results.add(path);
+      } catch (e) {
+        errors.add(e.toString().replaceFirst('Exception: ', ''));
+      }
+    }
+
+    if (results.isEmpty && errors.isNotEmpty) {
+      throw Exception(errors.join('; '));
+    }
+
+    return results;
+  }
+
   /// Uploads all [files] for [tenderId], returning paths for successfully
   /// uploaded files. Errors per file are collected and rethrown as a single
   /// exception only if every upload fails; partial success is allowed.
@@ -70,7 +100,7 @@ class ImageService {
 
     for (final file in files) {
       try {
-        final path = await uploadForTender(tenderId, file);
+        final path = await uploadFile(file, tenderId: tenderId);
         results.add(path);
       } catch (e) {
         errors.add(e.toString().replaceFirst('Exception: ', ''));

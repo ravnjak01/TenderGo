@@ -29,17 +29,8 @@ namespace TenderGo.Services.Mapping
 
             CreateMap<TenderInsertRequest, Tender>()
                 .ForMember(dest => dest.LocationName, opt => opt.MapFrom(src => src.LocationName))
-                .ForMember(dest => dest.Images,
-                 opt => opt.MapFrom(src => src.ImageUrls != null && src.ImageUrls.Any()
-                 ? src.ImageUrls
-                .Where(url => !string.IsNullOrWhiteSpace(url))
-                .Select((url, index) => new TenderImage
-                {
-                    ImageUrl = url.Trim(),
-                    IsPrimary = (index == 0) 
-                })
-                .ToList()
-            : new List<TenderImage>()));
+                .ForMember(dest => dest.Images, opt => opt.Ignore());
+
 
 
             CreateMap<TenderUpdateRequest, Tender>()

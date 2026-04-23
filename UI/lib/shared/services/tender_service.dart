@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -17,7 +19,44 @@ class TenderService {
     return await _storage.read(key: 'jwt_token');
   }
 
-  //NE RADI PRIKAZIVANJE SLIKA U TENDER_DETAILS_SCREEN, PROVJERITI KASNIJE
+  Future<TenderInsertRequest> _withImageBytes(
+    TenderInsertRequest data,
+    List<PlatformFile>? imageFiles,
+  ) async {
+    if (imageFiles == null || imageFiles.isEmpty) {
+      return data;
+    }
+
+    final byteImages = <List<int>>[];
+    for (final file in imageFiles) {
+      if (file.bytes != null && file.bytes!.isNotEmpty) {
+        byteImages.add(file.bytes!.toList());
+        continue;
+      }
+
+      if (file.path != null && file.path!.isNotEmpty) {
+        final diskBytes = await File(file.path!).readAsBytes();
+        if (diskBytes.isNotEmpty) {
+          byteImages.add(diskBytes.toList());
+        }
+      }
+    }
+
+    if (byteImages.isEmpty) {
+      return data;
+    }
+
+    return TenderInsertRequest(
+      title: data.title,
+      maxBudget: data.maxBudget,
+      locationName: data.locationName,
+      description: data.description,
+      categoryId: data.categoryId,
+      deadline: data.deadline,
+      imageBytes: byteImages,
+    );
+  }
+
 
   Future<Options> _options() async {
     final token = await _getToken();
@@ -132,37 +171,36 @@ class TenderService {
     List<PlatformFile>? imageFiles,
   }) async {
     try {
+      final request = await _withImageBytes(data, imageFiles);
+
       final response = await _dio.post(
         TenderApiEndpoints.insert,
-        data: data.toJson(),
+        data: request.toJson(),
         options: await _options(),
       );
-      final created = TenderDto.fromJson(response.data);
-      if (imageFiles != null && imageFiles.isNotEmpty) {
-        await _imageService.uploadAllForTender(created.id!, imageFiles);
-      }
-      return created;
+
+      return TenderDto.fromJson(response.data);
     } on DioException catch (e) {
       throw Exception(e.response?.data ?? 'Error creating tender');
+    } catch (e) {
+      throw Exception('An unexpected error occurred: $e');
     }
   }
-
   // ===== CREATE DRAFT =====
   Future<TenderDto> createDraft(
     TenderInsertRequest data, {
     List<PlatformFile>? imageFiles,
   }) async {
     try {
+      final request = await _withImageBytes(data, imageFiles);
+
       final response = await _dio.post(
         TenderApiEndpoints.insertDraft,
-        data: data.toJson(),
+        data: request.toJson(),
         options: await _options(),
       );
-      final created = TenderDto.fromJson(response.data);
-      if (imageFiles != null && imageFiles.isNotEmpty) {
-        await _imageService.uploadAllForTender(created.id!, imageFiles);
-      }
-      return created;
+
+      return TenderDto.fromJson(response.data);
     } on DioException catch (e) {
       throw Exception(e.response?.data ?? 'Error creating draft tender');
     }

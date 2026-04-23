@@ -1,20 +1,20 @@
-import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
-import 'package:tendergo/shared/models/dto/category_dto.dart';
 import 'package:tendergo/shared/models/dto/tender_post_dto.dart';
 import 'package:tendergo/shared/providers/tender_provider.dart';
-import 'package:tendergo/shared/services/category_service.dart';
-import 'package:tendergo/shared/services/dio_client.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
-import 'package:tendergo/admin/widgets/datepicker_widget.dart';
+import 'package:tendergo/shared/widgets/tender/category_section_widget.dart';
+import 'package:tendergo/shared/widgets/tender/image_upload_section_widget.dart';
+import 'package:tendergo/shared/widgets/tender/datepicker_widget.dart';
 import 'package:tendergo/admin/widgets/error_banner.widget.dart';
 import 'package:tendergo/admin/widgets/common/app_card.dart';
-import 'package:tendergo/admin/widgets/common/app_icon.dart';
 import 'package:tendergo/admin/widgets/common/app_text_field.dart';
+import 'package:tendergo/shared/widgets/feedback/fade_in_widget.dart';
+import 'package:tendergo/shared/widgets/feedback/snackbar_helper.dart';
+import 'package:tendergo/shared/widgets/tender/submit_row_widget.dart';
 
 class TenderPostScreen extends StatefulWidget {
   final TenderService tenderService;
@@ -27,36 +27,19 @@ class TenderPostScreen extends StatefulWidget {
 
 class _TenderPostScreenState extends State<TenderPostScreen>
     with SingleTickerProviderStateMixin {
-  late final TenderService _tenderService = widget.tenderService;
-  late final CategoryService _categoryService = CategoryService(
-    DioClient.getDio(),
-  );
-
   final _formKey = GlobalKey<FormState>();
   final _titleCtrl = TextEditingController();
   final _budgetCtrl = TextEditingController();
   final _locationCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
-  final _imageUrlCtrl = TextEditingController();
 
   int? _selectedCategoryId;
   DateTime? _deadline;
-  final List<String> _imageUrls = [];
   final List<PlatformFile> _imageFiles = [];
-  List<CategoryDto> _categories = [];
   bool _isCategoryLoading = true;
   String? _categoryLoadError;
   bool _isLoading = false;
   String? _errorMessage;
-
-  late final AnimationController _aniCtrl = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 540),
-  )..forward();
-  late final Animation<double> _fadeAni = CurvedAnimation(
-    parent: _aniCtrl,
-    curve: Curves.easeOut,
-  );
 
   @override
   void initState() {
@@ -69,11 +52,13 @@ class _TenderPostScreenState extends State<TenderPostScreen>
       _isCategoryLoading = true;
       _categoryLoadError = null;
     });
+
     try {
-      final categories = await _categoryService.getAll();
+      await context.read<TenderProvider>().fetchCategories();
+
       if (!mounted) return;
+
       setState(() {
-        _categories = categories;
         _isCategoryLoading = false;
       });
     } catch (e) {
@@ -90,48 +75,17 @@ class _TenderPostScreenState extends State<TenderPostScreen>
 
   @override
   void dispose() {
-    _aniCtrl.dispose();
     _titleCtrl.dispose();
     _budgetCtrl.dispose();
     _locationCtrl.dispose();
     _descCtrl.dispose();
-    _imageUrlCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _pickDeadline() async {
-    final now = DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: now.add(const Duration(days: 14)),
-      firstDate: now,
-      lastDate: now.add(const Duration(days: 730)),
-    );
-    if (picked != null) {
-      setState(
-        () => _deadline = DateTime(
-          picked.year,
-          picked.month,
-          picked.day,
-          23,
-          59,
-          59,
-        ),
-      );
-    }
-  }
-
-  void _addImageUrl() {
-    final url = _imageUrlCtrl.text.trim();
-    if (url.isEmpty) return;
-    final uri = Uri.tryParse(url);
-    if (uri == null || !uri.isAbsolute) {
-      _showSnack('Enter a valid URL', isError: true);
-      return;
-    }
-    setState(() => _imageUrls.add(url));
-    _imageUrlCtrl.clear();
-  }
+ 
+ //dosao do refaktorisanja ,zadnje obrisao metodu _pickDeadline jer je 
+ //DatepickerWidget samostalno preuzeo tu funkcionalnost, pa je nije potrebno duplicirati. Također, metoda _buildSubmitRow je uklonjena jer se sada koristi TenderSubmitRow widget koji ima ugrađenu podršku za loading state i onPressed funkcije. Ove promjene su napravljene kako bi se pojednostavio kod i smanjila duplikacija funkcionalnosti.
+ 
 
   Future<void> _pickImagesFromDisk() async {
     try {
@@ -155,17 +109,23 @@ class _TenderPostScreenState extends State<TenderPostScreen>
       }
 
       if (newFiles.isEmpty) {
-        _showSnack('Selected files are already added.', isError: true);
+        SnackbarHelper.show(
+          context,
+          'Selected files are already added.',
+          isError: true,
+        );
         return;
       }
 
       setState(() => _imageFiles.addAll(newFiles));
     } catch (e) {
-      _showSnack(e.toString().replaceFirst('Exception: ', ''), isError: true);
+      SnackbarHelper.show(
+        context,
+        e.toString().replaceFirst('Exception: ', ''),
+        isError: true,
+      );
     }
   }
-
-  void _removeImageUrl(int index) => setState(() => _imageUrls.removeAt(index));
 
   void _removeImageFile(int index) =>
       setState(() => _imageFiles.removeAt(index));
@@ -177,7 +137,7 @@ class _TenderPostScreenState extends State<TenderPostScreen>
     description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
     categoryId: _selectedCategoryId!,
     deadline: _deadline!,
-    imageUrls: _imageUrls.isEmpty ? null : List.from(_imageUrls),
+    imageBytes: null,
   );
 
   bool _validateExtra() {
@@ -193,141 +153,66 @@ class _TenderPostScreenState extends State<TenderPostScreen>
   }
 
   Future<void> _submitTender() async {
-  if (!_formKey.currentState!.validate()) return;
-  if (_deadline == null) {
-    _showSnack('Please select a deadline', isError: true);
-    return;
-  }
-
-  setState(() => _isLoading = true);
-
-  try {
-    // KORAK 1: Uploadaj lokalne fajlove, dobij URL-ove
-    final uploadedUrls = await _uploadLocalImages(_imageFiles);
-
-    // KORAK 2: Kombiniraj sa ručno unesenim URL-ovima
-    final allImageUrls = [..._imageUrls, ...uploadedUrls];
-
-    // KORAK 3: Kreiraj tender sa svim URL-ovima kao JSON
-    final request = TenderInsertRequest(
-      title: _titleCtrl.text.trim(),
-      maxBudget: double.parse(_budgetCtrl.text.trim()),
-      locationName: _locationCtrl.text.trim(),
-      description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
-      categoryId: _selectedCategoryId!,
-      deadline: _deadline!,
-      imageUrls: allImageUrls,
-    );
-
-    await widget.tenderService.create(request);
-    if (!mounted) return;
-    Navigator.pop(context, true);
-  } catch (e) {
-    _showSnack(e.toString().replaceFirst('Exception: ', ''), isError: true);
-  } finally {
-    if (mounted) setState(() => _isLoading = false);
-  }
-  }
-
-// Upload lokalnih fajlova na images endpoint
-Future<List<String>> _uploadLocalImages(List<PlatformFile> files) async {
-  if (files.isEmpty) return [];
-  
-  final urls = <String>[];
-  
-  for (final file in files) {
-    final formData = FormData();
-    
-    if (file.path != null && file.path!.isNotEmpty) {
-      formData.files.add(MapEntry(
-        'file',
-        await MultipartFile.fromFile(file.path!, filename: file.name),
-      ));
-    } else if (file.bytes != null) {
-      formData.files.add(MapEntry(
-        'file',
-        MultipartFile.fromBytes(file.bytes!, filename: file.name),
-      ));
-    } else {
-      continue; // preskoči ako nema ni path ni bytes
+    if (!_formKey.currentState!.validate()) return;
+    if (_deadline == null) {
+      SnackbarHelper.show(context, 'Please select a deadline', isError: true);
+      return;
     }
 
-    final response = await DioClient.getDio().post(
-      '/images/upload',
-      data: formData,
-    );
+    setState(() => _isLoading = true);
 
-    // ImageService vraća TenderImageDTO
-    final imageUrl = response.data['imageUrl'] as String?;
-    if (imageUrl != null && imageUrl.isNotEmpty) {
-      urls.add(imageUrl);
-    }
-  }
-  
-  return urls;
-}
-
-  Future<void> _saveDraft() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
-    if (!_validateExtra()) return;
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
     try {
-      await _tenderService.createDraft(
-        _buildRequest(),
-        imageFiles: _imageFiles,
+      final request = TenderInsertRequest(
+        title: _titleCtrl.text.trim(),
+        maxBudget: double.parse(_budgetCtrl.text.trim()),
+        locationName: _locationCtrl.text.trim(),
+        description: _descCtrl.text.trim().isEmpty
+            ? null
+            : _descCtrl.text.trim(),
+        categoryId: _selectedCategoryId!,
+        deadline: _deadline!,
+        imageBytes: null,
       );
+
+      await widget.tenderService.create(request, imageFiles: _imageFiles);
       if (!mounted) return;
-      _showSnack('Draft saved successfully!');
-      await Future.delayed(const Duration(milliseconds: 900));
-      if (mounted) Navigator.pop(context, true);
+      Navigator.pop(context, true);
     } catch (e) {
-      if (!mounted) return;
-      setState(
-        () => _errorMessage = e.toString().replaceFirst('Exception: ', ''),
+      SnackbarHelper.show(
+        context,
+        e.toString().replaceFirst('Exception: ', ''),
+        isError: true,
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  void _showSnack(String msg, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(
-              isError ? Icons.error_outline : Icons.check_circle_outline,
-              color: isError ? AppColors.error : AppColors.success,
-              size: 18,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                msg,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 13,
-                ),
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: AppColors.surface,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-          side: BorderSide(
-            color: isError
-                ? AppColors.error.withValues(alpha: 0.4)
-                : AppColors.success.withValues(alpha: 0.4),
-          ),
-        ),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
+  Future<void> _saveDraft() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    if (!_validateExtra()) return;
+
+    final tenderProvider = context.read<TenderProvider>();
+
+    try {
+      // 2. Pozivamo providera
+      await tenderProvider.saveDraft(
+        request: _buildRequest(),
+        imageFiles: _imageFiles,
+      );
+
+      // 3. UI akcije nakon uspjeha
+      if (!mounted) return;
+      SnackbarHelper.show(context, 'Draft saved successfully!');
+
+      await Future.delayed(const Duration(milliseconds: 900));
+      if (mounted) Navigator.pop(context, true);
+    } catch (e) {
+      // 4. UI akcije u slučaju greške
+      if (!mounted) return;
+      String error = e.toString().replaceFirst('Exception: ', '');
+      SnackbarHelper.show(context, error, isError: true);
+    }
   }
 
   Widget _cardField(Widget child) =>
@@ -335,11 +220,14 @@ Future<List<String>> _uploadLocalImages(List<PlatformFile> files) async {
 
   @override
   Widget build(BuildContext context) {
+    final categories = context.watch<TenderProvider>().categories;
+    final bool isDesktopWidth = MediaQuery.sizeOf(context).width >= 900;
+    final int descriptionLines = isDesktopWidth ? 5 : 4;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: _buildAppBar(),
-      body: FadeTransition(
-        opacity: _fadeAni,
+      body: FadeInWrapper(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 48),
           child: Form(
@@ -367,7 +255,27 @@ Future<List<String>> _uploadLocalImages(List<PlatformFile> files) async {
                       ),
                     ),
                     _cardField(_buildBudgetField()),
-                    _cardField(_buildCategorySection()),
+                    _cardField(
+                      TenderCategorySection(
+                        isLoading: _isCategoryLoading,
+                        loadError: _categoryLoadError,
+                        onRetry: _loadCategories,
+                        categories: categories,
+                        selectedCategoryId: _selectedCategoryId,
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedCategoryId = value;
+                            _errorMessage = null;
+                          });
+                        },
+                        validator: (value) {
+                          if (value == null) {
+                            return 'Please select a category';
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
                     _cardField(
                       AppTextField(
                         controller: _locationCtrl,
@@ -393,7 +301,9 @@ Future<List<String>> _uploadLocalImages(List<PlatformFile> files) async {
                     _cardField(
                       DatepickerWidget(
                         deadline: _deadline,
-                        onTap: _pickDeadline,
+                       onDateSelected: (newDate) {
+                          setState(() => _deadline = newDate);
+                        },
                       ),
                     ),
                     _cardField(
@@ -402,8 +312,8 @@ Future<List<String>> _uploadLocalImages(List<PlatformFile> files) async {
                         label: 'Description (optional)',
                         hint:
                             'Describe scope, requirements, evaluation criteria…',
-                        minLines: 5,
-                        maxLines: 5,
+                        minLines: descriptionLines,
+                        maxLines: descriptionLines,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -417,10 +327,13 @@ Future<List<String>> _uploadLocalImages(List<PlatformFile> files) async {
                   title: 'IMAGES (OPTIONAL)',
                   icon: Icons.image_outlined,
                   children: [
-                    _cardField(_buildImageUrlRow()),
-                    if (_imageFiles.isNotEmpty)
-                      _cardField(_buildImageFileChips()),
-                    if (_imageUrls.isNotEmpty) _cardField(_buildImageChips()),
+                    _cardField(
+                      TenderImageUploadSection(
+                        imageFiles: _imageFiles,
+                        onPickFromDisk: _pickImagesFromDisk,
+                        onRemoveFile: _removeImageFile,
+                      ),
+                    ),
                     const SizedBox(height: 4),
                   ],
                 ),
@@ -433,8 +346,15 @@ Future<List<String>> _uploadLocalImages(List<PlatformFile> files) async {
                   ),
                 ],
 
-                const SizedBox(height: 28),
-                _buildSubmitRow(),
+                const SizedBox(height: 32),
+                TenderSubmitRow(
+                  isLoading: _isLoading,
+                  onSaveDraft: _saveDraft,
+                  onSubmitTender: _submitTender,
+                ),
+
+                const SizedBox(height: 20),
+
               ],
             ),
           ),
@@ -586,352 +506,4 @@ Future<List<String>> _uploadLocalImages(List<PlatformFile> files) async {
     },
   );
 
-  Widget _buildCategorySection() => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      const Text(
-        'Category *',
-        style: TextStyle(
-          color: AppColors.textSecondary,
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      const SizedBox(height: 8),
-      if (_isCategoryLoading)
-        // Small inline spinner — ScreenLoadingState is a full-screen widget
-        const Center(
-          child: SizedBox(
-            height: 24,
-            width: 24,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: AppColors.primary,
-            ),
-          ),
-        )
-      else if (_categoryLoadError != null)
-        // ScreenErrorState is full-screen too, so use a compact inline version
-        Row(
-          children: [
-            const Icon(Icons.error_outline, size: 14, color: AppColors.error),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Text(
-                _categoryLoadError!,
-                style: const TextStyle(color: AppColors.error, fontSize: 12),
-              ),
-            ),
-            TextButton(
-              onPressed: _loadCategories,
-              style: TextButton.styleFrom(
-                padding: EdgeInsets.zero,
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              child: const Text(
-                'Retry',
-                style: TextStyle(fontSize: 12, color: AppColors.primary),
-              ),
-            ),
-          ],
-        )
-      else
-        DropdownButtonFormField<int>(
-          value: _selectedCategoryId,
-          isExpanded: true,
-          decoration: InputDecoration(
-            hintText: 'Select a category',
-            prefixIcon: const Icon(
-              Icons.category_outlined,
-              color: AppColors.textSecondary,
-            ),
-            filled: true,
-            fillColor: AppColors.surfaceVariant,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 15,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: AppColors.outline),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: AppColors.error),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: AppColors.error, width: 1.5),
-            ),
-          ),
-          items: _categories
-              .map(
-                (category) => DropdownMenuItem<int>(
-                  value: category.id,
-                  child: Text(category.name),
-                ),
-              )
-              .toList(),
-          onChanged: (value) {
-            setState(() {
-              _selectedCategoryId = value;
-              _errorMessage = null;
-            });
-          },
-          validator: (value) {
-            if (value == null) {
-              return 'Please select a category';
-            }
-            return null;
-          },
-          selectedItemBuilder: (context) {
-            return _categories
-                .map(
-                  (category) => Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      category.name,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                )
-                .toList();
-          },
-          ),    
-    ],
-  );
-  
-
-  Widget _buildImageUrlRow() => Column(
-    children: [
-      SizedBox(
-        width: double.infinity,
-        child: FilledButton.icon(
-          onPressed: _pickImagesFromDisk,
-          icon: const Icon(Icons.upload_file_rounded, size: 18),
-          label: const Text('Upload from disk'),
-          style: FilledButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
-            minimumSize: const Size.fromHeight(48),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-        ),
-      ),
-      const SizedBox(height: 10),
-      Row(
-        children: [
-          Expanded(
-            child: AppTextField(
-              controller: _imageUrlCtrl,
-              label: 'Or paste image URL',
-              prefixIcon: Icons.link_rounded,
-            ),
-          ),
-          const SizedBox(width: 10),
-          AppIconButton(icon: Icons.add_rounded, onTap: _addImageUrl),
-        ],
-      ),
-    ],
-  );
-
-  Widget _buildImageFileChips() => Wrap(
-    spacing: 8,
-    runSpacing: 8,
-    children: List.generate(
-      _imageFiles.length,
-      (i) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceVariant,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppColors.outline),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.upload_file_rounded,
-              size: 13,
-              color: AppColors.textSecondary,
-            ),
-            const SizedBox(width: 5),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 160),
-              child: Text(
-                _imageFiles[i].name,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 12,
-                ),
-              ),
-            ),
-            const SizedBox(width: 6),
-            GestureDetector(
-              onTap: () => _removeImageFile(i),
-              child: const Icon(
-                Icons.close_rounded,
-                size: 13,
-                color: AppColors.error,
-              ),
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
-
-  Widget _buildImageChips() => Wrap(
-    spacing: 8,
-    runSpacing: 8,
-    children: List.generate(
-      _imageUrls.length,
-      (i) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceVariant,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppColors.outline),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.image_outlined,
-              size: 13,
-              color: AppColors.textSecondary,
-            ),
-            const SizedBox(width: 5),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 160),
-              child: Text(
-                _imageUrls[i],
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 12,
-                ),
-              ),
-            ),
-            const SizedBox(width: 6),
-            GestureDetector(
-              onTap: () => _removeImageUrl(i),
-              child: const Icon(
-                Icons.close_rounded,
-                size: 13,
-                color: AppColors.error,
-              ),
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
-
-  // ActionButton doesn't support icons or loading state, so the submit
-  // row keeps full ElevatedButton/OutlinedButton implementations
-  Widget _buildSubmitRow() => Row(
-    mainAxisAlignment: MainAxisAlignment.center,
-    children: [
-      SizedBox(
-        width: 146,
-        height: 52,
-        child: OutlinedButton(
-          onPressed: _isLoading ? null : _saveDraft,
-          style: OutlinedButton.styleFrom(
-            side: const BorderSide(color: AppColors.primary),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            child: _isLoading
-                ? const SizedBox(
-                    key: ValueKey('loader_draft'),
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      color: AppColors.primary,
-                    ),
-                  )
-                : const Row(
-                    key: ValueKey('label_draft'),
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.drafts, color: AppColors.primary, size: 19),
-                      SizedBox(width: 8),
-                      Text(
-                        'Save Draft',
-                        style: TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-          ),
-        ),
-      ),
-      const SizedBox(width: 12),
-      SizedBox(
-        width: 180,
-        height: 52,
-        child: ElevatedButton(
-          onPressed: _isLoading ? null : _submitTender,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            disabledBackgroundColor: AppColors.textDisabled,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            elevation: 0,
-          ),
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            child: _isLoading
-                ? const SizedBox(
-                    key: ValueKey('loader'),
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      color: Colors.white,
-                    ),
-                  )
-                : const Row(
-                    key: ValueKey('label'),
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.publish_rounded,
-                        color: Colors.white,
-                        size: 19,
-                      ),
-                      SizedBox(width: 8),
-                      Text(
-                        'Publish Tender',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-          ),
-        ),
-      ),
-    ],
-  );
 }

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class TenderInsertRequest {
   final String title;
   final double maxBudget;
@@ -5,7 +7,7 @@ class TenderInsertRequest {
   final String? description;
   final int categoryId;
   final DateTime deadline;
-  final List<String>? imageUrls;
+  final List<List<int>>? imageBytes;
 
   TenderInsertRequest({
     required this.title,
@@ -14,17 +16,21 @@ class TenderInsertRequest {
     this.description,
     required this.categoryId,
     required this.deadline,
-    this.imageUrls,
+    this.imageBytes,
   });
 
   /// Convert TenderInsertRequest to JSON
   Map<String, dynamic> toJson() {
-    final normalizedImageUrls =
-        imageUrls
-            ?.map((url) => url.trim())
-            .where((url) => url.isNotEmpty)
+    final normalizedImageBytes =
+        imageBytes
+            ?.map((bytes) => bytes.toList())
+            .where((bytes) => bytes.isNotEmpty)
             .toList() ??
-        const <String>[];
+        const <List<int>>[];
+
+    final encodedImageBytes = normalizedImageBytes
+        .map(base64Encode)
+        .toList(growable: false);
 
     return {
       'title': title,
@@ -33,11 +39,7 @@ class TenderInsertRequest {
       'description': description,
       'categoryId': categoryId,
       'deadline': deadline.toIso8601String(),
-      // Keep both for backend variants that expect either one string or many.
-      'imageUrl': normalizedImageUrls.isEmpty
-          ? null
-          : normalizedImageUrls.first,
-      'imageUrls': normalizedImageUrls,
+      'imageBytes': encodedImageBytes,
     };
   }
 
@@ -50,8 +52,15 @@ class TenderInsertRequest {
       description: json['description'] as String?,
       categoryId: json['categoryId'] as int,
       deadline: DateTime.parse(json['deadline'] as String),
-      imageUrls: json['imageUrls'] != null
-          ? List<String>.from(json['imageUrls'] as List)
+      imageBytes: (json['imageBytes'] ?? json['imageUrls']) != null
+          ? List<List<int>>.from(
+              ((json['imageBytes'] ?? json['imageUrls']) as List).map((x) {
+                if (x is String) {
+                  return base64Decode(x);
+                }
+                return List<int>.from(x as List);
+              }),
+            )
           : null,
     );
   }

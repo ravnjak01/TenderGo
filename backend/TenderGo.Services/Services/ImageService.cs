@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using TenderGo.Models.DTOs; // Obavezno dodaj namespace za DTO
+using TenderGo.Models.DTOs; 
 using TenderGo.Services.Interfaces;
 
 namespace TenderGo.Services.Services
@@ -19,39 +19,35 @@ namespace TenderGo.Services.Services
             _environment = environment;
         }
 
-        public async Task<TenderImageDTO> UploadImageAsync(IFormFile file, string subFolder, bool isPrimary = false)
+        public async Task<TenderImageDTO> UploadImageAsync(byte[] imageBytes, string subFolder, bool isPrimary = false)
         {
-            if (file == null || file.Length == 0)
-                throw new ArgumentException("Fajl je prazan.");
+            if (imageBytes == null || imageBytes.Length == 0)
+                throw new ArgumentException("Niz bajtova je prazan.");
 
-            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
-            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-
-            if (!allowedExtensions.Contains(extension))
-                throw new ArgumentException("Nepodržan format slike.");
-
-            // Putanja: wwwroot/uploads/subFolder
+            var extension = ".jpg"; // Možeš dodati logiku za detekciju tipa, ali .jpg je siguran default
             string folderPath = Path.Combine(_environment.WebRootPath, "uploads", subFolder);
 
             if (!Directory.Exists(folderPath))
                 Directory.CreateDirectory(folderPath);
 
-            // Generisanje jedinstvenog imena
             string fileName = $"{Guid.NewGuid()}{extension}";
             string fullPath = Path.Combine(folderPath, fileName);
 
-            using (var stream = new FileStream(fullPath, FileMode.Create))
-            {
-                await file.CopyToAsync(stream);
-            }
+            await File.WriteAllBytesAsync(fullPath, imageBytes);
 
-            // Kreiranje i vraćanje DTO objekta
             return new TenderImageDTO
             {
                 ImageUrl = $"/uploads/{subFolder}/{fileName}",
                 FileName = fileName,
                 IsPrimary = isPrimary
             };
+        }
+
+        public async Task<TenderImageDTO> UploadImageAsync(IFormFile file, string subFolder, bool isPrimary = false)
+        {
+            using var ms = new MemoryStream();
+            await file.CopyToAsync(ms);
+            return await UploadImageAsync(ms.ToArray(), subFolder, isPrimary);
         }
 
         public void DeleteImage(string relativePath)

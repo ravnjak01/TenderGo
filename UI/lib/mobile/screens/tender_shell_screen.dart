@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tendergo/admin/screens/tender_details_screen.dart';
-import 'package:tendergo/admin/screens/tender_post_screen.dart';
+import 'package:tendergo/mobile/screens/tender_post_screen.dart';
 import 'package:tendergo/admin/screens/user_profile_screen.dart';
 import 'package:tendergo/mobile/screens/tenders_list_screen.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
@@ -27,7 +27,7 @@ class _MobileTenderShellScreenState extends State<MobileTenderShellScreen> {
   Future<void> _openPostTender() async {
     final result = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
-        builder: (_) => TenderPostScreen(tenderService: widget.tenderService),
+        builder: (_) => const MobileTenderPostScreen(),
       ),
     );
 

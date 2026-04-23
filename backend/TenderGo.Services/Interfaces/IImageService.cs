@@ -10,6 +10,7 @@ namespace TenderGo.Services.Interfaces
 {
     public interface IImageService
     {
+        Task<TenderImageDTO> UploadImageAsync(byte[] imageBytes, string subFolder, bool isPrimary = false);
         Task<TenderImageDTO> UploadImageAsync(IFormFile file, string subFolder, bool isPrimary = false);
         void DeleteImage(string relativePath);
     }

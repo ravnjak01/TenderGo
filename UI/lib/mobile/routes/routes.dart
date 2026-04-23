@@ -4,6 +4,7 @@ import 'package:tendergo/mobile/screens/forgot_password_screen.dart';
 import 'package:tendergo/mobile/screens/login_screen.dart';
 import 'package:tendergo/mobile/screens/registration_screen.dart';
 import 'package:tendergo/mobile/screens/reset_password_screen.dart';
+import 'package:tendergo/mobile/screens/tender_post_screen.dart';
 import 'package:tendergo/mobile/screens/tender_shell_screen.dart';
 import 'package:tendergo/shared/routes/routes.dart';
 import 'package:tendergo/shared/services/auth_service.dart';
@@ -24,6 +25,7 @@ class MobileRoutes {
         tenderService: tenderService,
         authService: authService,
       ),
+      AppRoutes.tenderPost: (context) => const MobileTenderPostScreen(),
     };
   }
 }

@@ -29,11 +29,13 @@ namespace TenderGo.Services.Services
         private readonly IAuthService _authService;
         protected readonly ILogger<TenderService> _logger;
         protected readonly IServiceProvider _serviceProvider;
-        public TenderService(TenderGoContext context, IMapper mapper, IHttpContextAccessor httpContextAccessor, IAuthService authService, ILogger<TenderService> logger, IServiceProvider serviceProvider) : base(context, mapper, httpContextAccessor)
+        protected readonly IImageService _imageService;
+        public TenderService(TenderGoContext context, IMapper mapper, IHttpContextAccessor httpContextAccessor, IAuthService authService, ILogger<TenderService> logger, IServiceProvider serviceProvider, IImageService imageService) : base(context, mapper, httpContextAccessor)
         {
             _logger = logger;
             _authService = authService;
             _serviceProvider = serviceProvider;
+            _imageService = imageService;
         }
 
         protected override IQueryable<Tender> AddIncludes(IQueryable<Tender> query)
@@ -123,10 +125,10 @@ namespace TenderGo.Services.Services
             if (request.Deadline <= DateTime.UtcNow)
                 throw new UserException("Deadline must be in the future");
 
-            try  // 
+            try  
             {
                 var entity = _mapper.Map<Tender>(request);
-                _logger.LogInformation("ImageUrls in request: {Count}", request.ImageUrls?.Count ?? 0);
+                _logger.LogInformation("ImageUrls in request: {Count}", request.ImageBytes?.Count ?? 0);
                 _logger.LogInformation("Images mapped to entity: {Count}", entity.Images?.Count ?? 0);
 
                 if (!string.IsNullOrWhiteSpace(request.LocationName))
@@ -141,14 +143,27 @@ namespace TenderGo.Services.Services
                 entity.CreatedAt = DateTime.UtcNow;
                 entity.CreatedByUserId = _authService.GetCurrentUserId();
 
-                var images = entity.Images.ToList();
-                for (int i = 0; i < images.Count; i++)
+                _context.Tenders.Add(entity);
+
+                if (request.ImageBytes != null && request.ImageBytes.Any())
                 {
-                    images[i].IsPrimary = (i == 0);
-                    images[i].Tender = entity;
+                    entity.Images = new List<TenderImage>();
+                    for (int i = 0; i < request.ImageBytes.Count; i++)
+                    {
+                        // Pozivamo ImageService da snimi bajtove na disk
+                        var uploadResult = await _imageService.UploadImageAsync(request.ImageBytes[i], "tenders", i == 0);
+
+                        // Kreiramo entitet za bazu
+                        var tenderImage = new TenderImage
+                        {
+                            ImageUrl = uploadResult.ImageUrl,
+                            IsPrimary = i == 0,
+                            Tender = entity // Veza sa ovim tenderom
+                        };
+                        entity.Images.Add(tenderImage);
+                    }
                 }
 
-                _context.Tenders.Add(entity);
                 await _context.SaveChangesAsync();
 
                 var saved = await _context.Tenders

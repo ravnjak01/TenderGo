@@ -170,14 +170,13 @@ if (!app.Environment.IsDevelopment())
 
 
 
-    app.ConfigureAwait(false);
-app.UseCors("AllowAll");
+app.UseCors("AllowAll"); 
 
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapControllers(); // Bez ovoga ruta /api/auth/register neće raditi
+app.MapControllers(); 
 
 using (var scope = app.Services.CreateScope())
 {
