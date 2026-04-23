@@ -38,6 +38,10 @@ public class TenderController
     public async Task<ActionResult<List<TenderDTO>>> GetDrafts()
         => Ok(await _tenderService.GetDraftTenders());
 
+    [HttpGet("cancelled")]
+    public async Task<ActionResult<List<TenderDTO>>> GetCancelled()
+        => Ok(await _tenderService.GetDraftTenders());
+
     [HttpGet("category/{id}")]
     public async Task<ActionResult<List<TenderDTO>>> GetByCategory(int id)
         => Ok(await _tenderService.GetTendersByCategory(id));

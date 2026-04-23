@@ -77,6 +77,17 @@ namespace TenderGo.Services.Services
             return _mapper.Map<IEnumerable<TenderDTO>>(tenders);
         }
 
+        public async Task<IEnumerable<TenderDTO>> GetCancelledTenders()
+        {
+            var tenders = await _context.Tenders
+                .Include(t => t.Category)
+                .Include(t => t.CreatedByUser)
+                .Include(t => t.Images)
+                .Where(t => t.Status == TenderStatus.Cancelled)
+                .ToListAsync();
+            return _mapper.Map<IEnumerable<TenderDTO>>(tenders);
+        }
+
         public async Task<IEnumerable<TenderDTO>> GetTendersByCategory(int id)
         {
             var categoryExists = await _context.Categories.AnyAsync(c => c.Id == id);

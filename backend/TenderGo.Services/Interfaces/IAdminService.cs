@@ -4,14 +4,16 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using TenderGo.Models.DTOs;
+using TenderGo.Models.Requests;
 
 namespace TenderGo.Services.Interfaces
 {
     public interface IAdminService
     {
-        Task<bool> BanUserAsync(string userId, string reason);
+        Task<bool> BanUserAsync(string userId, BanRequest reason);
         Task<bool> UnbanUserAsync(string userId);
         Task<IEnumerable<UserDTO>> GetAllUsersAsync();
+        Task<bool> DeleteTenderAsync(int tenderId);
 
     }
 }

@@ -1,0 +1,94 @@
+services:
+  tendergo-sql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    user: root
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=${SA_PASSWORD}
+      - MSSQL_PID=Developer
+    ports:
+      - "1401:1433"
+    networks:
+     - tendergo-network
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P '${SA_PASSWORD}' -Q 'SELECT 1' -C"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    volumes:
+      - tendergo-sql-data:/var/opt/mssql
+  
+   
+  tendergo-rabbitmq:
+    image: rabbitmq:3-management
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASS}
+      - RABBITMQ_VM_MEMORY_HIGH_WATERMARK_RELATIVE=0.6
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - tendergo-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M  # Ne dozvoli kontejneru više od 512MB RAM-a
+        reservations:
+          memory: 256M  # Rezerviši mu odmah 256MB
+
+  tendergo-subscriber:
+    build:
+      context: .
+      dockerfile: DockerfileSubscriber
+    restart: unless-stopped
+    environment:
+      - DOTNET_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=${DB_CONNECTION}
+      - RabbitMQ__Host=tendergo-rabbitmq
+      - RabbitMQ__Username=${RABBITMQ_USER}
+      - RabbitMQ__Password=${RABBITMQ_PASS}
+    depends_on:
+      tendergo-rabbitmq:
+        condition: service_started
+    networks:
+      - tendergo-network
+ 
+
+  tendergo-api:
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: DockerfileApi
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=${DB_CONNECTION}
+      - RabbitMQ__Host=tendergo-rabbitmq
+      - RabbitMQ__Username=${RABBITMQ_USER}
+      - RabbitMQ__Password=${RABBITMQ_PASS}
+    ports:
+      - "8080:8080"
+    depends_on:                      
+      tendergo-sql:
+        condition: service_healthy
+      tendergo-rabbitmq:
+        condition: service_started
+    networks:
+      - tendergo-network  
+
+  
+   
+networks:
+  tendergo-network:
+    driver: bridge
+
+volumes:
+  tendergo-sql-data:
+  tendergo-rabbitmq-data:

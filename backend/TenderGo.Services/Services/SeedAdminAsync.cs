@@ -8,7 +8,14 @@ namespace TenderGo.Data // Dodaj namespace tvog projekta
     {
         public static async Task SeedAdminAsync(IServiceProvider serviceProvider)
         {
+            var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
             var userManager = serviceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+            // 1. Kreiraj ulogu ako ne postoji
+            if (!await roleManager.RoleExistsAsync("Admin"))
+            {
+                await roleManager.CreateAsync(new IdentityRole("Admin"));
+            }
 
             var adminEmail = "admin@tendergo.com";
             var admin = await userManager.FindByEmailAsync(adminEmail);
@@ -19,14 +26,27 @@ namespace TenderGo.Data // Dodaj namespace tvog projekta
                 {
                     UserName = adminEmail,
                     Email = adminEmail,
-                    EmailConfirmed = true // Preporuka: potvrdi email odmah
+                    EmailConfirmed = true,
+
+                    FirstName = "Sistem",
+                    LastName = "Administrator",
+                    CreatedAt = DateTime.UtcNow, 
+
+                    
+                    Address = new Address
+                    {
+                        Country = "Bosna i Hercegovina",
+                        City = "Sarajevo",
+                        Street = "Admin Street",
+                        PostalCode = "71000"
+                    }
                 };
 
                 var result = await userManager.CreateAsync(admin, "Admin123!");
 
                 if (result.Succeeded)
                 {
-                    await userManager.AddToRoleAsync(admin, "Admin"); // Proveri da li je AppRoles.Admin string
+                    await userManager.AddToRoleAsync(admin, "Admin");
                 }
             }
         }

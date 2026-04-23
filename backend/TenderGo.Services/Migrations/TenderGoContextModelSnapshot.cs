@@ -199,6 +199,12 @@ namespace TenderGo.Services.Migrations
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("int");
 
+                    b.Property<string>("BanReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("BannedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<int?>("CompanyId")
                         .HasColumnType("int");
 
@@ -222,6 +228,9 @@ namespace TenderGo.Services.Migrations
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsBanned")
+                        .HasColumnType("bit");
 
                     b.Property<bool?>("IsDeleted")
                         .HasColumnType("bit");
@@ -392,6 +401,32 @@ namespace TenderGo.Services.Migrations
                     b.HasIndex("AddressId");
 
                     b.ToTable("Company");
+                });
+
+            modelBuilder.Entity("TenderGo.Models.Entities.Notification", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Notifications");
                 });
 
             modelBuilder.Entity("TenderGo.Models.Entities.Rating", b =>

@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using TenderGo.Models.DTOs;
 using TenderGo.Models.Entities;
+using TenderGo.Models.Requests;
 
 namespace TenderGo.Services.Mapping
 {
@@ -13,10 +14,11 @@ namespace TenderGo.Services.Mapping
     {
         public MappingProfile()
         {
-            // Add your object-object mapping configurations here
-            //CreateMap<Class, Destination>();
+
 
             CreateMap<Category, CategoryDTO>().ReverseMap();
+            CreateMap<CategoryUpdateRequest, Category>();
+
         }
     }
 }

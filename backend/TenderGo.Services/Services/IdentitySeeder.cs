@@ -1,29 +1,59 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using TenderGo.Models.Entities;
 
-namespace TenderGo.Services.Services
+public class IdentitySeeder
 {
-    public class IdentitySeeder
+    public static async Task SeedRolesAndAdminAsync(IServiceProvider serviceProvider)
     {
-        public static async Task SeedRolesAsync(IServiceProvider serviceProvider)
+        var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+        var userManager = serviceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+        // 1. Seed Rola
+        if (!await roleManager.RoleExistsAsync(AppRoles.Admin))
         {
-            var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+            await roleManager.CreateAsync(new IdentityRole(AppRoles.Admin));
+        }
+        if (!await roleManager.RoleExistsAsync(AppRoles.User))
+        {
+            await roleManager.CreateAsync(new IdentityRole(AppRoles.User));
+        }
 
-            if (!await roleManager.RoleExistsAsync(AppRoles.Admin))
-            {
-                await roleManager.CreateAsync(new IdentityRole(AppRoles.Admin));
-            }
+        // 2. Seed Admin Korisnika
+        var adminEmail = "admin@tendergo.com";
+        var adminUser = await userManager.FindByEmailAsync(adminEmail);
 
-            if (!await roleManager.RoleExistsAsync(AppRoles.User))
+        if (adminUser == null)
+        {
+            var admin = new ApplicationUser
             {
-                await roleManager.CreateAsync(new IdentityRole(AppRoles.User));
+                UserName = adminEmail,
+                Email = adminEmail,
+                EmailConfirmed = true,
+                FirstName = "Sistem",
+                LastName = "Administrator",
+                CreatedAt = DateTime.UtcNow,
+                Address = new Address
+                {
+                    Country = "Bosna i Hercegovina",
+                    City = "Sarajevo",
+                    Street = "Admin Street",
+                    PostalCode = "71000"
+                }
+            };
+
+            var result = await userManager.CreateAsync(admin, "Admin123!");
+
+            if (result.Succeeded)
+            {
+                await userManager.AddToRoleAsync(admin, AppRoles.Admin);
             }
-        }   
+            else
+            {
+                // Ako ne uspije, ispiši greške u konzolu/logger radi lakšeg debugiranja
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                throw new Exception($"Seed Admin failed: {errors}");
+            }
+        }
     }
 }

@@ -118,7 +118,7 @@ namespace TenderGo.Services.Services
 
         public BaseBidState CreateState(ApplicationStatus bidStatus, TenderStatus tenderStatus)
         {
-            if (tenderStatus != TenderStatus.Open && tenderStatus != TenderStatus.Draft)
+            if (tenderStatus != TenderStatus.Open)
             {
                 return _serviceProvider.GetRequiredService<FinalBidState>();
             }
