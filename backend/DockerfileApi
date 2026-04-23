@@ -1,0 +1,28 @@
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+WORKDIR /app
+EXPOSE 8080
+
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+
+ENV NUGET_FALLBACK_PACKAGES=""
+
+COPY ["TenderGo.Api/TenderGo.Api.csproj", "TenderGo.Api/"]
+COPY ["TenderGo.Services/TenderGo.Services.csproj", "TenderGo.Services/"]
+COPY ["TenderGo.Models/TenderGo.Models.csproj", "TenderGo.Models/"]
+COPY ["TenderGo.Contracts/TenderGo.Contracts.csproj", "TenderGo.Contracts/"]
+
+RUN dotnet restore "TenderGo.Api/TenderGo.Api.csproj"
+
+COPY . .
+
+FROM build AS publish
+WORKDIR "/src/TenderGo.Api"
+RUN dotnet publish "TenderGo.Api.csproj" -c Release -o /app/publish 
+
+FROM base AS final
+WORKDIR /app
+RUN adduser --disabled-password --gecos "" appuser && chown -R appuser /app
+USER appuser
+COPY --from=publish /app/publish .
+ENTRYPOINT ["dotnet", "TenderGo.Api.dll"]

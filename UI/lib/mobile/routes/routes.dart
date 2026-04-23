@@ -1,0 +1,29 @@
+import 'package:flutter/material.dart';
+import 'package:tendergo/admin/screens/splash_screen.dart';
+import 'package:tendergo/mobile/screens/forgot_password_screen.dart';
+import 'package:tendergo/mobile/screens/login_screen.dart';
+import 'package:tendergo/mobile/screens/registration_screen.dart';
+import 'package:tendergo/mobile/screens/reset_password_screen.dart';
+import 'package:tendergo/mobile/screens/tender_shell_screen.dart';
+import 'package:tendergo/shared/routes/routes.dart';
+import 'package:tendergo/shared/services/auth_service.dart';
+import 'package:tendergo/shared/services/tender_service.dart';
+
+class MobileRoutes {
+  static Map<String, WidgetBuilder> getRoutes({
+    required AuthService authService,
+    required TenderService tenderService,
+  }) {
+    return {
+      AppRoutes.splash: (context) => const SplashScreen(),
+      AppRoutes.login: (context) => const MobileLoginScreen(),
+      AppRoutes.registration: (context) => const MobileRegistrationScreen(),
+      AppRoutes.forgotPassword: (context) => const MobileForgotPasswordScreen(),
+      AppRoutes.resetPassword: (context) => const MobileResetPasswordScreen(),
+      AppRoutes.tenderList: (context) => MobileTenderShellScreen(
+        tenderService: tenderService,
+        authService: authService,
+      ),
+    };
+  }
+}
