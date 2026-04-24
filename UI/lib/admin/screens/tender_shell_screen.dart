@@ -8,6 +8,7 @@ import 'package:tendergo/admin/screens/tender_post_screen.dart';
 import 'package:tendergo/admin/screens/tenders_list_screen.dart';
 import 'package:tendergo/admin/screens/user_profile_screen.dart';
 import 'package:tendergo/shared/routes/routes.dart';
+import 'package:tendergo/shared/screens/user_profile_screen.dart';
 import 'package:tendergo/shared/services/auth_service.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
 
