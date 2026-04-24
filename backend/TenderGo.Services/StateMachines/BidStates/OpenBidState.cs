@@ -52,12 +52,14 @@ namespace TenderGo.Services.StateMachines.BidStates
             _context.Bids.Add(entity);
             await _context.SaveChangesAsync();
 
-            await _pubSub.PublishAsync(new BidCreatedEvent
-            {
-                TenderId = entity.TenderId,
-                OwnerUserId = tender.CreatedByUserId,
-                OfferedPrice = entity.OfferedPrice
-            }, cfg => cfg.WithTopic("bid_created"));
+            //rabbitmq zakomentarisan zasad
+
+            //await _pubSub.PublishAsync(new BidCreatedEvent
+            //{
+            //    TenderId = entity.TenderId,
+            //    OwnerUserId = tender.CreatedByUserId,
+            //    OfferedPrice = entity.OfferedPrice
+            //}, cfg => cfg.WithTopic("bid_created"));
 
 
             return _mapper.Map<BidDTO>(entity);

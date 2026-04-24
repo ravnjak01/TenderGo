@@ -63,7 +63,7 @@ class _TenderGridState extends State<TenderGrid> {
                   }
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (_) => TenderDetailsScreen(
+                      builder: (_) => AdminTenderDetailsScreen(
                         tenderService: widget.tenderService,
                         tenderId: dto.id,
                       ),

@@ -235,7 +235,7 @@ class _TenderShellScreenState extends State<TenderShellScreen> {
                 });
               },
             )
-          : TenderDetailsScreen(
+          : AdminTenderDetailsScreen(
               tenderService: widget.tenderService,
               tenderId: _selectedTenderId,
               embedded: true,

@@ -9,12 +9,12 @@ import 'package:tendergo/shared/services/dio_client.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
 import 'package:tendergo/shared/widgets/feedback/screen_state_widget.dart';
 
-class TenderDetailsScreen extends StatefulWidget {
+class AdminTenderDetailsScreen extends StatefulWidget {
   final TenderService tenderService;
   final int? tenderId;
   final bool embedded;
 
-  const TenderDetailsScreen({
+  const AdminTenderDetailsScreen({
     super.key,
     required this.tenderService,
     this.tenderId,
@@ -22,10 +22,10 @@ class TenderDetailsScreen extends StatefulWidget {
   });
 
   @override
-  State<TenderDetailsScreen> createState() => _TenderDetailsScreenState();
+  State<AdminTenderDetailsScreen> createState() => _AdminTenderDetailsScreenState();
 }
 
-class _TenderDetailsScreenState extends State<TenderDetailsScreen> {
+class _AdminTenderDetailsScreenState extends State<AdminTenderDetailsScreen> {
   Future<TenderDto>? _tenderFuture;
   bool _initialized = false;
   int? _resolvedTenderId;

@@ -42,7 +42,7 @@ class AdminRoutes {
       ),
       AppRoutes.tenderPost: (context) => TenderPostScreen(tenderService: tenderService),
       AppRoutes.tenderDetails: (context) =>
-          TenderDetailsScreen(tenderService: tenderService),
+          AdminTenderDetailsScreen(tenderService: tenderService),
       AppRoutes.userProfile: (context) => UserProfileScreen(authService: authService),
       AppRoutes.myTenders: (context) => MyTendersScreen(tenderService: tenderService),
       AppRoutes.myBids: (context) => MyBidsScreen(bidService: bidService),

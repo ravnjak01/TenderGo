@@ -22,7 +22,6 @@ namespace TenderGo.Api.Controllers
         }
 
 
-        //DOSAO KOD PROVJERE DA LI ISPISUJE KAD SE POSALJE PONUDA NA TENDER ,TESTIRAM PREKO SWAGGERA
 
 
 
