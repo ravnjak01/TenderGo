@@ -202,140 +202,158 @@ class _TenderCard extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final isOpen = model.status == TenderStatus.open;
 
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: colorScheme.outlineVariant, width: 1),
-      ),
-      color: colorScheme.surfaceContainerLowest,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () {
-          // Navigate to tender detail page
-          // Navigator.of(context).push(...)
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ── header row ────────────────────────────────────────────────
-              Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 360;
+
+        return Card(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: colorScheme.outlineVariant, width: 1),
+          ),
+          color: colorScheme.surfaceContainerLowest,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () {
+              // Navigate to tender detail page
+              // Navigator.of(context).push(...)
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          model.title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          model.category,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.primary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  _StatusChip(isOpen: isOpen),
-                ],
-              ),
-
-              const SizedBox(height: 14),
-              const Divider(height: 1),
-              const SizedBox(height: 14),
-
-              // ── meta row ──────────────────────────────────────────────────
-              Row(
-                children: [
-                  _MetaItem(
-                    icon: Icons.location_on_rounded,
-                    label: model.locationName,
-                  ),
-                  const SizedBox(width: 16),
-                  _MetaItem(
-                    icon: Icons.calendar_today_rounded,
-                    label: _formatDate(model.deadline),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 12),
-
-              // ── budget + posted ───────────────────────────────────────────
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
+                  // ── header row ──────────────────────────────────────────
+                  Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Max Budget',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              model.title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              model.category,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colorScheme.primary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            if (isCompact) ...[
+                              const SizedBox(height: 8),
+                              _StatusChip(isOpen: isOpen),
+                            ],
+                          ],
                         ),
                       ),
+                      if (!isCompact) ...[
+                        const SizedBox(width: 8),
+                        _StatusChip(isOpen: isOpen),
+                      ],
+                    ],
+                  ),
+
+                  const SizedBox(height: 14),
+                  const Divider(height: 1),
+                  const SizedBox(height: 14),
+
+                  // ── meta row ────────────────────────────────────────────
+                  Wrap(
+                    spacing: 16,
+                    runSpacing: 8,
+                    children: [
+                      _MetaItem(
+                        icon: Icons.location_on_rounded,
+                        label: model.locationName,
+                      ),
+                      _MetaItem(
+                        icon: Icons.calendar_today_rounded,
+                        label: _formatDate(model.deadline),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // ── budget + posted ─────────────────────────────────────
+                  Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    runSpacing: 8,
+                    spacing: 16,
+                    crossAxisAlignment: WrapCrossAlignment.end,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Max Budget',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          Text(
+                            '${model.valueKM.toStringAsFixed(0)} KM',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: colorScheme.onSurface,
+                            ),
+                          ),
+                        ],
+                      ),
                       Text(
-                        '${model.valueKM.toStringAsFixed(0)} KM',
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: colorScheme.onSurface,
+                        'Posted ${_timeAgo(model.postedAt)}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
                   ),
-                  Text(
-                    'Posted ${_timeAgo(model.postedAt)}',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => TenderBidsScreen(
+                              tenderId: model.id,
+                              tenderTitle: model.title,
+                              tenderDto: tender,
+                              tenderService: tenderService,
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.gavel_rounded, size: 16),
+                      label: const Text('See bids'),
+                      style: OutlinedButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 8,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
                     ),
                   ),
                 ],
               ),
-              Align(
-                alignment: Alignment.centerRight,
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => TenderBidsScreen(
-                          tenderId: model.id,
-                          tenderTitle: model.title,
-                          tenderDto: tender,
-                          tenderService: tenderService,
-                        ),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.gavel_rounded, size: 16),
-                  label: const Text('See bids'),
-                  style: OutlinedButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 8,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 

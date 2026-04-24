@@ -173,106 +173,109 @@ class _BidCard extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: colorScheme.outlineVariant, width: 1),
-      ),
-      color: colorScheme.surfaceContainerLowest,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () {
-          // Navigate to bid detail page
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ── header ─────────────────────────────────────────────────
-              Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 360;
+
+        return Card(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: colorScheme.outlineVariant, width: 1),
+          ),
+          color: colorScheme.surfaceContainerLowest,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () {
+              // Navigate to bid detail page
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _BidAvatar(bidId: bid.id),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          bid.tenderTitle,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                  // ── header ───────────────────────────────────────────────
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _BidAvatar(bidId: bid.id),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              bid.tenderDisplayTitle,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            if (isCompact) ...[
+                              const SizedBox(height: 8),
+                              _StatusChip(status: bid.status),
+                            ],
+                          ],
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Tender #${bid.tenderId}',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.primary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
+                      ),
+                      if (!isCompact) ...[
+                        const SizedBox(width: 8),
+                        _StatusChip(status: bid.status),
                       ],
-                    ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  _StatusChip(status: bid.status),
-                ],
-              ),
 
-              const SizedBox(height: 14),
-              const Divider(height: 1),
-              const SizedBox(height: 14),
+                  const SizedBox(height: 14),
+                  Divider(
+                    height: 1,
+                    thickness: 5,
+                    color: colorScheme.outlineVariant,
+                  ),
+                  const SizedBox(height: 14),
 
-              // ── proposal preview ────────────────────────────────────────
-              if (bid.proposal != null) ...[
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerLow,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    bid.proposal!,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                      fontStyle: FontStyle.italic,
+                  // ── proposal preview ────────────────────────────────────
+                  if (bid.proposal != null) ...[
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerLow,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        bid.proposal!,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-              ],
-
-              // ── meta row ────────────────────────────────────────────────
-              Row(
-                children: [
-                  _MetaItem(
-                    icon: Icons.schedule_rounded,
-                    label: _timeAgo(bid.submittedAt),
-                  ),
-                  if (bid.deliveryDays != null) ...[
-                    const SizedBox(width: 16),
-                    _MetaItem(
-                      icon: Icons.local_shipping_rounded,
-                      label: '${bid.deliveryDays} days delivery',
-                    ),
+                    const SizedBox(height: 12),
                   ],
-                ],
-              ),
 
-              const SizedBox(height: 12),
+                  // ── meta row ────────────────────────────────────────────
+                  Wrap(
+                    spacing: 16,
+                    runSpacing: 8,
+                    children: [
+                      _MetaItem(
+                        icon: Icons.schedule_rounded,
+                        label: _timeAgo(bid.submittedAt),
+                      ),
+                      if (bid.deliveryDays != null)
+                        _MetaItem(
+                          icon: Icons.local_shipping_rounded,
+                          label: '${bid.deliveryDays} days delivery',
+                        ),
+                    ],
+                  ),
 
-              // ── price + submitted by ─────────────────────────────────────
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
+                  const SizedBox(height: 12),
+
+                  // ── price ───────────────────────────────────────────────
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -291,13 +294,12 @@ class _BidCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  
                 ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 

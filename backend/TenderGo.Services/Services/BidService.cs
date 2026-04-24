@@ -35,7 +35,12 @@ namespace TenderGo.Services.Services
 
 
 
-       
+        protected override IQueryable<Bid> AddIncludes(IQueryable<Bid> query)
+        {
+            return query
+                .Include(b => b.Tender)             
+                .Include(b => b.SubmittedByUser);   
+        }
 
 
         public override async Task<BidDTO> Insert(BidInsertRequest request)
@@ -98,6 +103,7 @@ namespace TenderGo.Services.Services
         public async Task<List<BidDTO>> GetBidsForTender(int tenderId)
         {
             var bids = await _context.Bids
+                .Include(b => b.Tender)
                 .Where(b => b.TenderId == tenderId)
                   .OrderByDescending(b => b.SubmittedAt)
                 .ToListAsync();

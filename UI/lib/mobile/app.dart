@@ -7,17 +7,20 @@ import 'package:tendergo/shared/providers/auth_provider.dart';
 import 'package:tendergo/shared/providers/tender_provider.dart';
 import 'package:tendergo/shared/routes/routes.dart';
 import 'package:tendergo/shared/services/auth_service.dart';
+import 'package:tendergo/shared/services/bid_service.dart';
 import 'package:tendergo/shared/services/category_service.dart';
 import 'package:tendergo/shared/services/dio_client.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
 
 class MobileApp extends StatelessWidget {
   final AuthService authService;
+  final BidService bidService;
   final TenderService tenderService;
 
   const MobileApp({
     super.key,
     required this.authService,
+    required this.bidService,
     required this.tenderService,
   });
 
@@ -44,6 +47,7 @@ class MobileApp extends StatelessWidget {
         initialRoute: AppRoutes.login,
         routes: MobileRoutes.getRoutes(
           authService: authService,
+          bidService: bidService,
           tenderService: tenderService,
         ),
       ),

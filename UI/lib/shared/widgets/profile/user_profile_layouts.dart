@@ -8,6 +8,10 @@ import 'package:tendergo/shared/core/utils/extensions/string_extensions.dart';
 import 'package:tendergo/shared/models/dto/auth_dto.dart';
 import 'package:tendergo/shared/models/dto/bid_dto.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
+import 'package:tendergo/shared/routes/routes.dart';
+
+
+//sljedece praviti klik na my bids i tenders prikazat listu bidova i tendera koje je korisnik kreirao, a ne sve bidove i tendere
 
 class UserProfileMobile extends StatelessWidget {
   const UserProfileMobile({
@@ -47,6 +51,9 @@ class UserProfileMobile extends StatelessWidget {
               UserProfileStatsCard(
                 bidsCount: bids.length,
                 tendersCount: tenders.length,
+                onBidsTap: () => Navigator.of(context).pushNamed(AppRoutes.myBids),
+                onTendersTap: () =>
+                    Navigator.of(context).pushNamed(AppRoutes.myTenders),
               ),
               const SizedBox(height: 32),
               ActionTile(
@@ -158,10 +165,14 @@ class UserProfileStatsCard extends StatelessWidget {
     super.key,
     required this.bidsCount,
     required this.tendersCount,
+    this.onBidsTap,
+    this.onTendersTap,
   });
 
   final int bidsCount;
   final int tendersCount;
+  final VoidCallback? onBidsTap;
+  final VoidCallback? onTendersTap;
 
   @override
   Widget build(BuildContext context) {
@@ -181,6 +192,7 @@ class UserProfileStatsCard extends StatelessWidget {
                 icon: Icons.gavel_rounded,
                 label: 'My Bids',
                 value: bidsCount.toString(),
+                onTap: onBidsTap,
               ),
             ),
             const SizedBox(width: 12),
@@ -189,6 +201,7 @@ class UserProfileStatsCard extends StatelessWidget {
                 icon: Icons.assignment_outlined,
                 label: 'My Tenders',
                 value: tendersCount.toString(),
+                onTap: onTendersTap,
               ),
             ),
           ],
@@ -204,41 +217,73 @@ class UserProfileStatTile extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.value,
+    this.onTap,
   });
 
   final IconData icon;
   final String label;
   final String value;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceVariant,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.outline),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 18, color: AppColors.primary),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
+        onTap: onTap,
+        child: Ink(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceVariant,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: onTap != null ? AppColors.primary : AppColors.outline,
             ),
           ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(icon, size: 18, color: AppColors.primary),
+                  const Spacer(),
+                  if (onTap != null)
+                    Icon(
+                      Icons.arrow_forward_rounded,
+                      size: 16,
+                      color: AppColors.textSecondary,
+                    ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                value,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              if (onTap != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Click for more',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:tendergo/admin/screens/mybids_screen.dart';
+import 'package:tendergo/admin/screens/mytenders_screen.dart';
 import 'package:tendergo/admin/screens/splash_screen.dart';
 import 'package:tendergo/mobile/screens/forgot_password_screen.dart';
 import 'package:tendergo/mobile/screens/login_screen.dart';
@@ -8,12 +10,15 @@ import 'package:tendergo/mobile/screens/tender_details_screen.dart';
 import 'package:tendergo/mobile/screens/tender_post_screen.dart';
 import 'package:tendergo/mobile/screens/tender_shell_screen.dart';
 import 'package:tendergo/shared/routes/routes.dart';
+import 'package:tendergo/shared/screens/user_profile_screen.dart';
 import 'package:tendergo/shared/services/auth_service.dart';
+import 'package:tendergo/shared/services/bid_service.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
 
 class MobileRoutes {
   static Map<String, WidgetBuilder> getRoutes({
     required AuthService authService,
+    required BidService bidService,
     required TenderService tenderService,
   }) {
     return {
@@ -29,6 +34,11 @@ class MobileRoutes {
       AppRoutes.tenderPost: (context) => const MobileTenderPostScreen(),
       AppRoutes.tenderDetails: (context) =>
           MobileTenderDetailsScreen(tenderService: tenderService),
+        AppRoutes.userProfile: (context) =>
+          UserProfileScreen(authService: authService),
+        AppRoutes.myTenders: (context) =>
+          MyTendersScreen(tenderService: tenderService),
+        AppRoutes.myBids: (context) => MyBidsScreen(bidService: bidService),
     };
   }
 }
