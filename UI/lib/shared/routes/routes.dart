@@ -12,4 +12,5 @@ class AppRoutes{
   static const String myTenders = '/my-tenders';
   static const String myBids = '/my-bids';
   static const String admin = '/admin';
+  static const String userPublicProfile = '/user-public-profile';
 }

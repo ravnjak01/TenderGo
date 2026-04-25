@@ -6,6 +6,7 @@ import 'package:tendergo/shared/services/bid_service.dart';
 import 'package:tendergo/shared/services/dio_client.dart';
 import 'package:tendergo/shared/services/image_service.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
+import 'package:tendergo/shared/services/user_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,6 +16,7 @@ void main() async {
   final bidService = BidService(dio);
   final imageService = ImageService(dio);
   final tenderService = TenderService(dio, imageService);
+  final userService = UserService(dio);
 
   runApp(
     DevicePreview(
@@ -23,6 +25,7 @@ void main() async {
         authService: authService,
         bidService: bidService,
         tenderService: tenderService,
+        userService: userService,
       ),
     ),
   );

@@ -11,17 +11,20 @@ import 'package:tendergo/shared/services/bid_service.dart';
 import 'package:tendergo/shared/services/category_service.dart';
 import 'package:tendergo/shared/services/dio_client.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
+import 'package:tendergo/shared/services/user_service.dart';
 
 class MobileApp extends StatelessWidget {
   final AuthService authService;
   final BidService bidService;
   final TenderService tenderService;
+  final UserService userService;
 
   const MobileApp({
     super.key,
     required this.authService,
     required this.bidService,
     required this.tenderService,
+    required this.userService,
   });
 
   @override
@@ -49,6 +52,7 @@ class MobileApp extends StatelessWidget {
           authService: authService,
           bidService: bidService,
           tenderService: tenderService,
+          userService: userService,
         ),
       ),
     );

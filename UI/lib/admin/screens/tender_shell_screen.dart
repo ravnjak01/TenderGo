@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
 import 'package:tendergo/shared/models/dto/auth_dto.dart';
+import 'package:tendergo/shared/models/dto/user_dto.dart';
 import 'package:tendergo/shared/providers/tender_provider.dart';
 import 'package:tendergo/admin/screens/tender_details_screen.dart';
 import 'package:tendergo/admin/screens/tender_post_screen.dart';

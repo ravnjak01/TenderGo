@@ -12,6 +12,7 @@ import 'package:tendergo/admin/screens/tender_details_screen.dart';
 import 'package:tendergo/admin/screens/tender_post_screen.dart';
 import 'package:tendergo/admin/screens/tender_shell_screen.dart';
 import 'package:tendergo/shared/routes/routes.dart';
+import 'package:tendergo/shared/screens/user_profile_public_screen.dart';
 import 'package:tendergo/shared/screens/user_profile_screen.dart';
 import 'package:tendergo/shared/services/admin_service.dart';
 import 'package:tendergo/shared/services/auth_service.dart';
@@ -19,6 +20,7 @@ import 'package:tendergo/shared/services/bid_service.dart';
 import 'package:tendergo/shared/services/category_service.dart';
 import 'package:tendergo/shared/services/image_service.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
+import 'package:tendergo/shared/services/user_service.dart';
 
 class AdminRoutes {
   
@@ -29,6 +31,8 @@ class AdminRoutes {
     required ImageService imageService,
     required TenderService tenderService,
     required BidService bidService,
+    required UserService userService,
+
   }) {
     return {
       AppRoutes.splash: (context) => const SplashScreen(),
@@ -52,6 +56,17 @@ class AdminRoutes {
         tenderService: tenderService,
         categoryService: categoryService,
       ),
+       AppRoutes.userPublicProfile: (context) {
+        final args = ModalRoute.of(context)?.settings.arguments;
+        final userId = switch (args) {
+          String value => value,
+          Map value =>
+            (value['userId'] ?? value['id'] ?? '').toString(),
+          _ => '',
+        };
+
+        return UserProfilePublicScreen(userId: userId, userService: userService);
+      },
       AppRoutes.home: (context) => const HomeScreen(),
     };
   }

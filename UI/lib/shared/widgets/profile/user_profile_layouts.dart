@@ -8,6 +8,7 @@ import 'package:tendergo/shared/core/utils/extensions/string_extensions.dart';
 import 'package:tendergo/shared/models/dto/auth_dto.dart';
 import 'package:tendergo/shared/models/dto/bid_dto.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
+import 'package:tendergo/shared/models/dto/user_dto.dart';
 import 'package:tendergo/shared/routes/routes.dart';
 
 
@@ -211,6 +212,7 @@ class UserProfileStatsCard extends StatelessWidget {
   }
 }
 
+//zadnje implementirao klikove na my bids i my tenders, 
 class UserProfileStatTile extends StatelessWidget {
   const UserProfileStatTile({
     super.key,

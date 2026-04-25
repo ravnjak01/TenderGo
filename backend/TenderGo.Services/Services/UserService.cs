@@ -1,9 +1,11 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TenderGo.Api.Database;
 using TenderGo.Models.DTOs;
 using TenderGo.Models.Entities;
 using TenderGo.Services.Interfaces;
@@ -14,9 +16,12 @@ namespace TenderGo.Services.Services
     public class UserService : IUserService
     {
         private readonly UserManager<ApplicationUser> _userManager;
-        public UserService(UserManager<ApplicationUser> userManager)
+        private readonly TenderGoContext _context;
+
+        public UserService(UserManager<ApplicationUser> userManager,TenderGoContext context)
         {
             _userManager = userManager;
+            _context = context;
         }
 
         public async Task<bool> ChangePasswordAsync(string userId, ChangePasswordDTO dto)
@@ -34,26 +39,29 @@ namespace TenderGo.Services.Services
             return true;
         }
 
-       public async Task<UserDTO> GetProfileAsync(string id)
+       public async Task<UserPublicDTO> GetPublicByIdAsync(string id)
         {
-            var user = await _userManager.FindByIdAsync(id)
-                ?? throw new NotFoundException("User not found", new { User = "User", Id = id });
+            var user = await _context.Users
+                .Include(u => u.CreatedTenders)
+                .Include(u => u.Address)
+                .FirstOrDefaultAsync(u => u.Id == id);
 
 
             var roles = await _userManager.GetRolesAsync(user);
-            return new UserDTO
+
+            return new UserPublicDTO
             {
                 Id = user.Id,
-                Email = user.Email,
-                Username = user.UserName,
-                Address = user.Address != null ? new AddressDTO
-                {
-                    Street = user.Address.Street,
-                    City = user.Address.City,
-                    PostalCode = user.Address.PostalCode,
-                    Country = user.Address.Country
-                } : null,
-                Roles = roles.ToList()
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                UserName = user.UserName,
+                Location = user.Address != null
+                    ? $"{user.Address.City}, {user.Address.Country}"
+                    : null,
+                Rating = user.AverageRating,
+                ReviewCount = user.RatingCount,
+                TenderCount = user.CreatedTenders.Count,
+                BidsCount = _context.Bids.Count(b => b.SubmittedByUserId == user.Id)
             };
         }
 

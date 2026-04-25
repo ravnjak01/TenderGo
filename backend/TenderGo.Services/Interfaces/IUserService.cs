@@ -12,7 +12,8 @@ namespace TenderGo.Services.Interfaces
             Task<bool> ChangePasswordAsync(string userId, ChangePasswordDTO dto);
 
             Task UpdateProfileAsync(string userId, UpdateProfileDTO dto);
-             Task<UserDTO> GetProfileAsync(string id);
+              Task<UserPublicDTO> GetPublicByIdAsync(string id);
+    
 
 
     }
