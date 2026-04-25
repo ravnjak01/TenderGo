@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using TenderGo.Models.DTOs;
+using TenderGo.Models.Requests;
 using TenderGo.Services.Interfaces;
 using TenderGo.Services.Services;
 
@@ -27,5 +29,16 @@ namespace TenderGo.Api.Controllers
 
             return Ok(result);
         }
+
+        [HttpPost("rate")]
+        [Authorize]
+        public async Task<IActionResult> RateUser([FromBody] RateUserDTO dto)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            await _userService.RateUserAsync(userId, dto);
+            return Ok(new { message = "Rating submitted successfully." });
+        }
+
+      
     }
 }

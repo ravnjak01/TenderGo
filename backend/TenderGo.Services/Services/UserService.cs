@@ -8,6 +8,8 @@ using System.Threading.Tasks;
 using TenderGo.Api.Database;
 using TenderGo.Models.DTOs;
 using TenderGo.Models.Entities;
+using TenderGo.Models.ENUMs;
+using TenderGo.Models.Requests;
 using TenderGo.Services.Interfaces;
 using TenderGo.Services.Services.Exceptions;
 
@@ -17,11 +19,13 @@ namespace TenderGo.Services.Services
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly TenderGoContext _context;
+        private readonly TenderService _tenderService;
 
-        public UserService(UserManager<ApplicationUser> userManager,TenderGoContext context)
+        public UserService(UserManager<ApplicationUser> userManager,TenderGoContext context, TenderService tenderService)
         {
             _userManager = userManager;
             _context = context;
+            _tenderService = tenderService; 
         }
 
         public async Task<bool> ChangePasswordAsync(string userId, ChangePasswordDTO dto)
@@ -112,6 +116,56 @@ namespace TenderGo.Services.Services
             }
 
 
+        }
+
+        public async Task<bool> RateUserAsync(string ratedByUserId, RateUserDTO dto)
+        {
+            var tender = await _context.Tenders
+                .FirstOrDefaultAsync(t => t.Id == dto.TenderId)
+                ?? throw new NotFoundException("Tender not found", new { dto.TenderId });
+
+            var state = _tenderService.CreateState(tender.Status);
+
+            if (!state.CanRate())
+                throw new UserException("Rating not allowed in current tender state.");
+
+            if (tender.Status != TenderStatus.Awarded)
+                throw new UserException("Tender is not completed yet.");
+
+            var ratedUser = await _context.Users
+                .FirstOrDefaultAsync(u => u.Id == dto.RatedUserId)
+                ?? throw new NotFoundException("User not found", new { dto.RatedUserId });
+
+            var alreadyRated = await _context.Ratings.AnyAsync(r =>
+                r.TenderId == dto.TenderId &&
+                r.RatedByUserId == ratedByUserId &&
+                r.RatedUserId == dto.RatedUserId);
+
+            if (alreadyRated)
+                throw new UserException("You already rated this user for this tender.");
+
+            var rating = new Rating
+            {
+                RatedByUserId = ratedByUserId,
+                RatedUserId = dto.RatedUserId,
+                TenderId = dto.TenderId,
+                Score = dto.Score,
+                Comment = dto.Comment,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.Ratings.Add(rating);
+
+            // ⭐ update rating stats
+            ratedUser.AverageRating =
+                ((ratedUser.AverageRating * ratedUser.RatingCount) + dto.Score)
+                / (ratedUser.RatingCount + 1);
+
+            ratedUser.RatingCount++;
+
+            await _context.SaveChangesAsync();
+
+            return true;
         }
     }
 }

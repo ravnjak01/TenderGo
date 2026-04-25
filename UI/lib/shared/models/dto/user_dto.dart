@@ -149,3 +149,24 @@ class UserPublicDto {
 
   String get fullName => "$firstName $lastName";
 }
+
+class RateUserRequest {
+  final String tenderId;
+  final String ratedUserId;
+  final int score;
+  final String? comment;
+
+  RateUserRequest({
+    required this.tenderId,
+    required this.ratedUserId,
+    required this.score,
+    this.comment,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'tenderId': tenderId,
+        'ratedUserId': ratedUserId,
+        'score': score,
+        if (comment != null) 'comment': comment,
+      };
+}

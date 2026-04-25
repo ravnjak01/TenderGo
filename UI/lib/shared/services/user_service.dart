@@ -48,4 +48,15 @@ class UserService {
 			throw Exception(e.response?.data ?? 'Error fetching user');
 		}
 	}
+   Future<void> rateUser(RateUserRequest request) async {
+    try {
+      await _dio.post(
+        'users/rate',
+        data: request.toJson(),
+        options: await _options(),
+      );
+    } on DioException catch (e) {
+      throw Exception(e.response?.data ?? 'Error submitting rating');
+    }
+  }
 }

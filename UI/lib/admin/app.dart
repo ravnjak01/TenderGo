@@ -11,12 +11,14 @@ import 'package:tendergo/shared/services/image_service.dart';
 import 'package:tendergo/shared/services/tender_service.dart';  
 import 'package:tendergo/shared/services/auth_service.dart';
 import 'package:tendergo/shared/services/admin_service.dart';
+import 'package:tendergo/shared/services/user_service.dart';
 class AdminApp extends StatelessWidget {
   final AuthService authService;
   final AdminService adminService;
   final BidService bidService;
   final ImageService imageService;
   final TenderService tenderService;
+  final UserService userService;
   final bool isLoggedIn;
   final CategoryService categoryService;
 
@@ -27,6 +29,7 @@ class AdminApp extends StatelessWidget {
     required this.bidService,
     required this.imageService,
     required this.tenderService,
+    required this.userService,
     required this.isLoggedIn,
     required this.categoryService,
   });
@@ -49,6 +52,7 @@ class AdminApp extends StatelessWidget {
           imageService: imageService,
           tenderService: tenderService,
           bidService: bidService,
+          userService: userService,
         ),
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
