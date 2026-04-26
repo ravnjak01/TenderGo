@@ -299,8 +299,21 @@ class TenderService {
         options: await _options(),
       );
 
-      return List<dynamic>.from(response.data);
+      final payload = response.data;
+      if (payload is List) {
+        return List<dynamic>.from(payload);
+      }
+      if (payload is Map<String, dynamic>) {
+        final listLike = payload['result'] ?? payload['items'] ?? payload['data'];
+        if (listLike is List) {
+          return List<dynamic>.from(listLike);
+        }
+      }
+      return const [];
     } on DioException catch (e) {
+      if (e.response?.statusCode == 404 || e.response?.statusCode == 405) {
+        return const [];
+      }
       throw Exception(e.response?.data ?? 'Error fetching user tenders');
     }
   }

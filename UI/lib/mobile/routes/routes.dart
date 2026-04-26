@@ -42,7 +42,10 @@ class MobileRoutes {
           UserProfileScreen(authService: authService),
       AppRoutes.myTenders: (context) =>
           MyTendersScreen(tenderService: tenderService),
-      AppRoutes.myBids: (context) => MyBidsScreen(bidService: bidService),
+      AppRoutes.myBids: (context) => MyBidsScreen(
+        bidService: bidService,
+        tenderService: tenderService,
+      ),
       AppRoutes.userPublicProfile: (context) {
         final args = ModalRoute.of(context)?.settings.arguments;
         final userId = switch (args) {
@@ -66,6 +69,7 @@ class MobileRoutes {
 
         return RateUserScreen(
           userService: userService,
+          authService: authService,
           tenderId: tenderId,
           ratedUserId: ratedUserId,
           ratedUserName: ratedUserName,

@@ -1,6 +1,7 @@
 import 'package:tendergo/shared/models/dto/auth_dto.dart';
 
 class UserDto {
+  final String? id;
   final String email;
   final String username;
   final AddressDto? address;
@@ -8,6 +9,7 @@ class UserDto {
   final String firstName;
   final String lastName;
   UserDto({
+    this.id,
     required this.email,
     required this.username,
     this.address,
@@ -20,6 +22,7 @@ class UserDto {
     final rawRoles = json['roles'];
 
     return UserDto(
+      id: (json['id'] ?? json['userId'])?.toString(),
       email: json['email'] ?? '',
       username: (json['username'] ?? json['userName'] ?? '').toString(),
       address: json['address'] != null
@@ -60,6 +63,7 @@ class UserDto {
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'email': email,
       'username': username,
       'address': address?.toJson(),
@@ -153,12 +157,14 @@ class UserPublicDto {
 class RateUserRequest {
   final String tenderId;
   final String ratedUserId;
+  final String ratedByUserId;
   final int score;
   final String? comment;
 
   RateUserRequest({
     required this.tenderId,
     required this.ratedUserId,
+    required this.ratedByUserId,
     required this.score,
     this.comment,
   });
@@ -166,6 +172,7 @@ class RateUserRequest {
   Map<String, dynamic> toJson() => {
         'tenderId': tenderId,
         'ratedUserId': ratedUserId,
+        'ratedByUserId': ratedByUserId,
         'score': score,
         if (comment != null) 'comment': comment,
       };

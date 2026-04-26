@@ -2,6 +2,8 @@ class BidDto {
 	final int id;
 	final int tenderId;
 	final String tenderTitle;
+	final String tenderCreatedByUserId;
+	final String? tenderCreatedByUserName;
 	final String submittedByUserId;
 	final String submittedByUserName;
 	final double offeredPrice;
@@ -14,6 +16,8 @@ class BidDto {
 		required this.id,
 		required this.tenderId,
 		required this.tenderTitle,
+		required this.tenderCreatedByUserId,
+		this.tenderCreatedByUserName,
 		required this.submittedByUserId,
 		required this.submittedByUserName,
 		required this.offeredPrice,
@@ -88,6 +92,22 @@ class BidDto {
 				tenderMap?['name'],
 				tenderMap?['title'],
 			]),
+			tenderCreatedByUserId: _readFirstNonEmptyString([
+				json['tenderCreatedByUserId'],
+				json['createdByUserId'],
+				tenderMap?['createdByUserId'],
+				tenderMap?['userId'],
+			]),
+			tenderCreatedByUserName: _readNullableString(
+				_readFirstNonEmptyString([
+					json['tenderCreatedByUserName'],
+					json['createdByUserName'],
+					json['createdByFullname'],
+					tenderMap?['createdByUserName'],
+					tenderMap?['createdByFullname'],
+					tenderMap?['userName'],
+				]),
+			),
 			submittedByUserId: _readString(json['submittedByUserId']),
 			submittedByUserName: _readString(json['submittedByUserName']),
 			offeredPrice: _readDouble(json['offeredPrice']),
@@ -146,6 +166,8 @@ class BidDto {
 			'id': id,
 			'tenderId': tenderId,
 			'tenderTitle': tenderTitle,
+			'tenderCreatedByUserId': tenderCreatedByUserId,
+			'tenderCreatedByUserName': tenderCreatedByUserName,
 			'submittedByUserId': submittedByUserId,
 			'submittedByUserName': submittedByUserName,
 			'offeredPrice': offeredPrice,

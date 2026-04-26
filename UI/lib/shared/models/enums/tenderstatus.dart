@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 
 /// 1. Osnovni Enum za status tendera
 enum TenderStatus {
-  draft(1),
-  open(2),
-  closed(3),
-  award(4),
-  cancelled(5);
+  open(1),
+  closed(2),
+  award(3),
+  cancelled(4);
 
   final int value;
   const TenderStatus(this.value);
@@ -15,7 +14,7 @@ enum TenderStatus {
   static TenderStatus fromInt(int value) {
     return TenderStatus.values.firstWhere(
       (e) => e.value == value,
-      orElse: () => TenderStatus.draft,
+      orElse: () => TenderStatus.open,
     );
   }
 }
@@ -24,7 +23,6 @@ enum TenderStatus {
 extension TenderStatusX on TenderStatus {
   String get label {
     switch (this) {
-      case TenderStatus.draft:     return 'Draft';
       case TenderStatus.open:      return 'Open';
       case TenderStatus.closed:    return 'Closed';
       case TenderStatus.award:     return 'Awarded';
@@ -35,7 +33,6 @@ extension TenderStatusX on TenderStatus {
   Color get badgeBg {
     switch (this) {
       case TenderStatus.open:      return const Color(0xFFEAF3DE); // Zelena
-      case TenderStatus.draft:     return const Color(0xFFE8F4FD); // Plava
       case TenderStatus.award:     return const Color(0xFFF1F8E9); // Svijetlo zelena
       case TenderStatus.closed:    
       case TenderStatus.cancelled: return const Color(0xFFFFEBEE); 
@@ -45,7 +42,6 @@ extension TenderStatusX on TenderStatus {
   Color get badgeFg {
     switch (this) {
       case TenderStatus.open:      return const Color(0xFF3B6D11); // Tamno zelena
-      case TenderStatus.draft:     return const Color(0xFF1976D2); // Tamno plava
       case TenderStatus.award:     return const Color(0xFF2E7D32); // Forbes zelena
       case TenderStatus.closed:    
       case TenderStatus.cancelled: return const Color(0xFFD32F2F); 

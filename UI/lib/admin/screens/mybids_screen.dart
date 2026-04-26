@@ -1,11 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:tendergo/shared/models/dto/bid_dto.dart';
+import 'package:tendergo/shared/routes/routes.dart';
 import 'package:tendergo/shared/services/bid_service.dart';
+import 'package:tendergo/shared/services/tender_service.dart';
+import 'package:tendergo/shared/widgets/feedback/snackbar_helper.dart';
 import 'package:tendergo/shared/widgets/feedback/screen_state_widget.dart';
 
 class MyBidsScreen extends StatefulWidget {
-  final BidService _bidService; 
-  const MyBidsScreen({super.key, required BidService bidService}) : _bidService = bidService;
+  final BidService _bidService;
+  final TenderService _tenderService;
+  const MyBidsScreen({
+    super.key,
+    required BidService bidService,
+    required TenderService tenderService,
+  }) : _bidService = bidService,
+       _tenderService = tenderService;
 
   @override
   State<MyBidsScreen> createState() => _MyBidsScreenState();
@@ -54,7 +63,7 @@ class _MyBidsScreenState extends State<MyBidsScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final fetched = await widget._bidService.getAll(
+      final fetched = await widget._bidService.getMyBids(
         page: _currentPage,
         pageSize: _pageSize,
       );
@@ -83,6 +92,45 @@ class _MyBidsScreenState extends State<MyBidsScreen> {
         _hasMore) {
       _fetchBids();
     }
+  }
+
+  Future<void> _openRateUser(BidDto bid) async {
+    final bidderId = bid.submittedByUserId.trim();
+    var ratedUserId = bid.tenderCreatedByUserId.trim();
+    var ratedUserName = (bid.tenderCreatedByUserName ?? '').trim();
+
+    if (ratedUserId.isEmpty || ratedUserId == bidderId) {
+      try {
+        final tender = await widget._tenderService.getById(bid.tenderId);
+        ratedUserId = tender.createdByUserId.trim();
+        final ownerName = tender.createdByFullname.trim();
+        if (ownerName.isNotEmpty) {
+          ratedUserName = ownerName;
+        }
+      } catch (_) {
+        // Ignore and keep fallback validation below.
+      }
+    }
+
+    if (!mounted) return;
+
+    if (ratedUserId.isEmpty || ratedUserId == bidderId) {
+      SnackbarHelper.show(
+        context,
+        'Unable to resolve tender owner for rating on this bid.',
+        isError: true,
+      );
+      return;
+    }
+
+    Navigator.of(context).pushNamed(
+      AppRoutes.rateUser,
+      arguments: {
+        'tenderId': bid.tenderId.toString(),
+        'ratedUserId': ratedUserId,
+        'ratedUserName': ratedUserName.isEmpty ? null : ratedUserName,
+      },
+    );
   }
 
   // ── build ──────────────────────────────────────────────────────────────────
@@ -152,7 +200,10 @@ class _MyBidsScreenState extends State<MyBidsScreen> {
               child: Center(child: CircularProgressIndicator()),
             );
           }
-          return _BidCard(bid: _bids[index]);
+          return _BidCard(
+            bid: _bids[index],
+            onRateUser: () => _openRateUser(_bids[index]),
+          );
         },
       ),
     );
@@ -164,9 +215,15 @@ class _MyBidsScreenState extends State<MyBidsScreen> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _BidCard extends StatelessWidget {
-  const _BidCard({required this.bid});
+  const _BidCard({required this.bid, required this.onRateUser});
 
   final BidDto bid;
+  final VoidCallback onRateUser;
+
+  bool _isAwardedStatus(String? status) {
+    final normalized = (status ?? '').trim().toLowerCase();
+    return normalized == 'accepted';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -294,6 +351,18 @@ class _BidCard extends StatelessWidget {
                       ),
                     ],
                   ),
+
+                  if (_isAwardedStatus(bid.status)) ...[
+                    const SizedBox(height: 12),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: FilledButton.tonalIcon(
+                        onPressed: onRateUser,
+                        icon: const Icon(Icons.star_rate_rounded),
+                        label: const Text('Rate User'),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

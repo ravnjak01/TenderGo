@@ -50,7 +50,10 @@ class AdminRoutes {
           AdminTenderDetailsScreen(tenderService: tenderService),
       AppRoutes.userProfile: (context) => UserProfileScreen(authService: authService),
       AppRoutes.myTenders: (context) => MyTendersScreen(tenderService: tenderService),
-      AppRoutes.myBids: (context) => MyBidsScreen(bidService: bidService),
+      AppRoutes.myBids: (context) => MyBidsScreen(
+        bidService: bidService,
+        tenderService: tenderService,
+      ),
       AppRoutes.admin: (context) => AdminScreen(
         adminService: adminService,
         authService: authService,
@@ -80,6 +83,7 @@ class AdminRoutes {
 
         return RateUserScreen(
           userService: userService,
+          authService: authService,
           tenderId: tenderId,
           ratedUserId: ratedUserId,
           ratedUserName: ratedUserName,

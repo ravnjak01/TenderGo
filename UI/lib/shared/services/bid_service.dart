@@ -54,6 +54,64 @@ class BidService {
 		}
 	}
 
+	// ===== GET BY CURRENT USER =====
+	Future<List<BidDto>> getByUser(String userId, {int page = 1, int pageSize = 10}) async {
+		try {
+			final response = await _dio.get(
+				BidApiEndpoints.getByUser(userId),
+				queryParameters: {
+					'page': page,
+					'pageSize': pageSize,
+				},
+				options: await _options(),
+			);
+
+			return BidDto.parseBidList(response.data);
+		} on DioException catch (e) {
+			// Some environments may not expose a dedicated "by user" endpoint.
+			if (e.response?.statusCode == 404 || e.response?.statusCode == 405) {
+				final all = await getAll(page: page, pageSize: pageSize);
+				return all
+					.where((bid) => bid.submittedByUserId.trim() == userId.trim())
+					.toList(growable: false);
+			}
+
+			final message = ApiErrorHandler.extractErrorMessage(e.response?.data) ?? 'Error fetching user bids';
+			if (BidErrorHandler.isDuplicateBidError(e, message)) {
+				throw BidAlreadyExistsException(message: message);
+			}
+			throw BidServiceException(
+				message: message,
+				statusCode: e.response?.statusCode,
+			);
+		}
+	}
+
+	// ===== GET MY BIDS =====
+	Future<List<BidDto>> getMyBids({int page = 1, int pageSize = 10}) async {
+		try {
+			final response = await _dio.get(
+				BidApiEndpoints.getMyBids,
+				queryParameters: {
+					'page': page,
+					'pageSize': pageSize,
+				},
+				options: await _options(),
+			);
+
+			return BidDto.parseBidList(response.data);
+		} on DioException catch (e) {
+			final message = ApiErrorHandler.extractErrorMessage(e.response?.data) ?? 'Error fetching current user bids';
+			if (BidErrorHandler.isDuplicateBidError(e, message)) {
+				throw BidAlreadyExistsException(message: message);
+			}
+			throw BidServiceException(
+				message: message,
+				statusCode: e.response?.statusCode,
+			);
+		}
+	}
+
 	// ===== GET BY ID =====
 	Future<BidDto> getById(int id) async {
 		try {

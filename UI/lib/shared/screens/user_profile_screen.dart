@@ -92,21 +92,23 @@ class _UserProfileScreenState extends State<UserProfileScreen>
       List<BidDto> bids = const [];
       List<TenderDto> tenders = const [];
 
-      if (currentUserId != null && currentUserId.isNotEmpty) {
-        final results = await Future.wait<dynamic>([
-          _bidService.getAll(page: 1, pageSize: 100),
-          _tenderService.getByUser(currentUserId),
-        ]);
+      final bidsFuture = _bidService.getMyBids(page: 1, pageSize: 100);
+      final tendersFuture =
+          (currentUserId != null && currentUserId.isNotEmpty)
+          ? _tenderService.getByUser(currentUserId)
+          : Future.value(const <dynamic>[]);
 
-        bids = (results[0] as List<BidDto>)
-            .where((bid) => bid.submittedByUserId == currentUserId)
-            .toList(growable: false);
+      final results = await Future.wait<dynamic>([
+        bidsFuture,
+        tendersFuture,
+      ]);
 
-        tenders = (results[1] as List<dynamic>)
-            .whereType<Map<String, dynamic>>()
-            .map(TenderDto.fromJson)
-            .toList(growable: false);
-      }
+      bids = results[0] as List<BidDto>;
+
+      tenders = (results[1] as List<dynamic>)
+          .whereType<Map<String, dynamic>>()
+          .map(TenderDto.fromJson)
+          .toList(growable: false);
 
       if (!mounted) return;
 

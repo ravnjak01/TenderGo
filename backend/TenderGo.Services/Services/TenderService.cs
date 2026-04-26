@@ -68,17 +68,7 @@ namespace TenderGo.Services.Services
             return _mapper.Map<IEnumerable<TenderDTO>>(tenders);
         }
 
-        public async Task<IEnumerable<TenderDTO>> GetDraftTenders()
-        {
-            var tenders = await _context.Tenders
-                .Include(t => t.Category)
-                .Include(t => t.CreatedByUser)
-                .Include(t => t.Images)
-                .Where(t => t.Status == TenderStatus.Draft)
-                .ToListAsync();
-            return _mapper.Map<IEnumerable<TenderDTO>>(tenders);
-        }
-
+      
         public async Task<IEnumerable<TenderDTO>> GetCancelledTenders()
         {
             var tenders = await _context.Tenders
@@ -209,17 +199,7 @@ namespace TenderGo.Services.Services
             return await state.Activate(id);
         }
 
-        public async Task<TenderDTO> SaveDraft(TenderInsertRequest request)
-        {
-            _logger.LogInformation(
-                "Attempting to save tender draft with title {Title}",
-                request.Title
-            );
-
-            var state = CreateState(TenderStatus.Draft);
-            return await state.Insert(request);
-        }
-
+        
 
         public async Task<TenderDTO> Cancel(int id)
         {
@@ -267,7 +247,6 @@ namespace TenderGo.Services.Services
         {
             return status switch
             {
-                TenderStatus.Draft => _serviceProvider.GetRequiredService<InitialTenderState>(),
                 TenderStatus.Open => _serviceProvider.GetRequiredService<OpenTenderState>(),
                 TenderStatus.Closed => _serviceProvider.GetRequiredService<ClosedTenderState>(),
                 TenderStatus.Awarded => _serviceProvider.GetRequiredService<AwardedTenderState>(),

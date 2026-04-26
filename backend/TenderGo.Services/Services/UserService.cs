@@ -20,12 +20,14 @@ namespace TenderGo.Services.Services
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly TenderGoContext _context;
         private readonly ITenderService _tenderService;
+        private readonly IAuthService _authService;
 
-        public UserService(UserManager<ApplicationUser> userManager,TenderGoContext context, ITenderService tenderService)
+        public UserService(UserManager<ApplicationUser> userManager,TenderGoContext context, ITenderService tenderService,IAuthService authService)
         {
             _userManager = userManager;
             _context = context;
-            _tenderService = tenderService; 
+            _tenderService = tenderService;
+            _authService = authService;
         }
 
         public async Task<bool> ChangePasswordAsync(string userId, ChangePasswordDTO dto)
@@ -118,12 +120,14 @@ namespace TenderGo.Services.Services
 
         }
 
-        public async Task<bool> RateUserAsync(string ratedByUserId, RateUserDTO dto)
+        public async Task<bool> RateUserAsync(string currentUserId, RateUserDTO dto)
         {
             var tender = await _context.Tenders
+                .Include(t => t.Bids)
                 .FirstOrDefaultAsync(t => t.Id == dto.TenderId)
                 ?? throw new NotFoundException("Tender not found", new { dto.TenderId });
 
+            // 🔒 state check (jedan izvor istine)
             var state = _tenderService.CreateState(tender.Status);
 
             if (!state.CanRate())
@@ -132,21 +136,36 @@ namespace TenderGo.Services.Services
             if (tender.Status != TenderStatus.Awarded)
                 throw new UserException("Tender is not completed yet.");
 
+            // 🔒 winning bid check
+            var winningBid = tender.Bids
+                .FirstOrDefault(b => b.Id == tender.WinningBidId)
+                ?? throw new UserException("Winning bid not found.");
+
+            // 🔒 only winner can rate
+            if (winningBid.SubmittedByUserId != currentUserId)
+                throw new UserException("Only winning bidder can rate user.");
+
+            // 🔒 cannot rate yourself
+            if (dto.RatedUserId == currentUserId)
+                throw new UserException("You cannot rate yourself.");
+
             var ratedUser = await _context.Users
                 .FirstOrDefaultAsync(u => u.Id == dto.RatedUserId)
                 ?? throw new NotFoundException("User not found", new { dto.RatedUserId });
 
+            // 🔒 duplicate rating protection
             var alreadyRated = await _context.Ratings.AnyAsync(r =>
                 r.TenderId == dto.TenderId &&
-                r.RatedByUserId == ratedByUserId &&
+                r.RatedByUserId == currentUserId &&
                 r.RatedUserId == dto.RatedUserId);
 
             if (alreadyRated)
                 throw new UserException("You already rated this user for this tender.");
 
+            // ⭐ create rating
             var rating = new Rating
             {
-                RatedByUserId = ratedByUserId,
+                RatedByUserId = currentUserId,
                 RatedUserId = dto.RatedUserId,
                 TenderId = dto.TenderId,
                 Score = dto.Score,
@@ -156,12 +175,13 @@ namespace TenderGo.Services.Services
 
             _context.Ratings.Add(rating);
 
-            // ⭐ update rating stats
-            ratedUser.AverageRating =
-                ((ratedUser.AverageRating * ratedUser.RatingCount) + dto.Score)
-                / (ratedUser.RatingCount + 1);
+            // ⭐ update rating stats safely
+            var totalScore = ratedUser.AverageRating * ratedUser.RatingCount;
 
             ratedUser.RatingCount++;
+
+            ratedUser.AverageRating =
+                (totalScore + dto.Score) / ratedUser.RatingCount;
 
             await _context.SaveChangesAsync();
 

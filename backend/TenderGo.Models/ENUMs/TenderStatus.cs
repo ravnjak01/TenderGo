@@ -8,10 +8,9 @@ namespace TenderGo.Models.ENUMs
 {
     public enum TenderStatus
     {
-        Draft = 1,      
-        Open = 2,      
-        Closed = 3,     
-        Awarded = 4,   
-        Cancelled = 5
+        Open = 1,      
+        Closed = 2,     
+        Awarded = 3,   
+        Cancelled = 4
     }
 }

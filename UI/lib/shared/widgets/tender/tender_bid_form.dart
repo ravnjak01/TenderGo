@@ -56,6 +56,8 @@ class _TenderBidFormState extends State<TenderBidForm> {
       _error = null;
     });
 
+    var submitted = false;
+
     try {
       await widget.bidService.create(
         BidInsertRequest(
@@ -64,18 +66,7 @@ class _TenderBidFormState extends State<TenderBidForm> {
           note: proposalText.isEmpty ? null : proposalText,
         ),
       );
-
-      if (!mounted) return;
-
-      _priceController.clear();
-      _proposalController.clear();
-      _deliveryDaysController.clear();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Bid sent successfully.')),
-      );
-
-      widget.onBidSuccess();
+      submitted = true;
     } on BidAlreadyExistsException catch (e) {
       if (!mounted) return;
       setState(() => _error = e.message);
@@ -89,6 +80,21 @@ class _TenderBidFormState extends State<TenderBidForm> {
       if (!mounted) return;
       setState(() => _isSubmitting = false);
     }
+
+    if (!submitted || !mounted) return;
+
+    _priceController.clear();
+    _proposalController.clear();
+    _deliveryDaysController.clear();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Bid sent successfully.')),
+    );
+
+    // Parent refresh failures should not turn a successful submit into an error.
+    try {
+      widget.onBidSuccess();
+    } catch (_) {}
   }
 
   @override

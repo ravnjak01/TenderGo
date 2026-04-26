@@ -40,6 +40,18 @@ namespace TenderGo.Api.Controllers
             return Ok(result);
         }
 
+        [HttpGet("my-bids")]
+        [Authorize]
+        public async Task<ActionResult<List<BidDTO>>> GetMyBids()
+        {
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var bids = await _bidService.GetBidsByUser(userId);
+            return Ok(bids);
+        }
+
 
         [HttpGet("tender/{tenderId}")]
         public async Task<ActionResult<List<BidDTO>>> GetBidsForTender(int tenderId)

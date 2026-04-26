@@ -42,6 +42,14 @@ namespace TenderGo.Services.Services
                 .Include(b => b.SubmittedByUser);   
         }
 
+        public async Task<List<BidDTO>> GetBidsByUser(string userId)
+        {
+            var bids = await _context.Bids
+                .Where(x => x.SubmittedByUserId == userId)
+                .ToListAsync();
+
+            return _mapper.Map<List<BidDTO>>(bids);
+        }
 
         public override async Task<BidDTO> Insert(BidInsertRequest request)
         {

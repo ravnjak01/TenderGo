@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
 import 'package:tendergo/shared/models/dto/user_dto.dart';
+import 'package:tendergo/shared/services/auth_service.dart';
 import 'package:tendergo/shared/services/user_service.dart';
 import 'package:tendergo/shared/widgets/feedback/snackbar_helper.dart';
 
 class RateUserScreen extends StatefulWidget {
   final UserService userService;
+  final AuthService authService;
   final String tenderId;
   final String ratedUserId;
   final String? ratedUserName;
@@ -13,6 +15,7 @@ class RateUserScreen extends StatefulWidget {
   const RateUserScreen({
     super.key,
     required this.userService,
+    required this.authService,
     required this.tenderId,
     required this.ratedUserId,
     this.ratedUserName,
@@ -61,10 +64,27 @@ class _RateUserScreenState extends State<RateUserScreen> {
 
     if (!(_formKey.currentState?.validate() ?? true)) return;
 
+    final currentUser = await widget.authService.getCurrentUser();
+    var ratedByUserId = currentUser.data?.id?.trim() ?? '';
+    if (ratedByUserId.isEmpty) {
+      ratedByUserId = (await AuthService.getCurrentUserId())?.trim() ?? '';
+    }
+
+    if (ratedByUserId.isEmpty) {
+      if (!mounted) return;
+      SnackbarHelper.show(
+        context,
+        'Could not resolve current user for rating.',
+        isError: true,
+      );
+      return;
+    }
+
     final comment = _commentController.text.trim();
     final request = RateUserRequest(
       tenderId: tenderId,
       ratedUserId: ratedUserId,
+      ratedByUserId: ratedByUserId,
       score: _score,
       comment: comment.isEmpty ? null : comment,
     );
