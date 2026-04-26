@@ -7,6 +7,8 @@ using TenderGo.Api.Database;
 using TenderGo.Models.Requests;
 using TenderGo.Models.DTOs;
 using TenderGo.Models.Entities;
+using TenderGo.Models.ENUMs;
+using TenderGo.Services.StateMachines.TenderStates;
 
 namespace TenderGo.Services.Interfaces
 {
@@ -25,6 +27,7 @@ namespace TenderGo.Services.Interfaces
         Task<TenderDTO> SaveDraft(TenderInsertRequest request);
         Task<TenderDTO> Award(int id, int bidId);
         Task<List<string>> AllowedActions(int id);
+        BaseState CreateState(TenderStatus status);
 
     }
 }

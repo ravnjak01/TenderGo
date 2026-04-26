@@ -121,6 +121,7 @@ builder.Services.AddTransient<ICategoryService, CategoryService>();
 builder.Services.AddHostedService<TenderExpiryJob>();
 builder.Services.AddScoped<IImageService, ImageService>();
 
+
 builder.Services.AddTransient<BaseState>();
 builder.Services.AddTransient < InitialTenderState>() ;
 builder.Services.AddTransient<OpenTenderState>();

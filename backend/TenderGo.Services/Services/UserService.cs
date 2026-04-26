@@ -19,9 +19,9 @@ namespace TenderGo.Services.Services
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly TenderGoContext _context;
-        private readonly TenderService _tenderService;
+        private readonly ITenderService _tenderService;
 
-        public UserService(UserManager<ApplicationUser> userManager,TenderGoContext context, TenderService tenderService)
+        public UserService(UserManager<ApplicationUser> userManager,TenderGoContext context, ITenderService tenderService)
         {
             _userManager = userManager;
             _context = context;

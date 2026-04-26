@@ -10,6 +10,7 @@ import 'package:tendergo/mobile/screens/tender_details_screen.dart';
 import 'package:tendergo/mobile/screens/tender_post_screen.dart';
 import 'package:tendergo/mobile/screens/tender_shell_screen.dart';
 import 'package:tendergo/shared/routes/routes.dart';
+import 'package:tendergo/shared/screens/rate_user_screen.dart';
 import 'package:tendergo/shared/screens/user_profile_public_screen.dart';
 import 'package:tendergo/shared/screens/user_profile_screen.dart';
 import 'package:tendergo/shared/services/auth_service.dart';
@@ -52,6 +53,23 @@ class MobileRoutes {
         };
 
         return UserProfilePublicScreen(userId: userId, userService: userService);
+      },
+      AppRoutes.rateUser: (context) {
+        final args = ModalRoute.of(context)?.settings.arguments;
+        final tenderId = args is Map ? (args['tenderId'] ?? '').toString() : '';
+        final ratedUserId = args is Map
+            ? (args['ratedUserId'] ?? args['userId'] ?? '').toString()
+            : '';
+        final ratedUserName = args is Map
+            ? (args['ratedUserName'] ?? args['username'])?.toString()
+            : null;
+
+        return RateUserScreen(
+          userService: userService,
+          tenderId: tenderId,
+          ratedUserId: ratedUserId,
+          ratedUserName: ratedUserName,
+        );
       },
     };
   }
