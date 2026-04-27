@@ -24,7 +24,12 @@ public class TenderController
     }
 
 
-
+    [HttpGet("search")]
+    public async Task<ActionResult<PagedResult<TenderDTO>>> Search([FromQuery] TenderSearchRequest request)
+    {
+        var result = await _tenderService.SearchAsync(request);
+        return Ok(result);
+    }
 
     [HttpGet("active")]
     public async Task<ActionResult<List<TenderDTO>>> GetActive()

@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using EasyNetQ;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -242,6 +243,37 @@ namespace TenderGo.Services.Services
 
             return await state.AllowedActions(entity);
         }
+
+        public async Task<PagedResult<TenderDTO>> SearchAsync(TenderSearchRequest request)
+        {
+            var query = _context.Tenders
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(request.SearchTerm))
+            {
+                var term = $"%{request.SearchTerm.ToLower()}%";
+
+                query = query.Where(t =>
+                    EF.Functions.Like(t.Title.ToLower(), term) ||
+                    EF.Functions.Like(t.LocationName.ToLower(), term)  ||
+                    EF.Functions.Like(t.Country.ToLower(), term)    
+                );
+            }
+
+            var totalCount = await query.CountAsync();
+
+            var results = await query
+                .ProjectTo<TenderDTO>(_mapper.ConfigurationProvider)
+                .ToListAsync();
+
+            return new PagedResult<TenderDTO>
+            {
+                Result = results,
+                TotalCount = totalCount 
+            };
+        }
+
+
 
         public BaseState CreateState(TenderStatus status)
         {

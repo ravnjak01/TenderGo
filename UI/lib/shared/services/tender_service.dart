@@ -318,6 +318,24 @@ class TenderService {
     }
   }
 
+
+  Future<List<TenderDto>> search(TenderSearchRequest request) async {
+    try {
+      final response = await _dio.get(
+        TenderApiEndpoints.search(request.searchTerm ?? ''),
+        options: await _options(),
+      );
+
+      final List<dynamic> data = response.data['result'] ?? [];
+
+      return data
+          .map((x) => TenderDto.fromJson(x as Map<String, dynamic>))
+          .toList();
+    } on DioException catch (e) {
+      throw Exception(e.response?.data ?? 'Error searching tenders');
+    }
+  }
+
   // ===== ALLOWED ACTIONS =====
   Future<List<dynamic>> allowedActions(int id) async {
     try {

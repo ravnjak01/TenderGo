@@ -26,6 +26,7 @@ namespace TenderGo.Services.Interfaces
         Task<TenderDTO> Award(int id, int bidId);
         Task<List<string>> AllowedActions(int id);
         BaseState CreateState(TenderStatus status);
+        Task<PagedResult<TenderDTO>>SearchAsync(TenderSearchRequest request);
 
     }
 }

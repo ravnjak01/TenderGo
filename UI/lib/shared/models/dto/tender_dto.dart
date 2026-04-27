@@ -243,3 +243,16 @@ factory TenderDto.fromJson(Map<String, dynamic> json) {
   }
 
 }
+
+class TenderSearchRequest{
+  final String? searchTerm;
+ 
+
+  TenderSearchRequest({
+   this.searchTerm,
+  });
+
+  Map<String, dynamic> toJson() => {
+        if (searchTerm != null) 'searchTerm': searchTerm,
+      };
+}

@@ -52,6 +52,8 @@ class TenderApiEndpoints {
   static String award(TenderDto tender, int bidId) =>
       '$_tenderBase/${tender.id}/award/$bidId';
 
+  static String search(String query) => '$_tenderBase/search?SearchTerm=${Uri.encodeComponent(query)}';
+
   /// GET /api/tender/{id}/allowedActions
   static String allowedActions(int id) =>
       '$_tenderBase/$id/allowedActions';
