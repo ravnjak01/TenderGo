@@ -22,6 +22,9 @@ class TenderProvider extends ChangeNotifier {
   List<CategoryDto> _categories = [];
   final Set<String> _selectedCategories = {'All'}; 
 
+  List<TenderDto>? _searchResults;
+  String _searchQuery = '';
+
   bool _isLoading = false;
   String? _error;
 
@@ -31,13 +34,15 @@ class TenderProvider extends ChangeNotifier {
   Set<String> get selectedCategories => _selectedCategories;
   bool get isLoading => _isLoading;
   String? get error => _error;
+  bool get isSearchActive => _searchQuery.isNotEmpty;
 
   
   List<TenderDto> get filteredTenders {
+    final base = _searchResults ?? _tenders;
     if (_selectedCategories.contains('All') || _selectedCategories.isEmpty) {
-      return _tenders;
+      return base;
     }
-    return _tenders
+    return base
         .where((t) => _selectedCategories.contains(t.categoryName))
         .toList();
   }
@@ -127,6 +132,33 @@ class TenderProvider extends ChangeNotifier {
     }
 
     return createdTender;
+  }
+
+  Future<void> searchTenders(String query) async {
+    _searchQuery = query.trim();
+    if (_searchQuery.isEmpty) {
+      _searchResults = null;
+      notifyListeners();
+      return;
+    }
+    _setLoading(true);
+    try {
+      _searchResults = await _service.search(
+        TenderSearchRequest(searchTerm: _searchQuery),
+      );
+      _error = null;
+    } catch (e) {
+      _error = e.toString().replaceFirst('Exception: ', '');
+      _searchResults = [];
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  void clearSearch() {
+    _searchQuery = '';
+    _searchResults = null;
+    notifyListeners();
   }
 
   Future<bool> deleteTender(int id) async {

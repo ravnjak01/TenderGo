@@ -21,11 +21,11 @@ namespace TenderGo.Services.Mapping
                 ? $"{src.CreatedByUser.FirstName} {src.CreatedByUser.LastName}"
                 : "Unknown author"))
             .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src =>
-                  src.Category != null ? src.Category.Name : string.Empty))  
+                  src.Category != null ? src.Category.Name : string.Empty))
             .ForMember(dest => dest.TotalBids, opt => opt.MapFrom(src =>
-                  src.Bids != null ? src.Bids.Count : 0))
+                    src.Bids.Count))
             .ForMember(dest => dest.Images, opt => opt.MapFrom(src =>
-                 src.Images ?? new List<TenderImage>()));
+                 src.Images));
 
             CreateMap<TenderInsertRequest, Tender>()
                 .ForMember(dest => dest.LocationName, opt => opt.MapFrom(src => src.LocationName))
