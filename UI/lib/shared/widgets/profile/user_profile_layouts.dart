@@ -47,7 +47,7 @@ class UserProfileMobile extends StatelessWidget {
             delegate: SliverChildListDelegate([
               if (user.roles.contains('Admin')) ...[
                 UserProfileRolesSection(roles: user.roles),
-                const SizedBox(height: 16),
+                const SizedBox(height: 5),
               ],
               const SizedBox(height: 16),
               UserProfileCards(user: user),
@@ -158,10 +158,13 @@ class UserProfileRolesSection extends StatelessWidget {
   Widget build(BuildContext context) {
     if (roles.isEmpty) return const SizedBox.shrink();
 
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: roles.map((r) => AppBadge(label: r.toRoleLabel())).toList(),
+    return Padding(
+      padding: const EdgeInsets.only(top: 10), // Ovdje kontrolišeš razmak od vrha
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: roles.map((r) => AppBadge(label: r.toRoleLabel())).toList(),
+      ),
     );
   }
 }

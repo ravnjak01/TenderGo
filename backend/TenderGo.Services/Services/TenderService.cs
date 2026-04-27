@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
@@ -31,12 +32,15 @@ namespace TenderGo.Services.Services
         protected readonly ILogger<TenderService> _logger;
         protected readonly IServiceProvider _serviceProvider;
         protected readonly IImageService _imageService;
-        public TenderService(TenderGoContext context, IMapper mapper, IHttpContextAccessor httpContextAccessor, IAuthService authService, ILogger<TenderService> logger, IServiceProvider serviceProvider, IImageService imageService) : base(context, mapper, httpContextAccessor)
+        protected readonly IBidService _bidService;
+
+        public TenderService(TenderGoContext context, IMapper mapper, IHttpContextAccessor httpContextAccessor, IAuthService authService, ILogger<TenderService> logger, IServiceProvider serviceProvider, IImageService imageService, IBidService bidService) : base(context, mapper, httpContextAccessor)
         {
             _logger = logger;
             _authService = authService;
             _serviceProvider = serviceProvider;
             _imageService = imageService;
+            _bidService = bidService;
         }
 
         protected override IQueryable<Tender> AddIncludes(IQueryable<Tender> query)
@@ -141,15 +145,13 @@ namespace TenderGo.Services.Services
                     entity.Images = new List<TenderImage>();
                     for (int i = 0; i < request.ImageBytes.Count; i++)
                     {
-                        // Pozivamo ImageService da snimi bajtove na disk
                         var uploadResult = await _imageService.UploadImageAsync(request.ImageBytes[i], "tenders", i == 0);
 
-                        // Kreiramo entitet za bazu
                         var tenderImage = new TenderImage
                         {
                             ImageUrl = uploadResult.ImageUrl,
                             IsPrimary = i == 0,
-                            Tender = entity // Veza sa ovim tenderom
+                            Tender = entity 
                         };
                         entity.Images.Add(tenderImage);
                     }
@@ -200,16 +202,30 @@ namespace TenderGo.Services.Services
             return await state.Activate(id);
         }
 
-        
+
 
         public async Task<TenderDTO> Cancel(int id)
         {
-            var entity = await _context.Tenders.FindAsync(id)
-                              ?? throw new NotFoundException("Tender not found", new { Entity = "Tender", Id = id });
+            var entity = await _context.Tenders
+                .Include(t => t.Bids) 
+                .FirstOrDefaultAsync(t => t.Id == id)
+                ?? throw new NotFoundException("Tender not found", new { Entity = "Tender", Id = id });
 
+            if (entity.Bids != null && entity.Bids.Any())
+            {
+                foreach (var bid in entity.Bids)
+                {
+                   
+                    await _bidService.Cancel(bid.Id); 
+                }
+            }
 
             var state = CreateState(entity.Status);
-            return await state.Cancel(id);
+            var result = await state.Cancel(id);
+
+            await _context.SaveChangesAsync();
+
+            return result;
         }
 
 

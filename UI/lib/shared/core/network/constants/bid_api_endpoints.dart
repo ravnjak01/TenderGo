@@ -15,4 +15,6 @@ class BidApiEndpoints {
   static String getByTender(int tenderId) => '$_bidBase/tender/$tenderId';
   static String getByUser(String userId) => '$_bidBase/user/$userId';
   static String getAllowedActions(int id) => '$_bidBase/$id/allowed-actions';
+  static String cancel(int id) => '$_bidBase/$id/cancel';
+
 }

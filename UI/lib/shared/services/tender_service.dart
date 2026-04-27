@@ -264,14 +264,14 @@ class TenderService {
   }
 
   // ===== CANCEL =====
-  Future<dynamic> cancel(int id) async {
+  Future<TenderDto> cancel(int id) async {
     try {
       final response = await _dio.patch(
         TenderApiEndpoints.cancel(id),
         options: await _options(),
       );
 
-      return response.data;
+      return TenderDto.fromJson(response.data);
     } on DioException catch (e) {
       throw Exception(e.response?.data ?? 'Error canceling tender');
     }

@@ -25,7 +25,6 @@ namespace TenderGo.Services.Services
         private readonly IAuthService _authService;
         protected readonly ILogger<BidService> _logger;
         protected readonly IServiceProvider _serviceProvider;
-
         public BidService(TenderGoContext context, IMapper mapper, IHttpContextAccessor httpContextAccessor,IAuthService authService, ILogger<BidService> logger, IServiceProvider serviceProvider) : base(context, mapper, httpContextAccessor)
         {
             _authService = authService;
@@ -127,6 +126,18 @@ namespace TenderGo.Services.Services
             var state = CreateState(entity.Status, entity.Tender.Status);
 
             return await state.AllowedActions(entity);
+        }
+
+        public async Task<BidDTO> Cancel(int id)
+        {
+            var entity = await _context.Bids.Include(b => b.Tender).FirstOrDefaultAsync(b => b.Id == id)
+                 ?? throw new NotFoundException("Bid not found", new { Entity = "Bid", Id = id });
+
+            var state = CreateState(entity.Status,entity.Tender.Status);
+            var result = await state.Cancel(id);
+
+
+            return result;
         }
 
 

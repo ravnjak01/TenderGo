@@ -203,8 +203,6 @@ class BidService {
 		}
 	}
 
-//dosao do prikazavinja ponuda po tendera,radi prikazuje se ,sljedece dodati dugme 
-//biranja ponude
 	// ===== BY TENDER =====
 	Future<List<BidDto>> getByTender(int tenderId) async {
 		try {
@@ -224,6 +222,19 @@ class BidService {
 			throw Exception(e.response?.data ?? 'Error fetching bids by tender');
 		}
 	}
+
+    Future<BidDto> cancel(int id) async {
+    try {
+      final response = await _dio.patch(
+        BidApiEndpoints.cancel(id),
+        options: await _options(),
+      );
+
+      return BidDto.parseBid(response.data);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data ?? 'Error canceling tender');
+    }
+  }
 
 	// ===== ALLOWED ACTIONS =====
 	Future<List<dynamic>> getAllowedActions(int id) async {

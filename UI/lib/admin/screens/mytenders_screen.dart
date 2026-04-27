@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:tendergo/admin/widgets/common/app_dialogs.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
 import 'package:tendergo/shared/models/enums/tenderstatus.dart';
 import 'package:tendergo/admin/screens/tender_bids_screen.dart';
 import 'package:tendergo/shared/services/auth_service.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
+import 'package:tendergo/shared/widgets/feedback/snackbar_helper.dart';
 import 'package:tendergo/shared/widgets/feedback/screen_state_widget.dart';
 
 class MyTendersScreen extends StatefulWidget {
@@ -104,6 +106,39 @@ class _MyTendersScreenState extends State<MyTendersScreen> {
     }
   }
 
+  Future<void> _cancelTender(TenderDto tender) async {
+    final confirmed = await AppDialogs.showConfirm(
+      context: context,
+      title: 'Cancel Tender',
+      content: 'Are you sure you want to cancel this tender?',
+      cancelLabel: 'No',
+      confirmLabel: 'Yes, Cancel',
+      isDestructive: true,
+    );
+    if (!confirmed || !mounted) return;
+
+    try {
+      final updated = await widget._tenderService.cancel(tender.id);
+      if (!mounted) return;
+
+      setState(() {
+        final index = _tenders.indexWhere((t) => t.id == tender.id);
+        if (index != -1) {
+          _tenders[index] = updated;
+        }
+      });
+
+      SnackbarHelper.show(context, 'Tender canceled successfully.');
+    } catch (e) {
+      if (!mounted) return;
+      SnackbarHelper.show(
+        context,
+        e.toString().replaceFirst('Exception: ', ''),
+        isError: true,
+      );
+    }
+  }
+
   // ── build ──────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
@@ -178,6 +213,7 @@ class _MyTendersScreenState extends State<MyTendersScreen> {
           return _TenderCard(
             tender: _tenders[index],
             tenderService: widget._tenderService,
+            onCancel: () => _cancelTender(_tenders[index]),
           );
         },
       ),
@@ -190,10 +226,15 @@ class _MyTendersScreenState extends State<MyTendersScreen> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _TenderCard extends StatelessWidget {
-  const _TenderCard({required this.tender, required this.tenderService});
+  const _TenderCard({
+    required this.tender,
+    required this.tenderService,
+    required this.onCancel,
+  });
 
   final TenderDto tender;
   final TenderService tenderService;
+  final VoidCallback onCancel;
 
   @override
   Widget build(BuildContext context) {
@@ -319,34 +360,58 @@ class _TenderCard extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => TenderBidsScreen(
-                              tenderId: model.id,
-                              tenderTitle: model.title,
-                              tenderDto: tender,
-                              tenderService: tenderService,
+                  Wrap(
+                    alignment: WrapAlignment.end,
+                    runSpacing: 8,
+                    spacing: 8,
+                    children: [
+                      if (isOpen)
+                        SizedBox(
+                          height: 32,
+                          child: OutlinedButton.icon(
+                            onPressed: onCancel,
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
+                              side: const BorderSide(color: Colors.red),
+                              foregroundColor: Colors.red,
+                            ),
+                            icon: const Icon(Icons.cancel_outlined, size: 16),
+                            label: const Text(
+                              'Cancel',
+                              style: TextStyle(fontSize: 12),
                             ),
                           ),
-                        );
-                      },
-                      icon: const Icon(Icons.gavel_rounded, size: 16),
-                      label: const Text('See bids'),
-                      style: OutlinedButton.styleFrom(
-                        visualDensity: VisualDensity.compact,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 8,
                         ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                      SizedBox(
+                        height: 32,
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => TenderBidsScreen(
+                                  tenderId: model.id,
+                                  tenderTitle: model.title,
+                                  tenderDto: tender,
+                                  tenderService: tenderService,
+                                ),
+                              ),
+                            );
+                          },
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                            ),
+                          ),
+                          icon: const Icon(Icons.gavel_rounded, size: 16),
+                          label: const Text(
+                            'See bids',
+                            style: TextStyle(fontSize: 12),
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ),
                 ],
               ),

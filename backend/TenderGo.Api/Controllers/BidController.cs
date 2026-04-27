@@ -32,7 +32,13 @@ namespace TenderGo.Api.Controllers
             return Ok(result);
         }
 
-      
+        [HttpPut("{id}/cancel")]
+        public async Task<ActionResult<BidDTO>> Cancel(int id)
+        {
+            var result = await _bidService.Cancel(id);
+            return Ok(result);
+        }
+
         [HttpPatch("{id}/withdraw")]
         public async Task<ActionResult<BidDTO>> Withdraw(int id)
         {

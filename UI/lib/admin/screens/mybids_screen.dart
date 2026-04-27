@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tendergo/admin/widgets/common/app_dialogs.dart';
 import 'package:tendergo/shared/models/dto/bid_dto.dart';
 import 'package:tendergo/shared/routes/routes.dart';
 import 'package:tendergo/shared/services/bid_service.dart';
@@ -91,6 +92,39 @@ class _MyBidsScreenState extends State<MyBidsScreen> {
         !_isLoading &&
         _hasMore) {
       _fetchBids();
+    }
+  }
+
+  Future<void> _cancelBid(BidDto bid) async {
+    final confirmed = await AppDialogs.showConfirm(
+      context: context,
+      title: 'Cancel Bid',
+      content: 'Are you sure you want to cancel this bid?',
+      cancelLabel: 'No',
+      confirmLabel: 'Yes, Cancel',
+      isDestructive: true,
+    );
+    if (!confirmed || !mounted) return;
+
+    try {
+      final updated = await widget._bidService.cancel(bid.id);
+      if (!mounted) return;
+
+      setState(() {
+        final index = _bids.indexWhere((b) => b.id == bid.id);
+        if (index != -1) {
+          _bids[index] = updated;
+        }
+      });
+
+      SnackbarHelper.show(context, 'Bid canceled successfully.');
+    } catch (e) {
+      if (!mounted) return;
+      SnackbarHelper.show(
+        context,
+        e.toString().replaceFirst('Exception: ', ''),
+        isError: true,
+      );
     }
   }
 
@@ -203,6 +237,7 @@ class _MyBidsScreenState extends State<MyBidsScreen> {
           return _BidCard(
             bid: _bids[index],
             onRateUser: () => _openRateUser(_bids[index]),
+            onCancel: () => _cancelBid(_bids[index]),
           );
         },
       ),
@@ -215,14 +250,30 @@ class _MyBidsScreenState extends State<MyBidsScreen> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _BidCard extends StatelessWidget {
-  const _BidCard({required this.bid, required this.onRateUser});
+  const _BidCard({
+    required this.bid,
+    required this.onRateUser,
+    required this.onCancel,
+  });
 
   final BidDto bid;
   final VoidCallback onRateUser;
+  final VoidCallback onCancel;
 
   bool _isAwardedStatus(String? status) {
     final normalized = (status ?? '').trim().toLowerCase();
     return normalized == 'accepted';
+  }
+
+  bool _isCancelableStatus(String? status) {
+    final normalized = (status ?? '').trim().toLowerCase();
+    if (normalized.isEmpty) return true;
+
+    return normalized != 'accepted' &&
+        normalized != 'rejected' &&
+        normalized != 'withdrawn' &&
+        normalized != 'cancelled' &&
+        normalized != 'canceled';
   }
 
   @override
@@ -363,6 +414,31 @@ class _BidCard extends StatelessWidget {
                       ),
                     ),
                   ],
+
+                  if (_isCancelableStatus(bid.status)) ...[
+  const SizedBox(height: 8), // Smanjio sam malo i razmak iznad
+  Align(
+    alignment: Alignment.centerRight,
+    child: SizedBox(
+      height: 32, // Fiksna visina dugmeta (standardna je oko 40-48)
+      // width: 100, // Možeš dodati i fiksnu širinu ako želiš
+      child: OutlinedButton.icon(
+        onPressed: onCancel,
+        style: OutlinedButton.styleFrom(
+          // Moramo ukloniti defaultni padding da bi tekst stao u 32px visine
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          side: const BorderSide(color: Colors.red), // Opcionalno: crvena ivica
+          foregroundColor: Colors.red, // Tekst i ikona postaju crveni
+        ),
+        icon: const Icon(Icons.cancel_outlined, size: 16), // Smanjena ikona
+        label: const Text(
+          'Cancel',
+          style: TextStyle(fontSize: 12), // Smanjen font
+        ),
+      ),
+    ),
+  ),
+],
                 ],
               ),
             ),
