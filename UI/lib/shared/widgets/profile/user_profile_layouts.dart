@@ -45,7 +45,10 @@ class UserProfileMobile extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
           sliver: SliverList(
             delegate: SliverChildListDelegate([
-              UserProfileRolesSection(roles: user.roles),
+              if (user.roles.contains('Admin')) ...[
+                UserProfileRolesSection(roles: user.roles),
+                const SizedBox(height: 16),
+              ],
               const SizedBox(height: 16),
               UserProfileCards(user: user),
               const SizedBox(height: 16),
@@ -106,6 +109,7 @@ class UserProfileDesktop extends StatelessWidget {
                       flex: 3,
                       child: Column(children: [UserProfileCards(user: user)]),
                     ),
+                    if (user.roles.contains('Admin')) ...[
                     const SizedBox(width: 24),
                     Expanded(
                       flex: 2,
@@ -133,6 +137,7 @@ class UserProfileDesktop extends StatelessWidget {
                         ),
                       ),
                     ),
+                  ]
                   ],
                 ),
               ),

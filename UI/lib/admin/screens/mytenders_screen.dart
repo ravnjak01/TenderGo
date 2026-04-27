@@ -59,7 +59,7 @@ class _MyTendersScreenState extends State<MyTendersScreen> {
     try {
       final currentUserId = await AuthService.getCurrentUserId();
       if (currentUserId == null || currentUserId.isEmpty) {
-        throw Exception('Could not resolve the current user from the session.');
+        throw Exception('Session expired. Please log in again to view your tenders.');
       }
 
       final fetchedRaw = await widget._tenderService.getByUser(currentUserId);
@@ -86,7 +86,7 @@ class _MyTendersScreenState extends State<MyTendersScreen> {
       if (!mounted) return;
       setState(() {
         _hasError = true;
-        _errorMessage = e.toString();
+        _errorMessage = e.toString().replaceFirst('Exception: ', '');
       });
     } finally {
       if (mounted) {

@@ -190,7 +190,7 @@ class _BidCard extends StatelessWidget {
     final dateFormatted =
         DateFormat('dd MMM yyyy, HH:mm').format(bid.submittedAt);
     final priceFormatted =
-        NumberFormat.currency(symbol: '\$', decimalDigits: 2).format(bid.offeredPrice);
+        '${bid.offeredPrice.toStringAsFixed(0)} KM';
 
     return Card(
       elevation: 0,
@@ -222,22 +222,11 @@ class _BidCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        bid.submittedByUserName,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      Text(
-                        'Bid #${bid.id}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    bid.submittedByUserName,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
                 // Status badge
