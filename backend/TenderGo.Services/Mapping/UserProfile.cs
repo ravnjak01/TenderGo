@@ -21,10 +21,26 @@ namespace TenderGo.Services.Mapping
             CreateMap<ApplicationUser, UserDTO>()
              .ForMember(dest => dest.Roles, opt => opt.Ignore());
 
-            CreateMap<UpdateProfileDTO, ApplicationUser>()
+            CreateMap<UpdateProfileRequest, ApplicationUser>()
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
 
             CreateMap<AddressDTO, Address>().ReverseMap();
+
+            CreateMap<ApplicationUser, UserPublicDTO>()
+        .ForMember(dest => dest.Location, opt => opt.MapFrom(src =>
+            src.Address != null ? $"{src.Address.City}, {src.Address.Country}" : null))
+        .ForMember(dest => dest.TenderCount, opt => opt.MapFrom(src =>
+            src.CreatedTenders != null ? src.CreatedTenders.Count : 0))
+        .ForMember(dest => dest.BidsCount, opt => opt.Ignore());
+
+            CreateMap<UpdateAddressDTO, Address>()
+    .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+
+            CreateMap<UpdateProfileRequest, ApplicationUser>()
+                .ForMember(dest => dest.FirstName, opt => opt.Ignore())
+                .ForMember(dest => dest.LastName, opt => opt.Ignore())
+                .ForMember(dest => dest.ProfileImageUrl, opt => opt.Ignore())
+                .ForMember(dest => dest.Address, opt => opt.Condition(src => src.Address != null));
         }
     }
 }

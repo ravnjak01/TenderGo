@@ -12,7 +12,6 @@ import 'package:tendergo/shared/models/dto/user_dto.dart';
 import 'package:tendergo/shared/routes/routes.dart';
 
 
-//sljedece praviti klik na my bids i tenders prikazat listu bidova i tendera koje je korisnik kreirao, a ne sve bidove i tendere
 
 class UserProfileMobile extends StatelessWidget {
   const UserProfileMobile({
@@ -20,6 +19,7 @@ class UserProfileMobile extends StatelessWidget {
     required this.user,
     required this.bids,
     required this.tenders,
+    required this.onEdit,
     required this.onChangePassword,
     required this.onLogout,
   });
@@ -27,6 +27,7 @@ class UserProfileMobile extends StatelessWidget {
   final UserDto user;
   final List<BidDto> bids;
   final List<TenderDto> tenders;
+  final VoidCallback onEdit;
   final VoidCallback onChangePassword;
   final VoidCallback onLogout;
 
@@ -60,6 +61,12 @@ class UserProfileMobile extends StatelessWidget {
                     Navigator.of(context).pushNamed(AppRoutes.myTenders),
               ),
               const SizedBox(height: 32),
+              ActionTile(
+                icon: Icons.edit_rounded,
+                label: 'Edit Profile',
+                onTap: onEdit,
+              ),
+              const SizedBox(height: 10),
               ActionTile(
                 icon: Icons.lock_outline_rounded,
                 label: 'Change Password',

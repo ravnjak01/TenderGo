@@ -24,22 +24,32 @@ namespace TenderGo.Services.Services
             if (imageBytes == null || imageBytes.Length == 0)
                 throw new ArgumentException("Niz bajtova je prazan.");
 
-            var extension = ".jpg"; // Možeš dodati logiku za detekciju tipa, ali .jpg je siguran default
+            // 1. Izračunaj hash odmah
+            var hash = await CalculateHash(imageBytes);
+            var extension = ".jpg";
+
+            // 2. Koristi HASH kao ime fajla umjesto GUID-a!
+            // Na ovaj način, ista slika će se uvijek zvati isto na disku.
+            string fileName = $"{hash}{extension}";
             string folderPath = Path.Combine(_environment.WebRootPath, "uploads", subFolder);
 
             if (!Directory.Exists(folderPath))
                 Directory.CreateDirectory(folderPath);
 
-            string fileName = $"{Guid.NewGuid()}{extension}";
             string fullPath = Path.Combine(folderPath, fileName);
 
-            await File.WriteAllBytesAsync(fullPath, imageBytes);
+            // 3. Provjeri postoji li fajl fizički na disku prije pisanja
+            if (!File.Exists(fullPath))
+            {
+                await File.WriteAllBytesAsync(fullPath, imageBytes);
+            }
 
             return new TenderImageDTO
             {
                 ImageUrl = $"/uploads/{subFolder}/{fileName}",
                 FileName = fileName,
-                IsPrimary = isPrimary
+                IsPrimary = isPrimary,
+                ImageHash = hash 
             };
         }
 
@@ -49,12 +59,21 @@ namespace TenderGo.Services.Services
             await file.CopyToAsync(ms);
             return await UploadImageAsync(ms.ToArray(), subFolder, isPrimary);
         }
+        public async  Task<string> CalculateHash(byte[] data)
+        {
+            return await Task.Run(() =>
+            {
+                using var sha256 = System.Security.Cryptography.SHA256.Create();
+                var hashBytes = sha256.ComputeHash(data);
+                return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+            });
+        }
+
 
         public void DeleteImage(string relativePath)
         {
             if (string.IsNullOrEmpty(relativePath)) return;
 
-            // Pretvaramo relativnu putanju (/uploads/...) u fizičku na disku
             var fullPath = Path.Combine(_environment.WebRootPath, relativePath.TrimStart('/'));
 
             if (File.Exists(fullPath))

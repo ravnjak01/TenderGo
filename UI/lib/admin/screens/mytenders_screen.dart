@@ -443,6 +443,10 @@ class _StatusChip extends StatelessWidget {
 
   final bool isOpen;
 
+
+//zadnje implementirao cancel metodu
+//razmisliti o prikazu lokacije,jer je  trenutno implementirano da se priakzuje 
+//samo grad tj. locationName a ne i country
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;

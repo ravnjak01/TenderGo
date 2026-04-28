@@ -39,6 +39,21 @@ namespace TenderGo.Api.Controllers
             return Ok(new { message = "Rating submitted successfully." });
         }
 
-      
+        [HttpPut("profile")]
+        public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized("User ID not found in token.");
+            }
+
+            await _userService.UpdateProfileAsync(userId, request);
+
+            return Ok(new { message = "Profile updated successfully." });
+        }
+
+
     }
 }

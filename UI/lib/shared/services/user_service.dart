@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:tendergo/shared/core/network/constants/user_endpoints.dart';
+import 'package:tendergo/shared/models/dto/update_profile_request.dart';
 import 'package:tendergo/shared/models/dto/user_dto.dart';
 
 class UserService {
@@ -26,7 +28,7 @@ class UserService {
 	Future<UserPublicDto> getUser(String userId) async {
 		try {
 			final response = await _dio.get(
-				'users/$userId',
+				UserEndpoints.getById(userId),
 				options: await _options(),
 			);
 
@@ -51,7 +53,7 @@ class UserService {
    Future<void> rateUser(RateUserRequest request) async {
     try {
       await _dio.post(
-        'users/rate',
+        UserEndpoints.rate,
         data: request.toJson(),
         options: await _options(),
       );
@@ -59,4 +61,16 @@ class UserService {
       throw Exception(e.response?.data ?? 'Error submitting rating');
     }
   }
+
+  Future<void> updateProfile(UpdateProfileRequest request) async {
+  try {
+    await _dio.put(
+      UserEndpoints.updateProfile,
+      data: request.toJson(),
+      options: await _options(),
+    );
+  } on DioException catch (e) {
+    throw Exception(e.response?.data ?? 'Error updating profile');
+  }
+}
 }

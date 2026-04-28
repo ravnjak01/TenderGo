@@ -12,7 +12,7 @@ namespace TenderGo.Services.Interfaces
     {   
             Task<bool> ChangePasswordAsync(string userId, ChangePasswordDTO dto);
 
-            Task UpdateProfileAsync(string userId, UpdateProfileDTO dto);
+            Task UpdateProfileAsync(string userId, UpdateProfileRequest dto);
         Task<bool> RateUserAsync(string ratedByUserId, RateUserDTO dto);
         Task<UserPublicDTO> GetPublicByIdAsync(string id);
     

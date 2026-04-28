@@ -17,6 +17,47 @@ class UserProfilePublicScreen extends StatelessWidget {
     return UserPublicDto.getInitials(user);
   }
 
+  Widget _buildAvatarWidget(BuildContext context, UserPublicDto user) {
+    final imageUrl = user.profileImageUrl;
+    
+    if (imageUrl != null && imageUrl.trim().isNotEmpty) {
+      return Container(
+        width: 88,
+        height: 88,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: AppColors.primary.withValues(alpha: 0.2),
+            width: 1.5,
+          ),
+        ),
+        child: ClipOval(
+          child: Image.network(
+            imageUrl,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => _buildInitialsCircle(context, user),
+          ),
+        ),
+      );
+    }
+    
+    return _buildInitialsCircle(context, user);
+  }
+
+  Widget _buildInitialsCircle(BuildContext context, UserPublicDto user) {
+    return CircleAvatar(
+      radius: 44,
+      backgroundColor: AppColors.primary.withValues(alpha: 0.14),
+      child: Text(
+        _initials(user),
+        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+          color: AppColors.primary,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+
   Widget _buildStatTile(
     BuildContext context, {
     required IconData icon,
@@ -84,17 +125,7 @@ class UserProfilePublicScreen extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
             child: Column(
               children: [
-                CircleAvatar(
-                  radius: 44,
-                  backgroundColor: AppColors.primary.withValues(alpha: 0.14),
-                  child: Text(
-                    _initials(user),
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
+                _buildAvatarWidget(context, user),
                 const SizedBox(height: 12),
                 Text(
                   user.fullName.trim().isEmpty ? user.username : user.fullName,

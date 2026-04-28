@@ -38,9 +38,7 @@ class _RateUserScreenState extends State<RateUserScreen> {
     super.dispose();
   }
 
-  //ZADNJE IMPLEMENTIRANO RATE USER,RADI NISU UOCENI PROBLEMI
-  //PROVJERITI ZASTO KAD KORISNIK OVORIO EKRAN ZA  SVOJE TENDERE SVI IMAJU OPEN STATUS
-  //IAKO U BAZI NEMAJU SVI TENDERI STATUS OPEN
+
 
   Future<void> _submit() async {
     if (_submitting) return;

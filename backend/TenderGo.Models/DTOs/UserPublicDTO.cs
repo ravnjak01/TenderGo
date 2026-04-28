@@ -16,6 +16,7 @@ namespace TenderGo.Models.DTOs
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public string Location { get; set; }
+        public string ProfileImageUrl { get; set; }
 
         // Reputacija
         public double Rating { get; set; }

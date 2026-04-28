@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -21,13 +22,18 @@ namespace TenderGo.Services.Services
         private readonly TenderGoContext _context;
         private readonly ITenderService _tenderService;
         private readonly IAuthService _authService;
+        private readonly IImageService _imageService;
+        private readonly IMapper _mapper;
 
-        public UserService(UserManager<ApplicationUser> userManager,TenderGoContext context, ITenderService tenderService,IAuthService authService)
+
+        public UserService(UserManager<ApplicationUser> userManager,TenderGoContext context, ITenderService tenderService,IAuthService authService,IImageService imageService,IMapper mapper)
         {
             _userManager = userManager;
             _context = context;
             _tenderService = tenderService;
             _authService = authService;
+            _imageService = imageService;
+            _mapper = mapper;
         }
 
         public async Task<bool> ChangePasswordAsync(string userId, ChangePasswordDTO dto)
@@ -48,67 +54,55 @@ namespace TenderGo.Services.Services
        public async Task<UserPublicDTO> GetPublicByIdAsync(string id)
         {
             var user = await _context.Users
-                .Include(u => u.CreatedTenders)
-                .Include(u => u.Address)
-                .FirstOrDefaultAsync(u => u.Id == id);
+        .Include(u => u.CreatedTenders)
+        .Include(u => u.Address)
+        .FirstOrDefaultAsync(u => u.Id == id)
+        ?? throw new NotFoundException("User not found", new { User = "User", Id = id });
 
+            var response = _mapper.Map<UserPublicDTO>(user);
 
-            var roles = await _userManager.GetRolesAsync(user);
+            response.BidsCount = await _context.Bids.CountAsync(b => b.SubmittedByUserId == user.Id);
 
-            return new UserPublicDTO
-            {
-                Id = user.Id,
-                FirstName = user.FirstName,
-                LastName = user.LastName,
-                UserName = user.UserName,
-                Location = user.Address != null
-                    ? $"{user.Address.City}, {user.Address.Country}"
-                    : null,
-                Rating = user.AverageRating,
-                ReviewCount = user.RatingCount,
-                TenderCount = user.CreatedTenders.Count,
-                BidsCount = _context.Bids.Count(b => b.SubmittedByUserId == user.Id)
-            };
+            return response;
         }
 
-        public async Task UpdateProfileAsync(string userId, UpdateProfileDTO dto)
+        public async Task UpdateProfileAsync(string userId, UpdateProfileRequest request)
         {
             var user=await _userManager.FindByIdAsync(userId)
                 ?? throw new NotFoundException("User not found", new { User = "User", Id = userId });
 
 
-            if (dto.ProfileImageUrl != null)
+            bool hasFirstName = !string.IsNullOrWhiteSpace(request.FirstName);
+            bool hasLastName = !string.IsNullOrWhiteSpace(request.LastName);
+
+            if (hasFirstName || hasLastName)
             {
-                user.ProfileImageUrl = dto.ProfileImageUrl;
-            }
-            if(dto.PhoneNumber != null)
-            {
-                user.PhoneNumber = dto.PhoneNumber;
-            }
-            if (dto.Address != null)
-            {
-                if (user.Address == null)
+                bool isChangingFirstName = hasFirstName && request.FirstName != user.FirstName;
+                bool isChangingLastName = hasLastName && request.LastName != user.LastName;
+
+                if (isChangingFirstName || isChangingLastName)
                 {
-                    var address = new Address
+                    if (user.NameChangeCount >= 3)
                     {
-                        Street = dto.Address.Street,
-                        City = dto.Address.City,
-                        PostalCode = dto.Address.PostalCode,
-                        Country = dto.Address.Country
-                    };
+                        throw new UserException("You have reached the maximum number of name changes (3).");
+                    }
 
-                    user.Address = address;
-                }
-                else
-                {
-                    user.Address.Street = dto.Address.Street;
-                    user.Address.City = dto.Address.City;
-                    user.Address.PostalCode = dto.Address.PostalCode;
-                    user.Address.Country = dto.Address.Country;
+                    user.NameChangeCount++;
+
+                    if (isChangingFirstName) user.FirstName = request.FirstName;
+                    if (isChangingLastName) user.LastName = request.LastName;
                 }
             }
 
-                var result=await _userManager.UpdateAsync(user);
+            if (request.ImageBytes != null && request.ImageBytes.Length > 0)
+            {
+                var uploadResult = await _imageService.UploadImageAsync(request.ImageBytes, "profiles");
+
+                user.ProfileImageUrl = uploadResult.ImageUrl;
+            }
+            _mapper.Map(request, user);
+
+            var result=await _userManager.UpdateAsync(user);
 
             if(!result.Succeeded)
             {
@@ -127,7 +121,6 @@ namespace TenderGo.Services.Services
                 .FirstOrDefaultAsync(t => t.Id == dto.TenderId)
                 ?? throw new NotFoundException("Tender not found", new { dto.TenderId });
 
-            // 🔒 state check (jedan izvor istine)
             var state = _tenderService.CreateState(tender.Status);
 
             if (!state.CanRate())
@@ -136,16 +129,13 @@ namespace TenderGo.Services.Services
             if (tender.Status != TenderStatus.Awarded)
                 throw new UserException("Tender is not completed yet.");
 
-            // 🔒 winning bid check
             var winningBid = tender.Bids
                 .FirstOrDefault(b => b.Id == tender.WinningBidId)
                 ?? throw new UserException("Winning bid not found.");
 
-            // 🔒 only winner can rate
             if (winningBid.SubmittedByUserId != currentUserId)
                 throw new UserException("Only winning bidder can rate user.");
 
-            // 🔒 cannot rate yourself
             if (dto.RatedUserId == currentUserId)
                 throw new UserException("You cannot rate yourself.");
 
@@ -153,7 +143,6 @@ namespace TenderGo.Services.Services
                 .FirstOrDefaultAsync(u => u.Id == dto.RatedUserId)
                 ?? throw new NotFoundException("User not found", new { dto.RatedUserId });
 
-            // 🔒 duplicate rating protection
             var alreadyRated = await _context.Ratings.AnyAsync(r =>
                 r.TenderId == dto.TenderId &&
                 r.RatedByUserId == currentUserId &&
@@ -162,7 +151,6 @@ namespace TenderGo.Services.Services
             if (alreadyRated)
                 throw new UserException("You already rated this user for this tender.");
 
-            // ⭐ create rating
             var rating = new Rating
             {
                 RatedByUserId = currentUserId,
@@ -175,7 +163,6 @@ namespace TenderGo.Services.Services
 
             _context.Ratings.Add(rating);
 
-            // ⭐ update rating stats safely
             var totalScore = ratedUser.AverageRating * ratedUser.RatingCount;
 
             ratedUser.RatingCount++;

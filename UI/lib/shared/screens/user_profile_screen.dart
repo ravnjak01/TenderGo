@@ -6,11 +6,14 @@ import 'package:tendergo/shared/models/dto/bid_dto.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
 import 'package:tendergo/shared/providers/auth_provider.dart';
 import 'package:tendergo/shared/routes/routes.dart';
+import 'package:tendergo/shared/screens/edit_profile_screen.dart';
 import 'package:tendergo/shared/services/auth_service.dart';
 import 'package:tendergo/shared/services/bid_service.dart';
 import 'package:tendergo/shared/services/dio_client.dart';
 import 'package:tendergo/shared/services/image_service.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
+import 'package:tendergo/shared/services/user_service.dart';
+import 'package:tendergo/shared/models/dto/update_profile_request.dart';
 import 'package:tendergo/admin/widgets/common/app_dialogs.dart';
 import 'package:tendergo/shared/widgets/feedback/screen_state_widget.dart';
 import 'package:tendergo/shared/widgets/profile/user_profile_layouts.dart';
@@ -36,6 +39,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
   late Animation<Offset> _slideAnim;
   late BidService _bidService;
   late TenderService _tenderService;
+  late UserService _userService;
 
   UserDto? _user;
   List<BidDto> _bids = const [];
@@ -59,6 +63,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
     final dio = DioClient.getDio();
     _bidService = BidService(dio);
     _tenderService = TenderService(dio, ImageService(dio));
+    _userService = UserService(dio);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -185,6 +190,9 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                 user: user,
                 bids: _bids,
                 tenders: _tenders,
+                onEdit: () {
+                  _handleEditProfile();
+                },
                 onChangePassword: () {
                   Navigator.of(context).pushNamed(AppRoutes.forgotPassword);
                 },
@@ -194,6 +202,27 @@ class _UserProfileScreenState extends State<UserProfileScreen>
               ),
       ),
     );
+  }
+
+  Future<void> _handleEditProfile() async {
+    if (_user == null) return;
+
+    final result = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (context) => EditProfileScreen(
+          user: _user!,
+          userService: _userService,
+          onSave: () async {
+            // Reload user data after edit
+            await _load();
+          },
+        ),
+      ),
+    );
+
+    if (result ?? false) {
+      await _load();
+    }
   }
 
   Future<void> _handleLogout() async {

@@ -1,10 +1,13 @@
 import 'package:tendergo/shared/models/dto/auth_dto.dart';
+import 'package:tendergo/shared/services/dio_client.dart';
+import 'package:tendergo/shared/services/dio_client.dart';
 
 class UserDto {
   final String? id;
   final String email;
   final String username;
   final AddressDto? address;
+  final String? profileImageUrl;
   final List<String> roles;
   final String firstName;
   final String lastName;
@@ -13,6 +16,7 @@ class UserDto {
     required this.email,
     required this.username,
     this.address,
+    this.profileImageUrl,
     required this.roles,
     required this.firstName,
     required this.lastName,
@@ -28,6 +32,14 @@ class UserDto {
       address: json['address'] != null
           ? AddressDto.fromJson(json['address'])
           : null,
+      profileImageUrl: DioClient.resolveImageUrl(
+        (json['profileImageUrl'] ??
+                json['imageUrl'] ??
+                json['avatarUrl'] ??
+                json['profilePicture'] ??
+                json['photoUrl'])
+            ?.toString(),
+      ),
       roles: rawRoles is List
           ? rawRoles
                 .map((role) {
@@ -67,6 +79,7 @@ class UserDto {
       'email': email,
       'username': username,
       'address': address?.toJson(),
+      'profileImageUrl': profileImageUrl,
       'roles': roles,
       'firstName': firstName,
       'lastName': lastName,
@@ -78,9 +91,9 @@ class UserDto {
     String initials = "";
     if (user.firstName.isNotEmpty) initials += user.firstName[0];
     if (user.lastName.isNotEmpty) initials += user.lastName[0];
-    return initials.isEmpty
-        ? user.username[0].toUpperCase()
-        : initials.toUpperCase();
+    if (initials.isNotEmpty) return initials.toUpperCase();
+    if (user.username.isNotEmpty) return user.username[0].toUpperCase();
+    return '?';
   }
 }
 
@@ -90,6 +103,7 @@ class UserPublicDto {
   final String firstName;
   final String lastName;
   final String? location;
+  final String? profileImageUrl;
 
   final double rating;
   final int reviewCount;
@@ -107,6 +121,7 @@ class UserPublicDto {
     required this.reviewCount,
     required this.tenderCount,
     required this.bidsCount,
+      this.profileImageUrl,
   });
 
   factory UserPublicDto.fromJson(Map<String, dynamic> json) {
@@ -120,6 +135,14 @@ class UserPublicDto {
       reviewCount: json['reviewCount'] ?? 0,
       tenderCount: json['tenderCount'] ?? 0,
       bidsCount: json['bidsCount'] ?? 0,
+      profileImageUrl: DioClient.resolveImageUrl(
+        (json['profileImageUrl'] ??
+                json['imageUrl'] ??
+                json['avatarUrl'] ??
+                json['profilePicture'] ??
+                json['photoUrl'])
+            ?.toString(),
+      ),
     );
   }
 
@@ -134,6 +157,7 @@ class UserPublicDto {
       'reviewCount': reviewCount,
       'tenderCount': tenderCount,
       'bidsCount': bidsCount,
+      'profileImageUrl': profileImageUrl,
     };
   }
 

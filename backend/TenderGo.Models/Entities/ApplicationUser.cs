@@ -12,9 +12,6 @@ namespace TenderGo.Models.Entities
         public string FirstName { get; set; }=string.Empty;
         public string LastName { get; set; } = string.Empty;
 
-        public int? CompanyId { get; set; }
-        public Company? Company { get; set; }
-
         public string? ProfileImageUrl { get; set; }
 
         public Address Address { get; set; } 
@@ -38,5 +35,7 @@ namespace TenderGo.Models.Entities
         public bool IsBanned { get; set; } = false;
         public string? BanReason { get; set; }
         public DateTime? BannedAt { get; set; }
+
+        public int NameChangeCount { get; set; } = 0;
     }
 }

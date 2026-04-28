@@ -145,15 +145,32 @@ namespace TenderGo.Services.Services
                     entity.Images = new List<TenderImage>();
                     for (int i = 0; i < request.ImageBytes.Count; i++)
                     {
-                        var uploadResult = await _imageService.UploadImageAsync(request.ImageBytes[i], "tenders", i == 0);
 
-                        var tenderImage = new TenderImage
+                        var bytes = request.ImageBytes[i];
+                        var hash = await _imageService.CalculateHash(bytes);
+
+                        var existingImage = await _context.TenderImages
+                            .FirstOrDefaultAsync(img => img.ImageHash == hash);
+
+                        if (existingImage != null)
                         {
-                            ImageUrl = uploadResult.ImageUrl,
-                            IsPrimary = i == 0,
-                            Tender = entity 
-                        };
-                        entity.Images.Add(tenderImage);
+                            entity.Images.Add(new TenderImage
+                            {
+                                ImageUrl = existingImage.ImageUrl,
+                                ImageHash = hash,
+                                IsPrimary = i == 0
+                            });
+                        }
+                        else
+                        {
+                            var uploadResult = await _imageService.UploadImageAsync(bytes, "tenders", i == 0);
+                            entity.Images.Add(new TenderImage
+                            {
+                                ImageUrl = uploadResult.ImageUrl,
+                                ImageHash = hash,
+                                IsPrimary = i == 0
+                            });
+                        }
                     }
                 }
 

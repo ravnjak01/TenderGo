@@ -13,6 +13,35 @@ class UserProfileHeader extends StatelessWidget {
     this.onBack,
   });
 
+  Widget _buildAvatarContent() {
+    final imageUrl = user.profileImageUrl;
+    if (imageUrl != null && imageUrl.trim().isNotEmpty) {
+      return ClipOval(
+        child: Image.network(
+          imageUrl,
+          width: 88,
+          height: 88,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _buildInitialsFallback(),
+        ),
+      );
+    }
+
+    return _buildInitialsFallback();
+  }
+
+  Widget _buildInitialsFallback() {
+    return Text(
+      UserDto.getInitials(user),
+      style: const TextStyle(
+        color: AppColors.primary,
+        fontSize: 28,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
@@ -60,15 +89,7 @@ class UserProfileHeader extends StatelessWidget {
                   ),
                 ),
                 alignment: Alignment.center,
-                child: Text(
-                  UserDto.getInitials(user),
-                  style: const TextStyle(
-                    color: AppColors.primary,
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1,
-                  ),
-                ),
+                child: _buildAvatarContent(),
               ),
               // Online status indicator
               Container(
