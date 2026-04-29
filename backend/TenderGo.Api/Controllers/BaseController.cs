@@ -28,7 +28,7 @@ public abstract class BaseController<T,TDb, TInsert, TUpdate>
     public async Task<ActionResult<PagedResult<T>>> GetAll([FromQuery] PagedResult<T> pagedResult)
         => Ok(await _readService.Get( pagedResult));
 
-    [HttpGet("{id}")]
+    [HttpGet("{id:int}")]
     public async Task<ActionResult<T>> GetById(int id)
         => Ok(await _readService.GetById(id));
 

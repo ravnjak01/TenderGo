@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:tendergo/admin/widgets/common/app_dialogs.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
 import 'package:tendergo/shared/models/enums/tenderstatus.dart';
 import 'package:tendergo/admin/screens/tender_bids_screen.dart';
 import 'package:tendergo/shared/services/auth_service.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
+import 'package:tendergo/shared/widgets/feedback/snackbar_helper.dart';
 import 'package:tendergo/shared/widgets/feedback/screen_state_widget.dart';
 
 class MyTendersScreen extends StatefulWidget {
@@ -59,7 +61,7 @@ class _MyTendersScreenState extends State<MyTendersScreen> {
     try {
       final currentUserId = await AuthService.getCurrentUserId();
       if (currentUserId == null || currentUserId.isEmpty) {
-        throw Exception('Could not resolve the current user from the session.');
+        throw Exception('Session expired. Please log in again to view your tenders.');
       }
 
       final fetchedRaw = await widget._tenderService.getByUser(currentUserId);
@@ -86,7 +88,7 @@ class _MyTendersScreenState extends State<MyTendersScreen> {
       if (!mounted) return;
       setState(() {
         _hasError = true;
-        _errorMessage = e.toString();
+        _errorMessage = e.toString().replaceFirst('Exception: ', '');
       });
     } finally {
       if (mounted) {
@@ -101,6 +103,39 @@ class _MyTendersScreenState extends State<MyTendersScreen> {
         !_isLoading &&
         _hasMore) {
       _fetchTenders();
+    }
+  }
+
+  Future<void> _cancelTender(TenderDto tender) async {
+    final confirmed = await AppDialogs.showConfirm(
+      context: context,
+      title: 'Cancel Tender',
+      content: 'Are you sure you want to cancel this tender?',
+      cancelLabel: 'No',
+      confirmLabel: 'Yes, Cancel',
+      isDestructive: true,
+    );
+    if (!confirmed || !mounted) return;
+
+    try {
+      final updated = await widget._tenderService.cancel(tender.id);
+      if (!mounted) return;
+
+      setState(() {
+        final index = _tenders.indexWhere((t) => t.id == tender.id);
+        if (index != -1) {
+          _tenders[index] = updated;
+        }
+      });
+
+      SnackbarHelper.show(context, 'Tender canceled successfully.');
+    } catch (e) {
+      if (!mounted) return;
+      SnackbarHelper.show(
+        context,
+        e.toString().replaceFirst('Exception: ', ''),
+        isError: true,
+      );
     }
   }
 
@@ -178,6 +213,7 @@ class _MyTendersScreenState extends State<MyTendersScreen> {
           return _TenderCard(
             tender: _tenders[index],
             tenderService: widget._tenderService,
+            onCancel: () => _cancelTender(_tenders[index]),
           );
         },
       ),
@@ -190,10 +226,15 @@ class _MyTendersScreenState extends State<MyTendersScreen> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _TenderCard extends StatelessWidget {
-  const _TenderCard({required this.tender, required this.tenderService});
+  const _TenderCard({
+    required this.tender,
+    required this.tenderService,
+    required this.onCancel,
+  });
 
   final TenderDto tender;
   final TenderService tenderService;
+  final VoidCallback onCancel;
 
   @override
   Widget build(BuildContext context) {
@@ -202,140 +243,182 @@ class _TenderCard extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final isOpen = model.status == TenderStatus.open;
 
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: colorScheme.outlineVariant, width: 1),
-      ),
-      color: colorScheme.surfaceContainerLowest,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () {
-          // Navigate to tender detail page
-          // Navigator.of(context).push(...)
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ── header row ────────────────────────────────────────────────
-              Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 360;
+
+        return Card(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: colorScheme.outlineVariant, width: 1),
+          ),
+          color: colorScheme.surfaceContainerLowest,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () {
+              // Navigate to tender detail page
+              // Navigator.of(context).push(...)
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          model.title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          model.category,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.primary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  _StatusChip(isOpen: isOpen),
-                ],
-              ),
-
-              const SizedBox(height: 14),
-              const Divider(height: 1),
-              const SizedBox(height: 14),
-
-              // ── meta row ──────────────────────────────────────────────────
-              Row(
-                children: [
-                  _MetaItem(
-                    icon: Icons.location_on_rounded,
-                    label: model.locationName,
-                  ),
-                  const SizedBox(width: 16),
-                  _MetaItem(
-                    icon: Icons.calendar_today_rounded,
-                    label: _formatDate(model.deadline),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 12),
-
-              // ── budget + posted ───────────────────────────────────────────
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
+                  // ── header row ──────────────────────────────────────────
+                  Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Max Budget',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              model.title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              model.category,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colorScheme.primary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            if (isCompact) ...[
+                              const SizedBox(height: 8),
+                              _StatusChip(isOpen: isOpen),
+                            ],
+                          ],
                         ),
                       ),
+                      if (!isCompact) ...[
+                        const SizedBox(width: 8),
+                        _StatusChip(isOpen: isOpen),
+                      ],
+                    ],
+                  ),
+
+                  const SizedBox(height: 14),
+                  const Divider(height: 1),
+                  const SizedBox(height: 14),
+
+                  // ── meta row ────────────────────────────────────────────
+                  Wrap(
+                    spacing: 16,
+                    runSpacing: 8,
+                    children: [
+                      _MetaItem(
+                        icon: Icons.location_on_rounded,
+                        label: model.locationName,
+                      ),
+                      _MetaItem(
+                        icon: Icons.calendar_today_rounded,
+                        label: _formatDate(model.deadline),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // ── budget + posted ─────────────────────────────────────
+                  Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    runSpacing: 8,
+                    spacing: 16,
+                    crossAxisAlignment: WrapCrossAlignment.end,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Max Budget',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          Text(
+                            '${model.valueKM.toStringAsFixed(0)} KM',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: colorScheme.onSurface,
+                            ),
+                          ),
+                        ],
+                      ),
                       Text(
-                        '${model.valueKM.toStringAsFixed(0)} KM',
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: colorScheme.onSurface,
+                        'Posted ${_timeAgo(model.postedAt)}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
                   ),
-                  Text(
-                    'Posted ${_timeAgo(model.postedAt)}',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    alignment: WrapAlignment.end,
+                    runSpacing: 8,
+                    spacing: 8,
+                    children: [
+                      if (isOpen)
+                        SizedBox(
+                          height: 32,
+                          child: OutlinedButton.icon(
+                            onPressed: onCancel,
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
+                              side: const BorderSide(color: Colors.red),
+                              foregroundColor: Colors.red,
+                            ),
+                            icon: const Icon(Icons.cancel_outlined, size: 16),
+                            label: const Text(
+                              'Cancel',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                          ),
+                        ),
+                      SizedBox(
+                        height: 32,
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => TenderBidsScreen(
+                                  tenderId: model.id,
+                                  tenderTitle: model.title,
+                                  tenderDto: tender,
+                                  tenderService: tenderService,
+                                ),
+                              ),
+                            );
+                          },
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                            ),
+                          ),
+                          icon: const Icon(Icons.gavel_rounded, size: 16),
+                          label: const Text(
+                            'See bids',
+                            style: TextStyle(fontSize: 12),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-              Align(
-                alignment: Alignment.centerRight,
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => TenderBidsScreen(
-                          tenderId: model.id,
-                          tenderTitle: model.title,
-                          tenderDto: tender,
-                          tenderService: tenderService,
-                        ),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.gavel_rounded, size: 16),
-                  label: const Text('See bids'),
-                  style: OutlinedButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 8,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -360,6 +443,10 @@ class _StatusChip extends StatelessWidget {
 
   final bool isOpen;
 
+
+//zadnje implementirao cancel metodu
+//razmisliti o prikazu lokacije,jer je  trenutno implementirano da se priakzuje 
+//samo grad tj. locationName a ne i country
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;

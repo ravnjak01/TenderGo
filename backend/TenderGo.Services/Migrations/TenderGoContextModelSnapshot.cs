@@ -199,14 +199,14 @@ namespace TenderGo.Services.Migrations
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("int");
 
+                    b.Property<double>("AverageRating")
+                        .HasColumnType("float");
+
                     b.Property<string>("BanReason")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("BannedAt")
                         .HasColumnType("datetime2");
-
-                    b.Property<int?>("CompanyId")
-                        .HasColumnType("int");
 
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
@@ -245,6 +245,9 @@ namespace TenderGo.Services.Migrations
                     b.Property<DateTimeOffset?>("LockoutEnd")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<int>("NameChangeCount")
+                        .HasColumnType("int");
+
                     b.Property<string>("NormalizedEmail")
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
@@ -265,6 +268,9 @@ namespace TenderGo.Services.Migrations
                     b.Property<string>("ProfileImageUrl")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("RatingCount")
+                        .HasColumnType("int");
+
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("nvarchar(max)");
 
@@ -282,8 +288,6 @@ namespace TenderGo.Services.Migrations
                         .HasColumnType("nvarchar(256)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("CompanyId");
 
                     b.HasIndex("NormalizedEmail")
                         .HasDatabaseName("EmailIndex");
@@ -369,40 +373,6 @@ namespace TenderGo.Services.Migrations
                     b.ToTable("Categories");
                 });
 
-            modelBuilder.Entity("TenderGo.Models.Entities.Company", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int?>("AddressId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Email")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PhoneNumber")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Website")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AddressId");
-
-                    b.ToTable("Company");
-                });
-
             modelBuilder.Entity("TenderGo.Models.Entities.Notification", b =>
                 {
                     b.Property<int>("Id")
@@ -421,8 +391,9 @@ namespace TenderGo.Services.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
@@ -609,6 +580,10 @@ namespace TenderGo.Services.Migrations
                     b.Property<string>("CreatedByUserId")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("ImageHash")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("ImageUrl")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -697,15 +672,6 @@ namespace TenderGo.Services.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("TenderGo.Models.Entities.ApplicationUser", b =>
-                {
-                    b.HasOne("TenderGo.Models.Entities.Company", "Company")
-                        .WithMany("Users")
-                        .HasForeignKey("CompanyId");
-
-                    b.Navigation("Company");
-                });
-
             modelBuilder.Entity("TenderGo.Models.Entities.Bid", b =>
                 {
                     b.HasOne("TenderGo.Models.Entities.ApplicationUser", "SubmittedByUser")
@@ -723,15 +689,6 @@ namespace TenderGo.Services.Migrations
                     b.Navigation("SubmittedByUser");
 
                     b.Navigation("Tender");
-                });
-
-            modelBuilder.Entity("TenderGo.Models.Entities.Company", b =>
-                {
-                    b.HasOne("TenderGo.Models.Entities.Address", "Address")
-                        .WithMany()
-                        .HasForeignKey("AddressId");
-
-                    b.Navigation("Address");
                 });
 
             modelBuilder.Entity("TenderGo.Models.Entities.Rating", b =>
@@ -819,11 +776,6 @@ namespace TenderGo.Services.Migrations
                     b.Navigation("RatingsGiven");
 
                     b.Navigation("RatingsReceived");
-                });
-
-            modelBuilder.Entity("TenderGo.Models.Entities.Company", b =>
-                {
-                    b.Navigation("Users");
                 });
 
             modelBuilder.Entity("TenderGo.Models.Entities.Tender", b =>

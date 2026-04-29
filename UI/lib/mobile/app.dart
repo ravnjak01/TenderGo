@@ -4,24 +4,41 @@ import 'package:provider/provider.dart';
 import 'package:tendergo/mobile/routes/routes.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
 import 'package:tendergo/shared/providers/auth_provider.dart';
+import 'package:tendergo/shared/providers/tender_provider.dart';
 import 'package:tendergo/shared/routes/routes.dart';
 import 'package:tendergo/shared/services/auth_service.dart';
+import 'package:tendergo/shared/services/bid_service.dart';
+import 'package:tendergo/shared/services/category_service.dart';
+import 'package:tendergo/shared/services/dio_client.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
+import 'package:tendergo/shared/services/user_service.dart';
 
 class MobileApp extends StatelessWidget {
   final AuthService authService;
+  final BidService bidService;
   final TenderService tenderService;
+  final UserService userService;
 
   const MobileApp({
     super.key,
     required this.authService,
+    required this.bidService,
     required this.tenderService,
+    required this.userService,
   });
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => AuthProvider(authService),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider(authService)),
+        ChangeNotifierProvider(
+          create: (_) => TenderProvider(
+            tenderService,
+            CategoryService(DioClient.getDio()),
+          ),
+        ),
+      ],
       child: MaterialApp(
         title: 'TenderGo',
         debugShowCheckedModeBanner: false,
@@ -33,7 +50,9 @@ class MobileApp extends StatelessWidget {
         initialRoute: AppRoutes.login,
         routes: MobileRoutes.getRoutes(
           authService: authService,
+          bidService: bidService,
           tenderService: tenderService,
+          userService: userService,
         ),
       ),
     );

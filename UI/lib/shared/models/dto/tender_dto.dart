@@ -212,8 +212,10 @@ factory TenderDto.fromJson(Map<String, dynamic> json) {
         return TenderStatus.open;
       case TenderStatus.closed:
         return TenderStatus.closed;
-      default:
-        return TenderStatus.open;
+      case TenderStatus.award:
+        return TenderStatus.award;
+      case TenderStatus.cancelled:
+        return TenderStatus.cancelled;
     }
   }
 
@@ -240,4 +242,17 @@ factory TenderDto.fromJson(Map<String, dynamic> json) {
     );
   }
 
+}
+
+class TenderSearchRequest{
+  final String? searchTerm;
+ 
+
+  TenderSearchRequest({
+   this.searchTerm,
+  });
+
+  Map<String, dynamic> toJson() => {
+        if (searchTerm != null) 'searchTerm': searchTerm,
+      };
 }

@@ -14,86 +14,6 @@ class ResetPasswordRequest {
   }
 }
 
-class UserDto {
-  final String email;
-  final String username;
-  final AddressDto? address;
-  final List<String> roles;
-  final String firstName;
-  final String lastName;
-  UserDto({
-    required this.email,
-    required this.username,
-    this.address,
-    required this.roles,
-    required this.firstName,
-    required this.lastName,
-  });
-
-  factory UserDto.fromJson(Map<String, dynamic> json) {
-    final rawRoles = json['roles'];
-
-    return UserDto(
-      email: json['email'] ?? '',
-      username: (json['username'] ?? json['userName'] ?? '').toString(),
-      address: json['address'] != null
-          ? AddressDto.fromJson(json['address'])
-          : null,
-      roles: rawRoles is List
-          ? rawRoles
-                .map((role) {
-                  if (role is String) {
-                    return role;
-                  }
-
-                  if (role is Map<String, dynamic>) {
-                    return (role['name'] ??
-                            role['roleName'] ??
-                            role['value'] ??
-                            '')
-                        .toString();
-                  }
-
-                  if (role is Map) {
-                    return (role['name'] ??
-                            role['roleName'] ??
-                            role['value'] ??
-                            '')
-                        .toString();
-                  }
-
-                  return role.toString();
-                })
-                .where((role) => role.trim().isNotEmpty)
-                .toList()
-          : [],
-      firstName: json['firstName'] ?? '',
-      lastName: json['lastName'] ?? '',
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'email': email,
-      'username': username,
-      'address': address?.toJson(),
-      'roles': roles,
-      'firstName': firstName,
-      'lastName': lastName,
-    };
-  }
-
-  // metoda za dobijanje inicijala korisnika
-  static String getInitials(UserDto user) {
-    String initials = "";
-    if (user.firstName.isNotEmpty) initials += user.firstName[0];
-    if (user.lastName.isNotEmpty) initials += user.lastName[0];
-    return initials.isEmpty
-        ? user.username[0].toUpperCase()
-        : initials.toUpperCase();
-  }
-}
-
 class LoginRequest {
   final String email;
   final String password;
@@ -145,12 +65,36 @@ class AddressDto {
 
   // Koristi se kada primaš podatke sa API-ja
   factory AddressDto.fromJson(Map<String, dynamic> json) {
+    String _pickString(List<String> keys) {
+      for (final key in keys) {
+        final value = json[key];
+        if (value == null) continue;
+        final normalized = value.toString().trim();
+        if (normalized.isNotEmpty) {
+          return normalized;
+        }
+      }
+      return '';
+    }
+
+    int _pickInt(List<String> keys) {
+      final value = _pickString(keys);
+      if (value.isEmpty) return 0;
+      return int.tryParse(value) ?? 0;
+    }
+
     return AddressDto(
-      id: json['id'] ?? 0,
-      country: json['country'] ?? '',
-      city: json['city'] ?? '',
-      street: json['street'] ?? '',
-      postalCode: json['postalCode'] ?? '',
+      id: _pickInt(['id', 'addressId', 'address_id', 'Id']),
+      country: _pickString(['country', 'Country', 'addressCountry']),
+      city: _pickString(['city', 'City', 'addressCity']),
+      street: _pickString(['street', 'Street', 'addressStreet']),
+      postalCode: _pickString([
+        'postalCode',
+        'postal_code',
+        'PostalCode',
+        'zipCode',
+        'zip_code',
+      ]),
     );
   }
 

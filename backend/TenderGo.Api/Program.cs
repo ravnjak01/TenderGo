@@ -121,6 +121,7 @@ builder.Services.AddTransient<ICategoryService, CategoryService>();
 builder.Services.AddHostedService<TenderExpiryJob>();
 builder.Services.AddScoped<IImageService, ImageService>();
 
+
 builder.Services.AddTransient<BaseState>();
 builder.Services.AddTransient < InitialTenderState>() ;
 builder.Services.AddTransient<OpenTenderState>();
@@ -169,14 +170,14 @@ if (!app.Environment.IsDevelopment())
 }
 
 
-app.UseCors("AllowAll");
+
+app.UseCors("AllowAll"); 
 
 app.UseRouting();
-
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapControllers(); // Bez ovoga ruta /api/auth/register neće raditi
+app.MapControllers(); 
 
 using (var scope = app.Services.CreateScope())
 {

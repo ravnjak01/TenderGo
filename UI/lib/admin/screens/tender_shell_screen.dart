@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
 import 'package:tendergo/shared/models/dto/auth_dto.dart';
+import 'package:tendergo/shared/models/dto/user_dto.dart';
 import 'package:tendergo/shared/providers/tender_provider.dart';
 import 'package:tendergo/admin/screens/tender_details_screen.dart';
 import 'package:tendergo/admin/screens/tender_post_screen.dart';
 import 'package:tendergo/admin/screens/tenders_list_screen.dart';
 import 'package:tendergo/admin/screens/user_profile_screen.dart';
 import 'package:tendergo/shared/routes/routes.dart';
+import 'package:tendergo/shared/screens/user_profile_screen.dart';
 import 'package:tendergo/shared/services/auth_service.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
 
@@ -235,7 +237,7 @@ class _TenderShellScreenState extends State<TenderShellScreen> {
                 });
               },
             )
-          : TenderDetailsScreen(
+          : AdminTenderDetailsScreen(
               tenderService: widget.tenderService,
               tenderId: _selectedTenderId,
               embedded: true,

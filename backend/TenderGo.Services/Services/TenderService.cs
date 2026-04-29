@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using EasyNetQ;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -9,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
@@ -29,11 +31,16 @@ namespace TenderGo.Services.Services
         private readonly IAuthService _authService;
         protected readonly ILogger<TenderService> _logger;
         protected readonly IServiceProvider _serviceProvider;
-        public TenderService(TenderGoContext context, IMapper mapper, IHttpContextAccessor httpContextAccessor, IAuthService authService, ILogger<TenderService> logger, IServiceProvider serviceProvider) : base(context, mapper, httpContextAccessor)
+        protected readonly IImageService _imageService;
+        protected readonly IBidService _bidService;
+
+        public TenderService(TenderGoContext context, IMapper mapper, IHttpContextAccessor httpContextAccessor, IAuthService authService, ILogger<TenderService> logger, IServiceProvider serviceProvider, IImageService imageService, IBidService bidService) : base(context, mapper, httpContextAccessor)
         {
             _logger = logger;
             _authService = authService;
             _serviceProvider = serviceProvider;
+            _imageService = imageService;
+            _bidService = bidService;
         }
 
         protected override IQueryable<Tender> AddIncludes(IQueryable<Tender> query)
@@ -66,17 +73,7 @@ namespace TenderGo.Services.Services
             return _mapper.Map<IEnumerable<TenderDTO>>(tenders);
         }
 
-        public async Task<IEnumerable<TenderDTO>> GetDraftTenders()
-        {
-            var tenders = await _context.Tenders
-                .Include(t => t.Category)
-                .Include(t => t.CreatedByUser)
-                .Include(t => t.Images)
-                .Where(t => t.Status == TenderStatus.Draft)
-                .ToListAsync();
-            return _mapper.Map<IEnumerable<TenderDTO>>(tenders);
-        }
-
+      
         public async Task<IEnumerable<TenderDTO>> GetCancelledTenders()
         {
             var tenders = await _context.Tenders
@@ -123,10 +120,10 @@ namespace TenderGo.Services.Services
             if (request.Deadline <= DateTime.UtcNow)
                 throw new UserException("Deadline must be in the future");
 
-            try  // 
+            try  
             {
                 var entity = _mapper.Map<Tender>(request);
-                _logger.LogInformation("ImageUrls in request: {Count}", request.ImageUrls?.Count ?? 0);
+                _logger.LogInformation("ImageUrls in request: {Count}", request.ImageBytes?.Count ?? 0);
                 _logger.LogInformation("Images mapped to entity: {Count}", entity.Images?.Count ?? 0);
 
                 if (!string.IsNullOrWhiteSpace(request.LocationName))
@@ -141,14 +138,42 @@ namespace TenderGo.Services.Services
                 entity.CreatedAt = DateTime.UtcNow;
                 entity.CreatedByUserId = _authService.GetCurrentUserId();
 
-                var images = entity.Images.ToList();
-                for (int i = 0; i < images.Count; i++)
+                _context.Tenders.Add(entity);
+
+                if (request.ImageBytes != null && request.ImageBytes.Any())
                 {
-                    images[i].IsPrimary = (i == 0);
-                    images[i].Tender = entity;
+                    entity.Images = new List<TenderImage>();
+                    for (int i = 0; i < request.ImageBytes.Count; i++)
+                    {
+
+                        var bytes = request.ImageBytes[i];
+                        var hash = await _imageService.CalculateHash(bytes);
+
+                        var existingImage = await _context.TenderImages
+                            .FirstOrDefaultAsync(img => img.ImageHash == hash);
+
+                        if (existingImage != null)
+                        {
+                            entity.Images.Add(new TenderImage
+                            {
+                                ImageUrl = existingImage.ImageUrl,
+                                ImageHash = hash,
+                                IsPrimary = i == 0
+                            });
+                        }
+                        else
+                        {
+                            var uploadResult = await _imageService.UploadImageAsync(bytes, "tenders", i == 0);
+                            entity.Images.Add(new TenderImage
+                            {
+                                ImageUrl = uploadResult.ImageUrl,
+                                ImageHash = hash,
+                                IsPrimary = i == 0
+                            });
+                        }
+                    }
                 }
 
-                _context.Tenders.Add(entity);
                 await _context.SaveChangesAsync();
 
                 var saved = await _context.Tenders
@@ -194,26 +219,30 @@ namespace TenderGo.Services.Services
             return await state.Activate(id);
         }
 
-        public async Task<TenderDTO> SaveDraft(TenderInsertRequest request)
-        {
-            _logger.LogInformation(
-                "Attempting to save tender draft with title {Title}",
-                request.Title
-            );
-
-            var state = CreateState(TenderStatus.Draft);
-            return await state.Insert(request);
-        }
 
 
         public async Task<TenderDTO> Cancel(int id)
         {
-            var entity = await _context.Tenders.FindAsync(id)
-                              ?? throw new NotFoundException("Tender not found", new { Entity = "Tender", Id = id });
+            var entity = await _context.Tenders
+                .Include(t => t.Bids) 
+                .FirstOrDefaultAsync(t => t.Id == id)
+                ?? throw new NotFoundException("Tender not found", new { Entity = "Tender", Id = id });
 
+            if (entity.Bids != null && entity.Bids.Any())
+            {
+                foreach (var bid in entity.Bids)
+                {
+                   
+                    await _bidService.Cancel(bid.Id); 
+                }
+            }
 
             var state = CreateState(entity.Status);
-            return await state.Cancel(id);
+            var result = await state.Cancel(id);
+
+            await _context.SaveChangesAsync();
+
+            return result;
         }
 
 
@@ -248,11 +277,41 @@ namespace TenderGo.Services.Services
             return await state.AllowedActions(entity);
         }
 
+        public async Task<PagedResult<TenderDTO>> SearchAsync(TenderSearchRequest request)
+        {
+            var query = _context.Tenders
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(request.SearchTerm))
+            {
+                var term = $"%{request.SearchTerm.ToLower()}%";
+
+                query = query.Where(t =>
+                    EF.Functions.Like(t.Title.ToLower(), term) ||
+                    EF.Functions.Like(t.LocationName.ToLower(), term)  ||
+                    EF.Functions.Like(t.Country.ToLower(), term)    
+                );
+            }
+
+            var totalCount = await query.CountAsync();
+
+            var results = await query
+                .ProjectTo<TenderDTO>(_mapper.ConfigurationProvider)
+                .ToListAsync();
+
+            return new PagedResult<TenderDTO>
+            {
+                Result = results,
+                TotalCount = totalCount 
+            };
+        }
+
+
+
         public BaseState CreateState(TenderStatus status)
         {
             return status switch
             {
-                TenderStatus.Draft => _serviceProvider.GetRequiredService<InitialTenderState>(),
                 TenderStatus.Open => _serviceProvider.GetRequiredService<OpenTenderState>(),
                 TenderStatus.Closed => _serviceProvider.GetRequiredService<ClosedTenderState>(),
                 TenderStatus.Awarded => _serviceProvider.GetRequiredService<AwardedTenderState>(),

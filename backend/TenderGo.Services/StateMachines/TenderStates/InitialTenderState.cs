@@ -58,7 +58,7 @@ namespace TenderGo.Services.StateMachines.TenderStates
 
             _logger.LogInformation("DEBUG: Entity Location after mapping: {Loc}", entity.LocationName);
 
-            entity.Status = TenderStatus.Draft;
+            entity.Status = TenderStatus.Open;
             entity.CreatedAt = DateTime.UtcNow;
                 
 
@@ -116,10 +116,7 @@ namespace TenderGo.Services.StateMachines.TenderStates
 
             _logger.LogInformation("Attempting to activate tender with ID {TenderId}", id);
 
-            if (entity.Status == TenderStatus.Draft) 
-            {
-                entity.PostedAt = DateTime.UtcNow;
-            }
+          
             entity.Status = TenderStatus.Open;
 
             await _context.SaveChangesAsync();

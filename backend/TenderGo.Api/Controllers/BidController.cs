@@ -22,7 +22,6 @@ namespace TenderGo.Api.Controllers
         }
 
 
-        //DOSAO KOD PROVJERE DA LI ISPISUJE KAD SE POSALJE PONUDA NA TENDER ,TESTIRAM PREKO SWAGGERA
 
 
 
@@ -33,12 +32,30 @@ namespace TenderGo.Api.Controllers
             return Ok(result);
         }
 
-      
+        [HttpPut("{id}/cancel")]
+        public async Task<ActionResult<BidDTO>> Cancel(int id)
+        {
+            var result = await _bidService.Cancel(id);
+            return Ok(result);
+        }
+
         [HttpPatch("{id}/withdraw")]
         public async Task<ActionResult<BidDTO>> Withdraw(int id)
         {
             var result = await _bidService.Withdraw(id);
             return Ok(result);
+        }
+
+        [HttpGet("my-bids")]
+        [Authorize]
+        public async Task<ActionResult<List<BidDTO>>> GetMyBids()
+        {
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var bids = await _bidService.GetBidsByUser(userId);
+            return Ok(bids);
         }
 
 

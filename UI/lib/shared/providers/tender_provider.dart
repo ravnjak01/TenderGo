@@ -1,6 +1,8 @@
 // lib/providers/tender_provider.dart
 
 import 'package:file_picker/file_picker.dart';
+import 'package:tendergo/shared/models/dto/category_dto.dart';
+import 'package:tendergo/shared/models/dto/tender_image_dto.dart';
 import 'package:tendergo/shared/services/category_service.dart';
 
 import '../models/dto/tender_dto.dart';
@@ -17,25 +19,30 @@ class TenderProvider extends ChangeNotifier {
 
   // --- State ---
   List<TenderDto> _tenders = [];
-  List<String> _categories = ['All'];
-  final Set<String> _selectedCategories = {'All'}; // Set za lakše filtriranje
+  List<CategoryDto> _categories = [];
+  final Set<String> _selectedCategories = {'All'}; 
+
+  List<TenderDto>? _searchResults;
+  String _searchQuery = '';
 
   bool _isLoading = false;
   String? _error;
 
-  // --- Getters ---
+  
   List<TenderDto> get tenders => _tenders;
-  List<String> get categories => _categories;
+  List<CategoryDto> get categories => _categories;
   Set<String> get selectedCategories => _selectedCategories;
   bool get isLoading => _isLoading;
   String? get error => _error;
+  bool get isSearchActive => _searchQuery.isNotEmpty;
 
-  // LOGIKA FILTRIRANJA: Ovo je ključni dio koji "stanjuje" UI
+  
   List<TenderDto> get filteredTenders {
+    final base = _searchResults ?? _tenders;
     if (_selectedCategories.contains('All') || _selectedCategories.isEmpty) {
-      return _tenders;
+      return base;
     }
-    return _tenders
+    return base
         .where((t) => _selectedCategories.contains(t.categoryName))
         .toList();
   }
@@ -44,13 +51,8 @@ class TenderProvider extends ChangeNotifier {
 
   // Učitavanje kategorija
   Future<void> fetchCategories() async {
-    try {
-      final apiCategories = await _categoryService.getAll();
-      _categories = ['All', ...apiCategories.map((c) => c.name)];
+     _categories = await _categoryService.getAll();
       notifyListeners();
-    } catch (e) {
-      debugPrint('Greška pri učitavanju kategorija: $e');
-    }
   }
 
   // Promjena kategorije (logika koju si imao u setState)
@@ -98,7 +100,7 @@ class TenderProvider extends ChangeNotifier {
   Future<void> fetchAllTenders() async {
     _setLoading(true);
     try {
-      _tenders = await _service.getAll(); // add getAll() to service
+      _tenders = await _service.getAll(); 
       _error = null;
     } catch (e) {
       _error = e.toString().replaceFirst('Exception: ', '');
@@ -132,6 +134,33 @@ class TenderProvider extends ChangeNotifier {
     return createdTender;
   }
 
+  Future<void> searchTenders(String query) async {
+    _searchQuery = query.trim();
+    if (_searchQuery.isEmpty) {
+      _searchResults = null;
+      notifyListeners();
+      return;
+    }
+    _setLoading(true);
+    try {
+      _searchResults = await _service.search(
+        TenderSearchRequest(searchTerm: _searchQuery),
+      );
+      _error = null;
+    } catch (e) {
+      _error = e.toString().replaceFirst('Exception: ', '');
+      _searchResults = [];
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  void clearSearch() {
+    _searchQuery = '';
+    _searchResults = null;
+    notifyListeners();
+  }
+
   Future<bool> deleteTender(int id) async {
     try {
       await _service.delete(id);
@@ -140,6 +169,26 @@ class TenderProvider extends ChangeNotifier {
       return true;
     } catch (_) {
       return false;
+    }
+  }
+
+  Future<void> saveDraft({
+    required TenderInsertRequest request, 
+     List<PlatformFile>? imageFiles,
+  }) async {
+   _setLoading(true); 
+
+    try {
+      await _service.createDraft(
+        request, 
+        imageFiles: imageFiles,
+      );
+      _error = null;
+    } catch (e) {
+      _error = e.toString().replaceFirst('Exception: ', '');
+      rethrow; 
+    } finally {
+      _setLoading(false);
     }
   }
 }

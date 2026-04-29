@@ -27,7 +27,7 @@ namespace TenderGo.Models.Requests
 
         public DateTime Deadline { get; set; }
 
-        public List<string>? ImageUrls { get; set; } = new();
+        public List<byte[]>? ImageBytes { get; set; } = new();
 
     }
 }

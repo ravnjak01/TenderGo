@@ -1,5 +1,6 @@
 import 'package:tendergo/shared/models/dto/auth_dto.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
+import 'package:tendergo/shared/models/dto/user_dto.dart';
 import 'package:tendergo/shared/services/admin_service.dart';
 import 'package:tendergo/shared/services/auth_service.dart';
 import 'package:tendergo/shared/services/tender_service.dart';

@@ -1,11 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:tendergo/admin/widgets/common/app_dialogs.dart';
 import 'package:tendergo/shared/models/dto/bid_dto.dart';
+import 'package:tendergo/shared/routes/routes.dart';
 import 'package:tendergo/shared/services/bid_service.dart';
+import 'package:tendergo/shared/services/tender_service.dart';
+import 'package:tendergo/shared/widgets/feedback/snackbar_helper.dart';
 import 'package:tendergo/shared/widgets/feedback/screen_state_widget.dart';
 
 class MyBidsScreen extends StatefulWidget {
-  final BidService _bidService; 
-  const MyBidsScreen({super.key, required BidService bidService}) : _bidService = bidService;
+  final BidService _bidService;
+  final TenderService _tenderService;
+  const MyBidsScreen({
+    super.key,
+    required BidService bidService,
+    required TenderService tenderService,
+  }) : _bidService = bidService,
+       _tenderService = tenderService;
 
   @override
   State<MyBidsScreen> createState() => _MyBidsScreenState();
@@ -54,7 +64,7 @@ class _MyBidsScreenState extends State<MyBidsScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final fetched = await widget._bidService.getAll(
+      final fetched = await widget._bidService.getMyBids(
         page: _currentPage,
         pageSize: _pageSize,
       );
@@ -83,6 +93,78 @@ class _MyBidsScreenState extends State<MyBidsScreen> {
         _hasMore) {
       _fetchBids();
     }
+  }
+
+  Future<void> _cancelBid(BidDto bid) async {
+    final confirmed = await AppDialogs.showConfirm(
+      context: context,
+      title: 'Cancel Bid',
+      content: 'Are you sure you want to cancel this bid?',
+      cancelLabel: 'No',
+      confirmLabel: 'Yes, Cancel',
+      isDestructive: true,
+    );
+    if (!confirmed || !mounted) return;
+
+    try {
+      final updated = await widget._bidService.cancel(bid.id);
+      if (!mounted) return;
+
+      setState(() {
+        final index = _bids.indexWhere((b) => b.id == bid.id);
+        if (index != -1) {
+          _bids[index] = updated;
+        }
+      });
+
+      SnackbarHelper.show(context, 'Bid canceled successfully.');
+    } catch (e) {
+      if (!mounted) return;
+      SnackbarHelper.show(
+        context,
+        e.toString().replaceFirst('Exception: ', ''),
+        isError: true,
+      );
+    }
+  }
+
+  Future<void> _openRateUser(BidDto bid) async {
+    final bidderId = bid.submittedByUserId.trim();
+    var ratedUserId = bid.tenderCreatedByUserId.trim();
+    var ratedUserName = (bid.tenderCreatedByUserName ?? '').trim();
+
+    if (ratedUserId.isEmpty || ratedUserId == bidderId) {
+      try {
+        final tender = await widget._tenderService.getById(bid.tenderId);
+        ratedUserId = tender.createdByUserId.trim();
+        final ownerName = tender.createdByFullname.trim();
+        if (ownerName.isNotEmpty) {
+          ratedUserName = ownerName;
+        }
+      } catch (_) {
+        // Ignore and keep fallback validation below.
+      }
+    }
+
+    if (!mounted) return;
+
+    if (ratedUserId.isEmpty || ratedUserId == bidderId) {
+      SnackbarHelper.show(
+        context,
+        'Unable to resolve tender owner for rating on this bid.',
+        isError: true,
+      );
+      return;
+    }
+
+    Navigator.of(context).pushNamed(
+      AppRoutes.rateUser,
+      arguments: {
+        'tenderId': bid.tenderId.toString(),
+        'ratedUserId': ratedUserId,
+        'ratedUserName': ratedUserName.isEmpty ? null : ratedUserName,
+      },
+    );
   }
 
   // ── build ──────────────────────────────────────────────────────────────────
@@ -152,7 +234,11 @@ class _MyBidsScreenState extends State<MyBidsScreen> {
               child: Center(child: CircularProgressIndicator()),
             );
           }
-          return _BidCard(bid: _bids[index]);
+          return _BidCard(
+            bid: _bids[index],
+            onRateUser: () => _openRateUser(_bids[index]),
+            onCancel: () => _cancelBid(_bids[index]),
+          );
         },
       ),
     );
@@ -164,115 +250,140 @@ class _MyBidsScreenState extends State<MyBidsScreen> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _BidCard extends StatelessWidget {
-  const _BidCard({required this.bid});
+  const _BidCard({
+    required this.bid,
+    required this.onRateUser,
+    required this.onCancel,
+  });
 
   final BidDto bid;
+  final VoidCallback onRateUser;
+  final VoidCallback onCancel;
+
+  bool _isAwardedStatus(String? status) {
+    final normalized = (status ?? '').trim().toLowerCase();
+    return normalized == 'accepted';
+  }
+
+  bool _isCancelableStatus(String? status) {
+    final normalized = (status ?? '').trim().toLowerCase();
+    if (normalized.isEmpty) return true;
+
+    return normalized != 'accepted' &&
+        normalized != 'rejected' &&
+        normalized != 'withdrawn' &&
+        normalized != 'cancelled' &&
+        normalized != 'canceled';
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: colorScheme.outlineVariant, width: 1),
-      ),
-      color: colorScheme.surfaceContainerLowest,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () {
-          // Navigate to bid detail page
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ── header ─────────────────────────────────────────────────
-              Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 360;
+
+        return Card(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: colorScheme.outlineVariant, width: 1),
+          ),
+          color: colorScheme.surfaceContainerLowest,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () {
+              // Navigate to bid detail page
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _BidAvatar(bidId: bid.id),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          bid.tenderTitle,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                  // ── header ───────────────────────────────────────────────
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _BidAvatar(bidId: bid.id),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              bid.tenderDisplayTitle,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            if (isCompact) ...[
+                              const SizedBox(height: 8),
+                              _StatusChip(status: bid.status),
+                            ],
+                          ],
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Tender #${bid.tenderId}',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.primary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
+                      ),
+                      if (!isCompact) ...[
+                        const SizedBox(width: 8),
+                        _StatusChip(status: bid.status),
                       ],
-                    ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  _StatusChip(status: bid.status),
-                ],
-              ),
 
-              const SizedBox(height: 14),
-              const Divider(height: 1),
-              const SizedBox(height: 14),
+                  const SizedBox(height: 14),
+                  Divider(
+                    height: 1,
+                    thickness: 5,
+                    color: colorScheme.outlineVariant,
+                  ),
+                  const SizedBox(height: 14),
 
-              // ── proposal preview ────────────────────────────────────────
-              if (bid.proposal != null) ...[
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerLow,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    bid.proposal!,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                      fontStyle: FontStyle.italic,
+                  // ── proposal preview ────────────────────────────────────
+                  if (bid.proposal != null) ...[
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerLow,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        bid.proposal!,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-              ],
-
-              // ── meta row ────────────────────────────────────────────────
-              Row(
-                children: [
-                  _MetaItem(
-                    icon: Icons.schedule_rounded,
-                    label: _timeAgo(bid.submittedAt),
-                  ),
-                  if (bid.deliveryDays != null) ...[
-                    const SizedBox(width: 16),
-                    _MetaItem(
-                      icon: Icons.local_shipping_rounded,
-                      label: '${bid.deliveryDays} days delivery',
-                    ),
+                    const SizedBox(height: 12),
                   ],
-                ],
-              ),
 
-              const SizedBox(height: 12),
+                  // ── meta row ────────────────────────────────────────────
+                  Wrap(
+                    spacing: 16,
+                    runSpacing: 8,
+                    children: [
+                      _MetaItem(
+                        icon: Icons.schedule_rounded,
+                        label: _timeAgo(bid.submittedAt),
+                      ),
+                      if (bid.deliveryDays != null)
+                        _MetaItem(
+                          icon: Icons.local_shipping_rounded,
+                          label: '${bid.deliveryDays} days delivery',
+                        ),
+                    ],
+                  ),
 
-              // ── price + submitted by ─────────────────────────────────────
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
+                  const SizedBox(height: 12),
+
+                  // ── price ───────────────────────────────────────────────
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -291,13 +402,49 @@ class _BidCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  
-                ],
-              ),
-            ],
-          ),
+
+                  if (_isAwardedStatus(bid.status)) ...[
+                    const SizedBox(height: 12),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: FilledButton.tonalIcon(
+                        onPressed: onRateUser,
+                        icon: const Icon(Icons.star_rate_rounded),
+                        label: const Text('Rate User'),
+                      ),
+                    ),
+                  ],
+
+                  if (_isCancelableStatus(bid.status)) ...[
+  const SizedBox(height: 8), // Smanjio sam malo i razmak iznad
+  Align(
+    alignment: Alignment.centerRight,
+    child: SizedBox(
+      height: 32, // Fiksna visina dugmeta (standardna je oko 40-48)
+      // width: 100, // Možeš dodati i fiksnu širinu ako želiš
+      child: OutlinedButton.icon(
+        onPressed: onCancel,
+        style: OutlinedButton.styleFrom(
+          // Moramo ukloniti defaultni padding da bi tekst stao u 32px visine
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          side: const BorderSide(color: Colors.red), // Opcionalno: crvena ivica
+          foregroundColor: Colors.red, // Tekst i ikona postaju crveni
+        ),
+        icon: const Icon(Icons.cancel_outlined, size: 16), // Smanjena ikona
+        label: const Text(
+          'Cancel',
+          style: TextStyle(fontSize: 12), // Smanjen font
         ),
       ),
+    ),
+  ),
+],
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 

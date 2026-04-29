@@ -13,7 +13,8 @@ namespace TenderGo.Models.DTOs
         public string Username { get; set; }
 
         public string FirstName { get; set; } 
-        public string LastName { get; set; } 
+        public string LastName { get; set; }
+        public string ProfileImageUrl { get; set; }
 
         public AddressDTO Address { get; set; }
         public List<string> Roles { get; set; } = new();

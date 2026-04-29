@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:tendergo/admin/screens/tender_details_screen.dart';
-import 'package:tendergo/admin/screens/tender_post_screen.dart';
-import 'package:tendergo/admin/screens/user_profile_screen.dart';
+import 'package:tendergo/mobile/screens/tender_post_screen.dart';
+import 'package:tendergo/mobile/screens/tender_details_screen.dart';
+import 'package:tendergo/shared/screens/user_profile_screen.dart';
 import 'package:tendergo/mobile/screens/tenders_list_screen.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
 import 'package:tendergo/shared/services/auth_service.dart';
@@ -27,7 +27,7 @@ class _MobileTenderShellScreenState extends State<MobileTenderShellScreen> {
   Future<void> _openPostTender() async {
     final result = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
-        builder: (_) => TenderPostScreen(tenderService: widget.tenderService),
+        builder: (_) => const MobileTenderPostScreen(),
       ),
     );
 
@@ -41,7 +41,7 @@ class _MobileTenderShellScreenState extends State<MobileTenderShellScreen> {
   void _openTenderDetails(int tenderId) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => TenderDetailsScreen(
+        builder: (_) => MobileTenderDetailsScreen(
           tenderService: widget.tenderService,
           tenderId: tenderId,
         ),
@@ -101,3 +101,6 @@ class _MobileTenderShellScreenState extends State<MobileTenderShellScreen> {
     );
   }
 }
+
+
+

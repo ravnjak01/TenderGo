@@ -5,6 +5,7 @@ using TenderGo.Models.Requests;
 using TenderGo.Models.DTOs;
 using TenderGo.Services.Interfaces;
 using TenderGo.Services.Services.Exceptions;
+using TenderGo.Services.Services;
 
 
 
@@ -24,7 +25,12 @@ public class TenderController
     }
 
 
-
+    [HttpGet("search")]
+    public async Task<ActionResult<PagedResult<TenderDTO>>> Search([FromQuery] TenderSearchRequest request)
+    {
+        var result = await _tenderService.SearchAsync(request);
+        return Ok(result);
+    }
 
     [HttpGet("active")]
     public async Task<ActionResult<List<TenderDTO>>> GetActive()
@@ -34,13 +40,11 @@ public class TenderController
     public async Task<ActionResult<List<TenderDTO>>> GetClosed()
         => Ok(await _tenderService.GetClosedTenders());
 
-    [HttpGet("drafts")]
-    public async Task<ActionResult<List<TenderDTO>>> GetDrafts()
-        => Ok(await _tenderService.GetDraftTenders());
+  
 
     [HttpGet("cancelled")]
     public async Task<ActionResult<List<TenderDTO>>> GetCancelled()
-        => Ok(await _tenderService.GetDraftTenders());
+        => Ok(await _tenderService.GetCancelledTenders());
 
     [HttpGet("category/{id}")]
     public async Task<ActionResult<List<TenderDTO>>> GetByCategory(int id)
@@ -66,13 +70,7 @@ public class TenderController
         return Ok(result);
     }
 
-    [HttpPost("draft")]
-    public async Task<ActionResult<TenderDTO>> SaveDraft(TenderInsertRequest request)
-    {
-        var result = await _tenderService.SaveDraft(request);
-        return Ok(result);
-
-    }
+   
     [Authorize(Roles = $"{AppRoles.Admin},{AppRoles.User}")]
     [HttpPatch("{id}/cancel")]
     public async Task<ActionResult<TenderDTO>> Cancel(int id)

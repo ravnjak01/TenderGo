@@ -417,3 +417,31 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# Flutter / Dart
+.dart_tool/
+.packages
+.pub/
+build/
+flutter_export_environment.sh
+
+# Flutter generated files
+*.dill
+*.blob
+*.bin
+*.cache
+
+# Android / iOS build folders
+android/.gradle/
+android/app/build/
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/
+
+# macOS / Linux / Windows build
+linux/build/
+macos/Build/
+windows/build/
+
+# IDE (Flutter)
+.idea/

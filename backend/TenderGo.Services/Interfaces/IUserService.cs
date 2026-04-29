@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using TenderGo.Models.DTOs;
+using TenderGo.Models.Requests;
 
 namespace TenderGo.Services.Interfaces
 {
@@ -11,8 +12,10 @@ namespace TenderGo.Services.Interfaces
     {   
             Task<bool> ChangePasswordAsync(string userId, ChangePasswordDTO dto);
 
-            Task UpdateProfileAsync(string userId, UpdateProfileDTO dto);
-             Task<UserDTO> GetProfileAsync(string id);
+            Task UpdateProfileAsync(string userId, UpdateProfileRequest dto);
+        Task<bool> RateUserAsync(string ratedByUserId, RateUserDTO dto);
+        Task<UserPublicDTO> GetPublicByIdAsync(string id);
+    
 
 
     }

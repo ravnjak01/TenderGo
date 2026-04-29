@@ -26,6 +26,7 @@ namespace TenderGo.Models.DTOs
         public string CategoryName { get; set; } = string.Empty;
 
         public DateTime PostedAt { get; set; }
+        public string? ProfileImageUrl { get; set; }
 
     }
 }

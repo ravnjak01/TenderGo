@@ -9,7 +9,10 @@ class AppRoutes{
   static const String tenderPost = '/tender-post';
   static const String tenderDetails = '/tender-details';
   static const String userProfile = '/user-profile';
+  static const String editProfile = '/edit-profile';
   static const String myTenders = '/my-tenders';
   static const String myBids = '/my-bids';
   static const String admin = '/admin';
+  static const String userPublicProfile = '/user-public-profile';
+  static const String rateUser = '/rate-user';
 }

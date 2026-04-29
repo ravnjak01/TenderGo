@@ -2,6 +2,8 @@ class BidDto {
 	final int id;
 	final int tenderId;
 	final String tenderTitle;
+	final String tenderCreatedByUserId;
+	final String? tenderCreatedByUserName;
 	final String submittedByUserId;
 	final String submittedByUserName;
 	final double offeredPrice;
@@ -14,6 +16,8 @@ class BidDto {
 		required this.id,
 		required this.tenderId,
 		required this.tenderTitle,
+		required this.tenderCreatedByUserId,
+		this.tenderCreatedByUserName,
 		required this.submittedByUserId,
 		required this.submittedByUserName,
 		required this.offeredPrice,
@@ -43,6 +47,16 @@ class BidDto {
 		return value.toString();
 	}
 
+	static String _readFirstNonEmptyString(List<dynamic> values, {String fallback = ''}) {
+		for (final value in values) {
+			final parsed = _readString(value).trim();
+			if (parsed.isNotEmpty) {
+				return parsed;
+			}
+		}
+		return fallback;
+	}
+
 	static String? _readNullableString(dynamic value) {
 		if (value == null) return null;
 		final parsed = _readString(value).trim();
@@ -57,11 +71,43 @@ class BidDto {
 		return DateTime.fromMillisecondsSinceEpoch(0);
 	}
 
+	String get tenderDisplayTitle {
+		final parsed = tenderTitle.trim();
+		return parsed.isNotEmpty ? parsed : 'Untitled tender';
+	}
+
 	factory BidDto.fromJson(Map<String, dynamic> json) {
+		final tender = json['tender'];
+		final tenderMap = tender is Map<String, dynamic> ? tender : null;
+
 		return BidDto(
 			id: _readInt(json['id']),
 			tenderId: _readInt(json['tenderId']),
-			tenderTitle: _readString(json['tenderTitle']),
+			tenderTitle: _readFirstNonEmptyString([
+				json['tenderTitle'],
+				json['tender_name'],
+				json['tenderName'],
+				json['title'],
+				tenderMap?['tenderTitle'],
+				tenderMap?['name'],
+				tenderMap?['title'],
+			]),
+			tenderCreatedByUserId: _readFirstNonEmptyString([
+				json['tenderCreatedByUserId'],
+				json['createdByUserId'],
+				tenderMap?['createdByUserId'],
+				tenderMap?['userId'],
+			]),
+			tenderCreatedByUserName: _readNullableString(
+				_readFirstNonEmptyString([
+					json['tenderCreatedByUserName'],
+					json['createdByUserName'],
+					json['createdByFullname'],
+					tenderMap?['createdByUserName'],
+					tenderMap?['createdByFullname'],
+					tenderMap?['userName'],
+				]),
+			),
 			submittedByUserId: _readString(json['submittedByUserId']),
 			submittedByUserName: _readString(json['submittedByUserName']),
 			offeredPrice: _readDouble(json['offeredPrice']),
@@ -120,6 +166,8 @@ class BidDto {
 			'id': id,
 			'tenderId': tenderId,
 			'tenderTitle': tenderTitle,
+			'tenderCreatedByUserId': tenderCreatedByUserId,
+			'tenderCreatedByUserName': tenderCreatedByUserName,
 			'submittedByUserId': submittedByUserId,
 			'submittedByUserName': submittedByUserName,
 			'offeredPrice': offeredPrice,

@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using TenderGo.Models.DTOs; // Obavezno dodaj namespace za DTO
+using TenderGo.Models.DTOs; 
 using TenderGo.Services.Interfaces;
 
 namespace TenderGo.Services.Services
@@ -19,46 +19,61 @@ namespace TenderGo.Services.Services
             _environment = environment;
         }
 
-        public async Task<TenderImageDTO> UploadImageAsync(IFormFile file, string subFolder, bool isPrimary = false)
+        public async Task<TenderImageDTO> UploadImageAsync(byte[] imageBytes, string subFolder, bool isPrimary = false)
         {
-            if (file == null || file.Length == 0)
-                throw new ArgumentException("Fajl je prazan.");
+            if (imageBytes == null || imageBytes.Length == 0)
+                throw new ArgumentException("Niz bajtova je prazan.");
 
-            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
-            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+            // 1. Izračunaj hash odmah
+            var hash = await CalculateHash(imageBytes);
+            var extension = ".jpg";
 
-            if (!allowedExtensions.Contains(extension))
-                throw new ArgumentException("Nepodržan format slike.");
-
-            // Putanja: wwwroot/uploads/subFolder
+            // 2. Koristi HASH kao ime fajla umjesto GUID-a!
+            // Na ovaj način, ista slika će se uvijek zvati isto na disku.
+            string fileName = $"{hash}{extension}";
             string folderPath = Path.Combine(_environment.WebRootPath, "uploads", subFolder);
 
             if (!Directory.Exists(folderPath))
                 Directory.CreateDirectory(folderPath);
 
-            // Generisanje jedinstvenog imena
-            string fileName = $"{Guid.NewGuid()}{extension}";
             string fullPath = Path.Combine(folderPath, fileName);
 
-            using (var stream = new FileStream(fullPath, FileMode.Create))
+            // 3. Provjeri postoji li fajl fizički na disku prije pisanja
+            if (!File.Exists(fullPath))
             {
-                await file.CopyToAsync(stream);
+                await File.WriteAllBytesAsync(fullPath, imageBytes);
             }
 
-            // Kreiranje i vraćanje DTO objekta
             return new TenderImageDTO
             {
                 ImageUrl = $"/uploads/{subFolder}/{fileName}",
                 FileName = fileName,
-                IsPrimary = isPrimary
+                IsPrimary = isPrimary,
+                ImageHash = hash 
             };
         }
+
+        public async Task<TenderImageDTO> UploadImageAsync(IFormFile file, string subFolder, bool isPrimary = false)
+        {
+            using var ms = new MemoryStream();
+            await file.CopyToAsync(ms);
+            return await UploadImageAsync(ms.ToArray(), subFolder, isPrimary);
+        }
+        public async  Task<string> CalculateHash(byte[] data)
+        {
+            return await Task.Run(() =>
+            {
+                using var sha256 = System.Security.Cryptography.SHA256.Create();
+                var hashBytes = sha256.ComputeHash(data);
+                return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+            });
+        }
+
 
         public void DeleteImage(string relativePath)
         {
             if (string.IsNullOrEmpty(relativePath)) return;
 
-            // Pretvaramo relativnu putanju (/uploads/...) u fizičku na disku
             var fullPath = Path.Combine(_environment.WebRootPath, relativePath.TrimStart('/'));
 
             if (File.Exists(fullPath))

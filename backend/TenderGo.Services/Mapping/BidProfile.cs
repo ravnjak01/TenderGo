@@ -15,8 +15,9 @@ namespace TenderGo.Services.Mapping
     {
         public BidProfile() {
             CreateMap<Bid, BidDTO>()
-    .ForMember(dest => dest.SubmittedByUserName,
-               opt => opt.MapFrom(src => src.SubmittedByUser.FirstName + " " + src.SubmittedByUser.LastName));
+                .ForMember(dest => dest.SubmittedByUserName,
+                          opt => opt.MapFrom(src => src.SubmittedByUser.FirstName + " " + src.SubmittedByUser.LastName))
+                   .ForMember(dest => dest.TenderTitle, opt => opt.MapFrom(src => src.Tender != null ? src.Tender.Title : null));
 
 
             CreateMap<BidInsertRequest, Bid>()

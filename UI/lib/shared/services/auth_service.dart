@@ -3,6 +3,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:tendergo/shared/core/network/constants/api_endpoints.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:tendergo/shared/models/dto/auth_dto.dart';
+import 'package:tendergo/shared/models/dto/user_dto.dart';
 import 'package:tendergo/shared/models/ui/auth_result.dart';
 
 class AuthService {
@@ -143,13 +144,7 @@ class AuthService {
         options: await _options(),
       );
       final data = response.data;
-      final payload = data is Map<String, dynamic>
-          ? (data['result'] is Map<String, dynamic>
-                ? data['result'] as Map<String, dynamic>
-                : data['data'] is Map<String, dynamic>
-                ? data['data'] as Map<String, dynamic>
-                : data)
-          : null;
+      final payload = _extractUserPayload(data);
       final user = payload != null ? UserDto.fromJson(payload) : null;
 
       return AuthResult(
@@ -167,6 +162,44 @@ class AuthService {
 
       return AuthResult(success: false, message: message);
     }
+  }
+
+  Map<String, dynamic>? _extractUserPayload(dynamic data) {
+    if (data is! Map<String, dynamic>) {
+      return null;
+    }
+
+    final directCandidates = <dynamic>[
+      data['result'],
+      data['data'],
+      data['user'],
+      data['User'],
+      data,
+    ];
+
+    for (final candidate in directCandidates) {
+      if (candidate is! Map) continue;
+      final map = candidate is Map<String, dynamic>
+          ? candidate
+          : candidate.map((key, value) => MapEntry(key.toString(), value));
+
+      final nestedUser =
+          map['user'] ?? map['User'] ?? map['result'] ?? map['data'];
+      if (nestedUser is Map<String, dynamic>) {
+        return nestedUser;
+      }
+      if (nestedUser is Map) {
+        return nestedUser.map((key, value) => MapEntry(key.toString(), value));
+      }
+
+      if (map.containsKey('email') ||
+          map.containsKey('userName') ||
+          map.containsKey('username')) {
+        return map;
+      }
+    }
+
+    return null;
   }
 
   Future<Options> _options() async {
