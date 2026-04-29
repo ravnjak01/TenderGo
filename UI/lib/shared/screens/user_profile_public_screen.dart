@@ -19,7 +19,7 @@ class UserProfilePublicScreen extends StatelessWidget {
 
   Widget _buildAvatarWidget(BuildContext context, UserPublicDto user) {
     final imageUrl = user.profileImageUrl;
-    
+
     if (imageUrl != null && imageUrl.trim().isNotEmpty) {
       return Container(
         width: 88,
@@ -40,7 +40,7 @@ class UserProfilePublicScreen extends StatelessWidget {
         ),
       );
     }
-    
+
     return _buildInitialsCircle(context, user);
   }
 
@@ -78,9 +78,9 @@ class UserProfilePublicScreen extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.textSecondary,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
             ),
           ),
           Text(
@@ -97,9 +97,7 @@ class UserProfilePublicScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (userId.trim().isEmpty) {
-      return const Scaffold(
-        body: Center(child: Text('Missing user ID.')),
-      );
+      return const Scaffold(body: Center(child: Text('Missing user ID.')));
     }
 
     return Scaffold(
@@ -128,17 +126,13 @@ class UserProfilePublicScreen extends StatelessWidget {
                 _buildAvatarWidget(context, user),
                 const SizedBox(height: 12),
                 Text(
-                  user.fullName.trim().isEmpty ? user.username : user.fullName,
+                  user.fullName.trim().isEmpty
+                      ? 'TenderGo User'
+                      : user.fullName,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  '@${user.username}',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 12),
                 Row(
