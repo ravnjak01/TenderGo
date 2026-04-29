@@ -18,11 +18,9 @@ namespace TenderGo.Models.DTOs
         public string Location { get; set; }
         public string ProfileImageUrl { get; set; }
 
-        // Reputacija
         public double Rating { get; set; }
         public int ReviewCount { get; set; }
 
-        // Aktivnost
         public int TenderCount { get; set; }
         public int BidsCount { get; set; }
     }

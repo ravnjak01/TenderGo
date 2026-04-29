@@ -24,7 +24,7 @@ namespace TenderGo.Services.Mapping
             CreateMap<UpdateProfileRequest, ApplicationUser>()
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
 
-            CreateMap<AddressDTO, Address>().ReverseMap();
+            CreateMap<Address, AddressDTO>().ReverseMap();
 
             CreateMap<ApplicationUser, UserPublicDTO>()
         .ForMember(dest => dest.Location, opt => opt.MapFrom(src =>

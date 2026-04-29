@@ -1,6 +1,5 @@
 import 'package:tendergo/shared/models/dto/auth_dto.dart';
 import 'package:tendergo/shared/services/dio_client.dart';
-import 'package:tendergo/shared/services/dio_client.dart';
 
 class UserDto {
   final String? id;
@@ -24,21 +23,78 @@ class UserDto {
 
   factory UserDto.fromJson(Map<String, dynamic> json) {
     final rawRoles = json['roles'];
+    final rawAddress =
+        json['address'] ??
+        json['Address'] ??
+        json['userAddress'] ??
+        json['user_address'] ??
+        json['AddressDto'];
+
+    final rawProfileImage =
+        json['profileImageUrl'] ??
+        json['imageUrl'] ??
+        json['avatarUrl'] ??
+        json['profilePicture'] ??
+        json['photoUrl'] ??
+        json['profileImage'] ??
+        json['avatar'] ??
+        json['image'];
+
+    final hasFlatAddressFields =
+        json['street'] != null ||
+        json['Street'] != null ||
+        json['addressStreet'] != null ||
+        json['city'] != null ||
+        json['City'] != null ||
+        json['addressCity'] != null ||
+        json['postalCode'] != null ||
+        json['postal_code'] != null ||
+        json['PostalCode'] != null ||
+        json['zipCode'] != null ||
+        json['zip_code'] != null ||
+        json['country'] != null ||
+        json['Country'] != null ||
+        json['addressCountry'] != null;
+
+    AddressDto? parsedAddress;
+    if (rawAddress is Map<String, dynamic>) {
+      parsedAddress = AddressDto.fromJson(rawAddress);
+    } else if (rawAddress is Map) {
+      parsedAddress = AddressDto.fromJson(
+        rawAddress.map((key, value) => MapEntry(key.toString(), value)),
+      );
+    } else if (hasFlatAddressFields) {
+      parsedAddress = AddressDto.fromJson({
+        'id': json['addressId'] ?? json['address_id'] ?? json['id'] ?? 0,
+        'street': json['street'] ?? json['addressStreet'] ?? '',
+        'city': json['city'] ?? json['addressCity'] ?? '',
+        'postalCode':
+            json['postalCode'] ??
+            json['postal_code'] ??
+            json['zipCode'] ??
+            json['zip_code'] ??
+            '',
+        'country': json['country'] ?? json['addressCountry'] ?? '',
+      });
+    }
 
     return UserDto(
       id: (json['id'] ?? json['userId'])?.toString(),
       email: json['email'] ?? '',
       username: (json['username'] ?? json['userName'] ?? '').toString(),
-      address: json['address'] != null
-          ? AddressDto.fromJson(json['address'])
-          : null,
+      address: parsedAddress,
       profileImageUrl: DioClient.resolveImageUrl(
-        (json['profileImageUrl'] ??
-                json['imageUrl'] ??
-                json['avatarUrl'] ??
-                json['profilePicture'] ??
-                json['photoUrl'])
-            ?.toString(),
+        (rawProfileImage is Map<String, dynamic>
+            ? (rawProfileImage['imageUrl'] ??
+                      rawProfileImage['url'] ??
+                      rawProfileImage['path'])
+                  ?.toString()
+            : rawProfileImage is Map
+            ? (rawProfileImage['imageUrl'] ??
+                      rawProfileImage['url'] ??
+                      rawProfileImage['path'])
+                  ?.toString()
+            : rawProfileImage?.toString()),
       ),
       roles: rawRoles is List
           ? rawRoles
@@ -121,7 +177,7 @@ class UserPublicDto {
     required this.reviewCount,
     required this.tenderCount,
     required this.bidsCount,
-      this.profileImageUrl,
+    this.profileImageUrl,
   });
 
   factory UserPublicDto.fromJson(Map<String, dynamic> json) {
@@ -170,8 +226,8 @@ class UserPublicDto {
 
     return initials.isEmpty
         ? user.username.isNotEmpty
-            ? user.username[0].toUpperCase()
-            : ''
+              ? user.username[0].toUpperCase()
+              : ''
         : initials.toUpperCase();
   }
 
@@ -194,10 +250,10 @@ class RateUserRequest {
   });
 
   Map<String, dynamic> toJson() => {
-        'tenderId': tenderId,
-        'ratedUserId': ratedUserId,
-        'ratedByUserId': ratedByUserId,
-        'score': score,
-        if (comment != null) 'comment': comment,
-      };
+    'tenderId': tenderId,
+    'ratedUserId': ratedUserId,
+    'ratedByUserId': ratedByUserId,
+    'score': score,
+    if (comment != null) 'comment': comment,
+  };
 }

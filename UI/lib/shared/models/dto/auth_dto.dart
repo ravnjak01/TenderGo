@@ -14,7 +14,6 @@ class ResetPasswordRequest {
   }
 }
 
-
 class LoginRequest {
   final String email;
   final String password;
@@ -66,12 +65,36 @@ class AddressDto {
 
   // Koristi se kada primaš podatke sa API-ja
   factory AddressDto.fromJson(Map<String, dynamic> json) {
+    String _pickString(List<String> keys) {
+      for (final key in keys) {
+        final value = json[key];
+        if (value == null) continue;
+        final normalized = value.toString().trim();
+        if (normalized.isNotEmpty) {
+          return normalized;
+        }
+      }
+      return '';
+    }
+
+    int _pickInt(List<String> keys) {
+      final value = _pickString(keys);
+      if (value.isEmpty) return 0;
+      return int.tryParse(value) ?? 0;
+    }
+
     return AddressDto(
-      id: json['id'] ?? 0,
-      country: json['country'] ?? '',
-      city: json['city'] ?? '',
-      street: json['street'] ?? '',
-      postalCode: json['postalCode'] ?? '',
+      id: _pickInt(['id', 'addressId', 'address_id', 'Id']),
+      country: _pickString(['country', 'Country', 'addressCountry']),
+      city: _pickString(['city', 'City', 'addressCity']),
+      street: _pickString(['street', 'Street', 'addressStreet']),
+      postalCode: _pickString([
+        'postalCode',
+        'postal_code',
+        'PostalCode',
+        'zipCode',
+        'zip_code',
+      ]),
     );
   }
 

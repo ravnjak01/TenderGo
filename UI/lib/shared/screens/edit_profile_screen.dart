@@ -38,20 +38,32 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Uint8List? _selectedImageBytes;
   String? _selectedImageName;
 
+  String? get _existingImageUrl {
+    final url = widget.user.profileImageUrl?.trim();
+    if (url == null || url.isEmpty) {
+      return null;
+    }
+    return url;
+  }
+
   @override
   void initState() {
     super.initState();
     _firstNameController = TextEditingController(text: widget.user.firstName);
     _lastNameController = TextEditingController(text: widget.user.lastName);
     _phoneNumberController = TextEditingController();
-    _streetController =
-        TextEditingController(text: widget.user.address?.street ?? '');
-    _cityController =
-        TextEditingController(text: widget.user.address?.city ?? '');
-    _postalCodeController =
-        TextEditingController(text: widget.user.address?.postalCode ?? '');
-    _countryController =
-        TextEditingController(text: widget.user.address?.country ?? '');
+    _streetController = TextEditingController(
+      text: widget.user.address?.street ?? '',
+    );
+    _cityController = TextEditingController(
+      text: widget.user.address?.city ?? '',
+    );
+    _postalCodeController = TextEditingController(
+      text: widget.user.address?.postalCode ?? '',
+    );
+    _countryController = TextEditingController(
+      text: widget.user.address?.country ?? '',
+    );
   }
 
   @override
@@ -83,11 +95,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error picking image: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error picking image: $e')));
     }
   }
+  //provjeriti zasto se ne ucitava adresa u edit formu na pocetku
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
@@ -108,7 +121,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         phoneNumber: _phoneNumberController.text.trim().isNotEmpty
             ? _phoneNumberController.text.trim()
             : null,
-        address: (_streetController.text.isNotEmpty ||
+        address:
+            (_streetController.text.isNotEmpty ||
                 _cityController.text.isNotEmpty ||
                 _postalCodeController.text.isNotEmpty ||
                 _countryController.text.isNotEmpty)
@@ -145,9 +159,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       setState(() {
         _error = e.toString().replaceFirst('Exception: ', '');
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $_error')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $_error')));
     } finally {
       if (!mounted) return;
       setState(() {
@@ -201,6 +215,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                   fit: BoxFit.cover,
                                 ),
                               )
+                            : _existingImageUrl != null
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(60),
+                                child: Image.network(
+                                  _existingImageUrl!,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Icon(
+                                    Icons.person_rounded,
+                                    size: 60,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              )
                             : Icon(
                                 Icons.person_rounded,
                                 size: 60,
@@ -217,9 +244,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         const SizedBox(height: 8),
                         Text(
                           'Selected: $_selectedImageName',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: AppColors.textSecondary,
-                              ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: AppColors.textSecondary),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -232,8 +258,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 Text(
                   'Personal Information',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -277,8 +303,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 Text(
                   'Address',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -326,10 +352,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     ),
                     child: Text(
                       _error!,
-                      style: TextStyle(
-                        color: AppColors.error,
-                        fontSize: 14,
-                      ),
+                      style: TextStyle(color: AppColors.error, fontSize: 14),
                     ),
                   ),
                   const SizedBox(height: 16),

@@ -220,7 +220,10 @@ namespace TenderGo.Services.Services
 
             var userId = GetCurrentUserId();
 
-            var user = await _userManager.FindByIdAsync(userId);
+            var user = await _context.Users
+                .Include(u => u.Address) 
+                .FirstOrDefaultAsync(u => u.Id == userId);
+
             if (user == null) throw new Exception("User not found");
 
             var roles = await _userManager.GetRolesAsync(user);

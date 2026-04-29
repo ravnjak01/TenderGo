@@ -68,8 +68,10 @@ namespace TenderGo.Services.Services
 
         public async Task UpdateProfileAsync(string userId, UpdateProfileRequest request)
         {
-            var user=await _userManager.FindByIdAsync(userId)
-                ?? throw new NotFoundException("User not found", new { User = "User", Id = userId });
+            var user = await _context.Users
+                      .Include(u => u.Address) 
+                      .FirstOrDefaultAsync(u => u.Id == userId)
+                  ?? throw new NotFoundException("User not found", new { User = "User", Id = userId });
 
 
             bool hasFirstName = !string.IsNullOrWhiteSpace(request.FirstName);
@@ -100,7 +102,14 @@ namespace TenderGo.Services.Services
 
                 user.ProfileImageUrl = uploadResult.ImageUrl;
             }
-            _mapper.Map(request, user);
+            if (request.Address != null)
+            {
+                if (user.Address == null)
+                {
+                    user.Address = new Address();
+                }
+                _mapper.Map(request.Address, user.Address);
+            }
 
             var result=await _userManager.UpdateAsync(user);
 
