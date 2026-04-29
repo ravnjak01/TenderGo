@@ -8,7 +8,6 @@ import 'package:tendergo/shared/services/tender_service.dart';
 import 'package:tendergo/shared/widgets/feedback/screen_state_widget.dart';
 import 'package:tendergo/shared/widgets/tender/tender_bid_form.dart';
 import 'package:tendergo/shared/widgets/tender/tender_detail_formatters.dart';
-import 'package:tendergo/shared/widgets/tender/tender_image_gallery.dart';
 
 class MobileTenderDetailsScreen extends StatefulWidget {
   final TenderService tenderService;
@@ -184,14 +183,15 @@ class _MobileTenderDetailsScreenState extends State<MobileTenderDetailsScreen> {
   }
 
   Widget _buildDescriptionSection(TenderDto tender) {
-    final description = (tender.description ?? 'No description provided.')
-        .trim();
+    final description = tender.description?.trim();
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
       child: _buildSectionCard(
         'Description',
         child: Text(
-          description,
+          (description == null || description.isEmpty)
+              ? 'No description provided.'
+              : description,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             color: AppColors.textSecondary,
             height: 1.6,
@@ -203,6 +203,7 @@ class _MobileTenderDetailsScreenState extends State<MobileTenderDetailsScreen> {
 
   Widget _buildSectionCard(String label, {required Widget child}) {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -431,7 +432,6 @@ class _MobileTenderDetailsScreenState extends State<MobileTenderDetailsScreen> {
                   () => Navigator.of(context).pop(),
                 ),
                 title: const Text('Tender Details'),
-               
               ),
               // Content
               SliverToBoxAdapter(child: _buildContent(tender)),
@@ -510,7 +510,6 @@ class _MobileTenderDetailsScreenState extends State<MobileTenderDetailsScreen> {
                     setState(() => _tenderFuture = _loadTender(tender.id)),
               ),
             ),
-           
           ],
         ),
       ),
