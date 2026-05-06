@@ -25,14 +25,23 @@ class TenderFilterBar extends StatelessWidget {
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Row(
-                    children: provider.categories.map((catDto) {
-                      final String categoryName = catDto.name;
-                      return CategoryChipWidget(
-                        label: categoryName,
-                        isSelected: provider.selectedCategories.contains(categoryName),
-                        onTap: () => provider.toggleCategory(categoryName),
-                      );
-                    }).toList(),
+                    children: [
+                      CategoryChipWidget(
+                        label: 'All',
+                        isSelected: provider.selectedCategories.contains('All'),
+                        onTap: () => provider.toggleCategory('All'),
+                      ),
+                      ...provider.categories
+                          .where((catDto) => catDto.name.toLowerCase() != 'all')
+                          .map((catDto) {
+                            final String categoryName = catDto.name;
+                            return CategoryChipWidget(
+                              label: categoryName,
+                              isSelected: provider.selectedCategories.contains(categoryName),
+                              onTap: () => provider.toggleCategory(categoryName),
+                            );
+                          }),
+                    ],
                   ),
                 ),
               ),

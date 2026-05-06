@@ -158,6 +158,10 @@ class _TenderPostScreenState extends State<TenderPostScreen>
       SnackbarHelper.show(context, 'Please select a deadline', isError: true);
       return;
     }
+    if (_selectedCategoryId == null) {
+      SnackbarHelper.show(context, 'Please select a category', isError: true);
+      return;
+    }
 
     setState(() => _isLoading = true);
 

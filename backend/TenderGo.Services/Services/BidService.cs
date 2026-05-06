@@ -62,7 +62,6 @@ namespace TenderGo.Services.Services
 
             _logger.LogInformation("Attempting to create a new bid for tender {TenderId} by user {UserId}", request.TenderId, _authService.GetCurrentUserId());
 
-            // Kreiramo stanje (ovdje proslijeđujemo početni status Pending i trenutni status tendera)
             var state = CreateState(ApplicationStatus.Pending, tender.Status);
 
             return await state.Insert(request);
@@ -150,11 +149,11 @@ namespace TenderGo.Services.Services
 
             return bidStatus switch
             {
-                ApplicationStatus.Pending => _serviceProvider.GetRequiredService<OpenBidState>(),
+                ApplicationStatus.Pending => _serviceProvider.GetRequiredService<PendingBidState>(),
                 ApplicationStatus.Withdrawn => _serviceProvider.GetRequiredService<FinalBidState>(),
                 ApplicationStatus.Accepted => _serviceProvider.GetRequiredService<FinalBidState>(),
                 ApplicationStatus.Rejected => _serviceProvider.GetRequiredService<FinalBidState>(),
-                _ => _serviceProvider.GetRequiredService<OpenBidState>()
+                _ => _serviceProvider.GetRequiredService<PendingBidState>()
             };
         }
 

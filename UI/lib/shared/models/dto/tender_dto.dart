@@ -212,8 +212,8 @@ factory TenderDto.fromJson(Map<String, dynamic> json) {
         return TenderStatus.open;
       case TenderStatus.closed:
         return TenderStatus.closed;
-      case TenderStatus.award:
-        return TenderStatus.award;
+      case TenderStatus.awarded:
+        return TenderStatus.awarded;
       case TenderStatus.cancelled:
         return TenderStatus.cancelled;
     }

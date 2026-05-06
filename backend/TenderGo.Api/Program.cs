@@ -123,14 +123,13 @@ builder.Services.AddScoped<IImageService, ImageService>();
 
 
 builder.Services.AddTransient<BaseState>();
-builder.Services.AddTransient < InitialTenderState>() ;
 builder.Services.AddTransient<OpenTenderState>();
 builder.Services.AddTransient<ClosedTenderState>();
 builder.Services.AddTransient<AwardedTenderState>();
 builder.Services.AddTransient<CancelledTenderState>();
 
 
-builder.Services.AddScoped<OpenBidState>();
+builder.Services.AddScoped<PendingBidState>();
 builder.Services.AddScoped<FinalBidState>();
 
 builder.Services.AddEasyNetQ("host=localhost");

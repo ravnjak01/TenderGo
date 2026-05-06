@@ -52,6 +52,8 @@ class _AdminTenderListScreenState extends State<AdminTenderListScreen> {
     });
   }
 
+  //zadnje popravio All box u ovom ekranu, sad kad se klikne na All, sve kategorije se selektuju i prikazuju, a kad se klikne ponovo, sve se deselectuju i prikazuju se samo oni koji nisu selektovani
+
   void _onSearchChanged(String query) {
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 400), () {

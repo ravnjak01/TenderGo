@@ -17,6 +17,7 @@ namespace TenderGo.Services.StateMachines.BidStates
         : base(serviceProvider, context, mapper) { }
 
 
+        //dosao kod ovog stanja,da li je uopste i potrebno ovaj state
         public async Task<List<string>>AllowedActions(Bid entity)
         {
 

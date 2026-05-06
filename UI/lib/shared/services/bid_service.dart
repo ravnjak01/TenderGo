@@ -225,7 +225,7 @@ class BidService {
 
     Future<BidDto> cancel(int id) async {
     try {
-      final response = await _dio.patch(
+      final response = await _dio.put(
         BidApiEndpoints.cancel(id),
         options: await _options(),
       );

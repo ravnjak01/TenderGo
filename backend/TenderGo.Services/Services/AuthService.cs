@@ -267,6 +267,11 @@ namespace TenderGo.Services.Services
 
         }
 
-       
+        public bool IsInRole(string role)
+        {
+            return _httpContextAccessor.HttpContext?.User?.IsInRole(role) ?? false;
+        }
+
+
     }
 }

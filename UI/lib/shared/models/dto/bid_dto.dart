@@ -8,7 +8,7 @@ class BidDto {
 	final String submittedByUserName;
 	final double offeredPrice;
 	final DateTime submittedAt;
-	final String status;
+	final ApplicationStatus status;
 	final String? proposal;
 	final int? deliveryDays;
 
@@ -63,6 +63,20 @@ class BidDto {
 		return parsed.isEmpty ? null : parsed;
 	}
 
+	static ApplicationStatus _readStatus(dynamic value) {
+		if (value is int) {
+			return ApplicationStatus.values.firstWhere(
+				(e) => e.value == value,
+				orElse: () => ApplicationStatus.pending,
+			);
+		}
+		final str = _readString(value).toLowerCase();
+		return ApplicationStatus.values.firstWhere(
+			(e) => e.name.toLowerCase() == str,
+			orElse: () => ApplicationStatus.pending,
+		);
+	}
+
 	static DateTime _readDateTime(dynamic value) {
 		if (value is DateTime) return value;
 		if (value is String) {
@@ -112,7 +126,7 @@ class BidDto {
 			submittedByUserName: _readString(json['submittedByUserName']),
 			offeredPrice: _readDouble(json['offeredPrice']),
 			submittedAt: _readDateTime(json['submittedAt']),
-			status: _readString(json['status']),
+			status: _readStatus(json['status']),
 			proposal: _readNullableString(json['proposal']),
 			deliveryDays: json['deliveryDays'] == null
 					? null
@@ -172,7 +186,7 @@ class BidDto {
 			'submittedByUserName': submittedByUserName,
 			'offeredPrice': offeredPrice,
 			'submittedAt': submittedAt.toIso8601String(),
-			'status': status,
+			'status': status.name,
 			'proposal': proposal,
 			'deliveryDays': deliveryDays,
 		};
@@ -210,4 +224,13 @@ class BidInsertRequest {
 
  
 
+}
+enum ApplicationStatus {
+  pending(1),
+  accepted(2),
+  rejected(3),
+  withdrawn(4);
+
+  final int value;
+  const ApplicationStatus(this.value);
 }

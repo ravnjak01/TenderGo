@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
@@ -72,13 +73,11 @@ namespace TenderGo.Services.StateMachines.TenderStates
                 throw new UserException("Only the owner can close the tender.");
             }
 
-            // 2. Biznis provjera (Vrijeme)
             if (entity.Deadline > DateTime.UtcNow)
             {
                 throw new UserException("The tender cannot be closed before the application deadline expires.");
             }
 
-            // 3. Akcija
             entity.Status = TenderStatus.Closed;
             await _context.SaveChangesAsync();
 
@@ -94,13 +93,12 @@ namespace TenderGo.Services.StateMachines.TenderStates
             var authService = _serviceProvider.GetRequiredService<IAuthService>();
             var currentUserId = authService.GetCurrentUserId();
             bool isOwner = entity.CreatedByUserId == currentUserId;
-
+            bool isAdmin = authService.IsInRole(AppRoles.Admin);
             if (entity.Deadline > DateTime.UtcNow)
             {
                 if (isOwner)
                 {
                     list.Add("Edit");
-                    list.Add("Cancel");
                 }
                 else
                 {
@@ -113,6 +111,10 @@ namespace TenderGo.Services.StateMachines.TenderStates
                 {
                     list.Add("Close");
                 }
+            }
+            if (isAdmin)
+            {
+                list.Add("Cancel");
             }
 
             return list;
