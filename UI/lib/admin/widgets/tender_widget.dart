@@ -15,14 +15,10 @@ class AdminTenderCardWidget extends StatelessWidget {
     super.key,
     required this.tender,
     this.onTap,
-    this.onSave,
-    this.isSaved = false,
   });
 
   final TenderCardModel tender;
   final VoidCallback? onTap;
-  final VoidCallback? onSave;
-  final bool isSaved;
 
 
 // Glavna metoda build koja sastavlja cijelu karticu koristeći manje widgete za različite dijelove (slika, tijelo, akcije)
@@ -49,8 +45,6 @@ class AdminTenderCardWidget extends StatelessWidget {
             _CardBody(tender: tender),
             CardActions(
               onView: onTap,
-              onSave: onSave,
-              isSaved: isSaved,
               isClosed: tender.status == TenderStatus.closed,
             ),
           ],

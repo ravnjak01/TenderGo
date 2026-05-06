@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tendergo/admin/screens/admin_screen.dart';
+import 'package:tendergo/shared/providers/admin_provider.dart';
 import 'package:tendergo/admin/screens/forgot_password_screen.dart';
 import 'package:tendergo/admin/screens/home_screen.dart';
 import 'package:tendergo/admin/screens/login_screen.dart';
@@ -55,10 +56,12 @@ class AdminRoutes {
         tenderService: tenderService,
       ),
       AppRoutes.admin: (context) => AdminScreen(
-        adminService: adminService,
-        authService: authService,
-        tenderService: tenderService,
-        categoryService: categoryService,
+        provider: AdminProvider(
+          adminService: adminService,
+          authService: authService,
+          tenderService: tenderService,
+          categoryService: categoryService,
+        ),
       ),
        AppRoutes.userPublicProfile: (context) {
         final args = ModalRoute.of(context)?.settings.arguments;

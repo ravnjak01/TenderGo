@@ -171,24 +171,4 @@ class TenderProvider extends ChangeNotifier {
       return false;
     }
   }
-
-  Future<void> saveDraft({
-    required TenderInsertRequest request, 
-     List<PlatformFile>? imageFiles,
-  }) async {
-   _setLoading(true); 
-
-    try {
-      await _service.createDraft(
-        request, 
-        imageFiles: imageFiles,
-      );
-      _error = null;
-    } catch (e) {
-      _error = e.toString().replaceFirst('Exception: ', '');
-      rethrow; 
-    } finally {
-      _setLoading(false);
-    }
-  }
 }

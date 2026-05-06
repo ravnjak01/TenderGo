@@ -4,14 +4,10 @@ import 'package:tendergo/admin/widgets/action_button_widget.dart';
 class CardActions extends StatelessWidget {
   const CardActions({
     this.onView,
-    this.onSave,
-    required this.isSaved,
     required this.isClosed,
   });
 
   final VoidCallback? onView;
-  final VoidCallback? onSave;
-  final bool isSaved;
   final bool isClosed;
 
   @override
@@ -27,12 +23,6 @@ class CardActions extends StatelessWidget {
             label: 'View details',
             isPrimary: !isClosed,
             onTap: onView,
-          ),
-          const SizedBox(width: 8),
-          ActionButton(
-            label: isSaved ? 'Saved' : 'Save',
-            isPrimary: false,
-            onTap: onSave,
           ),
         ],
       ),

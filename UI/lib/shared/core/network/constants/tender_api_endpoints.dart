@@ -14,9 +14,6 @@ class TenderApiEndpoints {
   /// POST /api/tender
   static const String insert = _tenderBase;
 
-  /// POST /api/tender/drafts
-  static const String insertDraft = '$_tenderBase/drafts';
-
   /// PATCH /api/tender/{id}
   static String update(int id) => '$_tenderBase/$id';
 
@@ -30,9 +27,6 @@ class TenderApiEndpoints {
 
   /// GET /api/tender/closed
   static const String getClosed = '$_tenderBase/closed';
-
-  /// GET /api/tender/drafts
-  static const String getDrafts = '$_tenderBase/drafts';
 
   static const String getCancelled = '$_tenderBase/cancelled';
 

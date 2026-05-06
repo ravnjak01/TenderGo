@@ -44,8 +44,6 @@ class MobileTenderCardWidget extends StatelessWidget {
             _CardBody(tender: tender),
             CardActions(
               onView: onTap,
-              onSave: onSave,
-              isSaved: isSaved,
               isClosed: tender.status == TenderStatus.closed,
             ),
           ],

@@ -1,29 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
 import 'package:tendergo/shared/models/dto/admin_dto.dart';
+import 'package:tendergo/shared/models/dto/category_dto.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
 import 'package:tendergo/shared/models/dto/user_dto.dart';
 import 'package:tendergo/shared/models/ui/auth_result.dart';
+import 'package:tendergo/shared/providers/admin_provider.dart';
 import 'package:tendergo/shared/routes/routes.dart';
-import 'package:tendergo/shared/services/admin_service.dart';
-import 'package:tendergo/shared/services/auth_service.dart';
-import 'package:tendergo/shared/models/dto/category_dto.dart';
-import 'package:tendergo/shared/services/category_service.dart';
-import 'package:tendergo/shared/services/tender_service.dart';
 import 'package:tendergo/shared/widgets/feedback/screen_state_widget.dart';
 
 class AdminScreen extends StatefulWidget {
-  final AdminService adminService;
-  final AuthService authService;
-  final TenderService tenderService;
-  final CategoryService categoryService;
+  final AdminProvider provider;
 
   const AdminScreen({
     super.key,
-    required this.adminService,
-    required this.authService,
-    required this.tenderService,
-    required this.categoryService,
+    required this.provider,
   });
 
   @override
@@ -102,7 +93,7 @@ class _AdminScreenState extends State<AdminScreen> {
 
     setState(() => _isSubmitting = true);
 
-    final result = await widget.adminService.deleteTender(tender.id);
+    final result = await widget.provider.deleteTender(tender.id);
 
     if (!mounted) return;
 
@@ -127,9 +118,7 @@ class _AdminScreenState extends State<AdminScreen> {
     setState(() => _isSubmitting = true);
 
     try {
-      final created = await widget.categoryService.insert(
-        CategoryDto(id: 0, name: name),
-      );
+      final created = await widget.provider.insertCategory(name);
 
       if (!mounted) return;
       setState(() {
@@ -156,10 +145,7 @@ class _AdminScreenState extends State<AdminScreen> {
     setState(() => _isSubmitting = true);
 
     try {
-      await widget.categoryService.update(
-        category.id,
-        CategoryDto(id: category.id, name: name),
-      );
+      await widget.provider.updateCategory(category.id, name);
 
       if (!mounted) return;
       setState(() {
@@ -211,7 +197,7 @@ class _AdminScreenState extends State<AdminScreen> {
     setState(() => _isSubmitting = true);
 
     try {
-      final success = await widget.categoryService.delete(category.id);
+      final success = await widget.provider.deleteCategory(category.id);
 
       if (!mounted) return;
       setState(() {
@@ -280,7 +266,7 @@ class _AdminScreenState extends State<AdminScreen> {
     }
 
     try {
-      final currentUserResult = await widget.authService.getCurrentUser();
+      final currentUserResult = await widget.provider.getCurrentUser();
       final currentUser = currentUserResult.data;
 
       if (!currentUserResult.success || currentUser is! UserDto) {
@@ -310,12 +296,11 @@ class _AdminScreenState extends State<AdminScreen> {
       }
 
       final results = await Future.wait<dynamic>([
-        widget.adminService.getAllUsers(),
-        widget.tenderService.getAll(page: 1, pageSize: 100),
-        widget.tenderService.getActive(),
-        widget.tenderService.getClosed(),
-        //widget.tenderService.getCancelled(),
-        widget.categoryService.getAll(),
+        widget.provider.getAllUsers(),
+        widget.provider.getAllTenders(),
+        widget.provider.getActiveTenders(),
+        widget.provider.getClosedTenders(),
+        widget.provider.getCategories(),
       ]);
 
       final usersResult = results[0] as AuthResult;
@@ -358,7 +343,7 @@ class _AdminScreenState extends State<AdminScreen> {
     }
 
     setState(() => _isSubmitting = true);
-    final result = await widget.adminService.banUser(
+    final result = await widget.provider.banUser(
       user.id,
       BanRequest(reason: reason),
     );
@@ -386,7 +371,7 @@ class _AdminScreenState extends State<AdminScreen> {
 
   Future<void> _handleUnbanUser(_AdminUserRecord user) async {
     setState(() => _isSubmitting = true);
-    final result = await widget.adminService.unbanUser(user.id);
+    final result = await widget.provider.unbanUser(user.id);
     if (!mounted) return;
 
     setState(() => _isSubmitting = false);

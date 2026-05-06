@@ -4,7 +4,7 @@ import 'package:tendergo/shared/services/tender_service.dart';
 import 'package:tendergo/admin/widgets/tender_widget.dart';
 import 'package:tendergo/admin/screens/tender_details_screen.dart';
 
-class TenderGrid extends StatefulWidget {
+class TenderGrid extends StatelessWidget {
   final List<TenderDto> tenders;
   final TenderService tenderService;
   final ValueChanged<int>? onTenderSelected;
@@ -17,15 +17,8 @@ class TenderGrid extends StatefulWidget {
   });
 
   @override
-  State<TenderGrid> createState() => _TenderGridState();
-}
-
-class _TenderGridState extends State<TenderGrid> {
-  final Set<int> _savedIds = {};
-
-  @override
   Widget build(BuildContext context) {
-    if (widget.tenders.isEmpty) {
+    if (tenders.isEmpty) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 48),
         child: Center(child: Text('No tenders match the selected filters.')),
@@ -49,35 +42,25 @@ class _TenderGridState extends State<TenderGrid> {
         return Wrap(
           spacing: spacing,
           runSpacing: spacing,
-          children: widget.tenders.map((dto) {
+          children: tenders.map((dto) {
             final model = dto.toCardModel(dto);
             return SizedBox(
               width: cardWidth,
               child: AdminTenderCardWidget(
                 tender: model,
-                isSaved: _savedIds.contains(dto.id),
                 onTap: () {
-                  if (widget.onTenderSelected != null) {
-                    widget.onTenderSelected!(dto.id);
+                  if (onTenderSelected != null) {
+                    onTenderSelected!(dto.id);
                     return;
                   }
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (_) => AdminTenderDetailsScreen(
-                        tenderService: widget.tenderService,
+                        tenderService: tenderService,
                         tenderId: dto.id,
                       ),
                     ),
                   );
-                },
-                onSave: () {
-                  setState(() {
-                    if (_savedIds.contains(dto.id)) {
-                      _savedIds.remove(dto.id);
-                    } else {
-                      _savedIds.add(dto.id);
-                    }
-                  });
                 },
               ),
             );
