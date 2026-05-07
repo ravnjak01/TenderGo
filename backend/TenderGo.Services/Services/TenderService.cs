@@ -282,7 +282,8 @@ namespace TenderGo.Services.Services
                 query = query.Where(t =>
                     EF.Functions.Like(t.Title.ToLower(), term) ||
                     EF.Functions.Like(t.LocationName.ToLower(), term)  ||
-                    EF.Functions.Like(t.Country.ToLower(), term)    
+                    EF.Functions.Like(t.Country.ToLower(), term) || 
+                     EF.Functions.Like(t.Description.ToLower(), term)
                 );
             }
 

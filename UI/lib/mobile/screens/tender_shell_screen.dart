@@ -4,6 +4,7 @@ import 'package:tendergo/mobile/screens/tender_details_screen.dart';
 import 'package:tendergo/shared/screens/user_profile_screen.dart';
 import 'package:tendergo/mobile/screens/tenders_list_screen.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
+import 'package:tendergo/shared/routes/routes.dart';
 import 'package:tendergo/shared/services/auth_service.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
 
@@ -57,6 +58,10 @@ class _MobileTenderShellScreenState extends State<MobileTenderShellScreen> {
     );
   }
 
+  void _openRecommendations() {
+    Navigator.of(context).pushNamed(AppRoutes.recommendations);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -72,6 +77,12 @@ class _MobileTenderShellScreenState extends State<MobileTenderShellScreen> {
           ),
         ),
         actions: [
+          IconButton(
+            onPressed: _openRecommendations,
+            icon: const Icon(Icons.recommend_outlined),
+            color: AppColors.textPrimary,
+            tooltip: 'For You',
+          ),
           IconButton(
             onPressed: _openUserProfile,
             icon: const Icon(Icons.person_outline_rounded),

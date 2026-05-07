@@ -76,6 +76,10 @@ class _TenderShellScreenState extends State<TenderShellScreen> {
     Navigator.of(context).pushNamed(AppRoutes.admin);
   }
 
+  void _openRecommendations() {
+    Navigator.of(context).pushNamed(AppRoutes.recommendations);
+  }
+
   Future<void> _openPostTender() async {
     final result = await Navigator.of(context).push(
       MaterialPageRoute(
@@ -143,6 +147,19 @@ class _TenderShellScreenState extends State<TenderShellScreen> {
             ),
             label: const Text(
               'My Bids',
+              style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w400),
+            ),
+          ),
+          const SizedBox(width: 8),
+          TextButton.icon(
+            onPressed: _openRecommendations,
+            icon: const Icon(
+              Icons.recommend_outlined,
+              size: 20,
+              color: Colors.black87,
+            ),
+            label: const Text(
+              'For You',
               style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w400),
             ),
           ),
