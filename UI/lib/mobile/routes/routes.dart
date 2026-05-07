@@ -11,6 +11,7 @@ import 'package:tendergo/mobile/screens/tender_post_screen.dart';
 import 'package:tendergo/mobile/screens/tender_shell_screen.dart';
 import 'package:tendergo/shared/screens/user_profile_screen.dart';
 import 'package:tendergo/shared/routes/routes.dart';
+import 'package:tendergo/shared/screens/notification_screen.dart';
 import 'package:tendergo/shared/screens/recommendation_screen.dart';
 import 'package:tendergo/shared/screens/rate_user_screen.dart';
 import 'package:tendergo/shared/screens/user_profile_public_screen.dart';
@@ -83,6 +84,7 @@ class MobileRoutes {
             : null;
         return RecommendedForYouScreen(onTenderTapped: onTap);
       },
+      AppRoutes.notifications: (context) => const NotificationScreen(),
     };
   }
 }

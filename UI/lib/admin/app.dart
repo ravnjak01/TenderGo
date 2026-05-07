@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:tendergo/admin/routes/routes.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
 import 'package:tendergo/shared/providers/auth_provider.dart';
+import 'package:tendergo/shared/providers/notification_provider.dart';
 import 'package:tendergo/shared/providers/tender_provider.dart';
 import 'package:tendergo/shared/routes/routes.dart';
 import 'package:tendergo/shared/services/bid_service.dart';
@@ -10,8 +11,8 @@ import 'package:tendergo/shared/services/category_service.dart';
 import 'package:tendergo/shared/services/image_service.dart';
 import 'package:tendergo/shared/services/tender_service.dart';  
 import 'package:tendergo/shared/services/auth_service.dart';
-import 'package:tendergo/shared/services/admin_service.dart';
-import 'package:tendergo/shared/services/user_service.dart';
+import 'package:tendergo/shared/services/admin_service.dart';import 'package:tendergo/shared/services/dio_client.dart';
+import 'package:tendergo/shared/services/notification_service.dart';import 'package:tendergo/shared/services/user_service.dart';
 class AdminApp extends StatelessWidget {
   final AuthService authService;
   final AdminService adminService;
@@ -42,6 +43,10 @@ class AdminApp extends StatelessWidget {
           create: (_) => TenderProvider(tenderService, categoryService),
         ),
         ChangeNotifierProvider(create: (_) => AuthProvider(authService)),
+        ChangeNotifierProvider(
+          create: (_) =>
+              NotificationProvider(NotificationService(DioClient.getDio())),
+        ),
       ],
       child: MaterialApp(
         initialRoute: AppRoutes.splash,

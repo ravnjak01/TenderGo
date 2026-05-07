@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
 import 'package:tendergo/shared/models/dto/auth_dto.dart';
 import 'package:tendergo/shared/models/dto/user_dto.dart';
+import 'package:tendergo/shared/providers/notification_provider.dart';
 import 'package:tendergo/shared/providers/tender_provider.dart';
 import 'package:tendergo/admin/screens/tender_details_screen.dart';
 import 'package:tendergo/admin/screens/tender_post_screen.dart';
@@ -12,6 +13,7 @@ import 'package:tendergo/shared/routes/routes.dart';
 import 'package:tendergo/shared/screens/user_profile_screen.dart';
 import 'package:tendergo/shared/services/auth_service.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
+import 'package:tendergo/shared/widgets/common/notification_bell_widget.dart';
 
 class TenderShellScreen extends StatefulWidget {
   final TenderService tenderService;
@@ -38,7 +40,17 @@ class _TenderShellScreenState extends State<TenderShellScreen> {
   @override
   void initState() {
     super.initState();
-    _loadUser(); // Učitaj korisnika pri pokretanju
+    _loadUser();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<NotificationProvider>().startPolling();
+    });
+  }
+
+  @override
+  void dispose() {
+    context.read<NotificationProvider>().stopPolling();
+    super.dispose();
   }
 
   Future<void> _loadUser() async {
@@ -205,6 +217,7 @@ class _TenderShellScreenState extends State<TenderShellScreen> {
                 child: const Text('+ Post a tender'),
               ),
               const SizedBox(width: 16),
+              NotificationBell(iconColor: Colors.black87),
               InkWell(
                 onTap: _openUserProfile,
                 mouseCursor: SystemMouseCursors.click,
