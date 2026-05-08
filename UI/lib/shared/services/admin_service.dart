@@ -3,7 +3,9 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:tendergo/shared/core/network/constants/api_endpoints.dart';
 import 'package:tendergo/shared/core/network/constants/admin_endpoints.dart';
 import 'package:tendergo/shared/models/dto/admin_dto.dart';
+import 'package:tendergo/shared/models/dto/user_dto.dart';
 import 'package:tendergo/shared/models/ui/auth_result.dart';
+import 'package:tendergo/shared/services/api_helper.dart';
 
 class AdminService {
   final Dio _dio;
@@ -35,25 +37,22 @@ class AdminService {
   }
 
   // 1. Get all users
-  Future<AuthResult> getAllUsers() async {
+  Future<AuthResult<List<UserDto>>> getAllUsers() async {
     try {
       final response = await _dio.get(
         AdminEndpoints.getAllUsers,
         options: await _options(),
       );
 
-      return AuthResult(
-        success: true,
+      final List<dynamic> data = response.data;
+      final users = data.map((json) => UserDto.fromJson(json)).toList();
+
+      return AuthResult.success(
+      users,
         message: 'Users fetched successfully.',
-        data: response.data,
       );
     } on DioException catch (e) {
-      final data = e.response?.data;
-      final message = (data is Map)
-          ? (data['message']?.toString() ?? 'Something went wrong.')
-          : 'Something went wrong.';
-
-      return AuthResult(success: false, message: message);
+      return ApiHelper.handleDioError<List<UserDto>>(e);
     }
   }
 
@@ -66,27 +65,12 @@ class AdminService {
         options: await _options(),
       );
 
-      return const AuthResult(
+      return  AuthResult(
         success: true,
         message: 'User banned successfully.',
       );
     } on DioException catch (e) {
-      String errorMessage = 'Something went wrong.';
-  
-  if (e.response?.data != null && e.response?.data is Map) {
-    final data = e.response!.data;
-    
-    // Provjerava da li backend šalje standardni Identity/Validation error
-    if (data['errors'] != null) {
-      // Ovo izvlači specifične greške poput "The reason field is required."
-      var errors = data['errors'] as Map;
-      errorMessage = errors.values.first[0].toString();
-    } else {
-      errorMessage = data['message']?.toString() ?? 'Something went wrong.';
-    }
-  }
-
-   return AuthResult(success: false, message: errorMessage);
+      return ApiHelper.handleDioError(e);
     }
   }
 
@@ -98,17 +82,12 @@ class AdminService {
         options: await _options(),
       );
 
-      return const AuthResult(
+      return  AuthResult(
         success: true,
         message: 'User unbanned successfully.',
       );
     } on DioException catch (e) {
-      final data = e.response?.data;
-      final message = (data is Map)
-          ? (data['message']?.toString() ?? 'Something went wrong.')
-          : 'Something went wrong.';
-
-      return AuthResult(success: false, message: message);
+      return ApiHelper.handleDioError(e);
     }
   }
 
@@ -119,25 +98,15 @@ class AdminService {
       options: await _options(),
     );
 
-    return const AuthResult(
+    return  AuthResult(
       success: true,
       message: 'Tender deleted successfully.',
     );
   } on DioException catch (e) {
-    final data = e.response?.data;
-
-    final message = (data is Map)
-        ? (data['message']?.toString() ?? 'Something went wrong.')
-        : 'Something went wrong.';
-
-    return AuthResult(
-      success: false,
-      message: message,
-    );
+    return ApiHelper.handleDioError(e);
   }
 }
 
-  // 🔐 Shared options (Authorization header)
   Future<Options> _options() async {
     final token = await _storage.read(key: 'jwt_token');
     return Options(

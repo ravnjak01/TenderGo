@@ -27,19 +27,21 @@ class MobileTenderShellScreen extends StatefulWidget {
 
 class _MobileTenderShellScreenState extends State<MobileTenderShellScreen> {
   int _listVersion = 0;
+  NotificationProvider? _notificationProvider;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      context.read<NotificationProvider>().startPolling();
+      _notificationProvider = context.read<NotificationProvider>();
+      _notificationProvider!.startPolling();
     });
   }
 
   @override
   void dispose() {
-    context.read<NotificationProvider>().stopPolling();
+    _notificationProvider?.stopPolling();
     super.dispose();
   }
 

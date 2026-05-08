@@ -1,6 +1,6 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:tendergo/mobile/widgets/tender_widget.dart';
+import 'package:tendergo/shared/controllers/tender_list_controller.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
 import 'package:tendergo/shared/widgets/feedback/screen_state_widget.dart';
@@ -25,8 +25,7 @@ class MobileTenderListScreen extends StatefulWidget {
 
 class _MobileTenderListScreenState extends State<MobileTenderListScreen> {
   final Set<int> _savedIds = <int>{};
-  Timer? _debounce;
-  final TextEditingController _searchController = TextEditingController();
+  final TenderListController _controller = TenderListController();
 
   bool _isLoading = false;
   bool _isSearching = false;
@@ -65,7 +64,7 @@ class _MobileTenderListScreenState extends State<MobileTenderListScreen> {
       setState(() {
         _tenders = tenders;
         _searchResults = null;
-        _searchController.clear();
+        _controller.searchController.clear();
         _selectedCategory = 'All';
       });
     } catch (e) {
@@ -82,39 +81,40 @@ class _MobileTenderListScreenState extends State<MobileTenderListScreen> {
   }
 
   void _onSearchChanged(String query) {
-    _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 400), () async {
-      if (!mounted) return;
-      if (query.trim().isEmpty) {
+    _controller.onSearchChanged(
+      query,
+      onClear: () {
+        if (!mounted) return;
         setState(() {
           _searchResults = null;
           _selectedCategory = 'All';
         });
-        return;
-      }
-      setState(() => _isSearching = true);
-      try {
-        final results = await widget.tenderService.search(
-          TenderSearchRequest(searchTerm: query.trim()),
-        );
+      },
+      onSearch: (q) async {
         if (!mounted) return;
-        setState(() {
-          _searchResults = results;
-          _selectedCategory = 'All';
-        });
-      } catch (_) {
-        if (!mounted) return;
-        setState(() => _searchResults = []);
-      } finally {
-        if (mounted) setState(() => _isSearching = false);
-      }
-    });
+        setState(() => _isSearching = true);
+        try {
+          final results = await widget.tenderService.search(
+            TenderSearchRequest(searchTerm: q),
+          );
+          if (!mounted) return;
+          setState(() {
+            _searchResults = results;
+            _selectedCategory = 'All';
+          });
+        } catch (_) {
+          if (!mounted) return;
+          setState(() => _searchResults = []);
+        } finally {
+          if (mounted) setState(() => _isSearching = false);
+        }
+      },
+    );
   }
 
   @override
   void dispose() {
-    _debounce?.cancel();
-    _searchController.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
@@ -169,12 +169,15 @@ class _MobileTenderListScreenState extends State<MobileTenderListScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     TenderSearchBar(
-                      controller: _searchController,
+                      controller: _controller.searchController,
                       onChanged: _onSearchChanged,
-                      onClear: () {
-                        _searchController.clear();
-                        _onSearchChanged('');
-                      },
+                      onClear: () => _controller.clearSearch(() {
+                        if (!mounted) return;
+                        setState(() {
+                          _searchResults = null;
+                          _selectedCategory = 'All';
+                        });
+                      }),
                       isLoading: _isSearching,
                     ),
                     const SizedBox(height: 10),
@@ -200,7 +203,7 @@ class _MobileTenderListScreenState extends State<MobileTenderListScreen> {
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      '${filtered.length} ${_searchController.text.isNotEmpty ? 'results' : 'active tenders'}',
+                      '${filtered.length} ${_controller.searchController.text.isNotEmpty ? 'results' : 'active tenders'}',
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -214,16 +217,19 @@ class _MobileTenderListScreenState extends State<MobileTenderListScreen> {
             if (filtered.isEmpty)
               SliverFillRemaining(
                 hasScrollBody: false,
-                child: _searchController.text.isNotEmpty
+                child: _controller.searchController.text.isNotEmpty
                     ? ScreenEmptyState(
                         icon: Icons.search_off_rounded,
                         title: 'No results found',
                         description: 'Try different keywords.',
                         actionLabel: 'Clear search',
-                        onAction: () {
-                          _searchController.clear();
-                          _onSearchChanged('');
-                        },
+                        onAction: () => _controller.clearSearch(() {
+                          if (!mounted) return;
+                          setState(() {
+                            _searchResults = null;
+                            _selectedCategory = 'All';
+                          });
+                        }),
                       )
                     : ScreenEmptyState(
                         icon: Icons.filter_alt_off_rounded,

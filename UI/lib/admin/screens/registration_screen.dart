@@ -23,9 +23,6 @@ class _AdminRegistrationScreenState extends State<AdminRegistrationScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirm  = true;
 
-  static const Color _btnBlue    = Color(0xFF2D4DB5);
-  static const Color _linkBlue   = Color(0xFF4472C4);
-
   @override
   void dispose() {
     _fnameController.dispose();
@@ -239,63 +236,21 @@ class _AdminRegistrationScreenState extends State<AdminRegistrationScreen> {
                               const SizedBox(height: 8),
 
                               Consumer<AuthProvider>(
-                                builder: (context, auth, child) {
-                                  return SizedBox(
-                                    width: double.infinity,
-                                    height: 50,
-                                    child: ElevatedButton(
-                                      // Ako je auth.isLoading true, onPressed je null (dugme je onemogućeno)
-                                      onPressed: auth.isLoading ? null : _handleRegistration,
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: _btnBlue,
-                                        foregroundColor: Colors.white,
-                                        disabledBackgroundColor: _btnBlue.withValues(alpha: 0.6), // Stil kad je onemogućeno
-                                        elevation: 0,
-                                        shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(8)),
-                                        textStyle: const TextStyle(
-                                            fontSize: 15, fontWeight: FontWeight.w600),
-                                      ),
-                                      child: auth.isLoading
-                                          ? const SizedBox(
-                                              height: 20,
-                                              width: 20,
-                                              child: CircularProgressIndicator(
-                                                  strokeWidth: 2, 
-                                                  color: Colors.white),
-                                            )
-                                          : const Text('Create Account'),
-                                    ),
-                                  );
-                                },
+                                builder: (context, auth, _) =>
+                                    AuthSubmitButton(
+                                  label: 'Create Account',
+                                  isLoading: auth.isLoading,
+                                  onPressed: _handleRegistration,
+                                ),
                               ),
 
                               const SizedBox(height: 20),
 
-                              // Sign in link
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const Text(
-                                    'Already have an account? ',
-                                    style: TextStyle(
-                                        color: Color(0xFF6B7280),
-                                        fontSize: 13),
-                                  ),
-                                  GestureDetector(
-                                    onTap: () {
-                                      Navigator.pushReplacementNamed(context, '/login');
-                                    },
-                                    child: const Text(
-                                      'Sign in',
-                                      style: TextStyle(
-                                        color: _linkBlue,
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                              AuthNavLink(
+                                prompt: 'Already have an account? ',
+                                linkText: 'Sign in',
+                                onTap: () => Navigator.pushReplacementNamed(
+                                    context, '/login'),
                               ),
                             ],
                           ),

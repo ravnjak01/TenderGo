@@ -107,7 +107,7 @@ class AuthService {
   Future<AuthResult> forgotPassword(String email) async {
     try {
       await _dio.post(ApiEndpoints.forgotPassword, data: {'email': email});
-      return const AuthResult(
+      return  AuthResult(
         success: true,
         message: 'If this email exists, a reset link was sent.',
       );
@@ -125,7 +125,7 @@ class AuthService {
   Future<AuthResult> resetPassword(ResetPasswordRequest request) async {
     try {
       await _dio.post(ApiEndpoints.resetPassword, data: request.toJson());
-      return const AuthResult(
+      return  AuthResult(
         success: true,
         message: 'Password reset successfully.',
       );

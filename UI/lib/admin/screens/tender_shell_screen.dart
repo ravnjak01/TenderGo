@@ -31,6 +31,7 @@ class TenderShellScreen extends StatefulWidget {
 class _TenderShellScreenState extends State<TenderShellScreen> {
   int? _selectedTenderId;
   UserDto? _currentUser;
+  NotificationProvider? _notificationProvider;
 
   bool get _isAdmin {
     final roles = _currentUser?.roles ?? const <String>[];
@@ -43,13 +44,14 @@ class _TenderShellScreenState extends State<TenderShellScreen> {
     _loadUser();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      context.read<NotificationProvider>().startPolling();
+      _notificationProvider = context.read<NotificationProvider>();
+      _notificationProvider!.startPolling();
     });
   }
 
   @override
   void dispose() {
-    context.read<NotificationProvider>().stopPolling();
+    _notificationProvider?.stopPolling();
     super.dispose();
   }
 
