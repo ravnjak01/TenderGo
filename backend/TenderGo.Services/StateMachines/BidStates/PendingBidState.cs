@@ -18,10 +18,10 @@ using TenderGo.Services.Services.Exceptions;
 
 namespace TenderGo.Services.StateMachines.BidStates
 {
-    public class OpenBidState : BaseBidState
+    public class PendingBidState : BaseBidState
     {
         private readonly IPubSub _pubSub;
-        public OpenBidState(IServiceProvider serviceProvider, TenderGoContext context, IMapper mapper, IPubSub pubSub)
+        public PendingBidState(IServiceProvider serviceProvider, TenderGoContext context, IMapper mapper, IPubSub pubSub)
             : base(serviceProvider, context, mapper) { _pubSub = pubSub; }
 
 
@@ -88,7 +88,7 @@ namespace TenderGo.Services.StateMachines.BidStates
             return _mapper.Map<BidDTO>(bid);
         }
 
-        public override async Task<BidDTO> Withdraw(int id)
+        public override async Task<BidDTO> Cancel(int id)
         {
             var bid = await _context.Bids
                 .Include(b => b.Tender)

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
 import 'package:tendergo/shared/models/dto/auth_dto.dart';
 import 'package:tendergo/shared/models/dto/user_dto.dart';
+import 'package:tendergo/shared/providers/notification_provider.dart';
 import 'package:tendergo/shared/providers/tender_provider.dart';
 import 'package:tendergo/admin/screens/tender_details_screen.dart';
 import 'package:tendergo/admin/screens/tender_post_screen.dart';
@@ -12,6 +13,7 @@ import 'package:tendergo/shared/routes/routes.dart';
 import 'package:tendergo/shared/screens/user_profile_screen.dart';
 import 'package:tendergo/shared/services/auth_service.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
+import 'package:tendergo/shared/widgets/common/notification_bell_widget.dart';
 
 class TenderShellScreen extends StatefulWidget {
   final TenderService tenderService;
@@ -29,6 +31,7 @@ class TenderShellScreen extends StatefulWidget {
 class _TenderShellScreenState extends State<TenderShellScreen> {
   int? _selectedTenderId;
   UserDto? _currentUser;
+  NotificationProvider? _notificationProvider;
 
   bool get _isAdmin {
     final roles = _currentUser?.roles ?? const <String>[];
@@ -38,7 +41,18 @@ class _TenderShellScreenState extends State<TenderShellScreen> {
   @override
   void initState() {
     super.initState();
-    _loadUser(); // Učitaj korisnika pri pokretanju
+    _loadUser();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _notificationProvider = context.read<NotificationProvider>();
+      _notificationProvider!.startPolling();
+    });
+  }
+
+  @override
+  void dispose() {
+    _notificationProvider?.stopPolling();
+    super.dispose();
   }
 
   Future<void> _loadUser() async {
@@ -74,6 +88,10 @@ class _TenderShellScreenState extends State<TenderShellScreen> {
 
   void _openAdmin() {
     Navigator.of(context).pushNamed(AppRoutes.admin);
+  }
+
+  void _openRecommendations() {
+    Navigator.of(context).pushNamed(AppRoutes.recommendations);
   }
 
   Future<void> _openPostTender() async {
@@ -146,6 +164,19 @@ class _TenderShellScreenState extends State<TenderShellScreen> {
               style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w400),
             ),
           ),
+          const SizedBox(width: 8),
+          TextButton.icon(
+            onPressed: _openRecommendations,
+            icon: const Icon(
+              Icons.recommend_outlined,
+              size: 20,
+              color: Colors.black87,
+            ),
+            label: const Text(
+              'For You',
+              style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w400),
+            ),
+          ),
           if (_isAdmin) ...[
             const SizedBox(width: 8),
             TextButton.icon(
@@ -188,6 +219,7 @@ class _TenderShellScreenState extends State<TenderShellScreen> {
                 child: const Text('+ Post a tender'),
               ),
               const SizedBox(width: 16),
+              NotificationBell(iconColor: Colors.black87),
               InkWell(
                 onTap: _openUserProfile,
                 mouseCursor: SystemMouseCursors.click,

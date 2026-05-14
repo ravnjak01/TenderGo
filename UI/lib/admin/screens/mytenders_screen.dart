@@ -434,6 +434,8 @@ class _TenderCard extends StatelessWidget {
   }
 }
 
+//dosao do refaktorisanja projekta,exportovati _timeAgo i 
+//_formatDate metode u neki utils file jer se koriste na vise mjesta
 // ─────────────────────────────────────────────────────────────────────────────
 // Sub-widgets
 // ─────────────────────────────────────────────────────────────────────────────

@@ -15,4 +15,6 @@ class AppRoutes{
   static const String admin = '/admin';
   static const String userPublicProfile = '/user-public-profile';
   static const String rateUser = '/rate-user';
+  static const String recommendations = '/recommendations';
+  static const String notifications = '/notifications';
 }

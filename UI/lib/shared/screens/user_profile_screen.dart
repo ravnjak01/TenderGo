@@ -185,7 +185,18 @@ class _UserProfileScreenState extends State<UserProfileScreen>
       child: SlideTransition(
         position: _slideAnim,
         child: isDesktop
-            ? UserProfileDesktop(user: user)
+            ? UserProfileDesktop(
+                user: user,
+                onEdit: () {
+                  _handleEditProfile();
+                },
+                onChangePassword: () {
+                  Navigator.of(context).pushNamed(AppRoutes.forgotPassword);
+                },
+                onLogout: () {
+                  _handleLogout();
+                },
+              )
             : UserProfileMobile(
                 user: user,
                 bids: _bids,

@@ -210,15 +210,6 @@ namespace TenderGo.Services.Services
              return await state.Update(id, request);
         }
 
-        public async Task<TenderDTO> Publish(int id)
-        {
-            var entity = await _context.Tenders.FindAsync(id)
-                         ?? throw new NotFoundException("Tender not found",new {Entity="Tender",Id=id});
-
-            var state = CreateState(entity.Status);
-            return await state.Activate(id);
-        }
-
 
 
         public async Task<TenderDTO> Cancel(int id)
@@ -282,6 +273,8 @@ namespace TenderGo.Services.Services
             var query = _context.Tenders
                 .AsQueryable();
 
+            query = query.Where(t => t.Status == TenderStatus.Open);
+
             if (!string.IsNullOrWhiteSpace(request.SearchTerm))
             {
                 var term = $"%{request.SearchTerm.ToLower()}%";
@@ -289,7 +282,8 @@ namespace TenderGo.Services.Services
                 query = query.Where(t =>
                     EF.Functions.Like(t.Title.ToLower(), term) ||
                     EF.Functions.Like(t.LocationName.ToLower(), term)  ||
-                    EF.Functions.Like(t.Country.ToLower(), term)    
+                    EF.Functions.Like(t.Country.ToLower(), term) || 
+                     EF.Functions.Like(t.Description.ToLower(), term)
                 );
             }
 

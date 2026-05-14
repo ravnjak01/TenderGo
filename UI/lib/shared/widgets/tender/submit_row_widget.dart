@@ -3,21 +3,17 @@ import 'package:tendergo/shared/core/theme/app_theme.dart';
 
 class TenderSubmitRow extends StatelessWidget {
   final bool isLoading;
-  final VoidCallback onSaveDraft;
   final VoidCallback onSubmitTender;
   final bool useCompactStyle;
   final bool fullWidthOnMobile;
-  final String saveDraftLabel;
   final String publishTenderLabel;
 
   const TenderSubmitRow({
     super.key,
     required this.isLoading,
-    required this.onSaveDraft,
     required this.onSubmitTender,
     this.useCompactStyle = false,
     this.fullWidthOnMobile = true,
-    this.saveDraftLabel = 'Save Draft',
     this.publishTenderLabel = 'Publish Tender',
   });
 
@@ -26,7 +22,6 @@ class TenderSubmitRow extends StatelessWidget {
     final bool isMobile = MediaQuery.sizeOf(context).width < 600;
 
     // Keep desktop dimensions while allowing stacked full-width buttons on mobile.
-    final double draftWidth = useCompactStyle ? 124 : (isMobile ? 140 : 146);
     final double publishWidth = useCompactStyle ? 154 : 180;
     final double buttonHeight = useCompactStyle ? 46 : (isMobile ? 48 : 52);
     final bool stretchButtons = isMobile && fullWidthOnMobile;
@@ -36,26 +31,6 @@ class TenderSubmitRow extends StatelessWidget {
       runSpacing: 12,
       spacing: 12,
       children: [
-        SizedBox(
-          width: stretchButtons ? double.infinity : draftWidth,
-          height: buttonHeight,
-          child: OutlinedButton(
-            onPressed: isLoading ? null : onSaveDraft,
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: AppColors.primary),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: _ButtonContent(
-              isLoading: isLoading,
-              icon: Icons.drafts,
-              label: saveDraftLabel,
-              isPrimary: false,
-              isCompact: useCompactStyle,
-            ),
-          ),
-        ),
         SizedBox(
           width: stretchButtons ? double.infinity : publishWidth,
           height: buttonHeight,

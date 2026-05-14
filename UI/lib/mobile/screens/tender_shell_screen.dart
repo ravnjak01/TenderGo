@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:tendergo/mobile/screens/tender_post_screen.dart';
 import 'package:tendergo/mobile/screens/tender_details_screen.dart';
 import 'package:tendergo/shared/screens/user_profile_screen.dart';
 import 'package:tendergo/mobile/screens/tenders_list_screen.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
+import 'package:tendergo/shared/providers/notification_provider.dart';
+import 'package:tendergo/shared/routes/routes.dart';
 import 'package:tendergo/shared/services/auth_service.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
+import 'package:tendergo/shared/widgets/common/notification_bell_widget.dart';
 
 class MobileTenderShellScreen extends StatefulWidget {
   const MobileTenderShellScreen({
@@ -23,6 +27,23 @@ class MobileTenderShellScreen extends StatefulWidget {
 
 class _MobileTenderShellScreenState extends State<MobileTenderShellScreen> {
   int _listVersion = 0;
+  NotificationProvider? _notificationProvider;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _notificationProvider = context.read<NotificationProvider>();
+      _notificationProvider!.startPolling();
+    });
+  }
+
+  @override
+  void dispose() {
+    _notificationProvider?.stopPolling();
+    super.dispose();
+  }
 
   Future<void> _openPostTender() async {
     final result = await Navigator.of(context).push<bool>(
@@ -57,6 +78,10 @@ class _MobileTenderShellScreenState extends State<MobileTenderShellScreen> {
     );
   }
 
+  void _openRecommendations() {
+    Navigator.of(context).pushNamed(AppRoutes.recommendations);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -72,6 +97,13 @@ class _MobileTenderShellScreenState extends State<MobileTenderShellScreen> {
           ),
         ),
         actions: [
+          const NotificationBell(iconColor: AppColors.textPrimary),
+          IconButton(
+            onPressed: _openRecommendations,
+            icon: const Icon(Icons.recommend_outlined),
+            color: AppColors.textPrimary,
+            tooltip: 'For You',
+          ),
           IconButton(
             onPressed: _openUserProfile,
             icon: const Icon(Icons.person_outline_rounded),

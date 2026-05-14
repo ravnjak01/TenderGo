@@ -9,7 +9,7 @@ import 'package:tendergo/shared/widgets/feedback/snackbar_helper.dart';
 import 'package:tendergo/shared/widgets/tender/category_section_widget.dart';
 import 'package:tendergo/shared/widgets/tender/datepicker_widget.dart';
 import 'package:tendergo/shared/widgets/tender/image_upload_section_widget.dart';
-import 'package:tendergo/shared/widgets/tender/submit_row_widget.dart';
+
 
 class MobileTenderPostScreen extends StatefulWidget {
   const MobileTenderPostScreen({super.key});
@@ -170,54 +170,6 @@ class _MobileTenderPostScreenState extends State<MobileTenderPostScreen> {
     }
   }
 
-  Future<void> _saveDraft() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
-    if (_selectedCategoryId == null) {
-      SnackbarHelper.show(context, 'Please select a category.', isError: true);
-      return;
-    }
-    if (_deadline == null) {
-      SnackbarHelper.show(context, 'Please select a deadline.', isError: true);
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final request = TenderInsertRequest(
-        title: _titleCtrl.text.trim(),
-        maxBudget: double.parse(_budgetCtrl.text.trim()),
-        locationName: _locationCtrl.text.trim(),
-        description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
-        categoryId: _selectedCategoryId!,
-        deadline: _deadline!,
-        imageBytes: null,
-      );
-
-      await context.read<TenderProvider>().saveDraft(
-        request: request,
-        imageFiles: _imageFiles,
-      );
-      if (!mounted) return;
-      SnackbarHelper.show(context, 'Draft saved successfully!');
-      Navigator.of(context).pop(true);
-    } catch (e) {
-      if (!mounted) return;
-      SnackbarHelper.show(
-        context,
-        e.toString().replaceFirst('Exception: ', ''),
-        isError: true,
-      );
-    } finally {
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final categories = context.watch<TenderProvider>().categories;
@@ -305,14 +257,33 @@ class _MobileTenderPostScreenState extends State<MobileTenderPostScreen> {
                 buttonHeight: 42,
               ),
               const SizedBox(height: 24),
-              TenderSubmitRow(
-                isLoading: _isLoading,
-                onSaveDraft: _saveDraft,
-                onSubmitTender: _submitTender,
-                useCompactStyle: true,
-                fullWidthOnMobile: false,
-                saveDraftLabel: 'Draft',
-                publishTenderLabel: 'Publish',
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton.icon(
+                  onPressed: _isLoading ? null : _submitTender,
+                  icon: _isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.publish_rounded, color: Colors.white),
+                  label: const Text(
+                    'Publish',
+                    style: TextStyle(color: Colors.white, fontSize: 16),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                ),
               ),
             ],
           ),

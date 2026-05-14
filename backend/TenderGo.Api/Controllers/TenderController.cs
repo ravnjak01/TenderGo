@@ -62,14 +62,6 @@ public class TenderController
     }
 
 
-
-    [HttpPut("{id}/publish")]
-    public async Task<ActionResult<TenderDTO>> Publish(int id)
-    {
-        var result= await _tenderService.Publish(id);
-        return Ok(result);
-    }
-
    
     [Authorize(Roles = $"{AppRoles.Admin},{AppRoles.User}")]
     [HttpPatch("{id}/cancel")]

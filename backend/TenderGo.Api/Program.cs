@@ -20,6 +20,7 @@ using DotNetEnv;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using TenderGo.Services.Mapping;
 using AutoMapper;
+using TenderGo.Recommender;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -120,17 +121,17 @@ builder.Services.AddScoped<EmailService>();
 builder.Services.AddTransient<ICategoryService, CategoryService>();
 builder.Services.AddHostedService<TenderExpiryJob>();
 builder.Services.AddScoped<IImageService, ImageService>();
-
+builder.Services.AddSingleton<RecommenderService>();
+builder.Services.AddSingleton<TenderVectorBuilder>();
 
 builder.Services.AddTransient<BaseState>();
-builder.Services.AddTransient < InitialTenderState>() ;
 builder.Services.AddTransient<OpenTenderState>();
 builder.Services.AddTransient<ClosedTenderState>();
 builder.Services.AddTransient<AwardedTenderState>();
 builder.Services.AddTransient<CancelledTenderState>();
 
 
-builder.Services.AddScoped<OpenBidState>();
+builder.Services.AddScoped<PendingBidState>();
 builder.Services.AddScoped<FinalBidState>();
 
 builder.Services.AddEasyNetQ("host=localhost");

@@ -36,12 +36,6 @@ namespace TenderGo.Services.StateMachines.TenderStates
 
         public virtual Task<TenderDTO> Update(int id, TenderUpdateRequest request) => throw new UserException("Not allowed in this state");
 
-        public virtual Task<TenderDTO> Activate(int id) => throw new UserException("Not allowed in this state");
-
-        public virtual Task<TenderDTO> Hide(int id) => throw new UserException("Not allowed in this state");
-
-        public virtual Task<TenderDTO> Delete(int id) => throw new UserException("Not allowed in this state");
-
         public virtual Task<TenderDTO> Cancel(int id) => throw new UserException("Not allowed in this state");
 
         public virtual Task<TenderDTO> Close(int id) => throw new UserException("Not allowed in this state");

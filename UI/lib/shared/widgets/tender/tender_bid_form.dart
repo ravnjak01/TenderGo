@@ -5,7 +5,6 @@ import 'package:tendergo/shared/core/theme/app_theme.dart';
 import 'package:tendergo/shared/models/dto/bid_dto.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
 import 'package:tendergo/shared/services/bid_service.dart';
-import 'package:tendergo/shared/widgets/tender/tender_section_label.dart';
 
 /// Self-contained bid form. Manages its own controllers and submission state.
 ///
@@ -87,9 +86,9 @@ class _TenderBidFormState extends State<TenderBidForm> {
     _proposalController.clear();
     _deliveryDaysController.clear();
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Bid sent successfully.')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Bid sent successfully.')));
 
     // Parent refresh failures should not turn a successful submit into an error.
     try {
@@ -102,8 +101,7 @@ class _TenderBidFormState extends State<TenderBidForm> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFFBF2),
-        border: Border.all(color: AppColors.primary.withOpacity(0.3), width: 1.2),
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Form(
@@ -111,31 +109,11 @@ class _TenderBidFormState extends State<TenderBidForm> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const TenderSectionLabel(
-              icon: Icons.gavel_rounded,
-              label: 'Your Bid',
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Send a Bid',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Submit your offer for "${widget.tender.title}".',
-              style: const TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 16),
             TextFormField(
               controller: _priceController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
               ],

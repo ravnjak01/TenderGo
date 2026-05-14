@@ -322,14 +322,14 @@ class _BidCard extends StatelessWidget {
                             ),
                             if (isCompact) ...[
                               const SizedBox(height: 8),
-                              _StatusChip(status: bid.status),
+                              _StatusChip(status: bid.status.name),
                             ],
                           ],
                         ),
                       ),
                       if (!isCompact) ...[
                         const SizedBox(width: 8),
-                        _StatusChip(status: bid.status),
+                        _StatusChip(status: bid.status.name),
                       ],
                     ],
                   ),
@@ -403,7 +403,7 @@ class _BidCard extends StatelessWidget {
                     ],
                   ),
 
-                  if (_isAwardedStatus(bid.status)) ...[
+                  if (_isAwardedStatus(bid.status.name)) ...[
                     const SizedBox(height: 12),
                     Align(
                       alignment: Alignment.centerRight,
@@ -415,7 +415,7 @@ class _BidCard extends StatelessWidget {
                     ),
                   ],
 
-                  if (_isCancelableStatus(bid.status)) ...[
+                  if (_isCancelableStatus(bid.status.name)) ...[
   const SizedBox(height: 8), // Smanjio sam malo i razmak iznad
   Align(
     alignment: Alignment.centerRight,

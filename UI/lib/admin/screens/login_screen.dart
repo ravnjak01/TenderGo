@@ -19,19 +19,14 @@ class AdminLoginScreen extends StatefulWidget {
 class _AdminLoginScreenState extends State<AdminLoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  bool _isLoading = false;
   bool _hidePassword = true;
   String? _errorMessage;
   final _formKey = GlobalKey<FormState>();
 
- void _handleLogin() async {
+ Future<void> _handleLogin() async {
   if (!(_formKey.currentState?.validate() ?? false)) return;
 
-  if (!mounted) return;
-  setState(() {
-    _isLoading = true;
-    _errorMessage = null;
-  });
+  setState(() => _errorMessage = null);
 
   final success = await context.read<AuthProvider>().login(
     _emailController.text.trim(),
@@ -42,9 +37,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
 
   if (!success) {
     setState(() {
-      _isLoading = false;
-      _errorMessage =
-          'Sign in not successful. Please check your credentials.';
+      _errorMessage = 'Sign in not successful. Please check your credentials.';
     });
     return;
   }
@@ -120,53 +113,31 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
-                onPressed: () => Navigator.pushNamed(context, '/forgot-password'),
+                onPressed: () =>
+                    Navigator.pushNamed(context, AppRoutes.forgotPassword),
                 child: const Text(
                   'Forgot Password?',
-                  style: TextStyle(fontSize: 14, color: Colors.blue),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.primary,
+                  ),
                 ),
               ),
             ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              height: 55,
-              child: ElevatedButton(
-                onPressed: _isLoading ? null : _handleLogin,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2D4DB5),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: _isLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Text('Sign In', style: TextStyle(fontSize: 16)),
+            const SizedBox(height: 12),
+            Consumer<AuthProvider>(
+              builder: (context, auth, _) => AuthSubmitButton(
+                label: 'Sign In',
+                isLoading: auth.isLoading,
+                onPressed: _handleLogin,
               ),
             ),
             const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text("Don't have an account? "),
-                GestureDetector(
-                  onTap: () => Navigator.pushNamed(context, '/registration'),
-                  child: const Text(
-                    'Sign up',
-                    style: TextStyle(
-                      color: Colors.blue,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
+            AuthNavLink(
+              prompt: "Don't have an account? ",
+              linkText: 'Sign up',
+              onTap: () =>
+                  Navigator.pushNamed(context, AppRoutes.registration),
             ),
           ],
         ),

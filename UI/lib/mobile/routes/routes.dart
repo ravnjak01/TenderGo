@@ -9,10 +9,12 @@ import 'package:tendergo/mobile/screens/reset_password_screen.dart';
 import 'package:tendergo/mobile/screens/tender_details_screen.dart';
 import 'package:tendergo/mobile/screens/tender_post_screen.dart';
 import 'package:tendergo/mobile/screens/tender_shell_screen.dart';
+import 'package:tendergo/shared/screens/user_profile_screen.dart';
 import 'package:tendergo/shared/routes/routes.dart';
+import 'package:tendergo/shared/screens/notification_screen.dart';
+import 'package:tendergo/shared/screens/recommendation_screen.dart';
 import 'package:tendergo/shared/screens/rate_user_screen.dart';
 import 'package:tendergo/shared/screens/user_profile_public_screen.dart';
-import 'package:tendergo/shared/screens/user_profile_screen.dart';
 import 'package:tendergo/shared/services/auth_service.dart';
 import 'package:tendergo/shared/services/bid_service.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
@@ -75,6 +77,14 @@ class MobileRoutes {
           ratedUserName: ratedUserName,
         );
       },
+      AppRoutes.recommendations: (context) {
+        final args = ModalRoute.of(context)?.settings.arguments;
+        final onTap = args is Map
+            ? args['onTenderTapped'] as void Function(int)?
+            : null;
+        return RecommendedForYouScreen(onTenderTapped: onTap);
+      },
+      AppRoutes.notifications: (context) => const NotificationScreen(),
     };
   }
 }

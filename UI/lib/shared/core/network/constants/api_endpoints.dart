@@ -14,6 +14,7 @@ class ApiEndpoints {
   static String uploadImage='Images/upload';
   static String deleteImage='Images';
 
-
-
+  // --- RECOMMENDATIONS ---
+  static const String recommendSimilar = '/recommend/similar';
+  static const String recommendForUser = '/recommend/for-user';
 }

@@ -3,9 +3,9 @@ import 'package:provider/provider.dart';
 import 'package:tendergo/shared/core/utils/validators/validators.dart';
 import 'package:tendergo/shared/providers/auth_provider.dart';
 import 'package:tendergo/shared/routes/routes.dart';
-import 'package:tendergo/admin/widgets/common/app_text_field.dart';
 import 'package:tendergo/admin/widgets/common/auth_scaffold.dart';
 import 'package:tendergo/shared/widgets/feedback/snackbar_helper.dart';
+import 'package:tendergo/shared/widgets/inputs/auth_widget.dart';
 
 class AdminForgotPasswordScreen extends StatefulWidget {
   const AdminForgotPasswordScreen({super.key});
@@ -62,10 +62,9 @@ class _AdminForgotPasswordScreenState extends State<AdminForgotPasswordScreen> {
               style: TextStyle(color: Colors.grey),
             ),
             const SizedBox(height: 25),
-            AppTextField(
+            AuthField(
               controller: _emailController,
               label: 'Email',
-              showLabel: false,
               hint: 'Enter your email',
               keyboardType: TextInputType.emailAddress,
               prefixIcon: Icons.email_outlined,
@@ -81,45 +80,17 @@ class _AdminForgotPasswordScreenState extends State<AdminForgotPasswordScreen> {
             ),
             const SizedBox(height: 20),
             Consumer<AuthProvider>(
-              builder: (context, auth, child) => SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: auth.isLoading ? null : _handleForgotPassword,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    backgroundColor: const Color(0xFF2a5298),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: auth.isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : const Text('Send Reset Link'),
-                ),
+              builder: (context, auth, _) => AuthSubmitButton(
+                label: 'Send Reset Link',
+                isLoading: auth.isLoading,
+                onPressed: _handleForgotPassword,
               ),
             ),
             const SizedBox(height: 15),
-            Center(
-              child: GestureDetector(
-                onTap: () {
-                  Navigator.pushReplacementNamed(context, '/login');
-                },
-                child: const Text(
-                  'Back to Login',
-                  style: TextStyle(
-                    color: Color(0xFF2a5298),
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
+            AuthNavLink(
+              linkText: 'Back to Login',
+              onTap: () =>
+                  Navigator.pushReplacementNamed(context, AppRoutes.login),
             ),
           ],
         ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:tendergo/shared/models/dto/bid_dto.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
+import 'package:tendergo/shared/models/enums/tenderstatus.dart';
 import 'package:tendergo/shared/services/bid_service.dart';
 import 'package:tendergo/shared/services/dio_client.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
@@ -126,10 +127,12 @@ class _TenderBidsScreenState extends State<TenderBidsScreen> {
                     final bid = bids[index];
                     return _BidCard(
                       bid: bid,
-                      statusColor: _statusColor(bid.status),
-                      tenderDto: widget.tenderDto,           // ← add
-                      tenderService: widget.tenderService,   // ← add
-                      onAwarded: _refresh,  
+                      statusColor: _statusColor(bid.status.name),
+                      tenderDto: widget.tenderDto,
+                      tenderService: widget.tenderService,
+                      bidService: _bidService,
+                      allBids: bids,
+                      onAwarded: _refresh,
                     );
                   },
                 ),
@@ -145,11 +148,21 @@ class _TenderBidsScreenState extends State<TenderBidsScreen> {
 class _BidCard extends StatelessWidget {
   final BidDto bid;
   final Color statusColor;
-  final TenderDto tenderDto;           
-  final TenderService tenderService;   
+  final TenderDto tenderDto;
+  final TenderService tenderService;
+  final BidService bidService;
+  final List<BidDto> allBids;
   final VoidCallback onAwarded;
 
-  const _BidCard({required this.bid, required this.statusColor, required this.tenderDto, required this.tenderService, required this.onAwarded });
+  const _BidCard({
+    required this.bid,
+    required this.statusColor,
+    required this.tenderDto,
+    required this.tenderService,
+    required this.bidService,
+    required this.allBids,
+    required this.onAwarded,
+  });
 
  Future<void> _award(BuildContext context) async {
     final confirmed = await AppDialogs.showConfirm(
@@ -165,6 +178,13 @@ class _BidCard extends StatelessWidget {
 
     try {
       await tenderService.award(tenderDto, bid.id);
+
+      // Reject all other pending bids for this tender
+      final rejectFutures = allBids
+          .where((b) => b.id != bid.id && b.status == ApplicationStatus.pending)
+          .map((b) => bidService.update(b.id, {'status': 'rejected'}));
+      await Future.wait(rejectFutures);
+
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -237,7 +257,7 @@ class _BidCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    bid.status,
+                    bid.status.name,
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -316,7 +336,8 @@ class _BidCard extends StatelessWidget {
               ),
             ],
 
-              if (bid.status.toLowerCase() == 'pending') ...[
+                if (tenderDto.status == TenderStatus.closed &&
+                  bid.status == ApplicationStatus.pending) ...[
       const SizedBox(height: 14),
       const Divider(height: 1),
       const SizedBox(height: 10),

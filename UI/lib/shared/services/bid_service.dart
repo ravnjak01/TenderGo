@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:tendergo/shared/core/error/api_error_handler.dart';
 import 'package:tendergo/shared/core/error/bid_error_handler.dart';
+import 'package:tendergo/shared/core/error/error_handler.dart';
 import 'package:tendergo/shared/core/network/constants/bid_api_endpoints.dart';
 import 'package:tendergo/shared/models/dto/bid_dto.dart';
 
@@ -43,7 +43,7 @@ class BidService {
 
 			return BidDto.parseBidList(response.data);
 		} on DioException catch (e) {
-			final message = ApiErrorHandler.extractErrorMessage(e.response?.data) ?? 'Error fetching bids';
+			final message = ErrorHandler.extractErrorMessage(e.response?.data) ?? 'Error fetching bids';
 			if (BidErrorHandler.isDuplicateBidError(e, message)) {
         throw BidAlreadyExistsException(message: message);
       }
@@ -76,7 +76,7 @@ class BidService {
 					.toList(growable: false);
 			}
 
-			final message = ApiErrorHandler.extractErrorMessage(e.response?.data) ?? 'Error fetching user bids';
+			final message = ErrorHandler.extractErrorMessage(e.response?.data) ?? 'Error fetching user bids';
 			if (BidErrorHandler.isDuplicateBidError(e, message)) {
 				throw BidAlreadyExistsException(message: message);
 			}
@@ -101,7 +101,7 @@ class BidService {
 
 			return BidDto.parseBidList(response.data);
 		} on DioException catch (e) {
-			final message = ApiErrorHandler.extractErrorMessage(e.response?.data) ?? 'Error fetching current user bids';
+			final message = ErrorHandler.extractErrorMessage(e.response?.data) ?? 'Error fetching current user bids';
 			if (BidErrorHandler.isDuplicateBidError(e, message)) {
 				throw BidAlreadyExistsException(message: message);
 			}
@@ -122,7 +122,7 @@ class BidService {
 
 			return BidDto.parseBid(response.data);
 		} on DioException catch (e) {
-			final message = ApiErrorHandler.extractErrorMessage(e.response?.data) ?? 'Error fetching bid';
+			final message = ErrorHandler.extractErrorMessage(e.response?.data) ?? 'Error fetching bid';
 			if (BidErrorHandler.isDuplicateBidError(e, message)) {
         throw BidAlreadyExistsException(message: message);
       }
@@ -144,7 +144,7 @@ class BidService {
 
     return BidDto.parseBid(response.data);
   } on DioException catch (e) {
-    final message = ApiErrorHandler.extractErrorMessage(e.response?.data) ?? 'Error creating bid';
+    final message = ErrorHandler.extractErrorMessage(e.response?.data) ?? 'Error creating bid';
 
     // Logika za specifične izuzetke
     if (BidErrorHandler.isDuplicateBidError(e, message)) {
@@ -225,7 +225,7 @@ class BidService {
 
     Future<BidDto> cancel(int id) async {
     try {
-      final response = await _dio.patch(
+      final response = await _dio.put(
         BidApiEndpoints.cancel(id),
         options: await _options(),
       );

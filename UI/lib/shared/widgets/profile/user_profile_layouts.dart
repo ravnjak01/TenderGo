@@ -88,9 +88,18 @@ class UserProfileMobile extends StatelessWidget {
 }
 
 class UserProfileDesktop extends StatelessWidget {
-  const UserProfileDesktop({super.key, required this.user});
+  const UserProfileDesktop({
+    super.key,
+    required this.user,
+    required this.onEdit,
+    required this.onChangePassword,
+    required this.onLogout,
+  });
 
   final UserDto user;
+  final VoidCallback onEdit;
+  final VoidCallback onChangePassword;
+  final VoidCallback onLogout;
 
   @override
   Widget build(BuildContext context) {
@@ -116,35 +125,80 @@ class UserProfileDesktop extends StatelessWidget {
                       flex: 3,
                       child: Column(children: [UserProfileCards(user: user)]),
                     ),
-                    if (user.roles.contains('Admin')) ...[
                     const SizedBox(width: 24),
                     Expanded(
                       flex: 2,
-                      child: Card(
-                        elevation: 0,
-                        color: AppColors.surface,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          side: const BorderSide(color: AppColors.outline),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Roles',
-                                style: Theme.of(context).textTheme.titleMedium
-                                    ?.copyWith(fontWeight: FontWeight.w700),
+                      child: Column(
+                        children: [
+                          if (user.roles.contains('Admin'))
+                            Card(
+                              elevation: 0,
+                              color: AppColors.surface,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                side: const BorderSide(color: AppColors.outline),
                               ),
-                              const SizedBox(height: 12),
-                              UserProfileRolesSection(roles: user.roles),
-                            ],
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Roles',
+                                      style: Theme.of(context).textTheme.titleMedium
+                                          ?.copyWith(fontWeight: FontWeight.w700),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    UserProfileRolesSection(roles: user.roles),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          if (user.roles.contains('Admin'))
+                            const SizedBox(height: 16),
+                          Card(
+                            elevation: 0,
+                            color: AppColors.surface,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              side: const BorderSide(color: AppColors.outline),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Account',
+                                    style: Theme.of(context).textTheme.titleMedium
+                                        ?.copyWith(fontWeight: FontWeight.w700),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  ActionTile(
+                                    icon: Icons.edit_rounded,
+                                    label: 'Edit Profile',
+                                    onTap: onEdit,
+                                  ),
+                                  const SizedBox(height: 10),
+                                  ActionTile(
+                                    icon: Icons.lock_outline_rounded,
+                                    label: 'Change Password',
+                                    onTap: onChangePassword,
+                                  ),
+                                  const SizedBox(height: 10),
+                                  ActionTile(
+                                    icon: Icons.logout_rounded,
+                                    label: 'Sign Out',
+                                    destructive: true,
+                                    onTap: onLogout,
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
-                        ),
+                        ],
                       ),
                     ),
-                  ]
                   ],
                 ),
               ),

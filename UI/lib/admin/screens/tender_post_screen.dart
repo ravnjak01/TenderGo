@@ -130,32 +130,14 @@ class _TenderPostScreenState extends State<TenderPostScreen>
   void _removeImageFile(int index) =>
       setState(() => _imageFiles.removeAt(index));
 
-  TenderInsertRequest _buildRequest() => TenderInsertRequest(
-    title: _titleCtrl.text.trim(),
-    maxBudget: double.parse(_budgetCtrl.text.trim()),
-    locationName: _locationCtrl.text.trim(),
-    description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
-    categoryId: _selectedCategoryId!,
-    deadline: _deadline!,
-    imageBytes: null,
-  );
-
-  bool _validateExtra() {
-    if (_deadline == null) {
-      setState(() => _errorMessage = 'Please select a deadline date.');
-      return false;
-    }
-    if (_selectedCategoryId == null) {
-      setState(() => _errorMessage = 'Please select a category.');
-      return false;
-    }
-    return true;
-  }
-
   Future<void> _submitTender() async {
     if (!_formKey.currentState!.validate()) return;
     if (_deadline == null) {
       SnackbarHelper.show(context, 'Please select a deadline', isError: true);
+      return;
+    }
+    if (_selectedCategoryId == null) {
+      SnackbarHelper.show(context, 'Please select a category', isError: true);
       return;
     }
 
@@ -185,33 +167,6 @@ class _TenderPostScreenState extends State<TenderPostScreen>
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _saveDraft() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
-    if (!_validateExtra()) return;
-
-    final tenderProvider = context.read<TenderProvider>();
-
-    try {
-      // 2. Pozivamo providera
-      await tenderProvider.saveDraft(
-        request: _buildRequest(),
-        imageFiles: _imageFiles,
-      );
-
-      // 3. UI akcije nakon uspjeha
-      if (!mounted) return;
-      SnackbarHelper.show(context, 'Draft saved successfully!');
-
-      await Future.delayed(const Duration(milliseconds: 900));
-      if (mounted) Navigator.pop(context, true);
-    } catch (e) {
-      // 4. UI akcije u slučaju greške
-      if (!mounted) return;
-      String error = e.toString().replaceFirst('Exception: ', '');
-      SnackbarHelper.show(context, error, isError: true);
     }
   }
 
@@ -349,7 +304,6 @@ class _TenderPostScreenState extends State<TenderPostScreen>
                 const SizedBox(height: 32),
                 TenderSubmitRow(
                   isLoading: _isLoading,
-                  onSaveDraft: _saveDraft,
                   onSubmitTender: _submitTender,
                 ),
 

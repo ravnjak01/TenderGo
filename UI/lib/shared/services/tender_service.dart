@@ -134,21 +134,7 @@ class TenderService {
     }
   }
 
-  // ===== DRAFTS =====
-  Future<List<TenderDto>> getDrafts() async {
-    try {
-      final response = await _dio.get(
-        TenderApiEndpoints.getDrafts,
-        options: await _options(),
-      );
-
-      return List<TenderDto>.from(
-        response.data.map((x) => TenderDto.fromJson(x)),
-      );
-    } on DioException catch (e) {
-      throw Exception(e.response?.data ?? 'Error fetching draft tenders');
-    }
-  }
+ 
 
    Future<List<TenderDto>> getCancelled() async {
     try {
@@ -186,25 +172,7 @@ class TenderService {
       throw Exception('An unexpected error occurred: $e');
     }
   }
-  // ===== CREATE DRAFT =====
-  Future<TenderDto> createDraft(
-    TenderInsertRequest data, {
-    List<PlatformFile>? imageFiles,
-  }) async {
-    try {
-      final request = await _withImageBytes(data, imageFiles);
-
-      final response = await _dio.post(
-        TenderApiEndpoints.insertDraft,
-        data: request.toJson(),
-        options: await _options(),
-      );
-
-      return TenderDto.fromJson(response.data);
-    } on DioException catch (e) {
-      throw Exception(e.response?.data ?? 'Error creating draft tender');
-    }
-  }
+ 
 
   // ===== UPDATE =====
   Future<bool> update(int id, Map<String, dynamic> data) async {
@@ -235,19 +203,7 @@ class TenderService {
     }
   }
 
-  // ===== ACTIVATE =====
-  Future<dynamic> activate(int id) async {
-    try {
-      final response = await _dio.put(
-        TenderApiEndpoints.activate(id),
-        options: await _options(),
-      );
-
-      return response.data;
-    } on DioException catch (e) {
-      throw Exception(e.response?.data ?? 'Error activating tender');
-    }
-  }
+ 
 
   // ===== AWARD =====
   Future<TenderDto> award(TenderDto tender, int bidId) async {

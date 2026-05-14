@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tendergo/admin/screens/admin_screen.dart';
+import 'package:tendergo/shared/providers/admin_provider.dart';
 import 'package:tendergo/admin/screens/forgot_password_screen.dart';
 import 'package:tendergo/admin/screens/home_screen.dart';
 import 'package:tendergo/admin/screens/login_screen.dart';
@@ -13,6 +14,8 @@ import 'package:tendergo/admin/screens/tender_post_screen.dart';
 import 'package:tendergo/admin/screens/tender_shell_screen.dart';
 import 'package:tendergo/shared/routes/routes.dart';
 import 'package:tendergo/shared/screens/rate_user_screen.dart';
+import 'package:tendergo/shared/screens/notification_screen.dart';
+import 'package:tendergo/shared/screens/recommendation_screen.dart';
 import 'package:tendergo/shared/screens/user_profile_public_screen.dart';
 import 'package:tendergo/shared/screens/user_profile_screen.dart';
 import 'package:tendergo/shared/services/admin_service.dart';
@@ -55,10 +58,12 @@ class AdminRoutes {
         tenderService: tenderService,
       ),
       AppRoutes.admin: (context) => AdminScreen(
-        adminService: adminService,
-        authService: authService,
-        tenderService: tenderService,
-        categoryService: categoryService,
+        provider: AdminProvider(
+          adminService: adminService,
+          authService: authService,
+          tenderService: tenderService,
+          categoryService: categoryService,
+        ),
       ),
        AppRoutes.userPublicProfile: (context) {
         final args = ModalRoute.of(context)?.settings.arguments;
@@ -90,6 +95,14 @@ class AdminRoutes {
         );
       },
       AppRoutes.home: (context) => const HomeScreen(),
+      AppRoutes.recommendations: (context) {
+        final args = ModalRoute.of(context)?.settings.arguments;
+        final onTap = args is Map
+            ? args['onTenderTapped'] as void Function(int)?
+            : null;
+        return RecommendedForYouScreen(onTenderTapped: onTap);
+      },
+      AppRoutes.notifications: (context) => const NotificationScreen(),
     };
   }
 }

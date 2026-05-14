@@ -26,6 +26,7 @@ namespace TenderGo.Services.Interfaces
         string GenerateJwtToken(ApplicationUser user,IEnumerable<Claim>claims);
         string GetCurrentUserId();
         Task<UserDTO> GetMyProfile();
+        bool IsInRole(string role);
 
     }
 }
