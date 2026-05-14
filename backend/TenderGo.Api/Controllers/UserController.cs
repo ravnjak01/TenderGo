@@ -32,7 +32,7 @@ namespace TenderGo.Api.Controllers
 
         [HttpPost("rate")]
         [Authorize]
-        public async Task<IActionResult> RateUser([FromBody] RateUserDTO dto)
+        public async Task<IActionResult> RateUser([FromBody] RateUserRequest dto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
             await _userService.RateUserAsync(userId, dto);

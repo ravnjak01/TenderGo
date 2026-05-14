@@ -11,22 +11,16 @@ namespace TenderGo.Models.Requests
     public class TenderInsertRequest
     {
         [Required]
-
         public string Title { get; set; }
         [Required]
-
         public decimal MaxBudget { get; set; }
         [Required]
-        
         public string LocationName { get; set; }
         public string? Description { get; set; }
         [Required]
-
         public int CategoryId { get; set; }
         [Required]
-
         public DateTime Deadline { get; set; }
-
         public List<byte[]>? ImageBytes { get; set; } = new();
 
     }

@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TenderGo.Models.DTOs
+namespace TenderGo.Models.Requests
 {
     public class ChangePasswordDTO
     {
@@ -14,8 +14,8 @@ namespace TenderGo.Models.DTOs
 
         [Required]
         [MinLength(8, ErrorMessage = "Password has to be 8 characters minimum.")]
-        
-        [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$",ErrorMessage = "Password has to contain capital letter,small letter and number.")]
+
+        [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$", ErrorMessage = "Password has to contain capital letter,small letter and number.")]
         public string NewPassword { get; set; }
 
         [Required]

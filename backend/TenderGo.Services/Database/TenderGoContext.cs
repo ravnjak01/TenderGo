@@ -59,7 +59,15 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
                 .HasForeignKey(t => t.CreatedByUserId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            entity.HasOne(t => t.Category)
+                  .WithMany()
+                  .HasForeignKey(t => t.CategoryId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+
+
         });
+        modelBuilder.Entity<Tender>().HasQueryFilter(t => !t.IsDeleted);
 
         modelBuilder.Entity<Tender>().Navigation(b => b.CreatedByUser).AutoInclude();//da se uvijek ucitava korisnik koji je kreirao tender
 
@@ -103,6 +111,11 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
             // 1 korisnik može poslati samo jedan bid po tenderu
             entity.HasIndex(b => new { b.TenderId, b.SubmittedByUserId })
                  .IsUnique();
+
+            entity.HasOne(b => b.SubmittedByUser)
+            .WithMany() 
+            .HasForeignKey(b => b.SubmittedByUserId)
+            .OnDelete(DeleteBehavior.Restrict);
         });
 
 
@@ -115,7 +128,23 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
                   .OnDelete(DeleteBehavior.Cascade); 
         });
 
-   
+        modelBuilder.Entity<Notification>(entity =>
+        {
+                        entity.HasOne(n => n.User) 
+                     .WithMany()
+                     .HasForeignKey(n => n.UserId)
+                     .OnDelete(DeleteBehavior.Cascade);
+        });
+
+
+        modelBuilder.Entity<RefreshToken>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasOne(rt => rt.User)
+                  .WithMany()
+                  .HasForeignKey(rt => rt.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
 
     }
 

@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using TenderGo.Models.DTOs; 
+using TenderGo.Models.DTOs;
 using TenderGo.Services.Interfaces;
 
 namespace TenderGo.Services.Services
@@ -14,22 +14,44 @@ namespace TenderGo.Services.Services
     {
         private readonly IWebHostEnvironment _environment;
 
+        // Allowed MIME types
+        private static readonly HashSet<string> AllowedMimeTypes = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "image/jpeg",
+            "image/png",
+            "image/gif",
+            "image/webp",
+            "image/bmp"
+        };
+
+        // Magic byte signatures: (offset, bytes, label)
+        private static readonly List<(int Offset, byte[] Signature, string Format)> MagicSignatures = new()
+        {
+            (0, new byte[] { 0xFF, 0xD8, 0xFF },             "JPEG"),
+            (0, new byte[] { 0x89, 0x50, 0x4E, 0x47,
+                             0x0D, 0x0A, 0x1A, 0x0A },       "PNG"),
+            (0, new byte[] { 0x47, 0x49, 0x46, 0x38 },       "GIF"),  // GIF87a / GIF89a
+            (0, new byte[] { 0x52, 0x49, 0x46, 0x46 },       "WEBP"), // RIFF....WEBP checked separately
+            (0, new byte[] { 0x42, 0x4D },                   "BMP"),
+        };
+
         public ImageService(IWebHostEnvironment environment)
         {
             _environment = environment;
         }
 
-        public async Task<TenderImageDTO> UploadImageAsync(byte[] imageBytes, string subFolder, bool isPrimary = false)
+        // ─── Upload (bytes) ───────────────────────────────────────────────────────
+        public async Task<TenderImageDTO> UploadImageAsync(
+            byte[] imageBytes, string subFolder, bool isPrimary = false)
         {
             if (imageBytes == null || imageBytes.Length == 0)
                 throw new ArgumentException("Niz bajtova je prazan.");
 
-            // 1. Izračunaj hash odmah
-            var hash = await CalculateHash(imageBytes);
-            var extension = ".jpg";
+            if (!IsValidImage(imageBytes))
+                throw new ArgumentException("Fajl nije validna slika (nevažeći magic bytes).");
 
-            // 2. Koristi HASH kao ime fajla umjesto GUID-a!
-            // Na ovaj način, ista slika će se uvijek zvati isto na disku.
+            var hash = await CalculateHash(imageBytes);
+            var extension = DetectExtension(imageBytes);
             string fileName = $"{hash}{extension}";
             string folderPath = Path.Combine(_environment.WebRootPath, "uploads", subFolder);
 
@@ -38,28 +60,49 @@ namespace TenderGo.Services.Services
 
             string fullPath = Path.Combine(folderPath, fileName);
 
-            // 3. Provjeri postoji li fajl fizički na disku prije pisanja
             if (!File.Exists(fullPath))
-            {
                 await File.WriteAllBytesAsync(fullPath, imageBytes);
-            }
 
             return new TenderImageDTO
             {
                 ImageUrl = $"/uploads/{subFolder}/{fileName}",
                 FileName = fileName,
                 IsPrimary = isPrimary,
-                ImageHash = hash 
+                ImageHash = hash
             };
         }
 
-        public async Task<TenderImageDTO> UploadImageAsync(IFormFile file, string subFolder, bool isPrimary = false)
+        // ─── Upload (IFormFile) ───────────────────────────────────────────────────
+        public async Task<TenderImageDTO> UploadImageAsync(
+            IFormFile file, string subFolder, bool isPrimary = false)
         {
+            // Validate MIME type declared by the client first (fast check)
+            if (!AllowedMimeTypes.Contains(file.ContentType))
+                throw new ArgumentException(
+                    $"Nedozvoljeni tip fajla: {file.ContentType}. " +
+                    $"Dozvoljeni tipovi: {string.Join(", ", AllowedMimeTypes)}");
+
             using var ms = new MemoryStream();
             await file.CopyToAsync(ms);
-            return await UploadImageAsync(ms.ToArray(), subFolder, isPrimary);
+            byte[] bytes = ms.ToArray();
+
+            // Deep validation: magic bytes must also match
+            if (!IsValidImage(bytes))
+                throw new ArgumentException(
+                    "Sadržaj fajla ne odgovara deklarisanom tipu (magic bytes provjera nije prošla).");
+
+            // Cross-check: declared MIME must agree with detected format
+            string detectedMime = DetectMimeType(bytes);
+            if (!string.IsNullOrEmpty(detectedMime) &&
+                !detectedMime.Equals(file.ContentType, StringComparison.OrdinalIgnoreCase))
+                throw new ArgumentException(
+                    $"MIME tip '{file.ContentType}' ne odgovara stvarnom formatu fajla '{detectedMime}'.");
+
+            return await UploadImageAsync(bytes, subFolder, isPrimary);
         }
-        public async  Task<string> CalculateHash(byte[] data)
+
+        // ─── Hash ─────────────────────────────────────────────────────────────────
+        public async Task<string> CalculateHash(byte[] data)
         {
             return await Task.Run(() =>
             {
@@ -69,17 +112,98 @@ namespace TenderGo.Services.Services
             });
         }
 
-
+        // ─── Delete ───────────────────────────────────────────────────────────────
         public void DeleteImage(string relativePath)
         {
             if (string.IsNullOrEmpty(relativePath)) return;
-
-            var fullPath = Path.Combine(_environment.WebRootPath, relativePath.TrimStart('/'));
-
+            var fullPath = Path.Combine(
+                _environment.WebRootPath, relativePath.TrimStart('/'));
             if (File.Exists(fullPath))
-            {
                 File.Delete(fullPath);
+        }
+
+        // ─── IsValidImage ─────────────────────────────────────────────────────────
+        /// <summary>
+        /// Validates image bytes against known magic byte signatures.
+        /// Checks both the magic bytes AND (for WebP) the RIFF/WEBP marker.
+        /// Does NOT rely on file extension or client-declared MIME type.
+        /// </summary>
+        public bool IsValidImage(byte[] fileBytes)
+        {
+            if (fileBytes == null || fileBytes.Length < 12) return false;
+
+            foreach (var (offset, signature, format) in MagicSignatures)
+            {
+                if (fileBytes.Length < offset + signature.Length) continue;
+
+                bool matches = fileBytes
+                    .Skip(offset)
+                    .Take(signature.Length)
+                    .SequenceEqual(signature);
+
+                if (!matches) continue;
+
+                // Extra check for WebP: RIFF????WEBP
+                if (format == "WEBP")
+                {
+                    // bytes 8-11 must be W E B P
+                    var webpMarker = new byte[] { 0x57, 0x45, 0x42, 0x50 };
+                    bool isWebp = fileBytes.Skip(8).Take(4).SequenceEqual(webpMarker);
+                    if (isWebp) return true;
+                    continue; // RIFF but not WEBP — keep checking other sigs
+                }
+
+                return true;
             }
+
+            return false;
+        }
+
+        // ─── Helpers ──────────────────────────────────────────────────────────────
+
+        /// <summary>Returns the detected MIME type from magic bytes, or empty string.</summary>
+        private static string DetectMimeType(byte[] bytes)
+        {
+            if (bytes.Length >= 3 &&
+                bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF)
+                return "image/jpeg";
+
+            if (bytes.Length >= 8 &&
+                bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E &&
+                bytes[3] == 0x47 && bytes[4] == 0x0D && bytes[5] == 0x0A &&
+                bytes[6] == 0x1A && bytes[7] == 0x0A)
+                return "image/png";
+
+            if (bytes.Length >= 4 &&
+                bytes[0] == 0x47 && bytes[1] == 0x49 &&
+                bytes[2] == 0x46 && bytes[3] == 0x38)
+                return "image/gif";
+
+            if (bytes.Length >= 12 &&
+                bytes[0] == 0x52 && bytes[1] == 0x49 &&
+                bytes[2] == 0x46 && bytes[3] == 0x46 &&
+                bytes[8] == 0x57 && bytes[9] == 0x45 &&
+                bytes[10] == 0x42 && bytes[11] == 0x50)
+                return "image/webp";
+
+            if (bytes.Length >= 2 && bytes[0] == 0x42 && bytes[1] == 0x4D)
+                return "image/bmp";
+
+            return string.Empty;
+        }
+
+        /// <summary>Returns the file extension detected from magic bytes.</summary>
+        private static string DetectExtension(byte[] bytes)
+        {
+            return DetectMimeType(bytes) switch
+            {
+                "image/jpeg" => ".jpg",
+                "image/png" => ".png",
+                "image/gif" => ".gif",
+                "image/webp" => ".webp",
+                "image/bmp" => ".bmp",
+                _ => ".jpg"   // safe fallback
+            };
         }
     }
 }

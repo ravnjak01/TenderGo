@@ -10,15 +10,16 @@ using TenderGo.Services.Services;
 
 namespace TenderGo.Services.Interfaces
 {
-    public interface IBidService:IReadService<BidDTO>,IWriteService<BidDTO, BidInsertRequest, BidUpdateRequest>
+    public interface IBidService:IReadService<BidDTO>
     {
 
         Task<BidDTO>Withdraw(int bidId);
         Task<List<BidDTO>> GetBidsForTender(int tenderId);
-        Task<BidDTO> Update(int id, BidUpdateRequest request);
         Task<List<string>> AllowedActions(int bidId);
         Task<List<BidDTO>> GetBidsByUser(string userId);
         Task<BidDTO> Cancel(int bidId);
+        Task<BidDTO> Insert(BidInsertRequest request);
+        Task Delete(int id);
 
     }
 }

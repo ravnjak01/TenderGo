@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using EasyNetQ;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -19,11 +20,11 @@ namespace TenderGo.Services.StateMachines.TenderStates
 {
     public class ClosedTenderState : BaseState
     {
-
-        public ClosedTenderState(IServiceProvider serviceProvider, TenderGoContext context, IMapper mapper, ILogger<ClosedTenderState> logger)
+        private readonly IPubSub _pubSub;
+        public ClosedTenderState(IServiceProvider serviceProvider, TenderGoContext context, IMapper mapper, ILogger<ClosedTenderState> logger,IPubSub pubSub)
             : base(serviceProvider, context, mapper, logger)
         {
-
+            _pubSub = pubSub;
         }
 
 
@@ -51,6 +52,18 @@ namespace TenderGo.Services.StateMachines.TenderStates
             }
 
             await _context.SaveChangesAsync();
+
+            //await _pubSub.PublishAsync(new TenderAwardedEvent
+            //{
+            //    TenderId = tender.Id,
+            //    TenderTitle = tender.Title,
+            //    WinnerUserId = winningBid.SubmittedByUserId,
+            //    OtherUserIds = tender.Bids
+            //    .Where(b => b.Id != bidId)
+            //    .Select(b => b.SubmittedByUserId)
+            //    .ToList()
+            //}, cfg => cfg.WithTopic("tender_awarded"));
+
 
             return _mapper.Map<TenderDTO>(tender);
         }

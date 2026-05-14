@@ -51,7 +51,6 @@ public class EmailService
         }
         catch (OperationCanceledException)
         {
-            // Logika ako je Task otkazan prije slanja
             throw;
         }
         catch (Exception ex)

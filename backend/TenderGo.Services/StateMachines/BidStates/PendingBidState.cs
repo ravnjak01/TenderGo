@@ -3,7 +3,7 @@ using EasyNetQ;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.Collections.Generic;
+using System.Collections.Generic; 
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -65,28 +65,28 @@ namespace TenderGo.Services.StateMachines.BidStates
             return _mapper.Map<BidDTO>(entity);
         }
 
-        public override async Task<BidDTO> Update(int id, BidUpdateRequest request)
-        {
-            var bid = await _context.Bids.Include(b => b.Tender).FirstOrDefaultAsync(x => x.Id == id)
-                ?? throw new NotFoundException("Bid not found",new { Bid="Bid",Id=id});
+        //public override async Task<BidDTO> Update(int id, BidUpdateRequest request)
+        //{
+        //    var bid = await _context.Bids.Include(b => b.Tender).FirstOrDefaultAsync(x => x.Id == id)
+        //        ?? throw new NotFoundException("Bid not found",new { Bid="Bid",Id=id});
 
-            var authService = _serviceProvider.GetRequiredService<IAuthService>();
-            if (bid.SubmittedByUserId != authService.GetCurrentUserId())
-            {
-                throw new UserException("You can only modify your own bids.");
-            }
+        //    var authService = _serviceProvider.GetRequiredService<IAuthService>();
+        //    if (bid.SubmittedByUserId != authService.GetCurrentUserId())
+        //    {
+        //        throw new UserException("You can only modify your own bids.");
+        //    }
 
 
 
-            if (bid.Tender.Status != TenderStatus.Open)
-                throw new UserException("Tender is no longer open for changes.");
+        //    if (bid.Tender.Status != TenderStatus.Open)
+        //        throw new UserException("Tender is no longer open for changes.");
 
-            _mapper.Map(request, bid);
-            await _context.SaveChangesAsync();
+        //    _mapper.Map(request, bid);
+        //    await _context.SaveChangesAsync();
           
 
-            return _mapper.Map<BidDTO>(bid);
-        }
+        //    return _mapper.Map<BidDTO>(bid);
+        //}
 
         public override async Task<BidDTO> Cancel(int id)
         {
@@ -107,7 +107,6 @@ namespace TenderGo.Services.StateMachines.BidStates
 
 
             bid.Status = ApplicationStatus.Withdrawn;
-            await _context.SaveChangesAsync();
             return _mapper.Map<BidDTO>(bid);
         }
 

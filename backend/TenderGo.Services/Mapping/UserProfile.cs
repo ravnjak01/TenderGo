@@ -33,7 +33,7 @@ namespace TenderGo.Services.Mapping
             src.CreatedTenders != null ? src.CreatedTenders.Count : 0))
         .ForMember(dest => dest.BidsCount, opt => opt.Ignore());
 
-            CreateMap<UpdateAddressDTO, Address>()
+            CreateMap<UpdateAddressRequest, Address>()
     .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
 
             CreateMap<UpdateProfileRequest, ApplicationUser>()

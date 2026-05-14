@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace TenderGo.Models.DTOs
 {
-    public class UpdateAddressDTO
+    public class UpdateAddressRequest
     {
         public string? Street { get; set; }
         public string? City { get; set; }

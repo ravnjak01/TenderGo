@@ -20,6 +20,7 @@ using AutoMapper;
 using TenderGo.Services.Services.Exceptions;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Cryptography;
 
 namespace TenderGo.Services.Services
 {
@@ -32,7 +33,9 @@ namespace TenderGo.Services.Services
         private readonly IMapper _mapper;
         private readonly ILogger<AuthService> _logger;
         private readonly EmailService _emailService;
-        public AuthService(UserManager<ApplicationUser> userManager, IConfiguration config, IHttpContextAccessor httpContextAccessor, TenderGoContext context, IMapper mapper, ILogger<AuthService> logger, EmailService emailService
+        private readonly IConfiguration _configuration;
+        private readonly string _cloudName;
+        public AuthService(UserManager<ApplicationUser> userManager, IConfiguration config, IHttpContextAccessor httpContextAccessor, TenderGoContext context, IMapper mapper, ILogger<AuthService> logger, EmailService emailService, IConfiguration configuration
             )
         {
             _logger = logger;
@@ -42,6 +45,8 @@ namespace TenderGo.Services.Services
             _context = context;
             _mapper = mapper;
             _emailService = emailService;
+            _configuration = configuration;
+            _cloudName = _configuration["AppSettings:FrontendUrl"];
         }
 
         public async Task<IdentityResult> RegisterAsync(RegisterRequest dto)
@@ -113,17 +118,50 @@ namespace TenderGo.Services.Services
 
             var token = GenerateJwtToken(user, claims);
 
+            var existingTokens = await _context.RefreshTokens
+          .Where(rt => rt.UserId == user.Id && !rt.IsRevoked)
+          .ToListAsync();
+
+            foreach (var existing in existingTokens)
+            {
+                existing.IsRevoked = true;
+                existing.RevokedAt = DateTime.UtcNow;
+                existing.UpdatedAt = DateTime.UtcNow;
+                existing.UpdatedByUserId = user.Id;
+            }
+
+            var refreshTokenExpiryDays = int.Parse(_config["Jwt:RefreshTokenExpiryDays"] ?? "7");
+            var refreshToken = new RefreshToken
+            {
+                Token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64)),
+                UserId = user.Id,
+                Expires = DateTime.UtcNow.AddDays(refreshTokenExpiryDays),
+                IsRevoked = false,
+                CreatedAt = DateTime.UtcNow,
+                CreatedByUserId = user.Id
+            };
+
+            await _context.RefreshTokens.AddAsync(refreshToken);
+            await _context.SaveChangesAsync();
+
+            _httpContextAccessor.HttpContext?.Response.Cookies.Append("refreshToken", refreshToken.Token, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Expires = refreshToken.Expires
+            });
+
+
             _logger.LogInformation("User with email {Email} logged in successfully", dto.Email);
             return new LoginResponseDto
             {
                 Token = token,
                 ExpiresAt = DateTime.UtcNow.AddMinutes(
-            int.Parse(_config["Jwt:ExpiresInMinutes"])
-
-
-
-        )
+                 int.Parse(_config["Jwt:ExpiresInMinutes"])
+                )
             };
+
 
 
         }
@@ -144,12 +182,15 @@ namespace TenderGo.Services.Services
                 throw new UserException("User is not defined.");
             }
 
-            var storedToken = await _context.RefreshTokens.FirstOrDefaultAsync(rt => rt.Token == refreshToken && rt.UserId == userId);
+            var storedToken = await _context.RefreshTokens.FirstOrDefaultAsync(rt => rt.Token == refreshToken && rt.UserId == userId && !rt.IsRevoked);
 
 
             if (storedToken != null)
             {
-                _context.RefreshTokens.Remove(storedToken);
+                storedToken.IsRevoked = true;
+                storedToken.RevokedAt = DateTime.UtcNow;
+                storedToken.UpdatedAt = DateTime.UtcNow;
+                storedToken.UpdatedByUserId = userId;
                 await _context.SaveChangesAsync();
             }
 
@@ -212,7 +253,7 @@ namespace TenderGo.Services.Services
         {
 
             var userId = _httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier);
-            return userId ?? throw new Exception("User not logged");
+            return userId ?? throw new UnauthorizedException();
         }
 
         public async Task<UserDTO> GetMyProfile()
@@ -242,19 +283,13 @@ namespace TenderGo.Services.Services
                 _logger.LogWarning($"Trying to reset for nonexisting email : {model.Email}");
                 return;
             }
-            try
-            {
-                var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-                var resetLink = $"http://localhost:3000/#/reset-password?token={Uri.EscapeDataString(token)}&email={Uri.EscapeDataString(user.Email)}";
 
-                await _emailService.SendResetPasswordEmail(user.Email, resetLink, cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Error during sending an email for {model.Email}");
+            var frontendUrl = _configuration["AppSettings:FrontendUrl"];
 
-                throw new Exception("Sending an email was not successfull.");
-            }
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+                var resetLink = $"{frontendUrl}/#/reset-password?token={Uri.EscapeDataString(token)}&email={Uri.EscapeDataString(user.Email)}";
+
+           await _emailService.SendResetPasswordEmail(user.Email, resetLink, cancellationToken);
         }
 
         public async Task<IdentityResult> ResetPasswordAsync(ResetPasswordRequest model)
@@ -272,6 +307,68 @@ namespace TenderGo.Services.Services
             return _httpContextAccessor.HttpContext?.User?.IsInRole(role) ?? false;
         }
 
+        public async Task<LoginResponseDto?> RefreshTokenAsync()
+        {
+            var refreshTokenValue = _httpContextAccessor.HttpContext?.Request.Cookies["refreshToken"];
+            if (string.IsNullOrEmpty(refreshTokenValue))
+                throw new UserException("Refresh token not found.");
+
+            var storedToken = await _context.RefreshTokens
+                .Include(rt => rt.User)
+                .FirstOrDefaultAsync(rt => rt.Token == refreshTokenValue);
+
+            if (storedToken == null || !storedToken.IsActive)
+                throw new UserException("Invalid or expired refresh token.");
+
+            var user = storedToken.User;
+            var roles = await _userManager.GetRolesAsync(user);
+
+            var claims = new List<Claim>
+    {
+        new Claim(ClaimTypes.NameIdentifier, user.Id),
+        new Claim(ClaimTypes.Email, user.Email),
+        new Claim(ClaimTypes.Name, user.UserName),
+        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+    };
+
+            foreach (var role in roles)
+                claims.Add(new Claim(ClaimTypes.Role, role));
+
+            var newJwtToken = GenerateJwtToken(user, claims);
+
+            storedToken.IsRevoked = true;
+            storedToken.RevokedAt = DateTime.UtcNow;
+            storedToken.UpdatedAt = DateTime.UtcNow;
+            storedToken.UpdatedByUserId = user.Id;
+
+            var refreshTokenExpiryDays = int.Parse(_config["Jwt:RefreshTokenExpiryDays"] ?? "7");
+            var newRefreshToken = new RefreshToken
+            {
+                Token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64)),
+                UserId = user.Id,
+                Expires = DateTime.UtcNow.AddDays(refreshTokenExpiryDays),
+                IsRevoked = false,
+                CreatedAt = DateTime.UtcNow,
+                CreatedByUserId = user.Id
+            };
+
+            await _context.RefreshTokens.AddAsync(newRefreshToken);
+            await _context.SaveChangesAsync();
+
+            _httpContextAccessor.HttpContext?.Response.Cookies.Append("refreshToken", newRefreshToken.Token, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Expires = newRefreshToken.Expires
+            });
+
+            return new LoginResponseDto
+            {
+                Token = newJwtToken,
+                ExpiresAt = DateTime.UtcNow.AddMinutes(int.Parse(_config["Jwt:ExpiresInMinutes"]))
+            };
+        }
 
     }
 }

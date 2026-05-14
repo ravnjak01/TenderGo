@@ -11,7 +11,7 @@ namespace TenderGo.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]                         // require login — adjust as needed
+[Authorize]                         
 public class RecommendController : ControllerBase
 {
     private readonly TenderGoContext _db;

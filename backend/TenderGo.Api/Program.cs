@@ -136,10 +136,20 @@ builder.Services.AddScoped<FinalBidState>();
 
 builder.Services.AddEasyNetQ("host=localhost");
 
+builder.Services.AddMemoryCache();
 
-builder.Services.AddCors(options => {
-    options.AddPolicy("AllowAll", policy => {
-        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+var allowedOrigins = builder.Configuration
+    .GetSection("CorsSettings:AllowedOrigins")
+    .Get<string[]>();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("TenderGoPolicy", policy =>
+    {
+        policy.WithOrigins(allowedOrigins) 
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
     });
 });
 
@@ -153,21 +163,23 @@ builder.Services.AddCors(options => {
 
 // --- OVDE SE ZAKLJUČAVAJU SERVISI ---
 var app = builder.Build();
-//app.UseMiddleware<GlobalExceptionMiddleware>();
 
-app.UseStaticFiles(); 
+app.UseStaticFiles();
 
 
-app.UseSwagger();
-app.UseSwaggerUI(c => {
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "TenderGo API V1");
-    c.RoutePrefix = "swagger"; 
-  
-});
-
-if (!app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(c => {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "TenderGo API V1");
+        c.RoutePrefix = "swagger";
+    });
+}
+else
 {
     app.UseHttpsRedirection();
+
+    app.UseHsts();
 }
 
 
