@@ -21,6 +21,8 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
     public virtual DbSet<TenderImage> TenderImages { get; set; }
     public virtual DbSet<RefreshToken> RefreshTokens { get; set; }
     public DbSet<Notification> Notifications { get; set; }
+    public DbSet<Location> Locations { get; set; }
+
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -64,13 +66,16 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
                   .HasForeignKey(t => t.CategoryId)
                   .OnDelete(DeleteBehavior.Restrict);
 
-
-
         });
         modelBuilder.Entity<Tender>().HasQueryFilter(t => !t.IsDeleted);
 
         modelBuilder.Entity<Tender>().Navigation(b => b.CreatedByUser).AutoInclude();//da se uvijek ucitava korisnik koji je kreirao tender
 
+        modelBuilder.Entity<Tender>()
+        .HasOne(t => t.Location)
+        .WithMany() 
+        .HasForeignKey(t => t.LocationId)
+        .OnDelete(DeleteBehavior.Restrict);
         //rating
         modelBuilder.Entity<Rating>(entity =>
         {
@@ -144,6 +149,24 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
                   .WithMany()
                   .HasForeignKey(rt => rt.UserId)
                   .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<Location>(entity =>
+        {
+            entity.ToTable("Locations");
+
+            entity.HasKey(l => l.Id);
+
+            entity.Property(l => l.Name)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(l => l.Country)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(l => l.Region)
+                .HasMaxLength(100);
         });
 
     }

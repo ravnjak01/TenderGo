@@ -24,8 +24,9 @@ public class TenderVectorBuilder
             Title = tender.Title,
             Status = tender.Status,
             Category = tender.Category?.Name ?? tender.CategoryId.ToString(),
-            Country = (tender.Country ?? "").ToLower().Trim(),
-            LocationName = (tender.LocationName ?? "").ToLower().Trim(),
+            Country = (tender.Location?.Country ?? "").ToLower().Trim(),
+            City = (tender.Location?.Name ?? "").ToLower().Trim(), 
+            Region = (tender.Location?.Region ?? "").ToLower().Trim(),
             BudgetBucket = GetBudgetBucket(tender.MaxBudget),
             Keywords = ExtractKeywords(tender.Title, tender.Description),
         };

@@ -34,6 +34,7 @@ namespace TenderGo.Services.Services
 
             while (!stoppingToken.IsCancellationRequested)
             {
+                await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
                 await ProcessExpiredTenders(stoppingToken);
                 await Task.Delay(_interval, stoppingToken);
             }

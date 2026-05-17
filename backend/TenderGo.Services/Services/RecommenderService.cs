@@ -61,7 +61,7 @@ public class RecommenderService
         score += WeightCountry * ExactMatchScore(a.Country, b.Country);
         score += WeightBudget * ExactMatchScore(a.BudgetBucket, b.BudgetBucket);
         score += WeightKeywords * KeywordSimilarity(a.Keywords, b.Keywords);
-        score += WeightLocation * LocationSimilarity(a.LocationName, b.LocationName, a.Country, b.Country);
+        score += WeightLocation * LocationSimilarity(a.City, b.City, a.Region ,b.Region,a.Country, b.Country);
 
         return Math.Round(score, 4);
     }
@@ -104,12 +104,19 @@ public class RecommenderService
     /// Gives full score if same city, partial score if same country only.
     /// </summary>
     private static double LocationSimilarity(
-        string locA, string locB,
-        string countryA, string countryB)
+        string cityA, string cityB, string regionA, string regionB, string countryA, string countryB
+        )
     {
-        if (string.Equals(locA, locB, StringComparison.OrdinalIgnoreCase)) return 1.0;
-        if (string.Equals(countryA, countryB, StringComparison.OrdinalIgnoreCase)) return 0.4;
-        return 0.0;
+        if (countryA != countryB) return 0.0;
+
+        // 2. Ako su u istoj državi i u istom su gradu -> Savršeno poklapanje (100%)
+        if (cityA == cityB && !string.IsNullOrEmpty(cityA)) return 1.0;
+
+        // 3. Ako nisu u istom gradu, ali jesu u istoj regiji/kantonu -> Geografski blizu (60%)
+        if (regionA == regionB && !string.IsNullOrEmpty(regionA)) return 0.6;
+
+        // 4. Ako su samo u istoj državi, ali različite regije i gradovi -> Daleko, ali ista zemlja (20%)
+        return 0.2;
     }
 
     // ---------------------------------------------------------------

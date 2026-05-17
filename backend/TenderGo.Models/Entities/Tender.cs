@@ -35,10 +35,12 @@ public class Tender : BaseEntity
     public virtual Bid? WinningBid { get; set; }
     [Required]
     public bool IsEdited { get; set; } = false;
+
     [Required]
-    public string LocationName { get; set; } = string.Empty;
+    public int LocationId { get; set; }
     [Required]
-    public string Country { get; set; } = string.Empty;
+    public virtual Location Location { get; set; }
+    [Required]
     public virtual ICollection<Bid> Bids { get; set; } = new List<Bid>();
     public virtual ICollection<TenderImage> Images { get; set; } = new List<TenderImage>();
 }

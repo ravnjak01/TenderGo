@@ -28,7 +28,6 @@ namespace TenderGo.Services.Mapping
                  src.Images));
 
             CreateMap<TenderInsertRequest, Tender>()
-                .ForMember(dest => dest.LocationName, opt => opt.MapFrom(src => src.LocationName))
                 .ForMember(dest => dest.Images, opt => opt.Ignore());
 
 
@@ -37,6 +36,8 @@ namespace TenderGo.Services.Mapping
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
 
             CreateMap<TenderImage, TenderImageDTO>();
+
+            CreateMap<Location, LocationDTO>();
         }
     }
 }

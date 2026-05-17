@@ -15,7 +15,8 @@ namespace TenderGo.Models.Requests
         [Required]
         public decimal MaxBudget { get; set; }
         [Required]
-        public string LocationName { get; set; }
+        public int LocationId{ get; set; }
+      
         public string? Description { get; set; }
         [Required]
         public int CategoryId { get; set; }

@@ -136,17 +136,23 @@ namespace TenderGo.Services.Services
 
             try  
             {
-                var entity = _mapper.Map<Tender>(request);
-                _logger.LogInformation("ImageUrls in request: {Count}", request.ImageBytes?.Count ?? 0);
-                _logger.LogInformation("Images mapped to entity: {Count}", entity.Images?.Count ?? 0);
+               
 
-                if (!string.IsNullOrWhiteSpace(request.LocationName))
-                {
-                    var parts = request.LocationName.Split(',');
-                    entity.LocationName = parts.Length >= 2 ? parts[0].Trim() : request.LocationName.Trim();
-                    entity.Country = parts.Length >= 2 ? parts[1].Trim() : "Unknown";
+                if(request.LocationId <= 0)
+{
+                    throw new UserException("Location is required.");
                 }
 
+                var location = await _context.Locations.FindAsync(request.LocationId);
+                if (location == null)
+                {
+                    throw new UserException("The selected location does not exist in our database.");
+                }
+
+                var entity = _mapper.Map<Tender>(request);
+
+
+                entity.LocationId = location.Id;
                 entity.Status = TenderStatus.Open;
                 entity.PostedAt = DateTime.UtcNow;
                 entity.CreatedAt = DateTime.UtcNow;
@@ -193,6 +199,7 @@ namespace TenderGo.Services.Services
                 var saved = await _context.Tenders
                     .Include(t => t.CreatedByUser)
                     .Include(t => t.Category)
+                    .Include(t => t.Location)
                     .Include(t => t.Images)
                     .Include(t => t.Bids)
                     .FirstAsync(t => t.Id == entity.Id);
@@ -321,8 +328,6 @@ namespace TenderGo.Services.Services
 
                 query = query.Where(t =>
                     EF.Functions.Like(t.Title.ToLower(), term) ||
-                    EF.Functions.Like(t.LocationName.ToLower(), term)  ||
-                    EF.Functions.Like(t.Country.ToLower(), term) || 
                      EF.Functions.Like(t.Description.ToLower(), term)
                 );
             }
@@ -340,8 +345,7 @@ namespace TenderGo.Services.Services
             };
         }
 
-
-
+       
         public BaseState CreateState(TenderStatus status)
         {
             return status switch

@@ -78,8 +78,9 @@ public class RecommendController : ControllerBase
                       Deadline = tender.Deadline,
                       Status = tender.Status.ToString(),
                       Category = tender.Category?.Name,
-                      Country = tender.Country,
-                      LocationName = tender.LocationName,
+                      Country = tender.Location.Country,
+                      LocationName = tender.Location.Name,
+                      Region = tender.Location.Region,
                       ThumbnailUrl = tender.Images.FirstOrDefault()?.ImageUrl,
                       SimilarityScore = scored.Score
                   })
@@ -158,8 +159,9 @@ public class RecommendController : ControllerBase
             Deadline = t.Deadline,
             Status = t.Status.ToString(),
             Category = t.Category?.Name,
-            Country = t.Country,
-            LocationName = t.LocationName,
+            Country = t.Location.Country,
+            City=t.Location.Name,
+            Region = t.Location.Region,
             ThumbnailUrl = t.Images.FirstOrDefault()?.ImageUrl,
             SimilarityScore = scoredDict[t.Id].Average()
         })
@@ -183,6 +185,8 @@ public class TenderRecommendationDto
     public string Status { get; set; } = null!;
     public string? Category { get; set; }
     public string? Country { get; set; }
+    public string? City { get; set; }
+    public string? Region { get; set; }
     public string? LocationName { get; set; }
     public string? ThumbnailUrl { get; set; }
     public double SimilarityScore { get; set; }

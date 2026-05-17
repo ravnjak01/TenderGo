@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tendergo/shared/providers/tender_provider.dart';
-import 'package:tendergo/admin/widgets/category_chip_widget.dart';
-import 'package:tendergo/admin/widgets/location_picker_sheet.dart';
+import 'package:tendergo/shared/widgets/tender/category_chip_widget.dart';
+import 'package:tendergo/shared/widgets/tender/location_picker_sheet.dart';
+import 'package:tendergo/shared/services/dio_client.dart';
+import 'package:tendergo/shared/services/location_service.dart';
 
 class TenderFilterBar extends StatelessWidget {
   final int tenderCount;
@@ -47,7 +49,19 @@ class TenderFilterBar extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               TextButton.icon(
-                onPressed: () => LocationPickerSheet.show(context),
+                onPressed: () async {
+                  final messenger = ScaffoldMessenger.of(context);
+                  try {
+                    final dio = DioClient.getDio();
+                    final service = LocationService(dio);
+                    final locations = await service.getLocations();
+                    LocationPickerSheet.show(context, locations: locations);
+                  } catch (e) {
+                    messenger.showSnackBar(const SnackBar(
+                      content: Text('Failed to load locations'),
+                    ));
+                  }
+                },
                 icon: const Icon(
                   Icons.pin_drop_rounded,
                   size: 18,
