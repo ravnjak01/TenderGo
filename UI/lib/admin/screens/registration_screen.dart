@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tendergo/shared/models/dto/auth_dto.dart';
+import 'package:tendergo/shared/models/requests/register_request.dart';
 import 'package:tendergo/shared/providers/auth_provider.dart';
 import 'package:tendergo/shared/widgets/feedback/snackbar_helper.dart';
 import 'package:tendergo/shared/widgets/inputs/auth_widget.dart';
+import 'package:tendergo/shared/widgets/inputs/custom_auth_field.dart';
 
 class AdminRegistrationScreen extends StatefulWidget {
   const AdminRegistrationScreen({super.key});
@@ -20,9 +22,6 @@ class _AdminRegistrationScreenState extends State<AdminRegistrationScreen> {
   final _passwordController   = TextEditingController();
   final _confirmController    = TextEditingController();
 
-  bool _obscurePassword = true;
-  bool _obscureConfirm  = true;
-
   @override
   void dispose() {
     _fnameController.dispose();
@@ -34,10 +33,8 @@ class _AdminRegistrationScreenState extends State<AdminRegistrationScreen> {
   }
 
   Future<void> _handleRegistration() async {
-  // 1. UI Validacija (ostaje ovdje)
   if (!_formKey.currentState!.validate()) return;
   
-  // 2. Pozivanje Providera
   final authProvider = Provider.of<AuthProvider>(context, listen: false);
   
   final request = RegisterRequest(
@@ -51,7 +48,6 @@ class _AdminRegistrationScreenState extends State<AdminRegistrationScreen> {
 
   if (!mounted) return;
 
-  // 3. UI Feedback i Navigacija (ostaje ovdje)
   if (success) {
     SnackbarHelper.show(context, "Account created successfully!");
     Navigator.pushReplacementNamed(context, '/login');
@@ -159,7 +155,7 @@ class _AdminRegistrationScreenState extends State<AdminRegistrationScreen> {
                               const SizedBox(height: 28),
 
                               // First Name
-                              AuthField(
+                              CustomTextField(
                                 label: 'First Name',
                                 hint: 'Enter first name',
                                 controller: _fnameController,
@@ -169,7 +165,7 @@ class _AdminRegistrationScreenState extends State<AdminRegistrationScreen> {
                               ),
 
                               // Last Name
-                              AuthField(
+                              CustomTextField(
                                 label: 'Last Name',
                                 hint: 'Enter last name',
                                 controller: _lnameController,
@@ -179,7 +175,7 @@ class _AdminRegistrationScreenState extends State<AdminRegistrationScreen> {
                               ),
 
                               // Email
-                              AuthField(
+                              CustomTextField(
                                 label: 'Email',
                                 hint: 'Enter email',
                                 controller: _emailController,
@@ -196,14 +192,11 @@ class _AdminRegistrationScreenState extends State<AdminRegistrationScreen> {
                               ),
 
                               // Password
-                              AuthField(
+                              CustomTextField(
                                 label: 'Password',
                                 hint: 'Enter password',
                                 controller: _passwordController,
-                                obscure: _obscurePassword,
-                                showToggle: true,
-                                onToggle: () => setState(
-                                    () => _obscurePassword = !_obscurePassword),
+                                isPasswordField: true,
                                 validator: (v) {
                                   if (v == null || v.isEmpty)
                                     return 'Password is required';
@@ -214,14 +207,11 @@ class _AdminRegistrationScreenState extends State<AdminRegistrationScreen> {
                               ),
 
                               // Confirm Password
-                              AuthField(
+                              CustomTextField(
                                 label: 'Confirm Password',
                                 hint: 'Confirm password',
                                 controller: _confirmController,
-                                obscure: _obscureConfirm,
-                                showToggle: true,
-                                onToggle: () => setState(
-                                    () => _obscureConfirm = !_obscureConfirm),
+                                isPasswordField: true,
                                 validator: (v) {
                                   if (v == null || v.isEmpty) {
                                     return 'Please confirm your password';

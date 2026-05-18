@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:tendergo/shared/core/error/bid_error_handler.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
 import 'package:tendergo/shared/models/dto/bid_dto.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
+import 'package:tendergo/shared/models/requests/bid_insert_request.dart';
+import 'package:tendergo/shared/providers/auth_provider.dart';
 import 'package:tendergo/shared/services/bid_service.dart';
 
 /// Self-contained bid form. Manages its own controllers and submission state.
@@ -43,6 +46,15 @@ class _TenderBidFormState extends State<TenderBidForm> {
   }
 
   Future<void> _submit() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+  final user = authProvider.currentUser;
+
+  if (user == null) {
+    throw Exception("User not logged in");
+  }
+
+  final userId = user.id;
+  
     if (!_formKey.currentState!.validate()) return;
 
     final offeredPrice = double.parse(
@@ -63,6 +75,7 @@ class _TenderBidFormState extends State<TenderBidForm> {
           tenderId: widget.tender.id,
           price: offeredPrice,
           note: proposalText.isEmpty ? null : proposalText,
+          userId: userId,
         ),
       );
       submitted = true;

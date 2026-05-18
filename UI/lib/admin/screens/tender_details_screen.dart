@@ -7,6 +7,9 @@ import 'package:tendergo/shared/services/tender_service.dart';
 import 'package:tendergo/shared/widgets/feedback/screen_state_widget.dart';
 import 'package:tendergo/shared/widgets/tender/tender_bid_form.dart';
 import 'package:tendergo/shared/widgets/tender/tender_info_section.dart';
+import 'package:tendergo/shared/widgets/tender/tender_description_card.dart';
+import 'package:tendergo/shared/widgets/tender/tender_details_meta_card.dart';
+import 'package:tendergo/shared/widgets/tender/tender_poster_card.dart';
 
 class AdminTenderDetailsScreen extends StatefulWidget {
   final TenderService tenderService;
@@ -90,73 +93,99 @@ class _AdminTenderDetailsScreenState extends State<AdminTenderDetailsScreen> {
               final tender = snapshot.data!;
 
               return LayoutBuilder(
-                builder: (context, constraints) {
-                  final bool isWide = constraints.maxWidth >= 980;
+              builder: (context, constraints) {
+                final bool isWide = constraints.maxWidth >= 980;
 
-                  return SingleChildScrollView(
-                    child: Container(
-                      color: AppColors.surface,
-                      padding: const EdgeInsets.all(24),
-                      child: isWide
-                          ? Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                  flex: 2,
-                                  child: TenderInfoSection(
-                                    tender: tender,
-                                    imageHeight: 320,
-                                    titleStyle: Theme.of(context)
-                                        .textTheme
-                                        .headlineMedium
-                                        ?.copyWith(
-                                          color: AppColors.textPrimary,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                  ),
-                                ),
-                                const SizedBox(width: 24),
-                                Expanded(
-                                  child: TenderBidForm(
-                                    tender: tender,
-                                    bidService: _bidService,
-                                    onBidSuccess: () => setState(
-                                      () => _tenderFuture = _loadTender(tender.id),
+                return SingleChildScrollView(
+                  child: Container(
+                    color: AppColors.surface,
+                    padding: const EdgeInsets.all(24),
+                    child: isWide
+                        ? Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // LIJEVA KOLONA (Glavni detalji o tenderu)
+                              Expanded(
+                                flex: 2,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    TenderInfoSection(
+                                      tender: tender,
+                                      imageHeight: 320,
+                                      titleStyle: Theme.of(context)
+                                          .textTheme
+                                          .headlineMedium
+                                          ?.copyWith(
+                                            color: AppColors.textPrimary,
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                     ),
-                                  ),
+                                    const SizedBox(height: 24),
+                                    TenderDescriptionCard(description: tender.description),
+                                    const SizedBox(height: 20),
+                                    TenderDetailsMetaCard(tender: tender),
+                                  ],
                                 ),
-                              ],
-                            )
-                          : Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                TenderInfoSection(
-                                  tender: tender,
-                                  imageHeight: 320,
-                                  titleStyle: Theme.of(context)
-                                      .textTheme
-                                      .headlineMedium
-                                      ?.copyWith(
-                                        color: AppColors.textPrimary,
-                                        fontWeight: FontWeight.bold,
+                              ),
+                              const SizedBox(width: 24),
+                              
+                              // DESNA KOLONA (Poster info i Bid forma)
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    TenderPosterCard(tender: tender), // <- SADA JE OVDJE ("Posted by")
+                                    const SizedBox(height: 24),
+                                    TenderBidForm(
+                                      tender: tender,
+                                      bidService: _bidService,
+                                      onBidSuccess: () => setState(
+                                        () => _tenderFuture = _loadTender(tender.id),
                                       ),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(height: 24),
-                                TenderBidForm(
-                                  tender: tender,
-                                  bidService: _bidService,
-                                  onBidSuccess: () => setState(
-                                    () => _tenderFuture = _loadTender(tender.id),
-                                  ),
+                              ),
+                            ],
+                          )
+                        : Column(
+                            // USKI LAYOUT (Mobilni/Uski ekrani - ostaje isti)
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              TenderInfoSection(
+                                tender: tender,
+                                imageHeight: 320,
+                                titleStyle: Theme.of(context)
+                                    .textTheme
+                                    .headlineMedium
+                                    ?.copyWith(
+                                      color: AppColors.textPrimary,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                              ),
+                              const SizedBox(height: 24),
+                              TenderDescriptionCard(description: tender.description),
+                              const SizedBox(height: 20),
+                              TenderDetailsMetaCard(tender: tender),
+                              const SizedBox(height: 20),
+                              TenderPosterCard(tender: tender), // "Posted by" na mobitelu
+                              const SizedBox(height: 24),
+                              TenderBidForm(
+                                tender: tender,
+                                bidService: _bidService,
+                                onBidSuccess: () => setState(
+                                  () => _tenderFuture = _loadTender(tender.id),
                                 ),
-                              ],
-                            ),
-                    ),
-                  );
-                },
-              );
-            },
-          );
+                              ),
+                            ],
+                          ),
+                  ),
+                );
+              },
+            );
+          },
+        );
 
     if (widget.embedded) {
       return content;

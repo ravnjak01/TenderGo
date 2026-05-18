@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:tendergo/admin/widgets/common/auth_scaffold.dart';
 import 'package:tendergo/shared/core/utils/validators/validators.dart';
 import 'package:tendergo/shared/models/dto/auth_dto.dart';
+import 'package:tendergo/shared/models/requests/register_request.dart';
 import 'package:tendergo/shared/providers/auth_provider.dart';
 import 'package:tendergo/shared/routes/routes.dart';
 import 'package:tendergo/shared/widgets/feedback/snackbar_helper.dart';
 import 'package:tendergo/shared/widgets/inputs/auth_widget.dart';
+import 'package:tendergo/shared/widgets/common/auth_scaffold.dart';
+import 'package:tendergo/shared/widgets/inputs/custom_auth_field.dart';
 
 class MobileRegistrationScreen extends StatefulWidget {
   const MobileRegistrationScreen({super.key});
@@ -85,7 +87,7 @@ class _MobileRegistrationScreenState extends State<MobileRegistrationScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            AuthField(
+            CustomTextField(
               label: 'First Name',
               hint: 'Enter first name',
               controller: _firstNameController,
@@ -96,7 +98,7 @@ class _MobileRegistrationScreenState extends State<MobileRegistrationScreen> {
                 return null;
               },
             ),
-            AuthField(
+            CustomTextField(
               label: 'Last Name',
               hint: 'Enter last name',
               controller: _lastNameController,
@@ -107,7 +109,7 @@ class _MobileRegistrationScreenState extends State<MobileRegistrationScreen> {
                 return null;
               },
             ),
-            AuthField(
+            CustomTextField(
               label: 'Email',
               hint: 'Enter email',
               controller: _emailController,
@@ -122,44 +124,37 @@ class _MobileRegistrationScreenState extends State<MobileRegistrationScreen> {
                 return null;
               },
             ),
-            AuthField(
+            CustomTextField(
+              controller: _passwordController,
               label: 'Password',
               hint: 'Enter password',
-              controller: _passwordController,
-              obscure: _obscurePassword,
-              showToggle: true,
-              onToggle: () => setState(() {
-                _obscurePassword = !_obscurePassword;
-              }),
+              isPasswordField: true,
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Password is required';
+                  return 'Please enter your password';
                 }
                 if (value.length < 8) {
-                  return 'Min 8 characters';
+                  return 'Password must be at least 8 characters';
                 }
                 return null;
               },
             ),
-            AuthField(
-              label: 'Confirm Password',
-              hint: 'Confirm password',
-              controller: _confirmController,
-              obscure: _obscureConfirm,
-              showToggle: true,
-              onToggle: () => setState(() {
-                _obscureConfirm = !_obscureConfirm;
-              }),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please confirm your password';
-                }
-                if (value != _passwordController.text) {
-                  return 'Passwords do not match';
-                }
-                return null;
-              },
-            ),
+          CustomTextField(
+                controller: _confirmController,
+                label: 'Confirm Password',
+                hint: 'Confirm password',
+                isPasswordField: true, // <- Ovo mijenja obscure, showToggle i onToggle
+                prefixIcon: Icons.lock_clock_outlined, // Opcionalno, dodaj ikonicu ako želiš
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please confirm your password';
+                  }
+                  if (value != _passwordController.text) {
+                    return 'Passwords do not match';
+                  }
+                  return null;
+                },
+              ),
             const SizedBox(height: 8),
             Consumer<AuthProvider>(
               builder: (context, auth, child) {

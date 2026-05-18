@@ -20,6 +20,7 @@ class MobileApp extends StatelessWidget {
   final BidService bidService;
   final TenderService tenderService;
   final UserService userService;
+  final CategoryService categoryService;
 
   const MobileApp({
     super.key,
@@ -27,6 +28,7 @@ class MobileApp extends StatelessWidget {
     required this.bidService,
     required this.tenderService,
     required this.userService,
+    required this.categoryService,
   });
 
   @override
@@ -37,13 +39,13 @@ class MobileApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) => TenderProvider(
             tenderService,
-            CategoryService(DioClient.getDio()),
+            categoryService,
           ),
         ),
-        ChangeNotifierProvider(
-          create: (_) =>
-              NotificationProvider(NotificationService(DioClient.getDio())),
-        ),
+        //ChangeNotifierProvider(
+          //create: (_) =>
+           //   NotificationProvider(NotificationService(DioClient.getDio())),
+       // ),
       ],
       child: MaterialApp(
         title: 'TenderGo',
@@ -59,6 +61,7 @@ class MobileApp extends StatelessWidget {
           bidService: bidService,
           tenderService: tenderService,
           userService: userService,
+          categoryService: categoryService,
         ),
       ),
     );

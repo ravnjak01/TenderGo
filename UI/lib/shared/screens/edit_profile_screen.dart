@@ -2,10 +2,11 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
-import 'package:tendergo/shared/models/dto/update_profile_request.dart';
+import 'package:tendergo/shared/models/requests/update_address_request.dart';
+import 'package:tendergo/shared/models/requests/update_profile_request.dart';
 import 'package:tendergo/shared/models/dto/user_dto.dart';
 import 'package:tendergo/shared/services/user_service.dart';
-import 'package:tendergo/admin/widgets/common/app_dialogs.dart';
+import 'package:tendergo/shared/widgets/common/app_dialogs.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final UserDto user;
@@ -141,7 +142,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     : null,
               )
             : null,
-        imageBytes: _selectedImageBytes,
+        imageBytes: _selectedImageBytes != null ? [_selectedImageBytes!] : null,
       );
 
       await widget.userService.updateProfile(request);

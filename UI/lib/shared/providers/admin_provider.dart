@@ -1,10 +1,13 @@
 import 'package:tendergo/shared/models/dto/admin_dto.dart';
 import 'package:tendergo/shared/models/dto/category_dto.dart';
+import 'package:tendergo/shared/models/dto/location_dto.dart';
+import 'package:tendergo/shared/models/requests/location_filter_request.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
 import 'package:tendergo/shared/models/ui/auth_result.dart';
 import 'package:tendergo/shared/services/admin_service.dart';
 import 'package:tendergo/shared/services/auth_service.dart';
 import 'package:tendergo/shared/services/category_service.dart';
+import 'package:tendergo/shared/services/location_service.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
 
 class AdminProvider {
@@ -12,12 +15,14 @@ class AdminProvider {
   final TenderService tenderService;
   final AuthService authService;
   final CategoryService categoryService;
+  final LocationService locationService;
 
   AdminProvider({
     required this.adminService,
     required this.tenderService,
     required this.authService,
     required this.categoryService,
+    required this.locationService,
   });
 
   Future<AuthResult> getCurrentUser() => authService.getCurrentUser();
@@ -47,4 +52,33 @@ class AdminProvider {
       categoryService.update(id, CategoryDto(id: id, name: name));
 
   Future<bool> deleteCategory(int id) => categoryService.delete(id);
+
+  Future<List<LocationDto>> getLocations() =>
+      locationService.getLocations(const LocationFilterRequest());
+
+  Future<LocationDto> insertLocation({
+    required String name,
+    required String country,
+    String? region,
+  }) =>
+      locationService.insertLocation(
+        name: name,
+        country: country,
+        region: region,
+      );
+
+  Future<bool> updateLocation(
+    int id, {
+    required String name,
+    required String country,
+    String? region,
+  }) =>
+      locationService.updateLocation(
+        id,
+        name: name,
+        country: country,
+        region: region,
+      );
+
+  Future<bool> deleteLocation(int id) => locationService.deleteLocation(id);
 }

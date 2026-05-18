@@ -1,11 +1,15 @@
+import 'dart:ffi';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:tendergo/shared/core/network/constants/tender_api_endpoints.dart';
+import 'package:tendergo/shared/models/dto/location_dto.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
-import 'package:tendergo/shared/models/dto/tender_post_dto.dart';
+import 'package:tendergo/shared/models/requests/tender_insert_request.dart';
+import 'package:tendergo/shared/models/requests/tender_search_request.dart';
 import 'package:tendergo/shared/services/image_service.dart';
 
 class TenderService {
@@ -14,6 +18,8 @@ class TenderService {
   static const _storage = FlutterSecureStorage();
 
   TenderService(this._dio, this._imageService);
+
+  ImageService get imageService => _imageService;
 
   Future<String?> _getToken() async {
     return await _storage.read(key: 'jwt_token');
@@ -27,17 +33,18 @@ class TenderService {
       return data;
     }
 
-    final byteImages = <List<int>>[];
+    final byteImages = <Uint8List>[];
     for (final file in imageFiles) {
       if (file.bytes != null && file.bytes!.isNotEmpty) {
-        byteImages.add(file.bytes!.toList());
-        continue;
-      }
+      // 2. file.bytes je već Uint8List, nema potrebe za .toList()
+      byteImages.add(file.bytes!); 
+      continue;
+    }
 
       if (file.path != null && file.path!.isNotEmpty) {
         final diskBytes = await File(file.path!).readAsBytes();
         if (diskBytes.isNotEmpty) {
-          byteImages.add(diskBytes.toList());
+          byteImages.add(diskBytes);
         }
       }
     }
@@ -49,23 +56,11 @@ class TenderService {
     return TenderInsertRequest(
       title: data.title,
       maxBudget: data.maxBudget,
-      locationName: data.locationName,
+      locationId: data.locationId,
       description: data.description,
       categoryId: data.categoryId,
       deadline: data.deadline,
       imageBytes: byteImages,
-    );
-  }
-
-
-  Future<Options> _options() async {
-    final token = await _getToken();
-
-    return Options(
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
     );
   }
 
@@ -75,7 +70,6 @@ class TenderService {
       final response = await _dio.get(
         TenderApiEndpoints.getAll,
         queryParameters: {'page': page, 'pageSize': pageSize},
-        options: await _options(),
       );
 
       final List<dynamic> data = response.data['result'] ?? [];
@@ -88,12 +82,15 @@ class TenderService {
     }
   }
 
+// ===== GET ALL LOCATIONS =====
+ 
+
+
   // ===== GET BY ID =====
   Future<TenderDto> getById(int id) async {
     try {
       final response = await _dio.get(
         TenderApiEndpoints.getById(id),
-        options: await _options(),
       );
 
       return TenderDto.fromJson(response.data);
@@ -107,7 +104,6 @@ class TenderService {
     try {
       final response = await _dio.get(
         TenderApiEndpoints.getActive,
-        options: await _options(),
       );
 
       return List<TenderDto>.from(
@@ -123,7 +119,6 @@ class TenderService {
     try {
       final response = await _dio.get(
         TenderApiEndpoints.getClosed,
-        options: await _options(),
       );
 
       return List<TenderDto>.from(
@@ -140,7 +135,6 @@ class TenderService {
     try {
       final response = await _dio.get(
         TenderApiEndpoints.getCancelled,
-        options: await _options(),
       );
 
       return List<TenderDto>.from(
@@ -162,7 +156,6 @@ class TenderService {
       final response = await _dio.post(
         TenderApiEndpoints.insert,
         data: request.toJson(),
-        options: await _options(),
       );
 
       return TenderDto.fromJson(response.data);
@@ -180,7 +173,6 @@ class TenderService {
       final response = await _dio.patch(
         TenderApiEndpoints.update(id),
         data: data,
-        options: await _options(),
       );
 
       return response.statusCode! >= 200 && response.statusCode! < 300;
@@ -194,7 +186,6 @@ class TenderService {
     try {
       final response = await _dio.delete(
         TenderApiEndpoints.delete(id),
-        options: await _options(),
       );
 
       return response.statusCode! >= 200 && response.statusCode! < 300;
@@ -210,7 +201,6 @@ class TenderService {
     try {
       final response = await _dio.patch(
         TenderApiEndpoints.award(tender, bidId),
-        options: await _options(),
       );
 
       return TenderDto.fromJson(response.data);
@@ -224,7 +214,6 @@ class TenderService {
     try {
       final response = await _dio.patch(
         TenderApiEndpoints.cancel(id),
-        options: await _options(),
       );
 
       return TenderDto.fromJson(response.data);
@@ -238,7 +227,6 @@ class TenderService {
     try {
       final response = await _dio.get(
         TenderApiEndpoints.getByCategory(id),
-        options: await _options(),
       );
 
       return List<dynamic>.from(response.data);
@@ -252,7 +240,6 @@ class TenderService {
     try {
       final response = await _dio.get(
         TenderApiEndpoints.getByUser(userId),
-        options: await _options(),
       );
 
       final payload = response.data;
@@ -279,7 +266,6 @@ class TenderService {
     try {
       final response = await _dio.get(
         TenderApiEndpoints.search(request.searchTerm ?? ''),
-        options: await _options(),
       );
 
       final List<dynamic> data = response.data['result'] ?? [];
@@ -297,7 +283,6 @@ class TenderService {
     try {
       final response = await _dio.get(
         TenderApiEndpoints.allowedActions(id),
-        options: await _options(),
       );
 
       return List<dynamic>.from(response.data);

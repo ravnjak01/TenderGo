@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 
 class CategoryChipWidget extends StatelessWidget {
-
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
-  const CategoryChipWidget({super.key,
-  required this.label, required this.isSelected, required this.onTap
+
+  const CategoryChipWidget({
+    super.key,
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-   return GestureDetector(
+    return GestureDetector(
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.only(right: 8),
@@ -23,9 +26,15 @@ class CategoryChipWidget extends StatelessWidget {
             color: isSelected ? const Color(0xFF185FA5) : const Color(0xFFE5E3DC),
             width: 1,
           ),
-          boxShadow: isSelected 
-            ? [BoxShadow(color: Colors.blue.withValues(alpha:0.1), blurRadius: 4, offset: const Offset(0, 2))]
-            : null,
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: Colors.blue.withValues(alpha: 0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  )
+                ]
+              : null,
         ),
         child: Text(
           label,
@@ -39,3 +48,4 @@ class CategoryChipWidget extends StatelessWidget {
     );
   }
 }
+

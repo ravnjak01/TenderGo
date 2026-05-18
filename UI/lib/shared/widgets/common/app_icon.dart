@@ -4,13 +4,20 @@ import 'package:tendergo/shared/core/theme/app_theme.dart';
 class AppIconButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
+  final String? tooltip;
 
-  const AppIconButton({required this.icon, required this.onTap});
+  const AppIconButton({
+    super.key,
+    required this.icon,
+    required this.onTap,
+    this.tooltip,
+  });
 
   @override
   Widget build(BuildContext context) {
     return IconButton(
       onPressed: onTap,
+      tooltip: tooltip,
       icon: Icon(icon, size: 16, color: AppColors.textSecondary),
       style: IconButton.styleFrom(
         backgroundColor: AppColors.surfaceVariant,
@@ -23,3 +30,4 @@ class AppIconButton extends StatelessWidget {
     );
   }
 }
+

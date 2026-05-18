@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
 import 'package:tendergo/shared/models/dto/user_dto.dart';
+import 'package:tendergo/shared/models/dto/user_public_dto.dart';
 import 'package:tendergo/shared/services/user_service.dart';
 
 class UserProfilePublicScreen extends StatelessWidget {
@@ -14,7 +15,7 @@ class UserProfilePublicScreen extends StatelessWidget {
   });
 
   String _initials(UserPublicDto user) {
-    return UserPublicDto.getInitials(user);
+    return user.initials;
   }
 
   Widget _buildAvatarWidget(BuildContext context, UserPublicDto user) {

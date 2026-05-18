@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tendergo/shared/models/dto/auth_dto.dart';
+import 'package:tendergo/shared/models/requests/reset_password_request.dart';
 import 'package:tendergo/shared/providers/auth_provider.dart';
-import 'package:tendergo/admin/widgets/common/app_text_field.dart';
-import 'package:tendergo/admin/widgets/common/auth_scaffold.dart';
 import 'package:tendergo/shared/widgets/feedback/snackbar_helper.dart';
+import 'package:tendergo/shared/widgets/inputs/custom_auth_field.dart';
+import 'package:tendergo/shared/widgets/common/auth_scaffold.dart';
 
 class AdminResetPasswordScreen extends StatefulWidget {
   const AdminResetPasswordScreen({super.key});
@@ -17,7 +18,6 @@ class AdminResetPasswordScreen extends StatefulWidget {
 class _AdminResetPasswordScreenState extends State<AdminResetPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final _passwordController = TextEditingController();
-  bool _hidePassword = true;
 
   late String token;
   late String email;
@@ -28,7 +28,7 @@ class _AdminResetPasswordScreenState extends State<AdminResetPasswordScreen> {
   void initState() {
     super.initState();
 
-    final uri = Uri.base; // Uri.base daje trenutni URL u Flutter Web
+    final uri = Uri.base; 
     token = Uri.decodeComponent(uri.queryParameters['token'] ?? '');
     email = uri.queryParameters['email'] ?? '';
   }
@@ -83,20 +83,12 @@ class _AdminResetPasswordScreenState extends State<AdminResetPasswordScreen> {
               style: TextStyle(color: Colors.grey),
             ),
             const SizedBox(height: 25),
-            AppTextField(
+            CustomTextField(
               controller: _passwordController,
               label: 'New Password',
               showLabel: false,
-              obscureText: _hidePassword,
               prefixIcon: Icons.lock_outline,
-              suffix: IconButton(
-                onPressed: () => setState(() => _hidePassword = !_hidePassword),
-                icon: Icon(
-                  _hidePassword
-                      ? Icons.visibility_off_outlined
-                      : Icons.visibility_outlined,
-                ),
-              ),
+              isPasswordField: true,
               validator: (value) {
                 if (value == null || value.length < 6) {
                   return 'Password must be at least 6 characters';

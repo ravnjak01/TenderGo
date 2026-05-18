@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
-import 'package:tendergo/admin/widgets/common/app_icon.dart';
 import 'package:tendergo/shared/models/dto/user_dto.dart';
+import 'package:tendergo/shared/widgets/common/app_icon.dart';
 
 class UserProfileHeader extends StatelessWidget {
   final UserDto user;
@@ -32,7 +32,7 @@ class UserProfileHeader extends StatelessWidget {
 
   Widget _buildInitialsFallback() {
     return Text(
-      UserDto.getInitials(user),
+      user.initials,
       style: const TextStyle(
         color: AppColors.primary,
         fontSize: 28,
@@ -56,7 +56,6 @@ class UserProfileHeader extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Top bar
           Row(
             children: [
               AppIconButton(
@@ -68,12 +67,9 @@ class UserProfileHeader extends StatelessWidget {
                 'Profile',
                 style: textTheme.titleMedium,
               ),
-              
             ],
           ),
           const SizedBox(height: 28),
-          
-          // Avatar section
           Stack(
             alignment: Alignment.bottomRight,
             children: [
@@ -91,7 +87,6 @@ class UserProfileHeader extends StatelessWidget {
                 alignment: Alignment.center,
                 child: _buildAvatarContent(),
               ),
-              // Online status indicator
               Container(
                 width: 22,
                 height: 22,
@@ -107,8 +102,6 @@ class UserProfileHeader extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          
-          // Name and Email
           Text(
             user.username,
             style: textTheme.titleLarge?.copyWith(
@@ -125,3 +118,4 @@ class UserProfileHeader extends StatelessWidget {
     );
   }
 }
+

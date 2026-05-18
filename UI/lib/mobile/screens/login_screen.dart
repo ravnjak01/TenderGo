@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:tendergo/admin/widgets/common/auth_scaffold.dart';
-import 'package:tendergo/admin/widgets/error_banner.widget.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
 import 'package:tendergo/shared/core/utils/validators/validators.dart';
 import 'package:tendergo/shared/providers/auth_provider.dart';
 import 'package:tendergo/shared/routes/routes.dart';
 import 'package:tendergo/shared/widgets/inputs/auth_widget.dart';
+import 'package:tendergo/shared/widgets/common/auth_scaffold.dart';
+import 'package:tendergo/shared/widgets/common/error_banner_widget.dart';
+import 'package:tendergo/shared/widgets/inputs/custom_auth_field.dart';
 
 class MobileLoginScreen extends StatefulWidget {
   const MobileLoginScreen({super.key});
@@ -47,7 +48,6 @@ class _MobileLoginScreenState extends State<MobileLoginScreen> {
     if (!mounted) return;
 
     if (success) {
-      // kasnije dodati pravu stranicu
        Navigator.of(context).pushReplacementNamed(AppRoutes.tenderList);
       return;
     }
@@ -77,7 +77,7 @@ class _MobileLoginScreenState extends State<MobileLoginScreen> {
               ),
             ),
             const SizedBox(height: 30),
-            AuthField(
+            CustomTextField(
               controller: _emailController,
               label: 'Email',
               hint: 'Enter email',
@@ -92,14 +92,12 @@ class _MobileLoginScreenState extends State<MobileLoginScreen> {
                 return null;
               },
             ),
-            AuthField(
+            CustomTextField(
               controller: _passwordController,
               label: 'Password',
               hint: 'Enter password',
-              obscure: _hidePassword,
-              showToggle: true,
-              onToggle: () =>
-                  setState(() => _hidePassword = !_hidePassword),
+              isPasswordField: true,
+              prefixIcon: Icons.lock_outline,
               validator: (value) {
                 if (value == null || value.isEmpty) {
                   return 'Please enter your password';

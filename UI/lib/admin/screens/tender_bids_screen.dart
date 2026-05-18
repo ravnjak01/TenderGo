@@ -1,18 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:tendergo/shared/controllers/tender_bids_controller.dart';
 import 'package:tendergo/shared/models/dto/bid_dto.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
+import 'package:tendergo/shared/models/enums/application_status.dart';
 import 'package:tendergo/shared/models/enums/tenderstatus.dart';
 import 'package:tendergo/shared/services/bid_service.dart';
 import 'package:tendergo/shared/services/dio_client.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
-import 'package:tendergo/admin/widgets/common/app_dialogs.dart';
+import 'package:tendergo/shared/widgets/common/action_button.dart';
+import 'package:tendergo/shared/widgets/common/app_badge.dart';
+import 'package:tendergo/shared/widgets/common/app_card.dart';
+import 'package:tendergo/shared/widgets/common/app_dialogs.dart';
+import 'package:tendergo/shared/widgets/common/app_icon.dart';
 import 'package:tendergo/shared/widgets/feedback/screen_state_widget.dart';
+import 'package:tendergo/shared/widgets/feedback/snackbar_helper.dart';
+import 'package:tendergo/shared/widgets/tender/tender_meta_item.dart';
 
 class TenderBidsScreen extends StatefulWidget {
   final int tenderId;
   final String? tenderTitle;
-    final TenderDto tenderDto;           
+  final TenderDto tenderDto;
   final TenderService tenderService;
 
   const TenderBidsScreen({
@@ -28,143 +36,27 @@ class TenderBidsScreen extends StatefulWidget {
 }
 
 class _TenderBidsScreenState extends State<TenderBidsScreen> {
-  late final BidService _bidService;
-  late Future<List<BidDto>> _bidsFuture;
+  late final TenderBidsController _controller;
 
   @override
   void initState() {
     super.initState();
-    final dio = DioClient.getDio();
-    // If you use GetIt or Provider, replace this with your DI approach
-    _bidService = BidService(dio);
-    _bidsFuture = _bidService.getByTender(widget.tenderId);
-  }
-
-  void _refresh() {
-    setState(() {
-      _bidsFuture = _bidService.getByTender(widget.tenderId);
-    });
-  }
-
-  Color _statusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'pending':
-        return Colors.orange;
-      case 'accepted':
-        return Colors.green;
-      case 'rejected':
-        return Colors.red;
-      case 'withdrawn':
-        return Colors.grey;
-      default:
-        return Colors.blueGrey;
-    }
+    _controller = TenderBidsController(
+      tenderId: widget.tenderId,
+      tender: widget.tenderDto,
+      tenderService: widget.tenderService,
+      bidService: BidService(DioClient.getDio()),
+    );
+    _controller.load();
   }
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.tenderTitle != null
-            ? 'Bids — ${widget.tenderTitle}'
-            : 'Bids for Tender #${widget.tenderId}'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh',
-            onPressed: _refresh,
-          ),
-        ],
-      ),
-      body: FutureBuilder<List<BidDto>>(
-        future: _bidsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const ScreenLoadingState();
-          }
-
-          if (snapshot.hasError) {
-            return ScreenErrorState(
-              message: snapshot.error.toString(),
-              onRetry: _refresh,
-            );
-          }
-
-          final bids = snapshot.data ?? [];
-
-          if (bids.isEmpty) {
-            return ScreenEmptyState(
-              icon: Icons.inbox_outlined,
-              title: 'No bids found',
-              description: 'No bids found for this tender.',
-              onAction: _refresh,
-            );
-          }
-
-          return Column(
-            children: [
-              // Summary bar
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                color: theme.colorScheme.surfaceContainerHighest,
-                child: Text(
-                  '${bids.length} bid${bids.length == 1 ? '' : 's'} submitted',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-
-              Expanded(
-                child: ListView.separated(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: bids.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    final bid = bids[index];
-                    return _BidCard(
-                      bid: bid,
-                      statusColor: _statusColor(bid.status.name),
-                      tenderDto: widget.tenderDto,
-                      tenderService: widget.tenderService,
-                      bidService: _bidService,
-                      allBids: bids,
-                      onAwarded: _refresh,
-                    );
-                  },
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
-}
 
-class _BidCard extends StatelessWidget {
-  final BidDto bid;
-  final Color statusColor;
-  final TenderDto tenderDto;
-  final TenderService tenderService;
-  final BidService bidService;
-  final List<BidDto> allBids;
-  final VoidCallback onAwarded;
-
-  const _BidCard({
-    required this.bid,
-    required this.statusColor,
-    required this.tenderDto,
-    required this.tenderService,
-    required this.bidService,
-    required this.allBids,
-    required this.onAwarded,
-  });
-
- Future<void> _award(BuildContext context) async {
+  Future<void> _award(BidDto bid) async {
     final confirmed = await AppDialogs.showConfirm(
       context: context,
       title: 'Award tender',
@@ -173,235 +65,321 @@ class _BidCard extends StatelessWidget {
       confirmLabel: 'Award',
       isDestructive: true,
     );
-
-    if (!confirmed || !context.mounted) return;
+    if (!confirmed || !mounted) return;
 
     try {
-      await tenderService.award(tenderDto, bid.id);
-
-      // Reject all other pending bids for this tender
-      final rejectFutures = allBids
-          .where((b) => b.id != bid.id && b.status == ApplicationStatus.pending)
-          .map((b) => bidService.update(b.id, {'status': 'rejected'}));
-      await Future.wait(rejectFutures);
-
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Tender awarded to ${bid.submittedByUserName}'),
-          backgroundColor: Colors.green,
-        ),
+      await _controller.award(bid);
+      if (!mounted) return;
+      SnackbarHelper.show(
+        context,
+        'Tender awarded to ${bid.submittedByUserName}',
       );
-      onAwarded(); // refresh the list
     } catch (e) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to award: $e'),
-          backgroundColor: Colors.red,
-        ),
+      if (!mounted) return;
+      SnackbarHelper.show(
+        context,
+        'Failed to award: ${e.toString().replaceFirst('Exception: ', '')}',
+        isError: true,
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final dateFormatted =
-        DateFormat('dd MMM yyyy, HH:mm').format(bid.submittedAt);
-    final priceFormatted =
-        '${bid.offeredPrice.toStringAsFixed(0)} KM';
+    final title = widget.tenderTitle != null
+        ? 'Bids - ${widget.tenderTitle}'
+        : 'Bids for Tender #${widget.tenderId}';
 
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: theme.colorScheme.outlineVariant),
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(title),
+        actions: [
+          AppIconButton(
+            icon: Icons.refresh_rounded,
+            tooltip: 'Refresh',
+            onTap: _controller.refresh,
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header row: bidder name + status badge
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                CircleAvatar(
-                  radius: 20,
-                  backgroundColor: theme.colorScheme.primaryContainer,
-                  child: Text(
-                    bid.submittedByUserName.isNotEmpty
-                        ? bid.submittedByUserName[0].toUpperCase()
-                        : '?',
-                    style: TextStyle(
-                      color: theme.colorScheme.onPrimaryContainer,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    bid.submittedByUserName,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                // Status badge
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    bid.status.name,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: statusColor,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+      body: ListenableBuilder(
+        listenable: _controller,
+        builder: (context, _) => _buildBody(),
+      ),
+    );
+  }
 
-            const SizedBox(height: 14),
-            const Divider(height: 1),
-            const SizedBox(height: 14),
+  Widget _buildBody() {
+    if (_controller.isLoading && _controller.bids.isEmpty) {
+      return const ScreenLoadingState();
+    }
 
-            // Price + delivery
-            Row(
-              children: [
-                Expanded(
-                  child: _InfoTile(
-                    icon: Icons.attach_money,
-                    label: 'Offered price',
-                    value: priceFormatted,
-                    valueStyle: theme.textTheme.titleMedium?.copyWith(
-                      color: theme.colorScheme.primary,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                if (bid.deliveryDays != null)
-                  Expanded(
-                    child: _InfoTile(
-                      icon: Icons.schedule,
-                      label: 'Delivery',
-                      value: '${bid.deliveryDays} day${bid.deliveryDays! > 1 ? 's' : ''}',
-                    ),
-                  ),
-              ],
-            ),
+    if (_controller.hasError && _controller.bids.isEmpty) {
+      return ScreenErrorState(
+        message: _controller.errorMessage,
+        onRetry: _controller.refresh,
+      );
+    }
 
-            const SizedBox(height: 10),
+    if (_controller.bids.isEmpty) {
+      return ScreenEmptyState(
+        icon: Icons.inbox_outlined,
+        title: 'No bids found',
+        description: 'No bids found for this tender.',
+        onAction: _controller.refresh,
+      );
+    }
 
-            // Submitted at
-            _InfoTile(
-              icon: Icons.calendar_today_outlined,
-              label: 'Submitted',
-              value: dateFormatted,
-            ),
-
-            // Proposal
-            if (bid.proposal != null && bid.proposal!.isNotEmpty) ...[
-              const SizedBox(height: 10),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Proposal',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      bid.proposal!,
-                      style: theme.textTheme.bodyMedium,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-
-                if (tenderDto.status == TenderStatus.closed &&
-                  bid.status == ApplicationStatus.pending) ...[
-      const SizedBox(height: 14),
-      const Divider(height: 1),
-      const SizedBox(height: 10),
-      Align(
-        alignment: Alignment.centerRight,
-        child: FilledButton.icon(
-          onPressed: () => _award(context),
-          icon: const Icon(Icons.emoji_events_rounded, size: 16),
-          label: const Text('Award'),
-          style: FilledButton.styleFrom(
-            visualDensity: VisualDensity.compact,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
+    return Column(
+      children: [
+        _BidsSummary(count: _controller.bids.length),
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: _controller.refresh,
+            child: ListView.separated(
+              padding: const EdgeInsets.all(16),
+              itemCount: _controller.bids.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                final bid = _controller.bids[index];
+                return _BidCard(
+                  bid: bid,
+                  canAward: widget.tenderDto.status == TenderStatus.closed &&
+                      bid.status == ApplicationStatus.pending,
+                  onAward: () => _award(bid),
+                );
+              },
             ),
           ),
         ),
-      ),
-    ],
-          ],
+      ],
+    );
+  }
+}
+
+class _BidsSummary extends StatelessWidget {
+  const _BidsSummary({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      color: theme.colorScheme.surfaceContainerHighest,
+      child: Text(
+        '$count bid${count == 1 ? '' : 's'} submitted',
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
         ),
       ),
     );
   }
 }
 
-class _InfoTile extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final TextStyle? valueStyle;
-
-  const _InfoTile({
-    required this.icon,
-    required this.label,
-    required this.value,
-    this.valueStyle,
+class _BidCard extends StatelessWidget {
+  const _BidCard({
+    required this.bid,
+    required this.canAward,
+    required this.onAward,
   });
+
+  final BidDto bid;
+  final bool canAward;
+  final VoidCallback onAward;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final priceFormatted = '${bid.offeredPrice.toStringAsFixed(0)} KM';
+    final dateFormatted = DateFormat('dd MMM yyyy, HH:mm').format(bid.submittedAt);
+
+    return AppCard(
+      title: 'Bidder',
+      icon: Icons.person_outline_rounded,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _BidAvatar(name: bid.submittedByUserName),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      bid.submittedByUserName,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  _BidStatusBadge(status: bid.status),
+                ],
+              ),
+              const SizedBox(height: 14),
+              const Divider(height: 1),
+              const SizedBox(height: 14),
+              Wrap(
+                spacing: 16,
+                runSpacing: 8,
+                children: [
+                  TenderMetaItem(
+                    icon: Icons.payments_outlined,
+                    label: priceFormatted,
+                  ),
+                  if (bid.deliveryDays != null)
+                    TenderMetaItem(
+                      icon: Icons.schedule_rounded,
+                      label:
+                          '${bid.deliveryDays} day${bid.deliveryDays! > 1 ? 's' : ''}',
+                    ),
+                  TenderMetaItem(
+                    icon: Icons.calendar_today_outlined,
+                    label: dateFormatted,
+                  ),
+                ],
+              ),
+              if (bid.proposal != null && bid.proposal!.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                _ProposalPreview(proposal: bid.proposal!),
+              ],
+              if (canAward) ...[
+                const SizedBox(height: 14),
+                const Divider(height: 1),
+                const SizedBox(height: 10),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: ActionButton(
+                    label: 'Award',
+                    icon: Icons.emoji_events_rounded,
+                    isPrimary: true,
+                    onTap: onAward,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _BidAvatar extends StatelessWidget {
+  const _BidAvatar({required this.name});
+
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final initial = name.trim().isNotEmpty ? name.trim()[0].toUpperCase() : '?';
+
+    return CircleAvatar(
+      radius: 20,
+      backgroundColor: theme.colorScheme.primaryContainer,
+      child: Text(
+        initial,
+        style: TextStyle(
+          color: theme.colorScheme.onPrimaryContainer,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+}
+
+class _BidStatusBadge extends StatelessWidget {
+  const _BidStatusBadge({required this.status});
+
+  final ApplicationStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = _colorsForStatus(context, status);
+
+    return AppBadge(
+      label: status.name,
+      backgroundColor: colors.background,
+      foregroundColor: colors.foreground,
+      borderColor: colors.background,
+    );
+  }
+
+  _BadgeColors _colorsForStatus(BuildContext context, ApplicationStatus status) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    switch (status) {
+      case ApplicationStatus.accepted:
+        return _BadgeColors(
+          background: Colors.green.withOpacity(0.12),
+          foreground: Colors.green.shade700,
+        );
+      case ApplicationStatus.rejected:
+        return _BadgeColors(
+          background: colorScheme.errorContainer,
+          foreground: colorScheme.onErrorContainer,
+        );
+      case ApplicationStatus.withdrawn:
+        return _BadgeColors(
+          background: colorScheme.surfaceContainerHighest,
+          foreground: colorScheme.onSurfaceVariant,
+        );
+      case ApplicationStatus.pending:
+        return _BadgeColors(
+          background: Colors.orange.withOpacity(0.12),
+          foreground: Colors.orange.shade800,
+        );
+    }
+  }
+}
+
+class _BadgeColors {
+  const _BadgeColors({
+    required this.background,
+    required this.foreground,
+  });
+
+  final Color background;
+  final Color foreground;
+}
+
+class _ProposalPreview extends StatelessWidget {
+  const _ProposalPreview({required this.proposal});
+
+  final String proposal;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 16, color: theme.colorScheme.onSurfaceVariant),
-        const SizedBox(width: 6),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Proposal',
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              letterSpacing: 0.5,
             ),
-            Text(
-              value,
-              style: valueStyle ?? theme.textTheme.bodyMedium,
-            ),
-          ],
-        ),
-      ],
+          ),
+          const SizedBox(height: 4),
+          Text(proposal, style: theme.textTheme.bodyMedium),
+        ],
+      ),
     );
   }
 }

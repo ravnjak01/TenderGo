@@ -5,21 +5,24 @@ import 'package:tendergo/mobile/screens/tender_details_screen.dart';
 import 'package:tendergo/shared/screens/user_profile_screen.dart';
 import 'package:tendergo/mobile/screens/tenders_list_screen.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
-import 'package:tendergo/shared/providers/notification_provider.dart';
+import 'package:tendergo/shared/providers/auth_provider.dart';
+import 'package:tendergo/shared/providers/tender_provider.dart';
 import 'package:tendergo/shared/routes/routes.dart';
 import 'package:tendergo/shared/services/auth_service.dart';
+import 'package:tendergo/shared/services/category_service.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
-import 'package:tendergo/shared/widgets/common/notification_bell_widget.dart';
 
 class MobileTenderShellScreen extends StatefulWidget {
   const MobileTenderShellScreen({
     super.key,
     required this.tenderService,
     required this.authService,
+    required this.categoryService,
   });
 
   final TenderService tenderService;
   final AuthService authService;
+  final CategoryService categoryService;
 
   @override
   State<MobileTenderShellScreen> createState() => _MobileTenderShellScreenState();
@@ -27,21 +30,21 @@ class MobileTenderShellScreen extends StatefulWidget {
 
 class _MobileTenderShellScreenState extends State<MobileTenderShellScreen> {
   int _listVersion = 0;
-  NotificationProvider? _notificationProvider;
+  late final TenderProvider _tenderProvider;
 
   @override
   void initState() {
     super.initState();
+    _tenderProvider = TenderProvider(widget.tenderService, widget.categoryService);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      _notificationProvider = context.read<NotificationProvider>();
-      _notificationProvider!.startPolling();
+      context.read<AuthProvider>().loadUser();
     });
   }
 
   @override
   void dispose() {
-    _notificationProvider?.stopPolling();
+    _tenderProvider.dispose();
     super.dispose();
   }
 
@@ -97,7 +100,6 @@ class _MobileTenderShellScreenState extends State<MobileTenderShellScreen> {
           ),
         ),
         actions: [
-          const NotificationBell(iconColor: AppColors.textPrimary),
           IconButton(
             onPressed: _openRecommendations,
             icon: const Icon(Icons.recommend_outlined),
@@ -118,6 +120,7 @@ class _MobileTenderShellScreenState extends State<MobileTenderShellScreen> {
       ),
       body: MobileTenderListScreen(
         key: ValueKey(_listVersion),
+      //  provider: _tenderProvider,
         tenderService: widget.tenderService,
         embedded: true,
         onTenderSelected: _openTenderDetails,

@@ -13,4 +13,9 @@ class TenderImageDto {
       isPrimary: json['isPrimary'] as bool? ?? false,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'imageUrl': imageUrl,
+        'isPrimary': isPrimary,
+      };
 }

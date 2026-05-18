@@ -8,6 +8,7 @@ class ActionTile extends StatelessWidget {
   final bool destructive;
 
   const ActionTile({
+    super.key,
     required this.icon,
     required this.label,
     required this.onTap,
@@ -25,8 +26,8 @@ class ActionTile extends StatelessWidget {
       clipBehavior: Clip.hardEdge,
       child: InkWell(
         onTap: onTap,
-        splashColor: (destructive ? AppColors.error : AppColors.primary)
-            .withOpacity(0.08),
+        splashColor:
+            (destructive ? AppColors.error : AppColors.primary).withOpacity(0.08),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
           decoration: BoxDecoration(

@@ -17,4 +17,7 @@ class ApiEndpoints {
   // --- RECOMMENDATIONS ---
   static const String recommendSimilar = '/recommend/similar';
   static const String recommendForUser = '/recommend/for-user';
+
+
+  static const String refreshToken = '/auth/refresh-token';
 }

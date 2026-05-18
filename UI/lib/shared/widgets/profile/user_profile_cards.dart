@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tendergo/shared/models/dto/auth_dto.dart';
-import 'package:tendergo/admin/widgets/common/app_card.dart';
 import 'package:tendergo/shared/models/dto/user_dto.dart';
+import 'package:tendergo/shared/widgets/common/app_card.dart';
 
 class UserProfileCards extends StatelessWidget {
   final UserDto user;
@@ -110,3 +110,4 @@ class UserProfileIdCard extends StatelessWidget {
     );
   }
 }
+

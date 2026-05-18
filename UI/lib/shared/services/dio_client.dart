@@ -58,7 +58,7 @@ class DioClient {
     }
 
   
-    dio.interceptors.add(AuthInterceptor());
+    dio.interceptors.add(AuthInterceptor(dio));
 
     dio.interceptors.add(LogInterceptor(
       request: true,

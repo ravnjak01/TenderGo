@@ -7,21 +7,18 @@ import 'package:tendergo/shared/models/ui/tendercardmodel.dart';
 import 'package:tendergo/shared/widgets/tender/card_image_widget.dart';
 import 'package:tendergo/shared/widgets/tender/tag_chip_widget.dart';
 
-
-// ─── Main widget ────────────────────────────────────────────────────────────────
-
 class AdminTenderCardWidget extends StatelessWidget {
   const AdminTenderCardWidget({
     super.key,
     required this.tender,
     this.onTap,
+    this.onCancelTender,
   });
 
   final TenderCardModel tender;
   final VoidCallback? onTap;
+  final VoidCallback? onCancelTender;
 
-
-// Glavna metoda build koja sastavlja cijelu karticu koristeći manje widgete za različite dijelove (slika, tijelo, akcije)
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -39,13 +36,14 @@ class AdminTenderCardWidget extends StatelessWidget {
           children: [
             TenderCardImage(
               imageUrl: tender.imageUrl,
-              theme: themeForCategory(tender.category), // Ako si ostavio ovu logiku
-              height: 140, // Možeš je fiksirati za desktop
+              theme: themeForCategory(tender.category),
+              height: 140,
             ),
             _CardBody(tender: tender),
             CardActions(
               onView: onTap,
               isClosed: tender.status == TenderStatus.closed,
+              onCancelTender: onCancelTender,
             ),
           ],
         ),
@@ -54,30 +52,27 @@ class AdminTenderCardWidget extends StatelessWidget {
   }
 }
 
-
-
-// ─── Card body ──────────────────────────────────────────────────────────────────
-
 class _CardBody extends StatelessWidget {
   const _CardBody({required this.tender});
   final TenderCardModel tender;
 
-
-
- @override
+  @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 10), 
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Row za Kategoriju i Lokaciju
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               Row(
                 children: [
-                  const Icon(Icons.pin_drop_outlined, size: 12, color: Color(0xFF185FA5)),
+                  const Icon(
+                    Icons.pin_drop_outlined,
+                    size: 12,
+                    color: Color(0xFF185FA5),
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     tender.locationName,
@@ -92,33 +87,22 @@ class _CardBody extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 5),
-
-          // Title
           Text(
             tender.title,
             style: const TextStyle(
               fontSize: 14,
-              fontWeight: FontWeight.w600, 
+              fontWeight: FontWeight.w600,
               color: Color(0xFF1A1A1A),
               height: 1.4,
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 10), 
-            Wrap(
-                children: [
-              TenderTag(label: tender.category), 
-                ],
-            ),
-            const SizedBox(height: 12),
-          
-
-          // Divider
+          const SizedBox(height: 10),
+          Wrap(children: [TenderTag(label: tender.category)]),
+          const SizedBox(height: 12),
           const Divider(height: 1, thickness: 0.5, color: Color(0xFFE5E3DC)),
           const SizedBox(height: 12),
-
-          // Meta row (Time, Deadline i Budget)
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
@@ -127,20 +111,27 @@ class _CardBody extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      timeAgo(tender.postedAt),
-                      style: const TextStyle(fontSize: 11, color: Color(0xFFB4B2A9)),
+                      tender.postedAt.toTimeAgo(),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFFB4B2A9),
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        const Icon(Icons.access_time_rounded, size: 13, color: Color(0xFF888780)),
+                        const Icon(
+                          Icons.access_time_rounded,
+                          size: 13,
+                          color: Color(0xFF888780),
+                        ),
                         const SizedBox(width: 4),
                         Text(
-                          formatDeadline(tender.deadline),
+                          tender.deadline.formatDeadline(),
                           style: const TextStyle(
-                            fontSize: 12, 
+                            fontSize: 12,
                             color: Color(0xFF5F5E5A),
-                            fontWeight: FontWeight.w500
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
@@ -148,13 +139,12 @@ class _CardBody extends StatelessWidget {
                   ],
                 ),
               ),
-              // Budget
               Text(
-                formatValue(tender.valueKM),
+                tender.valueKM.formatCurrency(),
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF185FA5), 
+                  color: Color(0xFF185FA5),
                 ),
               ),
             ],
@@ -162,12 +152,6 @@ class _CardBody extends StatelessWidget {
         ],
       ),
     );
-  }}
-
-
-
-
-
-
-
+  }
+}
 

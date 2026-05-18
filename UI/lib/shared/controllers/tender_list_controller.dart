@@ -24,10 +24,10 @@ class TenderListController {
 
   /// Starts a repeating background poll every [pollingInterval].
   /// [onPoll] is responsible for its own mounted check.
-  void startPolling(VoidCallback onPoll) {
-    _pollingTimer?.cancel();
-    _pollingTimer = Timer.periodic(pollingInterval, (_) => onPoll());
-  }
+  // void startPolling(VoidCallback onPoll) {
+  //   _pollingTimer?.cancel();
+  //   _pollingTimer = Timer.periodic(pollingInterval, (_) => onPoll());
+  // }
 
   void stopPolling() {
     _pollingTimer?.cancel();

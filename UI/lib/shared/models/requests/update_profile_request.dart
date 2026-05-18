@@ -1,34 +1,16 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
-class UpdateAddressDto {
-  final String? street;
-  final String? city;
-  final String? postalCode;
-  final String? country;
+import 'package:tendergo/shared/models/requests/update_address_request.dart';
 
-  UpdateAddressDto({
-    this.street,
-    this.city,
-    this.postalCode,
-    this.country,
-  });
-
-  Map<String, dynamic> toJson() {
-    return {
-      if (street != null) 'street': street,
-      if (city != null) 'city': city,
-      if (postalCode != null) 'postalCode': postalCode,
-      if (country != null) 'country': country,
-    };
-  }
-}
 
 class UpdateProfileRequest {
   final String? firstName;
   final String? lastName;
   final String? phoneNumber;
   final UpdateAddressDto? address;
-  final List<int>? imageBytes; 
+   final List<Uint8List>? imageBytes;
+
 
   UpdateProfileRequest({
     this.firstName,
@@ -44,7 +26,7 @@ class UpdateProfileRequest {
       if (lastName != null) 'lastName': lastName,
       if (phoneNumber != null) 'phoneNumber': phoneNumber,
       if (address != null) 'address': address!.toJson(),
-      if (imageBytes != null) 'imageBytes': base64Encode(imageBytes!),
+        'imageBytes': imageBytes?.map((bytes) => base64Encode(bytes)).toList(),
     };
   }
 }

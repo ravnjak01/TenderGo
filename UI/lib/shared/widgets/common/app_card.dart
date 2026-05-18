@@ -1,5 +1,4 @@
-
-  import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
 
@@ -9,6 +8,7 @@ class AppCard extends StatelessWidget {
   final List<Widget> children;
 
   const AppCard({
+    super.key,
     required this.title,
     required this.icon,
     required this.children,
@@ -45,8 +45,7 @@ class AppCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          const Divider(
-              height: 1, thickness: 1, color: AppColors.outline),
+          const Divider(height: 1, thickness: 1, color: AppColors.outline),
           ...children,
         ],
       ),
@@ -61,6 +60,7 @@ class InfoRow extends StatelessWidget {
   final bool copyable;
 
   const InfoRow({
+    super.key,
     required this.label,
     required this.value,
     this.monospace = false,
@@ -96,9 +96,7 @@ class InfoRow extends StatelessWidget {
           ),
           if (copyable)
             GestureDetector(
-              onTap: () {
-                Clipboard.setData(ClipboardData(text: value));
-              },
+              onTap: () => Clipboard.setData(ClipboardData(text: value)),
               child: const Padding(
                 padding: EdgeInsets.only(left: 8),
                 child: Icon(
@@ -113,5 +111,4 @@ class InfoRow extends StatelessWidget {
     );
   }
 }
-
 

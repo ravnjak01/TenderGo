@@ -1,8 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:tendergo/admin/widgets/common/app_action_tile.dart';
-import 'package:tendergo/admin/widgets/common/app_badge.dart';
-import 'package:tendergo/admin/widgets/user_profile_cards.dart';
-import 'package:tendergo/admin/widgets/user_profile_header.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
 import 'package:tendergo/shared/core/utils/extensions/string_extensions.dart';
 import 'package:tendergo/shared/models/dto/auth_dto.dart';
@@ -10,6 +6,10 @@ import 'package:tendergo/shared/models/dto/bid_dto.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
 import 'package:tendergo/shared/models/dto/user_dto.dart';
 import 'package:tendergo/shared/routes/routes.dart';
+import 'package:tendergo/shared/widgets/common/app_action_tile.dart';
+import 'package:tendergo/shared/widgets/common/app_badge.dart';
+import 'package:tendergo/shared/widgets/profile/user_profile_cards.dart';
+import 'package:tendergo/shared/widgets/profile/user_profile_header.dart';
 
 
 

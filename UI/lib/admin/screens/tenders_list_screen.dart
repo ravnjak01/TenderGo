@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tendergo/shared/controllers/tender_list_controller.dart';
+import 'package:tendergo/shared/models/dto/tender_dto.dart';
+import 'package:tendergo/shared/providers/auth_provider.dart';
 import 'package:tendergo/shared/providers/tender_provider.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
+import 'package:tendergo/shared/widgets/common/app_dialogs.dart';
 import 'package:tendergo/shared/widgets/feedback/screen_state_widget.dart';
+import 'package:tendergo/shared/widgets/feedback/snackbar_helper.dart';
 import 'package:tendergo/shared/widgets/tender/filter_bar_widget.dart';
 import 'package:tendergo/shared/widgets/tender/grid_widget.dart';
 import 'package:tendergo/shared/widgets/tender/search_bar_widget.dart';
@@ -27,25 +31,22 @@ class AdminTenderListScreen extends StatefulWidget {
 class _AdminTenderListScreenState extends State<AdminTenderListScreen> {
   final TenderListController _controller = TenderListController();
 
-  // Cached provider reference — safe to use in dispose().
   TenderProvider? _tenderProvider;
 
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _tenderProvider = context.read<TenderProvider>();
-      _tenderProvider!.fetchActiveTenders();
-      _tenderProvider!.fetchCategories();
-      _controller.startPolling(() {
-        if (!mounted) return;
-        if (!_tenderProvider!.isSearchActive) {
-          _tenderProvider!.fetchActiveTenders();
-        }
-      });
-    });
-  }
+ @override
+void initState() {
+  super.initState();
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (!mounted) return;
+
+    _tenderProvider = context.read<TenderProvider>();
+    _tenderProvider!.fetchActiveTenders();
+    _tenderProvider!.fetchCategories();
+
+
+    //context.read<NotificationProvider>().startPolling();
+  });
+}
 
   void _onSearchChanged(String query) {
     _controller.onSearchChanged(
@@ -68,6 +69,32 @@ class _AdminTenderListScreenState extends State<AdminTenderListScreen> {
     super.dispose();
   }
 
+  Future<void> _cancelTender(TenderDto tender) async {
+    final confirmed = await AppDialogs.showConfirm(
+      context: context,
+      title: 'Cancel tender',
+      content: 'Are you sure you want to cancel this tender?',
+      cancelLabel: 'No',
+      confirmLabel: 'Yes, Cancel',
+      isDestructive: true,
+    );
+    if (!confirmed || !mounted) return;
+
+    final provider = context.read<TenderProvider>();
+    final ok = await provider.cancelTender(tender.id);
+    if (!mounted) return;
+
+    if (ok) {
+      SnackbarHelper.show(context, 'Tender canceled successfully.');
+    } else {
+      SnackbarHelper.show(
+        context,
+        provider.error ?? 'Failed to cancel tender',
+        isError: true,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -77,8 +104,9 @@ class _AdminTenderListScreenState extends State<AdminTenderListScreen> {
   }
 
   Widget _buildBody() {
-    return Consumer<TenderProvider>(
-      builder: (context, provider, _) {
+    return Consumer2<TenderProvider, AuthProvider>(
+      builder: (context, provider, auth, _) {
+        final isAdmin = auth.isAdmin;
         if (provider.isLoading && !provider.isSearchActive) {
           return const ScreenLoadingState();
         }
@@ -110,6 +138,8 @@ class _AdminTenderListScreenState extends State<AdminTenderListScreen> {
                 tenders: provider.filteredTenders,
                 tenderService: widget.tenderService,
                 onTenderSelected: widget.onTenderSelected,
+                showCancelAction: isAdmin,
+                onCancelTender: isAdmin ? _cancelTender : null,
               ),
             ],
           ),

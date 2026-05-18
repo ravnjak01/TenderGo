@@ -4,6 +4,9 @@ import 'package:tendergo/shared/core/network/constants/api_endpoints.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:tendergo/shared/models/dto/auth_dto.dart';
 import 'package:tendergo/shared/models/dto/user_dto.dart';
+import 'package:tendergo/shared/models/requests/login_request.dart';
+import 'package:tendergo/shared/models/requests/register_request.dart';
+import 'package:tendergo/shared/models/requests/reset_password_request.dart';
 import 'package:tendergo/shared/models/ui/auth_result.dart';
 
 class AuthService {
@@ -58,6 +61,7 @@ class AuthService {
 
     return true;
   }
+  //4. getCurrentUser
 
   static Future<String?> getCurrentUserId() async {
     final token = await _storage.read(key: 'jwt_token');
@@ -87,7 +91,7 @@ class AuthService {
     return null;
   }
 
-  //4.Registracija (Registration)
+  //5.Registracija (Registration)
   Future<bool> register(RegisterRequest request) async {
     try {
       final response = await _dio.post(
@@ -103,7 +107,7 @@ class AuthService {
     }
   }
 
-  // 5. Forgot Password
+  // 6. Forgot Password
   Future<AuthResult> forgotPassword(String email) async {
     try {
       await _dio.post(ApiEndpoints.forgotPassword, data: {'email': email});
@@ -121,7 +125,7 @@ class AuthService {
     }
   }
 
-  // 6. Reset Password
+  // 7. Reset Password
   Future<AuthResult> resetPassword(ResetPasswordRequest request) async {
     try {
       await _dio.post(ApiEndpoints.resetPassword, data: request.toJson());
@@ -134,6 +138,42 @@ class AuthService {
         success: false,
         message: e.response?.data['message'] ?? 'Something went wrong.',
       );
+    }
+  }
+
+Future<bool> refreshToken() async {
+    try {
+      final storedRefresh = await _storage.read(key: 'refresh_token');
+      if (storedRefresh == null || storedRefresh.isEmpty) return false;
+ 
+      // Bypass the interceptor to avoid an infinite refresh loop.
+      final plainDio = Dio(_dio.options);
+      final response = await plainDio.post(
+        ApiEndpoints.refreshToken,
+        data: {'refreshToken': storedRefresh},
+      );
+ 
+      if (response.statusCode == 200) {
+        final newToken = response.data['token']?.toString();
+        final newRefresh = response.data['refreshToken']?.toString();
+ 
+        if (newToken == null || newToken.isEmpty) {
+          await logout();
+          return false;
+        }
+ 
+        await _storage.write(key: 'jwt_token', value: newToken);
+        if (newRefresh != null && newRefresh.isNotEmpty) {
+          await _storage.write(key: 'refresh_token', value: newRefresh);
+        }
+        return true;
+      }
+ 
+      await logout();
+      return false;
+    } on DioException catch (_) {
+      await logout();
+      return false;
     }
   }
 

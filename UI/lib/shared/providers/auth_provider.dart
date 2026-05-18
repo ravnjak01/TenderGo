@@ -1,105 +1,64 @@
-import 'package:flutter/material.dart';
+import 'package:tendergo/shared/models/requests/login_request.dart';
+import 'package:tendergo/shared/models/requests/register_request.dart';
+import 'package:tendergo/shared/models/requests/reset_password_request.dart';
+import 'package:tendergo/shared/providers/base_provider.dart';
 import 'package:tendergo/shared/models/dto/auth_dto.dart';
 import 'package:tendergo/shared/models/dto/user_dto.dart';
 import 'package:tendergo/shared/models/ui/auth_result.dart';
 import 'package:tendergo/shared/services/auth_service.dart';
 
-class AuthProvider extends ChangeNotifier {
+class AuthProvider extends BaseProvider {
   final AuthService _authService;
-  
-  bool _isLoading = false;
-  bool get isLoading => _isLoading;
-
-  // Dodajemo polja za korisnika i error poruku
-  UserDto? _currentUser;
-  UserDto? get currentUser => _currentUser;
-
-  String? _errorMessage;
-  String? get errorMessage => _errorMessage;
 
   AuthProvider(this._authService);
 
-  // --- NOVA METODA: loadUser ---
-  Future<AuthResult> loadUser() async {
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
+  UserDto? _currentUser;
+  UserDto? get currentUser => _currentUser;
 
-    try {
-      final result = await _authService.getCurrentUser();
-      
-      if (result.success) {
-        _currentUser = result.data;
-      } else {
-        _errorMessage = result.message;
-      }
-      return result;
-    } catch (e) {
-      _errorMessage = "Failed to load user data.";
-      return AuthResult(success: false, message: _errorMessage!);
-    } finally {
-      _isLoading = false;
-      notifyListeners();
+
+  String? get errorMessage => error;
+
+  bool get isAdmin {
+      final roles = _currentUser?.roles ?? const <String>[];
+      return roles.any((role) => role.toLowerCase() == 'admin');
     }
+
+
+  Future<AuthResult> loadUser() async {
+    final result = await handleAsync(() => _authService.getCurrentUser());
+    if (result != null && result.success) {
+      _currentUser = result.data;
+    }
+    return result ?? AuthResult(success: false, message: error ?? 'Failed to load user');
   }
 
-  // --- POSTOJEĆE METODE ---
-
   Future<bool> login(String email, String password) async {
-    // Ovdje bi bilo dobro dodati isLoading ako login traje dugo
-    return await _authService.login(
+    final success = await _authService.login(
       LoginRequest(email: email, password: password),
     );
+    if (success) {
+      await loadUser();
+    }
+    return success;
   }
 
   Future<bool> registerUser(RegisterRequest request) async {
-    _isLoading = true;
-    notifyListeners(); 
-
-    try {
-      final success = await _authService.register(request);
-      return success;
-    } catch (e) {
-      return false;
-    } finally {
-      _isLoading = false;
-      notifyListeners(); 
-    }
+    final result = await handleAsync(() => _authService.register(request));
+    return result ?? false;
   }
 
   Future<AuthResult> resetPassword(ResetPasswordRequest request) async {
-    _isLoading = true;
-    notifyListeners();
-
-    try {
-      final result = await _authService.resetPassword(request);
-      return result; 
-    } catch (e) {
-      return AuthResult(success: false, message: "Something went wrong");
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
+    final result = await handleAsync(() => _authService.resetPassword(request));
+    return result ?? AuthResult(success: false, message: error ?? 'Something went wrong');
   }
 
   Future<AuthResult> sendForgotPasswordEmail(String email) async {
-    _isLoading = true;
-    notifyListeners(); 
-
-    try {
-      final result = await _authService.forgotPassword(email);
-      return result;
-    } catch (e) {
-      return AuthResult(success: false, message: "Something went wrong.");
-    } finally {
-      _isLoading = false;
-      notifyListeners(); 
-    }
+    final result = await handleAsync(() => _authService.forgotPassword(email));
+    return result ?? AuthResult(success: false, message: error ?? 'Something went wrong');
   }
 
-  // Bonus: Metoda za logout kako bi očistio podatke
   void logout() {
     _currentUser = null;
-    notifyListeners();
+    safeNotify();
   }
 }

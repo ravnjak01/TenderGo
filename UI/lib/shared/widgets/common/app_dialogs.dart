@@ -36,3 +36,4 @@ class AppDialogs {
     return result ?? false;
   }
 }
+

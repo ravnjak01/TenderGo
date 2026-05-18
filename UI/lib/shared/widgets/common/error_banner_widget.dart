@@ -50,3 +50,4 @@ class ErrorBannerWidget extends StatelessWidget {
     );
   }
 }
+
