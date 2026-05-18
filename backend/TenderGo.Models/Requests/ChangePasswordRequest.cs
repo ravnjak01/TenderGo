@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace TenderGo.Models.Requests
 {
-    public class ChangePasswordDTO
+    public class ChangePasswordRequest
     {
         [Required]
         public string CurrentPassword { get; set; }

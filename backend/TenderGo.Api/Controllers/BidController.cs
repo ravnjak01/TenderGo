@@ -37,11 +37,14 @@ namespace TenderGo.Api.Controllers
             return Ok(await _bidService.GetById(id));
         }
 
+
+        //PROVJERITI DA LI OVAJ KONTROLER TREBA DA NASLJEDJUJE BAZNI I STA VRACAJU SVI KONTROLERI DA LI NEKI GLOBALNI OMOTAC ILI DIREKTNI REZULTAT TIPA
+        //return Ok(result);
         [HttpPost]
         public async Task<ActionResult<BidDTO>> Insert([FromBody] BidInsertRequest request)
         {
             var result = await _bidService.Insert(request);
-            return Ok(new {message="Bid sent successfully"});
+            return Ok(result);
         }
 
         [HttpPut("{id}/cancel")]

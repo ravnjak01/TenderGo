@@ -1,4 +1,6 @@
-﻿using Azure.Core;
+﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
+using Azure.Core;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TenderGo.Api.Database;
@@ -16,38 +18,49 @@ namespace TenderGo.Services.Services
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly TenderGoContext _context;
         private readonly IAuthService _authService;
-        public AdminService(UserManager<ApplicationUser> userManager, TenderGoContext context, IAuthService authService)
+        private readonly IMapper _mapper;
+        public AdminService(UserManager<ApplicationUser> userManager, TenderGoContext context, IAuthService authService,IMapper mapper)
         {
             _userManager = userManager;
             _context = context;
+            _mapper=mapper;
             _authService = authService;
         }
 
+
+ protected virtual IQueryable<ApplicationUser> AddIncludes(IQueryable<ApplicationUser> query)
+ {
+    return query
+    .Include(u=>u.Address)
+    .Include(u=>u.RatingsReceived)
+    .Include(u=>u.CreatedTenders);
+
+ }
+
         public async Task<IEnumerable<UserDTO>> GetAllUsersAsync()
         {
-            var query = from user in _context.Users
-                        where !user.IsDeleted
-                        select new UserDTO
-                        {
-                            Id = user.Id,
-                            Email = user.Email,
-                            Username = user.UserName,
-                            FirstName = user.FirstName,
-                            LastName = user.LastName,
-                            Address = user.Address == null ? null : new AddressDTO
-                            {
-                                Street = user.Address.Street,
-                                City = user.Address.City,
-                                Country = user.Address.Country,
-                                PostalCode = user.Address.PostalCode
-                            },
-                            Roles = (from userRole in _context.UserRoles
-                                     join role in _context.Roles on userRole.RoleId equals role.Id
-                                     where userRole.UserId == user.Id
-                                     select role.Name).ToList()
-                        };
+            var usersQuery = _context.Users
+        .Where(user => !user.IsDeleted)
+        .ProjectTo<UserDTO>(_mapper.ConfigurationProvider);
 
-            return await query.ToListAsync();
+    // 2. Ručno lijepimo uloge jer Identity nema direktnu navigaciju na entitetu
+    var finalQuery = from user in usersQuery
+                     select new UserDTO
+                     {
+                         Id = user.Id,
+                         Email = user.Email,
+                         Username = user.Username,
+                         FirstName = user.FirstName,
+                         LastName = user.LastName,
+                         Address = user.Address,
+                         // Izvlači stringove ("Admin", "User") iz baze koji odgovaraju tvojim AppRoles konstantama
+                         Roles = (from userRole in _context.UserRoles
+                                  join role in _context.Roles on userRole.RoleId equals role.Id
+                                  where userRole.UserId == user.Id
+                                  select role.Name).ToList()
+                     };
+
+                    return await finalQuery.ToListAsync();
         }
         public async Task<bool> BanUserAsync(string userId, BanRequest reason)
         {

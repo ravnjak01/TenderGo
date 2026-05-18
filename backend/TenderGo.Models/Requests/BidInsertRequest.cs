@@ -16,6 +16,6 @@ namespace TenderGo.Models.Requests
         [StringLength(500)]
         public string? Note { get; set; }
         [Required]
-        public int UserId { get; set; }
+        public string UserId { get; set; }
     }
 }

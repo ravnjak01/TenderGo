@@ -19,6 +19,10 @@ namespace TenderGo.Services.Mapping
             CreateMap<Category, CategoryDTO>().ReverseMap();
             CreateMap<CategoryUpdateRequest, Category>();
 
+            CreateMap<LocationInsertRequest, Location>()
+                .ForMember(d => d.Name, o => o.MapFrom(s => s.City ?? string.Empty));
+            CreateMap<LocationUpdateRequest, Location>();
+
         }
     }
 }

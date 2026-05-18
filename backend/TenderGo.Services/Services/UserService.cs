@@ -39,7 +39,7 @@ namespace TenderGo.Services.Services
 
 
         //dodati kontroler za promjenu passworda 
-        public async Task<bool> ChangePasswordAsync(ChangePasswordDTO dto)
+        public async Task<bool> ChangePasswordAsync(ChangePasswordRequest dto)
         {
 
             var userId = _authService.GetCurrentUserId();

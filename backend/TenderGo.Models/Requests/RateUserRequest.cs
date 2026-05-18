@@ -18,7 +18,6 @@ namespace TenderGo.Models.Requests
         [Required]
         public int Score { get; set; }
         public string? Comment { get; set; }
-        [Required]
-        public DateTime CreatedAt { get; set; }
+      
     }
 }
