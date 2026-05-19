@@ -20,7 +20,7 @@ namespace TenderGo.Services.Mapping
             CreateMap<CategoryUpdateRequest, Category>();
 
             CreateMap<LocationInsertRequest, Location>()
-                .ForMember(d => d.Name, o => o.MapFrom(s => s.City ?? string.Empty));
+                .ForMember(d => d.Name, o => o.MapFrom(s => s.Name ?? string.Empty));
             CreateMap<LocationUpdateRequest, Location>();
 
         }

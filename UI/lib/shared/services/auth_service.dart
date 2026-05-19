@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:tendergo/shared/core/error/error_handler.dart';
 import 'package:tendergo/shared/core/network/constants/api_endpoints.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:tendergo/shared/models/dto/auth_dto.dart';
@@ -16,7 +17,7 @@ class AuthService {
   AuthService(this._dio);
 
   // 1. Prijava (Login)
-  Future<bool> login(LoginRequest request) async {
+  Future<AuthResult<void>> login(LoginRequest request) async {
     try {
       final response = await _dio.post(
         ApiEndpoints.login,
@@ -24,18 +25,25 @@ class AuthService {
       );
 
       if (response.statusCode == 200) {
-        String? token = response.data['token'];
+        final token = response.data['token']?.toString();
 
-        if (token == null) {
-          return false;
+        if (token == null || token.isEmpty) {
+          return AuthResult.failure('Invalid response from server.');
         }
 
         await _storage.write(key: 'jwt_token', value: token);
-        return true;
+        return AuthResult.success(null);
       }
-      return false;
-    } on DioException catch (_) {
-      return false;
+      return AuthResult.failure('Sign in not successful. Please check your credentials.');
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      if (ErrorHandler.isAccountBanned(data)) {
+        return AuthResult.failure(ErrorHandler.accountBannedMessage());
+      }
+      final message = ErrorHandler.extractErrorMessage(data);
+      return AuthResult.failure(
+        message ?? 'Wrong email or password.',
+      );
     }
   }
 

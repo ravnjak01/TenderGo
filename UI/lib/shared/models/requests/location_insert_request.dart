@@ -1,17 +1,17 @@
 class LocationInsertRequest {
 
   final String country;
-  final String city;
-  final String region;
+  final String name;
+  final String? region;
 
   const LocationInsertRequest({
     required this.country,
-    required this.city,
-    required this.region,
+    required this.name,
+    this.region,
   });
 
   Map<String, dynamic> toJson() => {
-        'city': city, 
+        'name': name, 
         'country': country,
         'region': region,
       };

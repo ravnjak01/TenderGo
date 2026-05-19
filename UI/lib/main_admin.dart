@@ -25,7 +25,6 @@ void main() async {
   final userService = UserService(dio);
 
   final bool isLoggedIn = await AuthService.isLoggedIn();
-
   runApp(
     AdminApp(
       isLoggedIn: isLoggedIn,

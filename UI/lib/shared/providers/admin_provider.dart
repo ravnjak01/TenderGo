@@ -3,6 +3,8 @@ import 'package:tendergo/shared/models/dto/category_dto.dart';
 import 'package:tendergo/shared/models/dto/location_dto.dart';
 import 'package:tendergo/shared/models/requests/location_filter_request.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
+import 'package:tendergo/shared/models/requests/location_insert_request.dart';
+import 'package:tendergo/shared/models/requests/location_update_request.dart';
 import 'package:tendergo/shared/models/ui/auth_result.dart';
 import 'package:tendergo/shared/services/admin_service.dart';
 import 'package:tendergo/shared/services/auth_service.dart';
@@ -56,29 +58,14 @@ class AdminProvider {
   Future<List<LocationDto>> getLocations() =>
       locationService.getLocations(const LocationFilterRequest());
 
-  Future<LocationDto> insertLocation({
-    required String name,
-    required String country,
-    String? region,
-  }) =>
+  Future<LocationDto> insertLocation(LocationInsertRequest request) =>
       locationService.insertLocation(
-        name: name,
-        country: country,
-        region: region,
+        request,
       );
 
   Future<bool> updateLocation(
-    int id, {
-    required String name,
-    required String country,
-    String? region,
-  }) =>
-      locationService.updateLocation(
-        id,
-        name: name,
-        country: country,
-        region: region,
-      );
+    int id, LocationUpdateRequest request) =>
+      locationService.updateLocation(id, request);
 
   Future<bool> deleteLocation(int id) => locationService.deleteLocation(id);
 }

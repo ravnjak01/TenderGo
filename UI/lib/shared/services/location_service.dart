@@ -2,6 +2,8 @@ import 'package:dio/dio.dart';
 import 'package:tendergo/shared/core/network/constants/location_endpoints.dart';
 import 'package:tendergo/shared/models/dto/location_dto.dart';
 import 'package:tendergo/shared/models/requests/location_filter_request.dart';
+import 'package:tendergo/shared/models/requests/location_insert_request.dart';
+import 'package:tendergo/shared/models/requests/location_update_request.dart';
 import 'package:tendergo/shared/services/base_service.dart';
 
 class LocationService extends BaseService<LocationDto> {
@@ -42,30 +44,21 @@ class LocationService extends BaseService<LocationDto> {
     return regions;
   }
 
-  Future<LocationDto> insertLocation({
-    required String name,
-    required String country,
-    String? region,
-  }) {
+  Future<LocationDto> insertLocation(LocationInsertRequest request) {
     return insert(LocationDto(
       id: 0,
-      name: name,
-      country: country,
-      region: region,
+      name: request.name,
+      country: request.country,
+      region: request.region,
     ));
   }
 
-  Future<bool> updateLocation(
-    int id, {
-    required String name,
-    required String country,
-    String? region,
-  }) {
+  Future<bool> updateLocation(int id,LocationUpdateRequest request) {
     return update(id, LocationDto(
       id: id,
-      name: name,
-      country: country,
-      region: region,
+      name: request.name ?? '', 
+      country: request.country ?? '' ,
+      region: request.region,
     ));
   }
 

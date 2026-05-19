@@ -51,8 +51,11 @@ Future<List<T>> getAll({int page = 1, int pageSize = 100, Map<String, dynamic>? 
       final response = await _dio.post(_endpointPath, data: body);
       final raw = response.data;
       
+      //zadnje popravio payload za response data
       final payload = raw is Map<String, dynamic>
-          ? (raw['result'] is Map<String, dynamic> ? raw['result'] as Map<String, dynamic> : raw)
+          ? (raw['data'] is Map<String, dynamic> 
+              ? raw['data'] as Map<String, dynamic> 
+              : (raw['result'] is Map<String, dynamic> ? raw['result'] as Map<String, dynamic> : raw))
           : const <String, dynamic>{};
 
       return _fromJson(payload);
