@@ -88,6 +88,11 @@ namespace TenderGo.Services.Services
                 throw new UserException("Wrong email or password.");
 
             }
+            if (user.IsBanned)
+            {
+                throw new UserException("ACCOUNT_BANNED");  
+            }
+
 
             var passwordValid = await _userManager.CheckPasswordAsync(user, dto.Password);
             if (!passwordValid)
@@ -266,6 +271,10 @@ namespace TenderGo.Services.Services
                 .FirstOrDefaultAsync(u => u.Id == userId);
 
             if (user == null) throw new Exception("User not found");
+            if (user.IsBanned)
+            {
+                throw new UserException("ACCOUNT_BANNED"); 
+            }
 
             var roles = await _userManager.GetRolesAsync(user);
 

@@ -28,16 +28,16 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
 
   setState(() => _errorMessage = null);
 
-  final success = await context.read<AuthProvider>().login(
+  final result = await context.read<AuthProvider>().login(
     _emailController.text.trim(),
     _passwordController.text,
   );
 
   if (!mounted) return;
 
-  if (!success) {
+  if (!result.success) {
     setState(() {
-      _errorMessage = 'Sign in not successful. Please check your credentials.';
+      _errorMessage = result.message;
     });
     return;
   }

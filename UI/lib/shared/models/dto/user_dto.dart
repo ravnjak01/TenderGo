@@ -12,6 +12,7 @@ class UserDto {
   final String? profileImageUrl;
   final AddressDto address; 
   final List<String> roles;
+  final bool isBanned;
 
   const UserDto({
     required this.id,
@@ -22,6 +23,7 @@ class UserDto {
     required this.address,
     this.profileImageUrl,
     required this.roles,
+    required this.isBanned,
   });
 
   factory UserDto.fromJson(Map<String, dynamic> json) {
@@ -39,6 +41,7 @@ class UserDto {
       profileImageUrl: DioClient.resolveImageUrl(json['profileImageUrl'] as String? ?? ''),
       address: AddressDto.fromJson(json['address'] as Map<String, dynamic>),
       roles: parsedRoles,
+      isBanned: json['isBanned'] as bool? ?? false,
     );
   }
 
@@ -51,6 +54,7 @@ class UserDto {
         'profileImageUrl': profileImageUrl,
         'address': address.toJson(),
         'roles': roles,
+        'isBanned': isBanned,
       };
 
 String get initials => UserHelper.generateInitials(

@@ -4,7 +4,6 @@ import 'package:tendergo/shared/core/theme/app_theme.dart';
 import 'package:tendergo/shared/core/utils/validators/validators.dart';
 import 'package:tendergo/shared/providers/auth_provider.dart';
 import 'package:tendergo/shared/routes/routes.dart';
-import 'package:tendergo/shared/widgets/inputs/auth_widget.dart';
 import 'package:tendergo/shared/widgets/common/auth_scaffold.dart';
 import 'package:tendergo/shared/widgets/common/error_banner_widget.dart';
 import 'package:tendergo/shared/widgets/inputs/custom_auth_field.dart';
@@ -40,22 +39,21 @@ class _MobileLoginScreenState extends State<MobileLoginScreen> {
       _errorMessage = null;
     });
 
-    final success = await context.read<AuthProvider>().login(
+    final result = await context.read<AuthProvider>().login(
           _emailController.text.trim(),
           _passwordController.text,
         );
 
     if (!mounted) return;
 
-    if (success) {
-       Navigator.of(context).pushReplacementNamed(AppRoutes.tenderList);
+    setState(() => _isLoading = false);
+
+    if (!result.success) {
+      setState(() => _errorMessage = result.message);
       return;
     }
 
-    setState(() {
-      _isLoading = false;
-      _errorMessage = 'Sign in not successful. Please check your credentials.';
-    });
+    Navigator.of(context).pushReplacementNamed(AppRoutes.tenderList);
   }
 
   @override
