@@ -18,5 +18,6 @@ namespace TenderGo.Models.DTOs
 
         public AddressDTO Address { get; set; }
         public List<string> Roles { get; set; } = new();
+        public bool IsBanned { get; set; }
     }
 }

@@ -6,6 +6,8 @@ import 'package:tendergo/shared/models/dto/location_dto.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
 import 'package:tendergo/shared/models/enums/tenderstatus.dart';
 import 'package:tendergo/shared/models/dto/user_dto.dart';
+import 'package:tendergo/shared/models/requests/location_insert_request.dart';
+import 'package:tendergo/shared/models/requests/location_update_request.dart';
 import 'package:tendergo/shared/models/ui/auth_result.dart';
 import 'package:tendergo/shared/providers/admin_provider.dart';
 import 'package:tendergo/shared/routes/routes.dart';
@@ -35,7 +37,7 @@ class _AdminScreenState extends State<AdminScreen> {
   bool _isSubmitting = false;
   String? _errorMessage;
   UserDto? _currentUser;
-  List<_AdminUserRecord> _users = const [];
+  List<UserDto> _users = const [];
   List<TenderDto> _allTenders = const [];
   List<TenderDto> _activeTenders = const [];
   List<TenderDto> _closedTenders = const [];
@@ -262,10 +264,14 @@ class _AdminScreenState extends State<AdminScreen> {
     setState(() => _isSubmitting = true);
 
     try {
-      final created = await widget.provider.insertLocation(
+      final request = LocationInsertRequest(
         name: values.name,
         country: values.country,
         region: values.region,
+      );
+      
+      final created = await widget.provider.insertLocation(
+       request,
       );
 
       if (!mounted) return;
@@ -306,11 +312,15 @@ class _AdminScreenState extends State<AdminScreen> {
     setState(() => _isSubmitting = true);
 
     try {
-      await widget.provider.updateLocation(
-        location.id,
+       final request = LocationUpdateRequest(
         name: values.name,
         country: values.country,
         region: values.region,
+      );
+
+      await widget.provider.updateLocation(
+        location.id,
+       request,
       );
 
       if (!mounted) return;
@@ -518,7 +528,9 @@ class _AdminScreenState extends State<AdminScreen> {
       if (!mounted) return;
       setState(() {
         _currentUser = currentUser;
-        _users = _parseUsers(usersResult.data);
+        _users = usersResult.data is List<UserDto>
+            ? usersResult.data as List<UserDto>
+            : const [];
         _allTenders = results[1] as List<TenderDto>;
         _activeTenders = results[2] as List<TenderDto>;
         _closedTenders = results[3] as List<TenderDto>;
@@ -544,7 +556,7 @@ class _AdminScreenState extends State<AdminScreen> {
     await _loadAdminData(showLoader: false);
   }
 
-  Future<void> _handleBanUser(_AdminUserRecord user) async {
+  Future<void> _handleBanUser(UserDto user) async {
     final reason = await _showBanDialog(user);
     if (reason == null || reason.isEmpty) {
       return;
@@ -563,10 +575,14 @@ class _AdminScreenState extends State<AdminScreen> {
       setState(() {
         _users = _users.map((u) {
           if (u.id == user.id) {
-            return _AdminUserRecord(
+            return UserDto(
               id: u.id,
-              username: u.username,
               email: u.email,
+              username: u.username,
+              firstName: u.firstName,
+              lastName: u.lastName,
+              address: u.address,
+              profileImageUrl: u.profileImageUrl,
               roles: u.roles,
               isBanned: true,
             );
@@ -577,7 +593,7 @@ class _AdminScreenState extends State<AdminScreen> {
     }
   }
 
-  Future<void> _handleUnbanUser(_AdminUserRecord user) async {
+  Future<void> _handleUnbanUser(UserDto user) async {
     setState(() => _isSubmitting = true);
     final result = await widget.provider.unbanUser(user.id);
     if (!mounted) return;
@@ -588,10 +604,14 @@ class _AdminScreenState extends State<AdminScreen> {
       setState(() {
         _users = _users.map((u) {
           if (u.id == user.id) {
-            return _AdminUserRecord(
+            return UserDto(
               id: u.id,
-              username: u.username,
               email: u.email,
+              username: u.username,
+              firstName: u.firstName,
+              lastName: u.lastName,
+              address: u.address,
+              profileImageUrl: u.profileImageUrl,
               roles: u.roles,
               isBanned: false,
             );
@@ -602,13 +622,13 @@ class _AdminScreenState extends State<AdminScreen> {
     }
   }
 
-  Future<String?> _showBanDialog(_AdminUserRecord user) async {
+  Future<String?> _showBanDialog(UserDto user) async {
     final controller = TextEditingController();
     final reason = await showDialog<String>(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: Text('Ban ${user.displayName}'),
+          title: Text('Ban ${_userDisplayName(user)}'),
           content: AppTextField(
             controller: controller,
             label: 'Reason',
@@ -636,36 +656,9 @@ class _AdminScreenState extends State<AdminScreen> {
     return reason;
   }
 
-  List<_AdminUserRecord> _parseUsers(dynamic payload) {
-    final rawList = switch (payload) {
-      final List<dynamic> items => items,
-      final Map<String, dynamic> map =>
-        (map['result'] ?? map['items'] ?? map['data']) as List<dynamic>? ??
-            const <dynamic>[],
-      _ => const <dynamic>[],
-    };
-
-    return rawList
-        .map(_coerceMap)
-        .where((item) => item.isNotEmpty)
-        .map(_AdminUserRecord.fromJson)
-        .toList();
-  }
-
-  Map<String, dynamic> _coerceMap(dynamic item) {
-    if (item is UserDto) {
-      return item.toJson();
-    }
-
-    if (item is Map<String, dynamic>) {
-      return item;
-    }
-
-    if (item is Map) {
-      return item.map((key, value) => MapEntry(key.toString(), value));
-    }
-
-    return const <String, dynamic>{};
+  String _userDisplayName(UserDto user) {
+    final name = '${user.firstName} ${user.lastName}'.trim();
+    return name.isNotEmpty ? name : user.username;
   }
 
   void _goBackHome() {
@@ -1008,7 +1001,7 @@ class _AdminScreenState extends State<AdminScreen> {
     );
   }
 
-  Widget _buildUserCard(_AdminUserRecord user) {
+  Widget _buildUserCard(UserDto user) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final statusColor = user.isBanned ? AppColors.error : AppColors.success;
@@ -1042,7 +1035,7 @@ class _AdminScreenState extends State<AdminScreen> {
                     children: [
                       Expanded(
                         child: Text(
-                          user.displayName,
+                          _userDisplayName(user),
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
@@ -1264,69 +1257,6 @@ class _LocationFormValues {
 }
 
 enum _TenderBucket { all, active, closed, cancelled }
-
-class _AdminUserRecord {
-  final String id;
-  final String username;
-  final String email;
-  final List<String> roles;
-  final bool isBanned;
-
-  const _AdminUserRecord({
-    required this.id,
-    required this.username,
-    required this.email,
-    required this.roles,
-    required this.isBanned,
-  });
-
-  factory _AdminUserRecord.fromJson(Map<String, dynamic> json) {
-    final roles = json['roles'] is List
-        ? List<String>.from(
-            (json['roles'] as List).map((role) => role.toString()),
-          )
-        : const <String>[];
-
-    final username = (json['username'] ?? json['userName'] ?? json['fullName'])
-        ?.toString()
-        .trim();
-
-    final email = json['email']?.toString().trim();
-    final id = json['id']?.toString().trim();
-
-    return _AdminUserRecord(
-      id: id == null || id.isEmpty ? '' : id,
-      username: username == null || username.isEmpty
-          ? 'Unknown user'
-          : username,
-      email: email == null || email.isEmpty ? 'No email' : email,
-      roles: roles,
-      isBanned:
-          json['isBanned'] == true ||
-          json['banned'] == true ||
-          json['isBlocked'] == true,
-    );
-  }
-
-  String get displayName => username;
-
-  String get initials {
-    if (displayName.isEmpty) {
-      return 'U';
-    }
-
-    final parts = displayName
-        .split(' ')
-        .where((part) => part.trim().isNotEmpty)
-        .toList();
-
-    if (parts.length >= 2) {
-      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-    }
-
-    return displayName[0].toUpperCase();
-  }
-}
 
 class _StatCard extends StatelessWidget {
   final String label;
