@@ -111,6 +111,10 @@ class _TenderBidFormState extends State<TenderBidForm> {
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = context.watch<AuthProvider>();
+    final currentUser = authProvider.currentUser;
+
+    final isMyTender = currentUser != null && widget.tender.createdByUserId == currentUser.id;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -124,6 +128,7 @@ class _TenderBidFormState extends State<TenderBidForm> {
           children: [
             TextFormField(
               controller: _priceController,
+              enabled: !isMyTender,
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
@@ -147,6 +152,7 @@ class _TenderBidFormState extends State<TenderBidForm> {
             const SizedBox(height: 12),
             TextFormField(
               controller: _deliveryDaysController,
+              enabled: !isMyTender,
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               decoration: const InputDecoration(
@@ -166,6 +172,7 @@ class _TenderBidFormState extends State<TenderBidForm> {
             const SizedBox(height: 12),
             TextFormField(
               controller: _proposalController,
+              enabled: !isMyTender,
               minLines: 4,
               maxLines: 6,
               decoration: const InputDecoration(
@@ -186,6 +193,36 @@ class _TenderBidFormState extends State<TenderBidForm> {
               ),
             ],
             const SizedBox(height: 16),
+
+            SizedBox(
+              width: double.infinity,
+              child: isMyTender
+                  ? Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.shade100,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.amber.shade800),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.warning_amber_rounded, color: Colors.amber.shade900),
+                          const SizedBox(width: 10),
+                          const Expanded(
+                            child: Text(
+                              'You cannot submit a bid for your own tender.',
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+
+                    /*
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -201,6 +238,20 @@ class _TenderBidFormState extends State<TenderBidForm> {
                       )
                     : const Text('Submit bid'),
               ),
+            ),
+            */: ElevatedButton(
+                      onPressed: _isSubmitting ? null : _submit,
+                      child: _isSubmitting
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text('Submit bid'),
+                    ),
             ),
           ],
         ),

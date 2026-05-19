@@ -64,9 +64,14 @@ namespace TenderGo.Services.Services
             try
             {
 
+            var currentUserId = _authService.GetCurrentUserId();
             var tender = await _context.Tenders.FindAsync(request.TenderId)
                   ?? throw new UserException("Tender not found");
 
+            if(currentUserId == tender.CreatedByUserId)
+            {
+                throw new UserException("OWNER_CANNOT_BID");
+            }
 
             _logger.LogInformation("Attempting to create a new bid for tender {TenderId} by user {UserId}", request.TenderId, _authService.GetCurrentUserId());
 

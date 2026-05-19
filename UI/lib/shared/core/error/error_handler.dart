@@ -34,6 +34,10 @@ class ErrorHandler {
             }
           }
         }
+
+        if (data['errors'] == "OWNER_CANNOT_BID") {
+        return 'You cannot place an offer on your own tender.';
+      }
       }
 
       if (data is String && data.trim().isNotEmpty) return data;
@@ -43,6 +47,19 @@ class ErrorHandler {
 
     return null;
   }
+
+  static bool isAccountBanned(dynamic data) {
+    final code = extractErrorMessage(data);
+    if (code == 'ACCOUNT_BANNED') return true;
+    if (data is Map && data['errors'] is List) {
+      return (data['errors'] as List)
+          .any((e) => e.toString() == 'ACCOUNT_BANNED');
+    }
+    return false;
+  }
+
+  static String accountBannedMessage() =>
+      'Your account has been banned. Please contact an administrator.';
 
   static void showApiError(BuildContext context, ApiResponse api) {
     final msg = switch (api.statusCode) {
