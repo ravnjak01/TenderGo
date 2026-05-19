@@ -9,7 +9,7 @@ using TenderGo.Services.Interfaces;
 namespace TenderGo.Api.Controllers
 {
     [ApiController]
-    [Authorize(Roles = AppRoles.Admin)]
+    [Authorize]
     [Route("api/[controller]")]
     public class CategoryController : BaseController<CategoryDTO, Category, CategoryDTO, CategoryUpdateRequest>
     {

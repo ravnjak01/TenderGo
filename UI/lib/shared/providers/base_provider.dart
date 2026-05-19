@@ -1,6 +1,7 @@
 // lib/shared/providers/base_provider.dart
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/scheduler.dart';
 
 /// Base class for all providers in TenderGo.
 ///
@@ -14,13 +15,13 @@ import 'package:flutter/foundation.dart';
 abstract class BaseProvider extends ChangeNotifier {
   // ── State ────────────────────────────────────────────────────────────────
 
-  bool _isLoading = false;
+  int _loadingCount = 0;
   String? _error;
   bool _disposed = false;
 
   // ── Getters ──────────────────────────────────────────────────────────────
 
-  bool get isLoading => _isLoading;
+  bool get isLoading => _loadingCount > 0;
   String? get error => _error;
 
   /// True after [dispose] has been called.
@@ -29,10 +30,14 @@ abstract class BaseProvider extends ChangeNotifier {
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
-  /// Updates [_isLoading] and calls [safeNotify].
-  void _setLoading(bool value) {
-    _isLoading = value;
+  void _incrementLoading() {
+    _loadingCount++;
     safeNotify();
+  }
+
+  void _decrementLoading() {
+    if (_loadingCount > 0) _loadingCount--;
+    _notifyDeferred();
   }
 
   /// Clears the current error message and notifies listeners.
@@ -49,6 +54,13 @@ abstract class BaseProvider extends ChangeNotifier {
   /// after the widget tree removes them.
   void safeNotify() {
     if (!_disposed) notifyListeners();
+  }
+
+  void _notifyDeferred() {
+    if (_disposed) return;
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (!_disposed) notifyListeners();
+    });
   }
 
   // ── handleAsync ──────────────────────────────────────────────────────────
@@ -80,7 +92,7 @@ abstract class BaseProvider extends ChangeNotifier {
   }) async {
     if (!silent) {
       if (clearOnStart) _error = null;
-      _setLoading(true);
+      _incrementLoading();
     }
 
     try {
@@ -93,9 +105,10 @@ abstract class BaseProvider extends ChangeNotifier {
       return null;
     } finally {
       if (!silent) {
-        _isLoading = false;
+        _decrementLoading();
+      } else {
+        _notifyDeferred();
       }
-      safeNotify();
     }
   }
 

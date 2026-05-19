@@ -35,4 +35,25 @@ class JsonParser {
     }
     return fallback;
   }
+
+  static bool readBool(dynamic value, {bool fallback = false}) {
+    if (value is bool) return value;
+    if (value is int) return value != 0;
+    if (value is String) {
+      final normalized = value.trim().toLowerCase();
+      if (normalized == 'true' || normalized == '1') return true;
+      if (normalized == 'false' || normalized == '0') return false;
+    }
+    return fallback;
+  }
+
+  static DateTime readDateTime(dynamic value, {DateTime? fallback}) {
+    final defaultFallback = fallback ?? DateTime.now();
+    if (value == null) return defaultFallback;
+    if (value is DateTime) return value;
+    if (value is String) {
+      return DateTime.tryParse(value) ?? defaultFallback;
+    }
+    return defaultFallback;
+  }
 }

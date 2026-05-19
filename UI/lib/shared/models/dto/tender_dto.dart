@@ -20,7 +20,6 @@ class TenderDto {
   final int categoryId;
   final String categoryName;
   final DateTime postedAt;
-  final String? profileImageUrl;
 
   const TenderDto({
     required this.id,
@@ -37,7 +36,6 @@ class TenderDto {
     required this.categoryId,
     required this.categoryName,
     required this.postedAt,
-    this.profileImageUrl,
   });
 
 
@@ -51,29 +49,36 @@ class TenderDto {
   }
 
   factory TenderDto.fromJson(Map<String, dynamic> json) {
-    // Parsiranje ugniježđenih slika
-    var rawImages = json['images'] as List?;
-    List<TenderImageDto> parsedImages = rawImages != null
-        ? rawImages.whereType<Map<String, dynamic>>().map(TenderImageDto.fromJson).toList()
-        : const [];
-
     return TenderDto(
-      id: json['id'] as int,
-      title: json['title'] as String,
-      description: json['description'] as String?,
+      id: JsonParser.readInt(json['id']),
+      title: JsonParser.readString(json['title']),
+      description: JsonParser.readNullableString(json['description']),
       maxBudget: JsonParser.readDouble(json['maxBudget']),
-      deadline: DateTime.parse(json['deadline'] as String),
+      deadline: JsonParser.readDateTime(json['deadline']),
       createdByUserId: JsonParser.readString(json['createdByUserId']),
       createdByFullname: JsonParser.readString(json['createdByFullname'], fallback: 'Unknown'),
-      status: TenderStatus.fromValue(json['status']), // Enum rješava svoje parsiranje
+      status: TenderStatus.fromValue(json['status']),
       totalBids: JsonParser.readInt(json['totalBids']),
-      images: parsedImages,
+      images: _parseImages(json['images']),
       location: _parseLocation(json['location']),
       categoryId: JsonParser.readInt(json['categoryId']),
       categoryName: JsonParser.readString(json['categoryName'], fallback: 'No category'),
-      postedAt: DateTime.parse(json['postedAt'] as String),
-      profileImageUrl: json['profileImageUrl'] as String?,
+      postedAt: JsonParser.readDateTime(json['postedAt']),
     );
+  }
+
+  static List<TenderImageDto> _parseImages(dynamic raw) {
+    if (raw == null) return const [];
+    if (raw is List) {
+      return raw
+          .whereType<Map<String, dynamic>>()
+          .map(TenderImageDto.fromJson)
+          .toList();
+    }
+    if (raw is Map<String, dynamic>) {
+      return [TenderImageDto.fromJson(raw)];
+    }
+    return const [];
   }
 
   Map<String, dynamic> toJson() => {
@@ -91,7 +96,6 @@ class TenderDto {
         'categoryId': categoryId,
         'categoryName': categoryName,
         'postedAt': postedAt.toIso8601String(),
-        'profileImageUrl': profileImageUrl,
       };
 
   // Pretvara TenderDto u model koji direktno očekuje tvoj UI Card Widget
@@ -104,16 +108,20 @@ class TenderDto {
       valueKM: maxBudget,
       deadline: deadline,
       postedAt: postedAt,
-      tags: location != null ? [location!.name, location!.country] : const [],
+      tags: [location.name, location.country],
       imageUrl: DioClient.resolveImageUrl(primaryImage?.imageUrl),
       locationName: location.displayLabel,
     );
   }
 
   static LocationDto _parseLocation(dynamic value) {
- 
+    if (value == null) {
+      return LocationDto(id: 0, name: 'Unknown', country: 'Unknown');
+    }
+    if (value is Map<String, dynamic>) {
       return LocationDto.fromJson(value);
-    
+    }
+    return LocationDto(id: 0, name: 'Unknown', country: 'Unknown');
   }
 }
 

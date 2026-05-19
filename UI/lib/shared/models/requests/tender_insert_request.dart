@@ -8,7 +8,6 @@ class TenderInsertRequest {
   final String? description;
   final int categoryId;
   final DateTime deadline;
-  // Promijenjeno u nullable List<Uint8List>? kako bi se poklopilo sa konstruktorom i slanjem null vrijednosti
   final List<Uint8List>? imageBytes;
 
   TenderInsertRequest({
@@ -18,7 +17,7 @@ class TenderInsertRequest {
     this.description,
     required this.categoryId,
     required this.deadline,
-    this.imageBytes, // Ovdje je dozvoljen null, zato polje gore mora biti nullable
+    this.imageBytes, 
   });
 
   /// Convert TenderInsertRequest to JSON Map
@@ -30,7 +29,6 @@ class TenderInsertRequest {
       'description': description,
       'categoryId': categoryId,
       'deadline': deadline.toIso8601String(),
-      // Koristimo ?. operator jer imageBytes može biti null
       'imageBytes': imageBytes?.map((bytes) => base64Encode(bytes)).toList(),
     };
   }

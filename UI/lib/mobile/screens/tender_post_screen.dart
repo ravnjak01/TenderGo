@@ -157,11 +157,20 @@ class _MobileTenderPostScreenState extends State<MobileTenderPostScreen> {
         imageBytes: null,
       );
 
-      await context.read<TenderProvider>().createTender(
+      final provider = context.read<TenderProvider>();
+      final created = await provider.createTender(
         request,
         imageFiles: _imageFiles,
       );
       if (!mounted) return;
+      if (created == null) {
+        SnackbarHelper.show(
+          context,
+          provider.error ?? 'Failed to post tender',
+          isError: true,
+        );
+        return;
+      }
       Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;

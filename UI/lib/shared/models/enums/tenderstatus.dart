@@ -11,14 +11,25 @@ enum TenderStatus {
   const TenderStatus(this.value);
 
   static TenderStatus fromValue(dynamic val) {
-    // Ako sa .NET backenda stigne kao broj (int)
     if (val is int) {
       return TenderStatus.values.firstWhere(
-        (e) => e.value == val, 
+        (e) => e.value == val,
         orElse: () => TenderStatus.open,
       );
     }
-    // Fallback ako je null ili nepoznat tip
+    if (val is String) {
+      final normalized = val.trim().toLowerCase();
+      for (final status in TenderStatus.values) {
+        if (status.name.toLowerCase() == normalized) return status;
+      }
+      const labels = {
+        'open': TenderStatus.open,
+        'closed': TenderStatus.closed,
+        'awarded': TenderStatus.awarded,
+        'cancelled': TenderStatus.cancelled,
+      };
+      return labels[normalized] ?? TenderStatus.open;
+    }
     return TenderStatus.open;
   }
   

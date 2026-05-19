@@ -38,7 +38,6 @@ class MobileRoutes {
       AppRoutes.tenderList: (context) => MobileTenderShellScreen(
         tenderService: tenderService,
         authService: authService,
-        categoryService: categoryService,
       ),
       AppRoutes.tenderPost: (context) => const MobileTenderPostScreen(),
       AppRoutes.tenderDetails: (context) =>

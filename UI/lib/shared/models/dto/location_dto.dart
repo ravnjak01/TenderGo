@@ -1,3 +1,5 @@
+import 'package:tendergo/shared/core/utils/json_parser.dart';
+
 class LocationDto {
   final int id;
   final String name;
@@ -20,9 +22,9 @@ class LocationDto {
 
   factory LocationDto.fromJson(Map<String, dynamic> json) {
     return LocationDto(
-      id: json['id'] as int,
-      name: json['name'] as String,
-      country: json['country'] as String,
+      id: JsonParser.readInt(json['id']),
+      name: JsonParser.readString(json['name'], fallback: 'Unknown'),
+      country: JsonParser.readString(json['country'], fallback: 'Unknown'),
       region: json['region'] as String?,
     );
   }

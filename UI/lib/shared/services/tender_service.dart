@@ -1,8 +1,8 @@
-import 'dart:ffi';
 import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:tendergo/shared/core/network/constants/tender_api_endpoints.dart';
@@ -106,9 +106,21 @@ class TenderService {
         TenderApiEndpoints.getActive,
       );
 
-      return List<TenderDto>.from(
-        response.data.map((x) => TenderDto.fromJson(x)),
-      );
+      final data = response.data;
+      if (data is! List) {
+        throw Exception('Unexpected active tenders response format');
+      }
+
+      final tenders = <TenderDto>[];
+      for (final item in data) {
+        if (item is! Map<String, dynamic>) continue;
+        try {
+          tenders.add(TenderDto.fromJson(item));
+        } catch (e, stack) {
+          debugPrint('Skipping malformed active tender: $e\n$stack');
+        }
+      }
+      return tenders;
     } on DioException catch (e) {
       throw Exception(e.response?.data ?? 'Error fetching active tenders');
     }
@@ -158,7 +170,14 @@ class TenderService {
         data: request.toJson(),
       );
 
-      return TenderDto.fromJson(response.data);
+      //zadnje popravio payload za response data ,zasto je potrebno ovo sve ispitat
+      final payload = response.data is Map<String, dynamic>
+          ? (response.data['data'] is Map<String, dynamic> 
+              ? response.data['data'] as Map<String, dynamic> 
+              : (response.data['result'] is Map<String, dynamic> ? response.data['result'] as Map<String, dynamic> : response.data))
+          : const <String, dynamic>{};
+
+      return TenderDto.fromJson(payload);
     } on DioException catch (e) {
       throw Exception(e.response?.data ?? 'Error creating tender');
     } catch (e) {

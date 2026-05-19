@@ -98,10 +98,10 @@ class TenderProvider extends BaseProvider {
     safeNotify();
   }
 
-  Future<void> fetchActiveTenders() =>
+  Future<void> fetchActiveTenders({bool silent = false}) =>
       handleAsync(() async {
         _tenders = await _service.getActive();
-      });
+      }, silent: silent);
 
   Future<void> fetchAllTenders() =>
       handleAsync(() async {
@@ -114,16 +114,10 @@ class TenderProvider extends BaseProvider {
   }) =>
       handleAsync(() async {
         final created = await _service.create(request, imageFiles: imageFiles);
-        if (created.status == TenderStatus.open) {
-          final idx = _tenders.indexWhere((t) => t.id == created.id);
-          if (idx >= 0) {
-            _tenders[idx] = created;
-          } else {
-            _tenders = [created, ..._tenders];
-          }
-        }
+        _tenders.removeWhere((t) => t.id == created.id);
+        _tenders.insert(0, created);
         return created;
-      });
+      }, silent: true);
 
   Future<void> searchTenders(String query) async {
     _searchQuery = query.trim();
@@ -148,7 +142,7 @@ class TenderProvider extends BaseProvider {
     notifyListeners();
     // Defer the notify to avoid calling during build
     WidgetsBinding.instance.addPostFrameCallback((_) {
-     // if (!_disposed) safeNotify();
+      safeNotify();
     });
   }
 
@@ -187,8 +181,9 @@ class TenderProvider extends BaseProvider {
     } catch (e) {
       _categoryLoadError = e.toString().replaceFirst('Exception: ', '').trim();
     } finally {
-      _isCategoryLoading = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
       safeNotify();
+    });
     }
   }
 

@@ -1,6 +1,8 @@
 import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:dio/io.dart' as dio_io;
+import 'package:flutter/foundation.dart';
 import 'package:tendergo/shared/core/network/interceptors/auth_interceptor.dart';
 
 class DioClient {
@@ -60,14 +62,17 @@ class DioClient {
   
     dio.interceptors.add(AuthInterceptor(dio));
 
-    dio.interceptors.add(LogInterceptor(
-      request: true,
-      requestHeader: true,
-      requestBody: true,
-      responseHeader: true,
-      responseBody: true,
-      error: true,
-    ));
+    if (kDebugMode) {
+      dio.interceptors.add(LogInterceptor(
+        request: true,
+        requestHeader: true,
+        requestBody: false,
+        responseHeader: true,
+        responseBody: false,
+        error: true,
+        logPrint: (obj) => debugPrint(obj.toString()),
+      ));
+    }
 
     return dio;
   }

@@ -32,17 +32,23 @@ class MobileTenderListScreen extends StatefulWidget {
 class _MobileTenderListScreenState extends State<MobileTenderListScreen> {
   final Set<int> _savedIds = <int>{};
   final TenderListController _controller = TenderListController();
+  bool _initialLoadDone = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      context.read<AuthProvider>().loadUser();
-      final p = Provider.of<TenderProvider>(context, listen: false);
-      p.fetchActiveTenders();
-      p.fetchCategories();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _initialLoad());
+  }
+
+  Future<void> _initialLoad() async {
+    if (!mounted) return;
+    context.read<AuthProvider>().loadUser();
+    final p = Provider.of<TenderProvider>(context, listen: false);
+    await p.fetchActiveTenders();
+    await p.fetchCategories();
+    if (mounted) {
+      setState(() => _initialLoadDone = true);
+    }
   }
 
   Future<void> _loadTenders() {
@@ -106,7 +112,7 @@ class _MobileTenderListScreenState extends State<MobileTenderListScreen> {
 
     return Consumer<TenderProvider>(
       builder: (context, provider, child) {
-        if (provider.isLoading && provider.tenders.isEmpty) {
+        if (!_initialLoadDone && provider.isLoading) {
           return const ScreenLoadingState(message: 'Loading tenders...');
         }
 

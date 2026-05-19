@@ -24,9 +24,7 @@ namespace TenderGo.Models.DTOs
         public string CategoryName { get; set; } = string.Empty;
 
 
-    //zadnje popravio location i tenderdto tendercardmodel
         public DateTime PostedAt { get; set; }
-        public string? ProfileImageUrl { get; set; }
 
     }
 }
