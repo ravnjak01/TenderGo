@@ -166,7 +166,7 @@ class _TenderShellScreenState extends State<TenderShellScreen> {
 
   /// Build the action buttons row (post tender, notifications, profile).
   Widget _buildActionsRow() {
-    
+    final userFromProvider = context.watch<AuthProvider>().currentUser;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -187,7 +187,7 @@ class _TenderShellScreenState extends State<TenderShellScreen> {
      //   NotificationBell(iconColor: Colors.black87),
         const SizedBox(width: 12),
         UserAvatarWidget(
-          user: _currentUser,
+          user: userFromProvider,
           onTap: _openUserProfile,
         ),
       ],

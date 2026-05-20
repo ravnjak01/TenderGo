@@ -2,6 +2,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:tendergo/shared/core/actions/back_button.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
 import 'package:tendergo/shared/models/requests/tender_insert_request.dart';
 import 'package:tendergo/shared/providers/tender_provider.dart';
@@ -198,6 +199,7 @@ class _MobileTenderPostScreenState extends State<MobileTenderPostScreen> {
       appBar: AppBar(
         backgroundColor: AppColors.surface,
         elevation: 0,
+      leading: const CustomBackButton(),
         title: const Text('Post Tender'),
       ),
       body: SafeArea(

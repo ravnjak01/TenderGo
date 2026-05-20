@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
+import 'package:tendergo/shared/core/utils/extensions/user_initials_extension.dart';
 import 'package:tendergo/shared/models/dto/user_dto.dart';
 import 'package:tendergo/shared/widgets/common/app_icon.dart';
 
@@ -58,10 +59,7 @@ class UserProfileHeader extends StatelessWidget {
         children: [
           Row(
             children: [
-              AppIconButton(
-                icon: Icons.arrow_back_ios_new_rounded,
-                onTap: onBack ?? () => Navigator.maybePop(context),
-              ),
+              
               const Spacer(),
               Text(
                 'Profile',

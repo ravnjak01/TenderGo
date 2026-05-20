@@ -5,6 +5,7 @@ import 'package:tendergo/shared/models/requests/location_filter_request.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
 import 'package:tendergo/shared/models/requests/location_insert_request.dart';
 import 'package:tendergo/shared/models/requests/location_update_request.dart';
+import 'package:tendergo/shared/models/ui/api_response.dart';
 import 'package:tendergo/shared/models/ui/auth_result.dart';
 import 'package:tendergo/shared/services/admin_service.dart';
 import 'package:tendergo/shared/services/auth_service.dart';
@@ -27,9 +28,9 @@ class AdminProvider {
     required this.locationService,
   });
 
-  Future<AuthResult> getCurrentUser() => authService.getCurrentUser();
+  Future<ApiResponse> getCurrentUser() => authService.getCurrentUser();
 
-  Future<AuthResult> getAllUsers() => adminService.getAllUsers();
+  Future<ApiResponse> getAllUsers() => adminService.getAllUsers();
 
   Future<List<TenderDto>> getAllTenders() =>
       tenderService.getAll(page: 1, pageSize: 100);
@@ -40,12 +41,12 @@ class AdminProvider {
 
   Future<List<CategoryDto>> getCategories() => categoryService.getAll();
 
-  Future<AuthResult> deleteTender(int id) => adminService.deleteTender(id);
+  Future<ApiResponse> deleteTender(int id) => adminService.deleteTender(id);
 
-  Future<AuthResult> banUser(String id, BanRequest request) =>
+  Future<ApiResponse> banUser(String id, BanRequest request) =>
       adminService.banUser(id, request);
 
-  Future<AuthResult> unbanUser(String id) => adminService.unbanUser(id);
+  Future<ApiResponse> unbanUser(String id) => adminService.unbanUser(id);
 
   Future<CategoryDto> insertCategory(String name) =>
       categoryService.insert(CategoryDto(id: 0, name: name));

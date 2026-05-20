@@ -2,6 +2,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:tendergo/shared/core/actions/back_button.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
 import 'package:tendergo/shared/models/requests/tender_insert_request.dart';
 import 'package:tendergo/shared/providers/tender_provider.dart';
@@ -334,14 +335,7 @@ class _TenderPostScreenState extends State<TenderPostScreen>
     elevation: 0,
     centerTitle: false,
     systemOverlayStyle: SystemUiOverlayStyle.dark,
-    leading: IconButton(
-      icon: const Icon(
-        Icons.arrow_back_ios_new_rounded,
-        size: 17,
-        color: AppColors.textSecondary,
-      ),
-      onPressed: () => Navigator.pop(context),
-    ),
+    leading: const CustomBackButton(),
     title: Row(
       children: [
         Container(

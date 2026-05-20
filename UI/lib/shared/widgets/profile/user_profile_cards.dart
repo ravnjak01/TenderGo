@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:tendergo/shared/models/dto/auth_dto.dart';
+import 'package:tendergo/shared/models/dto/address_dto.dart';
 import 'package:tendergo/shared/models/dto/user_dto.dart';
 import 'package:tendergo/shared/widgets/common/app_card.dart';
 

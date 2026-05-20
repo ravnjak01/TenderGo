@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tendergo/shared/core/actions/back_button.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
 import 'package:tendergo/shared/models/dto/user_dto.dart';
 import 'package:tendergo/shared/models/requests/rate_user_request.dart';
@@ -116,7 +117,7 @@ class _RateUserScreenState extends State<RateUserScreen> {
     final ratedName = (widget.ratedUserName ?? '').trim();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Rate User')),
+      appBar: AppBar(title: const Text('Rate User'), leading: const CustomBackButton()),
       body: SafeArea(
         child: Form(
           key: _formKey,

@@ -1,7 +1,7 @@
-import 'package:tendergo/shared/core/utils/extensions/user_helper.dart';
+import 'package:tendergo/shared/models/has_initials.dart';
 import 'package:tendergo/shared/services/dio_client.dart';
 
-class UserPublicDto {
+class UserPublicDto implements HasInitials{
   final String id;
   final String username;
   final String firstName;
@@ -58,10 +58,5 @@ class UserPublicDto {
     };
   }
 
-   String get initials => UserHelper.generateInitials(
-        firstName: firstName,
-        lastName: lastName,
-        username: username,
-      );
-  String get fullName => "$firstName $lastName";
+   
 }

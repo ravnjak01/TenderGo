@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:tendergo/shared/core/actions/back_button.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
 import 'package:tendergo/shared/models/dto/user_dto.dart';
 import 'package:tendergo/shared/models/dto/bid_dto.dart';
@@ -152,6 +153,12 @@ class _UserProfileScreenState extends State<UserProfileScreen>
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      appBar: AppBar(
+         backgroundColor: AppColors.background,
+         elevation: 0,
+         leading: const CustomBackButton(),
+         title: const Text('Profile'),
+       ),
       body: SafeArea(
         child: _loading
             ? _buildLoading()

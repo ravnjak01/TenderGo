@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tendergo/shared/core/actions/back_button.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
 import 'package:tendergo/shared/services/bid_service.dart';
@@ -135,10 +136,7 @@ class _MobileTenderDetailsScreenState extends State<MobileTenderDetailsScreen> {
                 pinned: true,
                 elevation: 0,
                 backgroundColor: AppColors.background.withOpacity(0.88),
-                leading: _buildHeaderIcon(
-                  Icons.arrow_back_ios_rounded,
-                  () => Navigator.of(context).pop(),
-                ),
+                leading: const CustomBackButton(),
                 title: const Text('Tender Details'),
               ),
               SliverToBoxAdapter(child: _buildContent(tender)),

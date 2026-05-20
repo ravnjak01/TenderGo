@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:tendergo/shared/core/actions/back_button.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
+import 'package:tendergo/shared/core/utils/extensions/user_initials_extension.dart';
 import 'package:tendergo/shared/models/dto/admin_dto.dart';
 import 'package:tendergo/shared/models/dto/category_dto.dart';
 import 'package:tendergo/shared/models/dto/location_dto.dart';
@@ -672,6 +674,7 @@ class _AdminScreenState extends State<AdminScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        leading: const CustomBackButton(),
         title: const Text('Admin Console'),
         actions: [
           AppIconButton(

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:tendergo/shared/models/dto/auth_dto.dart';
+import 'package:tendergo/shared/models/dto/address_dto.dart';
 import 'package:tendergo/shared/models/requests/register_request.dart';
 import 'package:tendergo/shared/providers/auth_provider.dart';
 import 'package:tendergo/shared/widgets/feedback/snackbar_helper.dart';

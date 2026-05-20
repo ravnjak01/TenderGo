@@ -56,6 +56,7 @@ class MobileApp extends StatelessWidget {
         locale: DevicePreview.locale(context),
         builder: DevicePreview.appBuilder,
         initialRoute: AppRoutes.login,
+        navigatorKey: AppRoutes.navigatorKey,
         routes: MobileRoutes.getRoutes(
           authService: authService,
           bidService: bidService,

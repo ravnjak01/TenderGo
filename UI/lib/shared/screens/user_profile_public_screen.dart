@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:tendergo/shared/core/actions/back_button.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
+import 'package:tendergo/shared/core/utils/extensions/user_initials_extension.dart';
 import 'package:tendergo/shared/models/dto/user_dto.dart';
 import 'package:tendergo/shared/models/dto/user_public_dto.dart';
 import 'package:tendergo/shared/services/user_service.dart';
@@ -102,7 +104,7 @@ class UserProfilePublicScreen extends StatelessWidget {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('User Profile')),
+      appBar: AppBar(title: const Text('User Profile'), leading: const CustomBackButton()),
       body: FutureBuilder<UserPublicDto>(
         future: userService.getUser(userId),
         builder: (context, snapshot) {

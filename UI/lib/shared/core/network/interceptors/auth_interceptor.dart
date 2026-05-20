@@ -1,9 +1,11 @@
 ﻿import 'dart:async';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:tendergo/shared/core/network/constants/api_endpoints.dart';
+import 'package:tendergo/shared/routes/routes.dart';
 
 /// Paths that never need an Authorization header.
 const _publicPaths = <String>[
@@ -183,7 +185,10 @@ class AuthInterceptor extends Interceptor {
   Future<void> _clearSession() async {
     await _storage.delete(key: 'jwt_token');
     await _storage.delete(key: 'refresh_token');
-    // TODO: Navigate to login screen, e.g.:
-    // AppRouter.instance.pushReplacementNamed('/login');
+
+     AppRoutes.navigatorKey.currentState?.pushNamedAndRemoveUntil(
+    '/login',
+    (route) => false,
+  );
   }
 }

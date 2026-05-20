@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tendergo/shared/controllers/bids_list_controller.dart';
+import 'package:tendergo/shared/core/actions/back_button.dart';
 import 'package:tendergo/shared/core/utils/extensions/string_extensions.dart';
 import 'package:tendergo/shared/models/dto/bid_dto.dart';
 import 'package:tendergo/shared/providers/tender_provider.dart';
@@ -113,6 +114,7 @@ class _MyBidsScreenState extends State<MyBidsScreen> {
         backgroundColor: colorScheme.surface,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
+        leading: const CustomBackButton(),
         title: Text(
           'My Bids',
           style: theme.textTheme.headlineSmall?.copyWith(

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart'; // ili paket koji koristiš za context.read
 import 'package:tendergo/shared/core/theme/app_theme.dart';
-import 'package:tendergo/shared/models/dto/auth_dto.dart';
+import 'package:tendergo/shared/models/dto/address_dto.dart';
 import 'package:tendergo/shared/models/requests/reset_password_request.dart';
 import 'package:tendergo/shared/providers/auth_provider.dart';
 import 'package:tendergo/shared/routes/routes.dart';

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:tendergo/shared/controllers/tender_bids_controller.dart';
+import 'package:tendergo/shared/core/actions/back_button.dart';
 import 'package:tendergo/shared/models/dto/bid_dto.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
 import 'package:tendergo/shared/models/enums/application_status.dart';
@@ -93,6 +94,7 @@ class _TenderBidsScreenState extends State<TenderBidsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
+        leading: const CustomBackButton(),
         actions: [
           AppIconButton(
             icon: Icons.refresh_rounded,

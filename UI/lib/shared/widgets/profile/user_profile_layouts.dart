@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
 import 'package:tendergo/shared/core/utils/extensions/string_extensions.dart';
-import 'package:tendergo/shared/models/dto/auth_dto.dart';
+import 'package:tendergo/shared/models/dto/address_dto.dart';
 import 'package:tendergo/shared/models/dto/bid_dto.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
 import 'package:tendergo/shared/models/dto/user_dto.dart';

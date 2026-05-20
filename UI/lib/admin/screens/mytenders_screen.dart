@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tendergo/admin/screens/tender_bids_screen.dart';
 import 'package:tendergo/shared/controllers/my_tenders_controller.dart';
+import 'package:tendergo/shared/core/actions/back_button.dart';
 import 'package:tendergo/shared/core/utils/extensions/string_extensions.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
 import 'package:tendergo/shared/models/enums/tenderstatus.dart';
@@ -76,6 +77,7 @@ class _MyTendersScreenState extends State<MyTendersScreen> {
         backgroundColor: colorScheme.surface,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
+        leading: const CustomBackButton(),
         title: Text(
           'My Tenders',
           style: theme.textTheme.headlineSmall?.copyWith(

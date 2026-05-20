@@ -1,18 +1,18 @@
-import 'package:tendergo/shared/core/utils/extensions/user_helper.dart';
-import 'package:tendergo/shared/models/dto/auth_dto.dart';
+import 'package:tendergo/shared/models/dto/address_dto.dart';
+import 'package:tendergo/shared/models/has_initials.dart';
 import 'package:tendergo/shared/services/dio_client.dart';
 
 
-class UserDto {
+class UserDto implements HasInitials {
   final String id;
   final String email;
-  final String username;
-  final String firstName;
-  final String lastName;
   final String? profileImageUrl;
   final AddressDto address; 
   final List<String> roles;
   final bool isBanned;
+  final String username;
+  final String firstName;
+  final String lastName;
 
   const UserDto({
     required this.id,
@@ -57,11 +57,6 @@ class UserDto {
         'isBanned': isBanned,
       };
 
-String get initials => UserHelper.generateInitials(
-      firstName: firstName,
-      lastName: lastName,
-      username: username,
-    );
 }
 
 

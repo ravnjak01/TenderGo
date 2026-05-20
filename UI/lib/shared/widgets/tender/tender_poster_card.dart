@@ -1,10 +1,16 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
+import 'package:tendergo/shared/models/dto/address_dto.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
+import 'package:tendergo/shared/models/dto/user_dto.dart'; // Ako zatreba za avatar
+import 'package:tendergo/shared/models/dto/user_public_dto.dart'; // Tvoj javni DTO
 import 'package:tendergo/shared/routes/routes.dart';
+import 'package:tendergo/shared/services/user_service.dart'; // Tvoj servis
+import 'package:tendergo/shared/widgets/common/user_avatar_widget.dart';
 import 'package:tendergo/shared/widgets/tender/tender_section_label.dart';
 
-class TenderPosterCard extends StatelessWidget {
+class TenderPosterCard extends StatefulWidget {
   const TenderPosterCard({
     super.key,
     required this.tender,
@@ -12,20 +18,52 @@ class TenderPosterCard extends StatelessWidget {
 
   final TenderDto tender;
 
-  String _getCreatorInitials(String fullName) {
-    final parts = fullName
-        .trim()
-        .split(RegExp(r'\s+'))
-        .where((part) => part.isNotEmpty)
-        .toList(growable: false);
+  @override
+  State<TenderPosterCard> createState() => _TenderPosterCardState();
+}
 
-    if (parts.isEmpty) return '?';
-    if (parts.length == 1) return parts.first[0].toUpperCase();
-    return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
+class _TenderPosterCardState extends State<TenderPosterCard> {
+  late final UserService _userService;
+  Future<UserPublicDto>? _userFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    // Inicijalizacija servisa (proslijedi Dio instancu koju koristiš u aplikaciji)
+    // Ako koristiš GetIt / locator, zamijeni sa: locator<Dio>() ili locator<UserService>()
+    _userService = UserService(Dio()); 
+
+    final userId = widget.tender.createdByUserId.trim();
+    if (userId.isNotEmpty) {
+      // Pozivamo tvoju metodu sa servisa
+      _userFuture = _userService.getUser(userId);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final userId = widget.tender.createdByUserId.trim();
+
+    // Priprema inicijala iz imena za prvu ruku dok se slika učitava
+    final nameParts = widget.tender.createdByFullname.trim().split(' ');
+    final firstName = nameParts.isNotEmpty ? nameParts.first : '';
+    final lastName = nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
+
+    // Dummy korisnik kojeg prikazujemo dok API ne vrati pravi odgovor
+    final fallbackUser = UserDto(
+      id: widget.tender.createdByUserId,
+      firstName: firstName,
+      lastName: lastName,
+      email: '',
+      username: '',
+      profileImageUrl: null, 
+      roles: const [],
+      isBanned: false,
+      address:  AddressDto(id: 0, city: '', country: '', street: '', postalCode: ''),
+    );
+
+
+//nije popravljeno 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -46,29 +84,47 @@ class TenderPosterCard extends StatelessWidget {
             color: Colors.transparent,
             child: InkWell(
               borderRadius: BorderRadius.circular(8),
-              onTap: () {
-                final userId = tender.createdByUserId.trim();
-                if (userId.isEmpty) return;
-                Navigator.of(context).pushNamed(
-                  AppRoutes.userPublicProfile,
-                  arguments: userId,
-                );
-              },
+              onTap: () => _navigateToProfile(context, userId),
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 6),
                 child: Row(
                   children: [
-                    CircleAvatar(
-                      radius: 20,
-                      backgroundColor: AppColors.primary.withOpacity(0.2),
-                      child: Text(
-                        _getCreatorInitials(tender.createdByFullname),
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primary,
-                          fontSize: 14,
-                        ),
-                      ),
+                    // FutureBuilder koji sada sluša UserPublicDto
+                    FutureBuilder<UserPublicDto>(
+                      future: _userFuture,
+                      builder: (context, snapshot) {
+                        if (snapshot.hasData && snapshot.data != null) {
+                          final publicUser = snapshot.data!;
+                          
+                          // PRILAGOĐAVANJE ZA AVATAR WIDGET:
+                          // Ako tvoj UserAvatarWidget prima isključivo stari 'UserDto', 
+                          // prepakuj javne podatke u njega ovako:
+                          final userForAvatar = UserDto(
+                            id: userId,
+                            firstName: publicUser.firstName ?? firstName,
+                            lastName: publicUser.lastName ?? lastName,
+                            email: '',
+                            username: '',
+                            profileImageUrl: publicUser.profileImageUrl, // Ovdje je tvoja slika sa backenda!
+                            roles: const [],
+                            isBanned: false,
+                            address:  AddressDto(id: 0, city: '', country: '', street: '', postalCode: ''),
+                          );
+
+                          return UserAvatarWidget(
+                            user: userForAvatar,
+                            size: 40,
+                            onTap: () => _navigateToProfile(context, userId),
+                          );
+                        }
+
+                        // Ako je loading ili greška, prikaži fallback sa inicijalima
+                        return UserAvatarWidget(
+                          user: fallbackUser,
+                          size: 40,
+                          onTap: () => _navigateToProfile(context, userId),
+                        );
+                      },
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -76,7 +132,7 @@ class TenderPosterCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            tender.createdByFullname,
+                            widget.tender.createdByFullname,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -107,6 +163,14 @@ class TenderPosterCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  void _navigateToProfile(BuildContext context, String userId) {
+    if (userId.isEmpty) return;
+    Navigator.of(context).pushNamed(
+      AppRoutes.userPublicProfile,
+      arguments: userId,
     );
   }
 }

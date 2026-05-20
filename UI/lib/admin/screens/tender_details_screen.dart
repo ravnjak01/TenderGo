@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tendergo/shared/core/actions/back_button.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
 import 'package:tendergo/shared/services/bid_service.dart';
@@ -195,10 +196,7 @@ class _AdminTenderDetailsScreenState extends State<AdminTenderDetailsScreen> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Tender details'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        leading: const CustomBackButton(),
       ),
       body: content,
     );
