@@ -69,7 +69,7 @@ Future<List<T>> getAll({int page = 1, int pageSize = 100, Map<String, dynamic>? 
     try {
       final body = requestData is Map ? requestData : requestData.toJson();
       
-      final response = await _dio.put( // Ili .patch zavisno šta koristiš
+      final response = await _dio.patch( // Ili .patch zavisno šta koristiš
         '$_endpointPath/$id',
         data: body,
       );

@@ -12,7 +12,7 @@ class BidDto {
   final DateTime submittedAt;
   final ApplicationStatus status;
   final String? proposal;
-  final int? deliveryDays;
+  final int deliveryDays;
 
   const BidDto({
     required this.id,
@@ -24,7 +24,7 @@ class BidDto {
     required this.submittedAt,
     required this.status,
     this.proposal,
-    this.deliveryDays,
+    required this.deliveryDays,
   });
 
   factory BidDto.fromJson(Map<String, dynamic> json) {
@@ -40,7 +40,7 @@ class BidDto {
           : DateTime.fromMillisecondsSinceEpoch(0),
       status: ApplicationStatus.fromValue(json['status']),
       proposal: JsonParser.readNullableString(json['proposal']),
-      deliveryDays: json['deliveryDays'] != null ? JsonParser.readInt(json['deliveryDays']) : null,
+      deliveryDays: JsonParser.readInt(json['deliveryDays']),
     );
   }
 

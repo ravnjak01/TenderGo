@@ -58,7 +58,7 @@ public class TenderController
         => Ok(await _tenderService.GetTendersByCategory(id));
 
     [HttpGet("user/{userId}")]
-    [Authorize(Roles = AppRoles.Admin)]
+    [Authorize]
     public async Task<ActionResult<List<TenderDTO>>> GetByUser(string userId)
     {
         var tenders = await _tenderService.GetTendersByUser(userId);

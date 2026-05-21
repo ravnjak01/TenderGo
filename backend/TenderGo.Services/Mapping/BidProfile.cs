@@ -25,7 +25,8 @@ namespace TenderGo.Services.Mapping
                 .ForMember(dest => dest.Proposal, opt => opt.MapFrom(src => src.Note))
                 .ForMember(dest => dest.SubmittedByUserId, opt => opt.MapFrom(src => src.UserId.ToString()))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => ApplicationStatus.Pending))
-                .ForMember(dest => dest.SubmittedAt, opt => opt.MapFrom(src => DateTime.UtcNow));
+                .ForMember(dest => dest.SubmittedAt, opt => opt.MapFrom(src => DateTime.UtcNow))
+                .ForMember(dest => dest.DeliveryDays, opt => opt.MapFrom(src => src.DeliveryDays));
         }
     }
 }

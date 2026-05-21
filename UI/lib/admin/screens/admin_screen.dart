@@ -10,6 +10,7 @@ import 'package:tendergo/shared/models/enums/tenderstatus.dart';
 import 'package:tendergo/shared/models/dto/user_dto.dart';
 import 'package:tendergo/shared/models/requests/location_insert_request.dart';
 import 'package:tendergo/shared/models/requests/location_update_request.dart';
+import 'package:tendergo/shared/models/ui/api_response.dart';
 import 'package:tendergo/shared/models/ui/auth_result.dart';
 import 'package:tendergo/shared/providers/admin_provider.dart';
 import 'package:tendergo/shared/routes/routes.dart';
@@ -522,7 +523,7 @@ class _AdminScreenState extends State<AdminScreen> {
         widget.provider.getLocations(),
       ]);
 
-      final usersResult = results[0] as AuthResult;
+      final usersResult = results[0] as ApiResponse;
       if (!usersResult.success) {
         throw Exception(usersResult.message);
       }

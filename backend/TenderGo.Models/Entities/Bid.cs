@@ -24,6 +24,7 @@ namespace TenderGo.Models.Entities
         [Required]
         public ApplicationStatus Status { get; set; } = ApplicationStatus.Pending;
         public string? Proposal { get; set; }
-        public int? DeliveryDays { get; set; }
+        [Required]
+        public int DeliveryDays { get; set; }
     }
 }

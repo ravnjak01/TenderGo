@@ -61,7 +61,7 @@ class _TenderBidFormState extends State<TenderBidForm> {
       _priceController.text.replaceAll(',', '.').trim(),
     );
     final proposalText = _proposalController.text.trim();
-
+    final deliveryDays = int.parse(_deliveryDaysController.text.trim());
     setState(() {
       _isSubmitting = true;
       _error = null;
@@ -76,6 +76,7 @@ class _TenderBidFormState extends State<TenderBidForm> {
           price: offeredPrice,
           note: proposalText.isEmpty ? null : proposalText,
           userId: userId,
+          deliveryDays: deliveryDays,
         ),
       );
       submitted = true;
@@ -156,12 +157,14 @@ class _TenderBidFormState extends State<TenderBidForm> {
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               decoration: const InputDecoration(
-                labelText: 'Delivery days (optional)',
+                labelText: 'Delivery days',
                 hintText: 'e.g. 30',
               ),
               validator: (value) {
                 final text = (value ?? '').trim();
-                if (text.isEmpty) return null;
+                if (text.isEmpty) {
+                  return 'Delivery days is required.';
+                }
                 final parsed = int.tryParse(text);
                 if (parsed == null || parsed <= 0) {
                   return 'Delivery days must be a positive number.';

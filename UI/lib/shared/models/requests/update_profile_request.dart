@@ -9,7 +9,7 @@ class UpdateProfileRequest {
   final String? lastName;
   final String? phoneNumber;
   final UpdateAddressDto? address;
-   final List<Uint8List>? imageBytes;
+   final Uint8List? imageBytes;
 
 
   UpdateProfileRequest({
@@ -26,7 +26,7 @@ class UpdateProfileRequest {
       if (lastName != null) 'lastName': lastName,
       if (phoneNumber != null) 'phoneNumber': phoneNumber,
       if (address != null) 'address': address!.toJson(),
-        'imageBytes': imageBytes?.map((bytes) => base64Encode(bytes)).toList(),
+        'imageBytes': imageBytes != null ? base64Encode(imageBytes!) : null,
     };
   }
 }

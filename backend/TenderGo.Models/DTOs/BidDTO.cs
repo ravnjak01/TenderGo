@@ -12,5 +12,5 @@ public class BidDTO : IHasId
     public DateTime SubmittedAt { get; set; }
     public ApplicationStatus Status { get; set; } 
     public string? Proposal { get; set; }
-    public int? DeliveryDays { get; set; }
+    public int DeliveryDays { get; set; }
 }

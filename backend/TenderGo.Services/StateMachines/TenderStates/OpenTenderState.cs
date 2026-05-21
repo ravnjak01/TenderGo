@@ -50,8 +50,8 @@ namespace TenderGo.Services.StateMachines.TenderStates
 
 
             var authService = _serviceProvider.GetRequiredService<IAuthService>();
-
-            if (tender.CreatedByUserId != authService.GetCurrentUserId())
+            bool isAdmin = authService.IsInRole(AppRoles.Admin);
+            if (tender.CreatedByUserId != authService.GetCurrentUserId() && !isAdmin)
                 throw new UserException("You can only cancel your own tenders");
 
             tender.Status = TenderStatus.Cancelled;

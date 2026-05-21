@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:tendergo/shared/core/error/error_handler.dart';
 import 'package:tendergo/shared/core/network/constants/api_endpoints.dart';
@@ -8,7 +9,9 @@ import 'package:tendergo/shared/models/dto/user_dto.dart';
 import 'package:tendergo/shared/models/requests/login_request.dart';
 import 'package:tendergo/shared/models/requests/register_request.dart';
 import 'package:tendergo/shared/models/requests/reset_password_request.dart';
+import 'package:tendergo/shared/models/ui/api_response.dart';
 import 'package:tendergo/shared/models/ui/auth_result.dart';
+import 'package:tendergo/shared/services/api_helper.dart';
 
 class AuthService {
   final Dio _dio;
@@ -17,7 +20,7 @@ class AuthService {
   AuthService(this._dio);
 
   // 1. Prijava (Login)
-  Future<AuthResult<void>> login(LoginRequest request) async {
+  Future<ApiResponse<void>> login(LoginRequest request) async {
     try {
       final response = await _dio.post(
         ApiEndpoints.login,
@@ -25,28 +28,33 @@ class AuthService {
       );
 
       if (response.statusCode == 200) {
+
+        if (response.data == null || response.data is! Map) {
+        return ApiResponse.failure('Server returned an empty or invalid response.');
+      }
+
         final token = response.data['token']?.toString();
 
         if (token == null || token.isEmpty) {
-          return AuthResult.failure('Invalid response from server.');
+          return ApiResponse.failure('Invalid response from server.');
         }
 
         await _storage.write(key: 'jwt_token', value: token);
-        return AuthResult.success(null);
+        return ApiResponse.success(null);
       }
-      return AuthResult.failure('Sign in not successful. Please check your credentials.');
+      return ApiResponse.failure('Sign in not successful. Please check your credentials.');
     } on DioException catch (e) {
       final data = e.response?.data;
       if (ErrorHandler.isAccountBanned(data)) {
-        return AuthResult.failure(ErrorHandler.accountBannedMessage());
+        return ApiResponse.failure(ErrorHandler.accountBannedMessage());
       }
       final message = ErrorHandler.extractErrorMessage(data);
-      return AuthResult.failure(
+      return ApiResponse.failure(
         message ?? 'Wrong email or password.',
       );
     }
   }
-
+  
   // 2. Odjava (Logout)
   Future<void> logout() async {
     await _storage.delete(key: 'jwt_token');
@@ -116,39 +124,36 @@ class AuthService {
   }
 
   // 6. Forgot Password
-  Future<AuthResult> forgotPassword(String email) async {
+ Future<ApiResponse<void>> forgotPassword(String email) async {
     try {
       await _dio.post(ApiEndpoints.forgotPassword, data: {'email': email});
-      return  AuthResult(
-        success: true,
+      
+      // Koristimo novi konstruktor za uspjeh (data je null)
+      return ApiResponse.success(
+        null, 
         message: 'If this email exists, a reset link was sent.',
       );
     } on DioException catch (e) {
-      final data = e.response?.data;
-      final message = (data is Map)
-          ? (data['message']?.toString() ?? 'Something went wrong.')
-          : 'Something went wrong.';
-
-      return AuthResult(success: false, message: message);
+      // Prepustamo ApiHelper-u da izvuče poruku i tačan status kod
+      return ApiHelper.handleDioError<void>(e);
     }
   }
 
   // 7. Reset Password
-  Future<AuthResult> resetPassword(ResetPasswordRequest request) async {
+  Future<ApiResponse<void>> resetPassword(ResetPasswordRequest request) async {
     try {
       await _dio.post(ApiEndpoints.resetPassword, data: request.toJson());
-      return  AuthResult(
-        success: true,
+      
+      // Koristimo novi konstruktor za uspjeh
+      return ApiResponse.success(
+        null, 
         message: 'Password reset successfully.',
       );
     } on DioException catch (e) {
-      return AuthResult(
-        success: false,
-        message: e.response?.data['message'] ?? 'Something went wrong.',
-      );
+      // Koristimo ApiHelper za uniformno rukovanje greškama
+      return ApiHelper.handleDioError<void>(e);
     }
   }
-
 Future<bool> refreshToken() async {
     try {
       final storedRefresh = await _storage.read(key: 'refresh_token');
@@ -185,30 +190,42 @@ Future<bool> refreshToken() async {
     }
   }
 
-  Future<AuthResult> getCurrentUser() async {
+ Future<ApiResponse<UserDto?>> getCurrentUser() async {
     try {
       final response = await _dio.get(
         ApiEndpoints.me,
         options: await _options(),
       );
       final data = response.data;
+
+      if (data == null) {
+      return ApiResponse.failure('Empty response from server.', statusCode: 500);
+    }
+
+    // ✅ Guard wrong type
+    if (data is! Map<String, dynamic>) {
+      return ApiResponse.failure('Unexpected response format.', statusCode: 500);
+    }
+    
       final payload = _extractUserPayload(data);
       final user = payload != null ? UserDto.fromJson(payload) : null;
 
-      return AuthResult(
-        success: user != null,
-        message: user != null
-            ? 'User data retrieved successfully.'
-            : 'Invalid user payload.',
-        data: user,
-      );
+      if (user != null) {
+        // Koristimo novi konstruktor za uspjeh (statusCode se automatski postavlja na 200)
+        return ApiResponse.success(
+          user, 
+          message: 'User data retrieved successfully.',
+        );
+      } else {
+        // Ako je payload bio nevalidan, vraćamo failure sa status kodom 400
+        return ApiResponse.failure(
+          'Invalid user payload.', 
+          statusCode: 400,
+        );
+      }
     } on DioException catch (e) {
-      final data = e.response?.data;
-      final message = (data is Map)
-          ? (data['message']?.toString() ?? 'Something went wrong.')
-          : 'Something went wrong.';
-
-      return AuthResult(success: false, message: message);
+      // Umjesto ručnog pisanja logike za grešku, iskoristi ApiHelper koji smo upravo sredili!
+      return ApiHelper.handleDioError<UserDto?>(e);
     }
   }
 

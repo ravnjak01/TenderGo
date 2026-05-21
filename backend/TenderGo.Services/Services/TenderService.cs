@@ -226,12 +226,6 @@ namespace TenderGo.Services.Services
                 .FirstOrDefaultAsync(t => t.Id == id)
                 ?? throw new NotFoundException("Tender not found", new { Entity = "Tender", Id = id });
 
-
-            //zadnje dodao provjeru ispod,dosao autentifikacija i autorizacija,4. stavka
-            //Šta trebaš popraviti da bi ispunio zahtjev 100%?
-//            U kontrolerima: Za operacije tipa "Moji tenderi" ili "Moje ponude", nemoj primati userId kroz parametar metode. Radije napravi metodu bez parametara, a unutar servisa koristi IHttpContextAccessor da dohvatiš ID iz tokena.
-
-//U servisima(Najvažnije): Za svaku Update, Delete ili Cancel metodu, prvo dobavi zapis iz baze, a onda uporedi njegov OwnerId(ili CreatedByUserId) sa ID-em koji dolazi iz tokena.
             var currentUserId = _authService.GetCurrentUserId();
             bool isAdmin = _authService.IsInRole(AppRoles.Admin);
 
@@ -240,17 +234,18 @@ namespace TenderGo.Services.Services
                 throw new ForbiddenException();
             }
 
+            var state = CreateState(entity.Status);
+            var result = await state.Cancel(id);
+
             if (entity.Bids != null && entity.Bids.Any())
             {
                 foreach (var bid in entity.Bids)
                 {
                    
-                    await _bidService.Cancel(bid.Id); 
+                    bid.Status = ApplicationStatus.Cancelled; 
+                     _context.Entry(bid).State = EntityState.Modified;
                 }
             }
-
-            var state = CreateState(entity.Status);
-            var result = await state.Cancel(id);
 
             await _context.SaveChangesAsync();
 

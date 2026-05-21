@@ -1,8 +1,9 @@
 import 'package:tendergo/shared/models/requests/login_request.dart';
 import 'package:tendergo/shared/models/requests/register_request.dart';
 import 'package:tendergo/shared/models/requests/reset_password_request.dart';
+import 'package:tendergo/shared/models/ui/api_response.dart';
 import 'package:tendergo/shared/providers/base_provider.dart';
-import 'package:tendergo/shared/models/dto/auth_dto.dart';
+import 'package:tendergo/shared/models/dto/address_dto.dart';
 import 'package:tendergo/shared/models/dto/user_dto.dart';
 import 'package:tendergo/shared/models/ui/auth_result.dart';
 import 'package:tendergo/shared/services/auth_service.dart';
@@ -24,7 +25,7 @@ class AuthProvider extends BaseProvider {
     }
 
 
-  Future<AuthResult> loadUser() async {
+  Future<ApiResponse> loadUser() async {
     final result = await handleAsync(() => _authService.getCurrentUser());
     if (result != null && result.success) {
     _currentUser = result.data;
@@ -37,10 +38,13 @@ class AuthProvider extends BaseProvider {
     notifyListeners();
   }
   
-  return result ?? AuthResult(success: false, message: error ?? 'Failed to load user');
+ return result ?? ApiResponse.failure(
+    error ?? 'Failed to load user', 
+    statusCode: 400, 
+  );
   }
 
-  Future<AuthResult> login(String email, String password) async {
+  Future<ApiResponse> login(String email, String password) async {
     final result = await _authService.login(
       LoginRequest(email: email, password: password),
     );
@@ -58,14 +62,14 @@ class AuthProvider extends BaseProvider {
     return result ?? false;
   }
 
-  Future<AuthResult> resetPassword(ResetPasswordRequest request) async {
+  Future<ApiResponse> resetPassword(ResetPasswordRequest request) async {
     final result = await handleAsync(() => _authService.resetPassword(request));
-    return result ?? AuthResult(success: false, message: error ?? 'Something went wrong');
+    return result ?? ApiResponse.failure(error ?? 'Something went wrong', statusCode: 400);
   }
 
-  Future<AuthResult> sendForgotPasswordEmail(String email) async {
+  Future<ApiResponse> sendForgotPasswordEmail(String email) async {
     final result = await handleAsync(() => _authService.forgotPassword(email));
-    return result ?? AuthResult(success: false, message: error ?? 'Something went wrong');
+    return result ?? ApiResponse.failure(error ?? 'Something went wrong', statusCode: 400);
   }
 
   void logout() {

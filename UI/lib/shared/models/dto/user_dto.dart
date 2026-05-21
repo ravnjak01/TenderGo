@@ -7,7 +7,7 @@ class UserDto implements HasInitials {
   final String id;
   final String email;
   final String? profileImageUrl;
-  final AddressDto address; 
+  final AddressDto? address; 
   final List<String> roles;
   final bool isBanned;
   final String username;
@@ -20,7 +20,7 @@ class UserDto implements HasInitials {
     required this.username,
     required this.firstName,
     required this.lastName,
-    required this.address,
+     this.address,
     this.profileImageUrl,
     required this.roles,
     required this.isBanned,
@@ -39,7 +39,9 @@ class UserDto implements HasInitials {
       firstName: json['firstName'] as String? ?? '',
       lastName: json['lastName'] as String? ?? '',
       profileImageUrl: DioClient.resolveImageUrl(json['profileImageUrl'] as String? ?? ''),
-      address: AddressDto.fromJson(json['address'] as Map<String, dynamic>),
+        address: json['address'] != null                          
+          ? AddressDto.fromJson(json['address'] as Map<String, dynamic>)
+          : null,
       roles: parsedRoles,
       isBanned: json['isBanned'] as bool? ?? false,
     );
@@ -52,7 +54,7 @@ class UserDto implements HasInitials {
         'firstName': firstName,
         'lastName': lastName,
         'profileImageUrl': profileImageUrl,
-        'address': address.toJson(),
+        'address': address?.toJson(),
         'roles': roles,
         'isBanned': isBanned,
       };

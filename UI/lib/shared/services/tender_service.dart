@@ -228,6 +228,8 @@ class TenderService {
     }
   }
 
+
+//ZADNJE POPRAVLJENO KOD ZA CANCEL U TENDER SERVICU I STATE MACHINE
   // ===== CANCEL =====
   Future<TenderDto> cancel(int id) async {
     try {

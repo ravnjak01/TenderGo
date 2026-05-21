@@ -159,8 +159,9 @@ class TenderProvider extends BaseProvider {
       await _service.cancel(id);
       _tenders.removeWhere((t) => t.id == id);
       _searchResults?.removeWhere((t) => t.id == id);
+      return true;
     });
-    return result != null;
+    return result ?? false;
   }
 
   bool _isCategoryLoading = false;

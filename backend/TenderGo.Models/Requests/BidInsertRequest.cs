@@ -17,5 +17,9 @@ namespace TenderGo.Models.Requests
         public string? Note { get; set; }
         [Required]
         public string UserId { get; set; }
+        [Required]
+        public int DeliveryDays { get; set; }
+
+        //ne zaboraviti uraditi migraciju zbog delivery days
     }
 }

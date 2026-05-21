@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -45,13 +46,7 @@ namespace TenderGo.Services.Services
     }
 
     return await query
-        .Select(l => new LocationDTO
-        {
-            Id = l.Id,
-            Name = l.Name,
-            Country = l.Country,
-            Region = l.Region
-        })
+        .ProjectTo<LocationDTO>(_mapper.ConfigurationProvider)
         .ToListAsync();
 }
 }

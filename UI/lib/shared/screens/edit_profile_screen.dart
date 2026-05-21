@@ -143,7 +143,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     : null,
               )
             : null,
-        imageBytes: _selectedImageBytes != null ? [_selectedImageBytes!] : null,
+        imageBytes: _selectedImageBytes,
       );
 
       await widget.userService.updateProfile(request);

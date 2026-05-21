@@ -3,12 +3,14 @@ class BidInsertRequest {
   final int tenderId;
   final String? note;
 	final String userId;
+  final int deliveryDays;
 
   BidInsertRequest({
     required this.price,
     required this.tenderId,
 		required this.userId,
     this.note,
+    required this.deliveryDays,
   });
 
   Map<String, dynamic> toJson()=> {
@@ -16,5 +18,6 @@ class BidInsertRequest {
       'tenderId': tenderId,
       'note': note,
       'userId': userId,
+      'deliveryDays': deliveryDays,
   };
 }

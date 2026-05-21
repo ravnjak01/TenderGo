@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using TenderGo.Models.DTOs;
 using TenderGo.Models.Requests;
 using TenderGo.Services.Interfaces;
+using TenderGo.Services.Services.Exceptions;
 
 namespace TenderGo.Api.Controllers
 {
@@ -43,6 +44,7 @@ namespace TenderGo.Api.Controllers
             return Ok(new { Message = "User logged out successfully" });
         }
 
+        [AllowAnonymous]
         [HttpPost("forgot-password")]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest model)
         {
@@ -50,7 +52,7 @@ namespace TenderGo.Api.Controllers
                 await _authService.ForgotPasswordAsync(model, baseUrl, HttpContext.RequestAborted);
                 return Ok(new { message = " If an account with mentioned email exists,link with instructions was sent." });
         }
-
+        [AllowAnonymous]
         [HttpPost("reset-password")]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest model)
         {
@@ -71,7 +73,15 @@ namespace TenderGo.Api.Controllers
         [HttpGet("me")]
         public async Task<ActionResult<UserDTO>> GetMe()
         {
-            return await _authService.GetMyProfile();
+             try
+            {
+                var result = await _authService.GetMyProfile();
+                return Ok(result); 
+            }
+            catch (UserException ex)
+            {
+                return Unauthorized(new { Message = ex.Message });
+            }
         }
 
 

@@ -37,33 +37,29 @@ namespace TenderGo.Services.Services
 
  }
 
-//zadnje dodao addincludes u admin servisu
-        public async Task<IEnumerable<UserDTO>> GetAllUsersAsync()
-        {
-            var usersQuery = _context.Users
-        .Where(user => !user.IsDeleted)
-        .ProjectTo<UserDTO>(_mapper.ConfigurationProvider);
-
-    // 2. Ručno lijepimo uloge jer Identity nema direktnu navigaciju na entitetu
-    var finalQuery = from user in usersQuery
+public async Task<IEnumerable<UserDTO>> GetAllUsersAsync()
+{
+    var finalQuery = from user in _context.Users
+                     where !user.IsDeleted
                      select new UserDTO
                      {
                          Id = user.Id,
                          Email = user.Email,
-                         Username = user.Username,
+                         Username = user.UserName, 
                          FirstName = user.FirstName,
                          LastName = user.LastName,
-                         Address = user.Address,
-                         // Izvlači stringove ("Admin", "User") iz baze koji odgovaraju tvojim AppRoles konstantama
+                         Address = user.Address != null ? new AddressDTO 
+                         { 
+                         } : null,
                          Roles = (from userRole in _context.UserRoles
                                   join role in _context.Roles on userRole.RoleId equals role.Id
                                   where userRole.UserId == user.Id
                                   select role.Name).ToList(),
-                        IsBanned = user.IsBanned,
+                         IsBanned = user.IsBanned,
                      };
 
-                    return await finalQuery.ToListAsync();
-        }
+    return await finalQuery.ToListAsync();
+}
         public async Task<bool> BanUserAsync(string userId, BanRequest reason)
         {
             var user = await _userManager.FindByIdAsync(userId);

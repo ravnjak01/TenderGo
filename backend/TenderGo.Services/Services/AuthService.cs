@@ -21,6 +21,8 @@ using TenderGo.Services.Services.Exceptions;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Cryptography;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Hosting;
 
 namespace TenderGo.Services.Services
 {
@@ -35,8 +37,9 @@ namespace TenderGo.Services.Services
         private readonly EmailService _emailService;
         private readonly IConfiguration _configuration;
         private readonly string _cloudName;
+        private readonly IWebHostEnvironment _env;
         public AuthService(UserManager<ApplicationUser> userManager, IConfiguration config, IHttpContextAccessor httpContextAccessor, TenderGoContext context, IMapper mapper, ILogger<AuthService> logger, EmailService emailService, IConfiguration configuration
-            )
+           ,IWebHostEnvironment env )
         {
             _logger = logger;
             _userManager = userManager;
@@ -46,6 +49,7 @@ namespace TenderGo.Services.Services
             _mapper = mapper;
             _emailService = emailService;
             _configuration = configuration;
+            _env=env;
             _cloudName = _configuration["AppSettings:FrontendUrl"];
         }
 
@@ -149,11 +153,16 @@ namespace TenderGo.Services.Services
             await _context.RefreshTokens.AddAsync(refreshToken);
             await _context.SaveChangesAsync();
 
+            var isProduction = _env.IsProduction();
+
+
             _httpContextAccessor.HttpContext?.Response.Cookies.Append("refreshToken", refreshToken.Token, new CookieOptions
             {
                 HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.Strict,
+                Secure = isProduction,
+                SameSite = isProduction
+                ? SameSiteMode.Strict
+                : SameSiteMode.Lax,
                 Expires = refreshToken.Expires
             });
 
@@ -265,6 +274,9 @@ namespace TenderGo.Services.Services
         {
 
             var userId = GetCurrentUserId();
+
+             if (string.IsNullOrEmpty(userId))
+                 throw new UnauthorizedException();
 
             var user = await _context.Users
                 .Include(u => u.Address) 

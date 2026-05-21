@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -33,14 +34,6 @@ namespace TenderGo.Services.Services
         }
 
 
-
-        protected override IQueryable<Bid> AddIncludes(IQueryable<Bid> query)
-        {
-            return query
-                .Include(b => b.Tender)             
-                .Include(b => b.SubmittedByUser);   
-        }
-
         public async Task<List<BidDTO>> GetBidsByUser(string userId)
         {
             var currentUserId = _authService.GetCurrentUserId();
@@ -51,11 +44,11 @@ namespace TenderGo.Services.Services
                 throw new ForbiddenException();
 
             }
-            var bids = await _context.Bids
-                .Where(x => x.SubmittedByUserId == userId)
-                .ToListAsync();
-
-            return _mapper.Map<List<BidDTO>>(bids);
+            
+            return await _context.Bids
+            .Where(x => x.SubmittedByUserId == userId)
+            .ProjectTo<BidDTO>(_mapper.ConfigurationProvider)
+            .ToListAsync();
         }
 
         public override async Task<BidDTO> Insert(BidInsertRequest request)
@@ -74,6 +67,11 @@ namespace TenderGo.Services.Services
             }
 
             _logger.LogInformation("Attempting to create a new bid for tender {TenderId} by user {UserId}", request.TenderId, _authService.GetCurrentUserId());
+
+            if(request.DeliveryDays <= 0)
+            {
+                throw new UserException("Delivery days must be greater than 0");
+            }
 
             var state = CreateState(ApplicationStatus.Pending, tender.Status);
 
@@ -125,15 +123,11 @@ namespace TenderGo.Services.Services
                 throw new ForbiddenException();
 
             }
-            var bids = await _context.Bids
-                .Include(b => b.SubmittedByUser)
-                .Include(b => b.Tender)
+            return await _context.Bids
                 .Where(b => b.TenderId == tenderId)
-                  .OrderByDescending(b => b.SubmittedAt)
+                .OrderByDescending(b => b.SubmittedAt)
+                .ProjectTo<BidDTO>(_mapper.ConfigurationProvider)
                 .ToListAsync();
-
-          
-            return _mapper.Map<List<BidDTO>>(bids);
         }
 
 
@@ -155,6 +149,7 @@ namespace TenderGo.Services.Services
             var state = CreateState(entity.Status,entity.Tender.Status);
             var result = await state.Cancel(id);
 
+            await _context.SaveChangesAsync();
 
             return result;
         }
