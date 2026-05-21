@@ -4,6 +4,7 @@ import 'package:tendergo/shared/core/network/constants/api_endpoints.dart';
 import 'package:tendergo/shared/core/network/constants/admin_endpoints.dart';
 import 'package:tendergo/shared/models/dto/admin_dto.dart';
 import 'package:tendergo/shared/models/dto/user_dto.dart';
+import 'package:tendergo/shared/models/ui/api_response.dart';
 import 'package:tendergo/shared/models/ui/auth_result.dart';
 import 'package:tendergo/shared/services/api_helper.dart';
 
@@ -37,7 +38,7 @@ class AdminService {
   }
 
   // 1. Get all users
-  Future<AuthResult<List<UserDto>>> getAllUsers() async {
+  Future<ApiResponse<List<UserDto>>> getAllUsers() async {
     try {
       final response = await _dio.get(
         AdminEndpoints.getAllUsers,
@@ -47,7 +48,7 @@ class AdminService {
       final List<dynamic> data = response.data;
       final users = data.map((json) => UserDto.fromJson(json)).toList();
 
-      return AuthResult.success(
+      return ApiResponse.success(
       users,
         message: 'Users fetched successfully.',
       );
@@ -57,7 +58,7 @@ class AdminService {
   }
 
   // 2. Ban user
-  Future<AuthResult> banUser(String userId, BanRequest reason) async {
+ Future<ApiResponse<void>> banUser(String userId, BanRequest reason) async {
     try {
       await _dio.post(
         AdminEndpoints.banUser(userId),
@@ -65,47 +66,41 @@ class AdminService {
         options: await _options(),
       );
 
-      return  AuthResult(
-        success: true,
-        message: 'User banned successfully.',
-      );
+      // KORISTIMO NOVI KONSTRUKTOR ZA USPJEH:
+      return ApiResponse.success(null, message: 'User banned successfully.');
     } on DioException catch (e) {
       return ApiHelper.handleDioError(e);
     }
   }
 
   // 3. Unban user
-  Future<AuthResult> unbanUser(String userId) async {
+  Future<ApiResponse<void>> unbanUser(String userId) async {
     try {
       await _dio.post(
         AdminEndpoints.unbanUser(userId),
         options: await _options(),
       );
 
-      return  AuthResult(
-        success: true,
-        message: 'User unbanned successfully.',
-      );
+      // KORISTIMO NOVI KONSTRUKTOR ZA USPJEH:
+      return ApiResponse.success(null, message: 'User unbanned successfully.');
     } on DioException catch (e) {
       return ApiHelper.handleDioError(e);
     }
   }
 
-  Future<AuthResult> deleteTender(int tenderId) async {
-  try {
-    await _dio.delete(
-      AdminEndpoints.deleteTender(tenderId),
-      options: await _options(),
-    );
+  Future<ApiResponse<void>> deleteTender(int tenderId) async {
+    try {
+      await _dio.delete(
+        AdminEndpoints.deleteTender(tenderId),
+        options: await _options(),
+      );
 
-    return  AuthResult(
-      success: true,
-      message: 'Tender deleted successfully.',
-    );
-  } on DioException catch (e) {
-    return ApiHelper.handleDioError(e);
+      // KORISTIMO NOVI KONSTRUKTOR ZA USPJEH:
+      return ApiResponse.success(null, message: 'Tender deleted successfully.');
+    } on DioException catch (e) {
+      return ApiHelper.handleDioError(e);
+    }
   }
-}
 
   Future<Options> _options() async {
     final token = await _storage.read(key: 'jwt_token');

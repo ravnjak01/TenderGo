@@ -4,9 +4,10 @@ import 'package:tendergo/shared/core/theme/app_theme.dart';
 import 'package:tendergo/shared/core/utils/validators/validators.dart';
 import 'package:tendergo/shared/routes/routes.dart';
 import 'package:tendergo/shared/providers/auth_provider.dart';
-import 'package:tendergo/admin/widgets/common/auth_scaffold.dart';
-import 'package:tendergo/admin/widgets/error_banner.widget.dart';
 import 'package:tendergo/shared/widgets/inputs/auth_widget.dart';
+import 'package:tendergo/shared/widgets/inputs/custom_auth_field.dart';
+import 'package:tendergo/shared/widgets/common/auth_scaffold.dart';
+import 'package:tendergo/shared/widgets/common/error_banner_widget.dart';
 
 class AdminLoginScreen extends StatefulWidget {
 
@@ -19,7 +20,6 @@ class AdminLoginScreen extends StatefulWidget {
 class _AdminLoginScreenState extends State<AdminLoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  bool _hidePassword = true;
   String? _errorMessage;
   final _formKey = GlobalKey<FormState>();
 
@@ -28,16 +28,16 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
 
   setState(() => _errorMessage = null);
 
-  final success = await context.read<AuthProvider>().login(
+  final result = await context.read<AuthProvider>().login(
     _emailController.text.trim(),
     _passwordController.text,
   );
 
   if (!mounted) return;
 
-  if (!success) {
+  if (!result.success) {
     setState(() {
-      _errorMessage = 'Sign in not successful. Please check your credentials.';
+      _errorMessage = result.message;
     });
     return;
   }
@@ -71,7 +71,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
               ),
             ),
             const SizedBox(height: 30),
-            AuthField(
+            CustomTextField(
               controller: _emailController,
               label: 'Email',
               hint: 'Enter email',
@@ -86,13 +86,11 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                 return null;
               },
             ),
-            AuthField(
+            CustomTextField(
               controller: _passwordController,
               label: 'Password',
               hint: 'Enter password',
-              obscure: _hidePassword,
-              showToggle: true,
-              onToggle: () => setState(() => _hidePassword = !_hidePassword),
+              isPasswordField: true,
               validator: (value) {
                 if (value == null || value.isEmpty) {
                   return 'Please enter your password';

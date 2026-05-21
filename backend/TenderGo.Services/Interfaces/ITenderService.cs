@@ -27,5 +27,6 @@ namespace TenderGo.Services.Interfaces
         BaseState CreateState(TenderStatus status);
         Task<PagedResult<TenderDTO>>SearchAsync(TenderSearchRequest request);
 
+
     }
 }

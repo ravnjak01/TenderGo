@@ -1,4 +1,6 @@
-﻿using Azure.Core;
+﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
+using Azure.Core;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TenderGo.Api.Database;
@@ -7,6 +9,7 @@ using TenderGo.Models.Entities;
 using TenderGo.Models.ENUMs;
 using TenderGo.Models.Requests;
 using TenderGo.Services.Interfaces;
+using TenderGo.Services.Services.Exceptions;
 
 namespace TenderGo.Services.Services
 {
@@ -14,47 +17,49 @@ namespace TenderGo.Services.Services
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly TenderGoContext _context;
-
-        public AdminService(UserManager<ApplicationUser> userManager,TenderGoContext context)
+        private readonly IAuthService _authService;
+        private readonly IMapper _mapper;
+        public AdminService(UserManager<ApplicationUser> userManager, TenderGoContext context, IAuthService authService,IMapper mapper)
         {
             _userManager = userManager;
             _context = context;
+            _mapper=mapper;
+            _authService = authService;
         }
 
-        public async Task<IEnumerable<UserDTO>> GetAllUsersAsync()
-        {
-            var users = await _userManager.Users
-                .Where(u => u.IsDeleted == false)
-                .Include(u => u.Address)
-                .ToListAsync();
 
-            var result = new List<UserDTO>();
+ protected virtual IQueryable<ApplicationUser> AddIncludes(IQueryable<ApplicationUser> query)
+ {
+    return query
+    .Include(u=>u.Address)
+    .Include(u=>u.RatingsReceived)
+    .Include(u=>u.CreatedTenders);
 
-            foreach (var user in users)
-            {
-                var roles = await _userManager.GetRolesAsync(user);
+ }
 
-                result.Add(new UserDTO
-                {
-                    Id = user.Id,
-                    Email = user.Email,
-                    Username = user.UserName,
-                    FirstName = user.FirstName,
-                    LastName = user.LastName,
-                    Address = user.Address == null ? null : new AddressDTO
-                    {
-                        Street = user.Address.Street,
-                        City = user.Address.City,
-                        Country = user.Address.Country,
-                        PostalCode = user.Address.PostalCode
-                    },
-                    Roles = roles.ToList()
-                });
-            }
+public async Task<IEnumerable<UserDTO>> GetAllUsersAsync()
+{
+    var finalQuery = from user in _context.Users
+                     where !user.IsDeleted
+                     select new UserDTO
+                     {
+                         Id = user.Id,
+                         Email = user.Email,
+                         Username = user.UserName, 
+                         FirstName = user.FirstName,
+                         LastName = user.LastName,
+                         Address = user.Address != null ? new AddressDTO 
+                         { 
+                         } : null,
+                         Roles = (from userRole in _context.UserRoles
+                                  join role in _context.Roles on userRole.RoleId equals role.Id
+                                  where userRole.UserId == user.Id
+                                  select role.Name).ToList(),
+                         IsBanned = user.IsBanned,
+                     };
 
-            return result;
-        }
-
+    return await finalQuery.ToListAsync();
+}
         public async Task<bool> BanUserAsync(string userId, BanRequest reason)
         {
             var user = await _userManager.FindByIdAsync(userId);
@@ -64,7 +69,6 @@ namespace TenderGo.Services.Services
             user.BanReason = reason.Reason;
             user.BannedAt = DateTime.UtcNow;
 
-            // Lock the account out indefinitely via Identity lockout
             await _userManager.SetLockoutEnabledAsync(user, true);
             await _userManager.SetLockoutEndDateAsync(user, DateTimeOffset.MaxValue);
 
@@ -81,7 +85,6 @@ namespace TenderGo.Services.Services
             user.BanReason = null;
             user.BannedAt = null;
 
-            // Lift the Identity lockout
             await _userManager.SetLockoutEndDateAsync(user, null);
 
             var result = await _userManager.UpdateAsync(user);
@@ -101,6 +104,45 @@ namespace TenderGo.Services.Services
             await _context.SaveChangesAsync();
 
             return true;
+        }
+
+        public async Task PurgeCancelledTenders()
+        {
+            var tendersToPurge = await _context.Tenders
+                .IgnoreQueryFilters()
+                .Where(t => t.Status == TenderStatus.Cancelled && t.IsDeleted)
+                .Include(t => t.Bids)
+                .Include(t => t.Images)
+                .ToListAsync();
+
+            foreach (var tender in tendersToPurge)
+            {
+                if (tender.WinningBidId != null)
+                {
+                    tender.WinningBidId = null;
+                    _context.Entry(tender).Property(x => x.WinningBidId).IsModified = true;
+                }
+
+                var ratings = await _context.Ratings.Where(r => r.TenderId == tender.Id).ToListAsync();
+                _context.Ratings.RemoveRange(ratings);
+
+                _context.Bids.RemoveRange(tender.Bids);
+                _context.TenderImages.RemoveRange(tender.Images);
+
+                _context.Tenders.Remove(tender);
+            }
+
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task AdminResetPasswordAsync(string userId, string newPassword)
+        {
+            if (!_authService.IsInRole(AppRoles.Admin))
+                throw new ForbiddenException();
+
+            var user = await _userManager.FindByIdAsync(userId);
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            await _userManager.ResetPasswordAsync(user, token, newPassword);
         }
     }
 }

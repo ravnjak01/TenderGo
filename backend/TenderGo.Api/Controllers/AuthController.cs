@@ -3,10 +3,11 @@ using Microsoft.AspNetCore.Mvc;
 using TenderGo.Models.DTOs;
 using TenderGo.Models.Requests;
 using TenderGo.Services.Interfaces;
+using TenderGo.Services.Services.Exceptions;
 
 namespace TenderGo.Api.Controllers
 {
-
+    [Authorize]
     [ApiController]
     [Route("api/auth")]
     public class AuthController : ControllerBase
@@ -36,7 +37,6 @@ namespace TenderGo.Api.Controllers
         }
 
         [HttpPost("logout")]
-        [Authorize]
 
         public async Task<IActionResult> Logout()
         {
@@ -46,23 +46,12 @@ namespace TenderGo.Api.Controllers
 
         [AllowAnonymous]
         [HttpPost("forgot-password")]
-        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest model, CancellationToken cancellationToken)
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest model)
         {
-
-            try
-            {
                 var baseUrl = $"{Request.Scheme}://{Request.Host}";
-
                 await _authService.ForgotPasswordAsync(model, baseUrl, HttpContext.RequestAborted);
-
                 return Ok(new { message = " If an account with mentioned email exists,link with instructions was sent." });
-            }
-            catch (Exception)
-            {
-                return StatusCode(500, new { message = "There was an error during processing the request." });
-            }
         }
-
         [AllowAnonymous]
         [HttpPost("reset-password")]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest model)
@@ -81,15 +70,28 @@ namespace TenderGo.Api.Controllers
             return BadRequest(result.Errors);
 
         }
-        [Authorize]
         [HttpGet("me")]
         public async Task<ActionResult<UserDTO>> GetMe()
         {
-            return await _authService.GetMyProfile();
+             try
+            {
+                var result = await _authService.GetMyProfile();
+                return Ok(result); 
+            }
+            catch (UserException ex)
+            {
+                return Unauthorized(new { Message = ex.Message });
+            }
         }
 
-       
 
+        [HttpPost("refresh-token")]
+        [AllowAnonymous]
+        public async Task<IActionResult> RefreshToken()
+        {
+            var result = await _authService.RefreshTokenAsync();
+            return Ok(result);
+        }
 
     }
 }

@@ -22,6 +22,7 @@ import 'package:tendergo/shared/services/admin_service.dart';
 import 'package:tendergo/shared/services/auth_service.dart';
 import 'package:tendergo/shared/services/bid_service.dart';
 import 'package:tendergo/shared/services/category_service.dart';
+import 'package:tendergo/shared/services/location_service.dart';
 import 'package:tendergo/shared/services/image_service.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
 import 'package:tendergo/shared/services/user_service.dart';
@@ -32,6 +33,7 @@ class AdminRoutes {
     required AuthService authService,
     required AdminService adminService,
     required CategoryService categoryService,
+    required LocationService locationService,
     required ImageService imageService,
     required TenderService tenderService,
     required BidService bidService,
@@ -47,15 +49,18 @@ class AdminRoutes {
       AppRoutes.tenderList: (context) => TenderShellScreen(
         tenderService: tenderService,
         authService: authService,
+        locationService: locationService,
       ),
-      AppRoutes.tenderPost: (context) => TenderPostScreen(tenderService: tenderService),
+      AppRoutes.tenderPost: (context) => TenderPostScreen(
+        tenderService: tenderService,
+        locationService: locationService,
+      ),
       AppRoutes.tenderDetails: (context) =>
           AdminTenderDetailsScreen(tenderService: tenderService),
       AppRoutes.userProfile: (context) => UserProfileScreen(authService: authService),
       AppRoutes.myTenders: (context) => MyTendersScreen(tenderService: tenderService),
       AppRoutes.myBids: (context) => MyBidsScreen(
         bidService: bidService,
-        tenderService: tenderService,
       ),
       AppRoutes.admin: (context) => AdminScreen(
         provider: AdminProvider(
@@ -63,6 +68,7 @@ class AdminRoutes {
           authService: authService,
           tenderService: tenderService,
           categoryService: categoryService,
+          locationService: locationService,
         ),
       ),
        AppRoutes.userPublicProfile: (context) {
@@ -78,7 +84,10 @@ class AdminRoutes {
       },
       AppRoutes.rateUser: (context) {
         final args = ModalRoute.of(context)?.settings.arguments;
-        final tenderId = args is Map ? (args['tenderId'] ?? '').toString() : '';
+        final rawTenderId = args is Map ? args['tenderId'] : null;
+        final int tenderId = rawTenderId is int 
+            ? rawTenderId 
+            : int.tryParse(rawTenderId?.toString() ?? '') ?? 0;
         final ratedUserId = args is Map
             ? (args['ratedUserId'] ?? args['userId'] ?? '').toString()
             : '';
@@ -102,7 +111,7 @@ class AdminRoutes {
             : null;
         return RecommendedForYouScreen(onTenderTapped: onTap);
       },
-      AppRoutes.notifications: (context) => const NotificationScreen(),
+   //   AppRoutes.notifications: (context) => const NotificationScreen(),
     };
   }
 }

@@ -11,6 +11,15 @@ namespace TenderGo.Models.ENUMs
        Pending = 1,
         Accepted = 2,
         Rejected = 3,
-        Withdrawn = 4   
+        Withdrawn = 4,   
+        Cancelled = 5
     }
+}
+
+public enum TenderStatus
+{
+    Open = 1,
+    Closed = 2,
+    Awarded = 3,
+    Cancelled = 4
 }

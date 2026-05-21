@@ -11,6 +11,7 @@ class AppColors {
   static const primary     = Color(0xFF2563EB);
   static const primaryDark = Color(0xFF1E40AF);
   static const primaryLight = Color(0xFF3B82F6); // hover / splash tint
+  static const secondary   = Color(0xFF185FA5); // tender-specific accent
 
   // ── Backgrounds ────────────────────────────────────────────────
   static const background  = Color(0xFFF9FAFB); // scaffold

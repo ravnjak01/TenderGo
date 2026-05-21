@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -21,9 +22,9 @@ namespace TenderGo.Services.Services
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly TenderGoContext _context;
         private readonly ITenderService _tenderService;
-        private readonly IAuthService _authService;
         private readonly IImageService _imageService;
         private readonly IMapper _mapper;
+        private readonly IAuthService _authService;
 
 
         public UserService(UserManager<ApplicationUser> userManager,TenderGoContext context, ITenderService tenderService,IAuthService authService,IImageService imageService,IMapper mapper)
@@ -31,16 +32,26 @@ namespace TenderGo.Services.Services
             _userManager = userManager;
             _context = context;
             _tenderService = tenderService;
-            _authService = authService;
             _imageService = imageService;
             _mapper = mapper;
+            _authService = authService;
         }
 
-        public async Task<bool> ChangePasswordAsync(string userId, ChangePasswordDTO dto)
+
+        //dodati kontroler za promjenu passworda 
+        public async Task<bool> ChangePasswordAsync(ChangePasswordRequest dto)
         {
-           var user = await _userManager.FindByIdAsync(userId)
+
+            var userId = _authService.GetCurrentUserId();
+            var user = await _userManager.FindByIdAsync(userId)
                 ?? throw new NotFoundException("User not found", new { User = "User", Id = userId });
 
+            var currentUserId =_authService.GetCurrentUserId();
+
+            if(currentUserId!= userId)
+            {
+                throw new ForbiddenException("You can only change your own password.");
+            }
 
             var result = await _userManager.ChangePasswordAsync(user, dto.CurrentPassword, dto.NewPassword);
             if (!result.Succeeded)
@@ -51,23 +62,41 @@ namespace TenderGo.Services.Services
             return true;
         }
 
-       public async Task<UserPublicDTO> GetPublicByIdAsync(string id)
+        public async Task<UserPublicDTO> GetPublicByIdAsync(string id)
         {
-            var user = await _context.Users
-        .Include(u => u.CreatedTenders)
-        .Include(u => u.Address)
-        .FirstOrDefaultAsync(u => u.Id == id)
-        ?? throw new NotFoundException("User not found", new { User = "User", Id = id });
+            var response = await _context.Users
+                .Where(u => u.Id == id && !u.IsDeleted)
+                .Select(u => new UserPublicDTO
+                {
+                    Id = u.Id,
+                    UserName = u.UserName,
+                    FirstName = u.FirstName,
+                    LastName = u.LastName,
+                    Location = u.Address != null
+                        ? u.Address.City + ", " + u.Address.Country
+                        : "No location",
+                    ProfileImageUrl = u.ProfileImageUrl,
 
-            var response = _mapper.Map<UserPublicDTO>(user);
+                    Rating = u.AverageRating,
+                    ReviewCount = u.RatingCount,
 
-            response.BidsCount = await _context.Bids.CountAsync(b => b.SubmittedByUserId == user.Id);
+                    TenderCount = u.CreatedTenders.Count(),
+                    BidsCount = _context.Bids.Count(b => b.SubmittedByUserId == u.Id)
+                })
+                .FirstOrDefaultAsync()
+                ?? throw new NotFoundException("User not found", new { User = "User", Id = id });
 
             return response;
         }
-
         public async Task UpdateProfileAsync(string userId, UpdateProfileRequest request)
         {
+            var currentUserId = _authService.GetCurrentUserId();
+            if (currentUserId != userId)
+            {
+                throw new ForbiddenException("You can only update your own profile.");
+
+            }
+
             var user = await _context.Users
                       .Include(u => u.Address) 
                       .FirstOrDefaultAsync(u => u.Id == userId)
@@ -123,7 +152,7 @@ namespace TenderGo.Services.Services
 
         }
 
-        public async Task<bool> RateUserAsync(string currentUserId, RateUserDTO dto)
+        public async Task<bool> RateUserAsync(string currentUserId, RateUserRequest dto)
         {
             var tender = await _context.Tenders
                 .Include(t => t.Bids)

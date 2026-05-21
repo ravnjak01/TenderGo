@@ -2,11 +2,15 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:tendergo/shared/core/actions/back_button.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
-import 'package:tendergo/shared/models/dto/tender_post_dto.dart';
+import 'package:tendergo/shared/models/requests/tender_insert_request.dart';
 import 'package:tendergo/shared/providers/tender_provider.dart';
+import 'package:tendergo/shared/services/dio_client.dart';
+import 'package:tendergo/shared/services/location_service.dart';
 import 'package:tendergo/shared/widgets/feedback/snackbar_helper.dart';
 import 'package:tendergo/shared/widgets/tender/category_section_widget.dart';
+import 'package:tendergo/shared/widgets/tender/location_section_widget.dart';
 import 'package:tendergo/shared/widgets/tender/datepicker_widget.dart';
 import 'package:tendergo/shared/widgets/tender/image_upload_section_widget.dart';
 
@@ -22,10 +26,12 @@ class _MobileTenderPostScreenState extends State<MobileTenderPostScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleCtrl = TextEditingController();
   final _budgetCtrl = TextEditingController();
-  final _locationCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
 
   int? _selectedCategoryId;
+  int? _selectedLocationId;
+  late final LocationService _locationService =
+      LocationService(DioClient.getDio());
   DateTime? _deadline;
   final List<PlatformFile> _imageFiles = [];
 
@@ -43,7 +49,6 @@ class _MobileTenderPostScreenState extends State<MobileTenderPostScreen> {
   void dispose() {
     _titleCtrl.dispose();
     _budgetCtrl.dispose();
-    _locationCtrl.dispose();
     _descCtrl.dispose();
     super.dispose();
   }
@@ -133,6 +138,10 @@ class _MobileTenderPostScreenState extends State<MobileTenderPostScreen> {
       SnackbarHelper.show(context, 'Please select a deadline.', isError: true);
       return;
     }
+    if (_selectedLocationId == null) {
+      SnackbarHelper.show(context, 'Please select a location.', isError: true);
+      return;
+    }
 
     setState(() {
       _isLoading = true;
@@ -142,18 +151,27 @@ class _MobileTenderPostScreenState extends State<MobileTenderPostScreen> {
       final request = TenderInsertRequest(
         title: _titleCtrl.text.trim(),
         maxBudget: double.parse(_budgetCtrl.text.trim()),
-        locationName: _locationCtrl.text.trim(),
+        locationId: _selectedLocationId!,
         description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
         categoryId: _selectedCategoryId!,
         deadline: _deadline!,
         imageBytes: null,
       );
 
-      await context.read<TenderProvider>().createTender(
+      final provider = context.read<TenderProvider>();
+      final created = await provider.createTender(
         request,
         imageFiles: _imageFiles,
       );
       if (!mounted) return;
+      if (created == null) {
+        SnackbarHelper.show(
+          context,
+          provider.error ?? 'Failed to post tender',
+          isError: true,
+        );
+        return;
+      }
       Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
@@ -181,6 +199,7 @@ class _MobileTenderPostScreenState extends State<MobileTenderPostScreen> {
       appBar: AppBar(
         backgroundColor: AppColors.surface,
         elevation: 0,
+      leading: const CustomBackButton(),
         title: const Text('Post Tender'),
       ),
       body: SafeArea(
@@ -224,10 +243,18 @@ class _MobileTenderPostScreenState extends State<MobileTenderPostScreen> {
                 },
               ),
               const SizedBox(height: 12),
-              TextFormField(
-                controller: _locationCtrl,
-                decoration: const InputDecoration(labelText: 'Location *'),
-                validator: (v) => _validateRequired(v, 'Location'),
+              TenderLocationSection(
+                locationService: _locationService,
+                selectedLocationId: _selectedLocationId,
+                onChanged: (value) {
+                  setState(() => _selectedLocationId = value);
+                },
+                validator: (value) {
+                  if (value == null) {
+                    return 'Please select a city';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 12),
               DatepickerWidget(

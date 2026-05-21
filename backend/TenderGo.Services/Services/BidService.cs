@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,7 +20,7 @@ using TenderGo.Services.StateMachines.BidStates;
 
 namespace TenderGo.Services.Services
 {
-   public class BidService : BaseService<BidDTO, Bid, BidInsertRequest, BidUpdateRequest>, IBidService
+   public class BidService : BaseService<BidDTO, Bid, BidInsertRequest, BidDTO>, IBidService
     {
 
         private readonly IAuthService _authService;
@@ -33,21 +34,21 @@ namespace TenderGo.Services.Services
         }
 
 
-
-        protected override IQueryable<Bid> AddIncludes(IQueryable<Bid> query)
-        {
-            return query
-                .Include(b => b.Tender)             
-                .Include(b => b.SubmittedByUser);   
-        }
-
         public async Task<List<BidDTO>> GetBidsByUser(string userId)
         {
-            var bids = await _context.Bids
-                .Where(x => x.SubmittedByUserId == userId)
-                .ToListAsync();
+            var currentUserId = _authService.GetCurrentUserId();
+            bool isAdmin = _authService.IsInRole(AppRoles.Admin);
 
-            return _mapper.Map<List<BidDTO>>(bids);
+            if (userId != currentUserId && !isAdmin)
+            {
+                throw new ForbiddenException();
+
+            }
+            
+            return await _context.Bids
+            .Where(x => x.SubmittedByUserId == userId)
+            .ProjectTo<BidDTO>(_mapper.ConfigurationProvider)
+            .ToListAsync();
         }
 
         public override async Task<BidDTO> Insert(BidInsertRequest request)
@@ -56,11 +57,21 @@ namespace TenderGo.Services.Services
             try
             {
 
+            var currentUserId = _authService.GetCurrentUserId();
             var tender = await _context.Tenders.FindAsync(request.TenderId)
                   ?? throw new UserException("Tender not found");
 
+            if(currentUserId == tender.CreatedByUserId)
+            {
+                throw new UserException("OWNER_CANNOT_BID");
+            }
 
             _logger.LogInformation("Attempting to create a new bid for tender {TenderId} by user {UserId}", request.TenderId, _authService.GetCurrentUserId());
+
+            if(request.DeliveryDays <= 0)
+            {
+                throw new UserException("Delivery days must be greater than 0");
+            }
 
             var state = CreateState(ApplicationStatus.Pending, tender.Status);
 
@@ -74,30 +85,23 @@ namespace TenderGo.Services.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Unexpected error while creating bid for tender {TenderId}", request.TenderId);
-                Console.WriteLine("STACK TRACE: " + ex.StackTrace);
-                Console.WriteLine("GREŠKA: " + ex.Message);
+              
                 throw new UserException("An unexpected error occurred while creating the bid.");
             }
         }
 
-        public override async Task<BidDTO> Update(int id, BidUpdateRequest request)
-        {
-            var bid = await _context.Bids.Include(b => b.Tender).FirstOrDefaultAsync(b => b.Id == id)
-                ?? throw new UserException("Bid not found");
-
-            _logger.LogInformation("Attempting to update bid {BidId}", id);
-
-            var state = CreateState(bid.Status, bid.Tender.Status);
-
-            return await state.Update(id, request);
-        }
-
-
-
+   
         public async Task<BidDTO> Withdraw(int id)
         {
             var bid = await _context.Bids.Include(b => b.Tender).FirstOrDefaultAsync(b => b.Id == id)
                 ?? throw new UserException("Bid not found");
+
+            var currentUserId = _authService.GetCurrentUserId();
+            if (bid.SubmittedByUserId != currentUserId)
+            {
+                throw new ForbiddenException();
+            }
+
 
             _logger.LogInformation("Attempting to withdraw bid {BidId}", id);
 
@@ -108,12 +112,22 @@ namespace TenderGo.Services.Services
 
         public async Task<List<BidDTO>> GetBidsForTender(int tenderId)
         {
-            var bids = await _context.Bids
-                .Include(b => b.Tender)
+            var tender = await _context.Tenders.FindAsync(tenderId)
+                      ?? throw new NotFoundException("Tender",tenderId);
+
+            var currentUserId = _authService.GetCurrentUserId();
+            bool isAdmin = _authService.IsInRole(AppRoles.Admin);
+
+            if (tender.CreatedByUserId != currentUserId && !isAdmin)
+            {
+                throw new ForbiddenException();
+
+            }
+            return await _context.Bids
                 .Where(b => b.TenderId == tenderId)
-                  .OrderByDescending(b => b.SubmittedAt)
+                .OrderByDescending(b => b.SubmittedAt)
+                .ProjectTo<BidDTO>(_mapper.ConfigurationProvider)
                 .ToListAsync();
-            return _mapper.Map<List<BidDTO>>(bids);
         }
 
 
@@ -135,6 +149,7 @@ namespace TenderGo.Services.Services
             var state = CreateState(entity.Status,entity.Tender.Status);
             var result = await state.Cancel(id);
 
+            await _context.SaveChangesAsync();
 
             return result;
         }

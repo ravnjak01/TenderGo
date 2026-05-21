@@ -1,19 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
+import 'package:tendergo/shared/models/enums/tenderstatus.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
-import 'package:tendergo/admin/widgets/tender_widget.dart';
+import 'package:tendergo/shared/widgets/tender/admin_tender_card_widget.dart';
 import 'package:tendergo/admin/screens/tender_details_screen.dart';
 
 class TenderGrid extends StatelessWidget {
   final List<TenderDto> tenders;
   final TenderService tenderService;
   final ValueChanged<int>? onTenderSelected;
+  final bool showCancelAction;
+  final Future<void> Function(TenderDto)? onCancelTender;
 
   const TenderGrid({
     super.key,
     required this.tenders,
     required this.tenderService,
     this.onTenderSelected,
+    this.showCancelAction = false,
+    this.onCancelTender,
   });
 
   @override
@@ -43,7 +48,7 @@ class TenderGrid extends StatelessWidget {
           spacing: spacing,
           runSpacing: spacing,
           children: tenders.map((dto) {
-            final model = dto.toCardModel(dto);
+            final model = dto.toCardModel();
             return SizedBox(
               width: cardWidth,
               child: AdminTenderCardWidget(
@@ -62,6 +67,11 @@ class TenderGrid extends StatelessWidget {
                     ),
                   );
                 },
+                onCancelTender: showCancelAction &&
+                        dto.status == TenderStatus.open &&
+                        onCancelTender != null
+                    ? () => onCancelTender!(dto)
+                    : null,
               ),
             );
           }).toList(),

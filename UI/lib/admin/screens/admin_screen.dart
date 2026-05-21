@@ -1,13 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:tendergo/shared/core/actions/back_button.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
+import 'package:tendergo/shared/core/utils/extensions/user_initials_extension.dart';
 import 'package:tendergo/shared/models/dto/admin_dto.dart';
 import 'package:tendergo/shared/models/dto/category_dto.dart';
+import 'package:tendergo/shared/models/dto/location_dto.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
+import 'package:tendergo/shared/models/enums/tenderstatus.dart';
 import 'package:tendergo/shared/models/dto/user_dto.dart';
+import 'package:tendergo/shared/models/requests/location_insert_request.dart';
+import 'package:tendergo/shared/models/requests/location_update_request.dart';
+import 'package:tendergo/shared/models/ui/api_response.dart';
 import 'package:tendergo/shared/models/ui/auth_result.dart';
 import 'package:tendergo/shared/providers/admin_provider.dart';
 import 'package:tendergo/shared/routes/routes.dart';
+import 'package:tendergo/shared/widgets/common/action_button.dart';
+import 'package:tendergo/shared/widgets/common/app_badge.dart';
+import 'package:tendergo/shared/widgets/common/app_dialogs.dart';
+import 'package:tendergo/shared/widgets/common/app_icon.dart';
+import 'package:tendergo/shared/widgets/common/app_text_field.dart';
 import 'package:tendergo/shared/widgets/feedback/screen_state_widget.dart';
+import 'package:tendergo/shared/widgets/feedback/snackbar_helper.dart';
+import 'package:tendergo/shared/widgets/tender/tender_meta_item.dart';
 
 class AdminScreen extends StatefulWidget {
   final AdminProvider provider;
@@ -26,12 +40,13 @@ class _AdminScreenState extends State<AdminScreen> {
   bool _isSubmitting = false;
   String? _errorMessage;
   UserDto? _currentUser;
-  List<_AdminUserRecord> _users = const [];
+  List<UserDto> _users = const [];
   List<TenderDto> _allTenders = const [];
   List<TenderDto> _activeTenders = const [];
   List<TenderDto> _closedTenders = const [];
   List<TenderDto> _cancelledTenders = const [];
   List<CategoryDto> _categories = const [];
+  List<LocationDto> _locations = const [];
   _TenderBucket _selectedBucket = _TenderBucket.all;
 
   bool get _isAdmin {
@@ -68,28 +83,15 @@ class _AdminScreenState extends State<AdminScreen> {
   }
 
   Future<void> _handleDeleteTender(TenderDto tender) async {
-    final confirm = await showDialog<bool>(
+    final confirmed = await AppDialogs.showConfirm(
       context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text('Delete tender'),
-          content: Text('Are you sure you want to delete "${tender.title}"?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              style: FilledButton.styleFrom(backgroundColor: AppColors.error),
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: const Text('Delete'),
-            ),
-          ],
-        );
-      },
+      title: 'Delete tender',
+      content: 'Are you sure you want to delete "${tender.title}"?',
+      confirmLabel: 'Delete',
+      isDestructive: true,
     );
 
-    if (confirm != true) return;
+    if (!confirmed) return;
 
     setState(() => _isSubmitting = true);
 
@@ -99,7 +101,7 @@ class _AdminScreenState extends State<AdminScreen> {
 
     setState(() => _isSubmitting = false);
 
-    _showSnackBar(result.message);
+    SnackbarHelper.show(context, result.message, isError: !result.success);
 
     if (result.success) {
       setState(() {
@@ -128,11 +130,15 @@ class _AdminScreenState extends State<AdminScreen> {
         ]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
         _isSubmitting = false;
       });
-      _showSnackBar('Category created successfully.');
+      SnackbarHelper.show(context, 'Category created successfully.');
     } catch (error) {
       if (!mounted) return;
       setState(() => _isSubmitting = false);
-      _showSnackBar(error.toString().replaceFirst('Exception: ', ''));
+      SnackbarHelper.show(
+        context,
+        error.toString().replaceFirst('Exception: ', ''),
+        isError: true,
+      );
     }
   }
 
@@ -162,37 +168,28 @@ class _AdminScreenState extends State<AdminScreen> {
               );
         _isSubmitting = false;
       });
-      _showSnackBar('Category updated successfully.');
+      SnackbarHelper.show(context, 'Category updated successfully.');
     } catch (error) {
       if (!mounted) return;
       setState(() => _isSubmitting = false);
-      _showSnackBar(error.toString().replaceFirst('Exception: ', ''));
+      SnackbarHelper.show(
+        context,
+        error.toString().replaceFirst('Exception: ', ''),
+        isError: true,
+      );
     }
   }
 
   Future<void> _handleDeleteCategory(CategoryDto category) async {
-    final confirm = await showDialog<bool>(
+    final confirmed = await AppDialogs.showConfirm(
       context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text('Delete category'),
-          content: Text('Are you sure you want to delete "${category.name}"?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              style: FilledButton.styleFrom(backgroundColor: AppColors.error),
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: const Text('Delete'),
-            ),
-          ],
-        );
-      },
+      title: 'Delete category',
+      content: 'Are you sure you want to delete "${category.name}"?',
+      confirmLabel: 'Delete',
+      isDestructive: true,
     );
 
-    if (confirm != true) return;
+    if (!confirmed) return;
 
     setState(() => _isSubmitting = true);
 
@@ -207,15 +204,21 @@ class _AdminScreenState extends State<AdminScreen> {
         _isSubmitting = false;
       });
 
-      _showSnackBar(
+      SnackbarHelper.show(
+        context,
         success
             ? 'Category deleted successfully.'
             : 'Failed to delete category.',
+        isError: !success,
       );
     } catch (error) {
       if (!mounted) return;
       setState(() => _isSubmitting = false);
-      _showSnackBar(error.toString().replaceFirst('Exception: ', ''));
+      SnackbarHelper.show(
+        context,
+        error.toString().replaceFirst('Exception: ', ''),
+        isError: true,
+      );
     }
   }
 
@@ -227,14 +230,10 @@ class _AdminScreenState extends State<AdminScreen> {
       builder: (dialogContext) {
         return AlertDialog(
           title: Text(initialValue == null ? 'Add category' : 'Edit category'),
-          content: TextField(
+          content: AppTextField(
             controller: controller,
-            autofocus: true,
-            textInputAction: TextInputAction.done,
-            decoration: const InputDecoration(
-              labelText: 'Category name',
-              hintText: 'Enter category name',
-            ),
+            label: 'Category name',
+            hint: 'Enter category name',
           ),
           actions: [
             TextButton(
@@ -255,6 +254,225 @@ class _AdminScreenState extends State<AdminScreen> {
 
     controller.dispose();
     return result;
+  }
+
+  Future<void> _handleAddLocation() async {
+    final values = await _showLocationDialog();
+    if (values == null ||
+        values.name.isEmpty ||
+        values.country.isEmpty) {
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      final request = LocationInsertRequest(
+        name: values.name,
+        country: values.country,
+        region: values.region,
+      );
+      
+      final created = await widget.provider.insertLocation(
+       request,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _locations = [..._locations, created]..sort(_compareLocations);
+        _isSubmitting = false;
+      });
+      SnackbarHelper.show(context, 'Location created successfully.');
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      SnackbarHelper.show(
+        context,
+        error.toString().replaceFirst('Exception: ', ''),
+        isError: true,
+      );
+    }
+  }
+
+  Future<void> _handleEditLocation(LocationDto location) async {
+    final values = await _showLocationDialog(
+      initialName: location.name,
+      initialCountry: location.country,
+      initialRegion: location.region,
+    );
+    if (values == null ||
+        values.name.isEmpty ||
+        values.country.isEmpty) {
+      return;
+    }
+
+    if (values.name == location.name &&
+        values.country == location.country &&
+        values.region == location.region) {
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+
+    try {
+       final request = LocationUpdateRequest(
+        name: values.name,
+        country: values.country,
+        region: values.region,
+      );
+
+      await widget.provider.updateLocation(
+        location.id,
+       request,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _locations = _locations
+            .map(
+              (l) => l.id == location.id
+                  ? LocationDto(
+                      id: l.id,
+                      name: values.name,
+                      country: values.country,
+                      region: values.region,
+                    )
+                  : l,
+            )
+            .toList()
+          ..sort(_compareLocations);
+        _isSubmitting = false;
+      });
+      SnackbarHelper.show(context, 'Location updated successfully.');
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      SnackbarHelper.show(
+        context,
+        error.toString().replaceFirst('Exception: ', ''),
+        isError: true,
+      );
+    }
+  }
+
+  Future<void> _handleDeleteLocation(LocationDto location) async {
+    final confirmed = await AppDialogs.showConfirm(
+      context: context,
+      title: 'Delete location',
+      content:
+          'Are you sure you want to delete "${location.name}, ${location.country}"?',
+      confirmLabel: 'Delete',
+      isDestructive: true,
+    );
+
+    if (!confirmed) return;
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      final success = await widget.provider.deleteLocation(location.id);
+
+      if (!mounted) return;
+      setState(() {
+        if (success) {
+          _locations = _locations.where((l) => l.id != location.id).toList();
+        }
+        _isSubmitting = false;
+      });
+
+      SnackbarHelper.show(
+        context,
+        success
+            ? 'Location deleted successfully.'
+            : 'Failed to delete location.',
+        isError: !success,
+      );
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      SnackbarHelper.show(
+        context,
+        error.toString().replaceFirst('Exception: ', ''),
+        isError: true,
+      );
+    }
+  }
+
+  Future<_LocationFormValues?> _showLocationDialog({
+    String? initialName,
+    String? initialCountry,
+    String? initialRegion,
+  }) async {
+    final nameController = TextEditingController(text: initialName ?? '');
+    final countryController = TextEditingController(text: initialCountry ?? '');
+    final regionController = TextEditingController(text: initialRegion ?? '');
+
+    final result = await showDialog<_LocationFormValues>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(
+            initialName == null ? 'Add location' : 'Edit location',
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AppTextField(
+                  controller: nameController,
+                  label: 'City',
+                  hint: 'Enter city name',
+                ),
+                const SizedBox(height: 12),
+                AppTextField(
+                  controller: countryController,
+                  label: 'Country',
+                  hint: 'Enter country',
+                ),
+                const SizedBox(height: 12),
+                AppTextField(
+                  controller: regionController,
+                  label: 'Region (optional)',
+                  hint: 'Enter region',
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final region = regionController.text.trim();
+                Navigator.of(dialogContext).pop(
+                  _LocationFormValues(
+                    name: nameController.text.trim(),
+                    country: countryController.text.trim(),
+                    region: region.isEmpty ? null : region,
+                  ),
+                );
+              },
+              child: Text(initialName == null ? 'Create' : 'Save'),
+            ),
+          ],
+        );
+      },
+    );
+
+    nameController.dispose();
+    countryController.dispose();
+    regionController.dispose();
+    return result;
+  }
+
+  int _compareLocations(LocationDto a, LocationDto b) {
+    final countryCompare = a.country.toLowerCase().compareTo(
+      b.country.toLowerCase(),
+    );
+    if (countryCompare != 0) return countryCompare;
+    return a.name.toLowerCase().compareTo(b.name.toLowerCase());
   }
 
   Future<void> _loadAdminData({bool showLoader = true}) async {
@@ -289,6 +507,7 @@ class _AdminScreenState extends State<AdminScreen> {
           _closedTenders = const [];
           _cancelledTenders = const [];
           _categories = const [];
+          _locations = const [];
           _isLoading = false;
           _errorMessage = null;
         });
@@ -301,9 +520,10 @@ class _AdminScreenState extends State<AdminScreen> {
         widget.provider.getActiveTenders(),
         widget.provider.getClosedTenders(),
         widget.provider.getCategories(),
+        widget.provider.getLocations(),
       ]);
 
-      final usersResult = results[0] as AuthResult;
+      final usersResult = results[0] as ApiResponse;
       if (!usersResult.success) {
         throw Exception(usersResult.message);
       }
@@ -311,7 +531,9 @@ class _AdminScreenState extends State<AdminScreen> {
       if (!mounted) return;
       setState(() {
         _currentUser = currentUser;
-        _users = _parseUsers(usersResult.data);
+        _users = usersResult.data is List<UserDto>
+            ? usersResult.data as List<UserDto>
+            : const [];
         _allTenders = results[1] as List<TenderDto>;
         _activeTenders = results[2] as List<TenderDto>;
         _closedTenders = results[3] as List<TenderDto>;
@@ -319,6 +541,7 @@ class _AdminScreenState extends State<AdminScreen> {
           ..sort(
             (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
           );
+        _locations = (results[5] as List<LocationDto>)..sort(_compareLocations);
         // _cancelledTenders = results[4] as List<TenderDto>;
         _isLoading = false;
         _errorMessage = null;
@@ -336,7 +559,7 @@ class _AdminScreenState extends State<AdminScreen> {
     await _loadAdminData(showLoader: false);
   }
 
-  Future<void> _handleBanUser(_AdminUserRecord user) async {
+  Future<void> _handleBanUser(UserDto user) async {
     final reason = await _showBanDialog(user);
     if (reason == null || reason.isEmpty) {
       return;
@@ -350,15 +573,19 @@ class _AdminScreenState extends State<AdminScreen> {
     if (!mounted) return;
 
     setState(() => _isSubmitting = false);
-    _showSnackBar(result.message);
+    SnackbarHelper.show(context, result.message, isError: !result.success);
     if (result.success) {
       setState(() {
         _users = _users.map((u) {
           if (u.id == user.id) {
-            return _AdminUserRecord(
+            return UserDto(
               id: u.id,
-              username: u.username,
               email: u.email,
+              username: u.username,
+              firstName: u.firstName,
+              lastName: u.lastName,
+              address: u.address,
+              profileImageUrl: u.profileImageUrl,
               roles: u.roles,
               isBanned: true,
             );
@@ -369,21 +596,25 @@ class _AdminScreenState extends State<AdminScreen> {
     }
   }
 
-  Future<void> _handleUnbanUser(_AdminUserRecord user) async {
+  Future<void> _handleUnbanUser(UserDto user) async {
     setState(() => _isSubmitting = true);
     final result = await widget.provider.unbanUser(user.id);
     if (!mounted) return;
 
     setState(() => _isSubmitting = false);
-    _showSnackBar(result.message);
+    SnackbarHelper.show(context, result.message, isError: !result.success);
     if (result.success) {
       setState(() {
         _users = _users.map((u) {
           if (u.id == user.id) {
-            return _AdminUserRecord(
+            return UserDto(
               id: u.id,
-              username: u.username,
               email: u.email,
+              username: u.username,
+              firstName: u.firstName,
+              lastName: u.lastName,
+              address: u.address,
+              profileImageUrl: u.profileImageUrl,
               roles: u.roles,
               isBanned: false,
             );
@@ -394,22 +625,19 @@ class _AdminScreenState extends State<AdminScreen> {
     }
   }
 
-  Future<String?> _showBanDialog(_AdminUserRecord user) async {
+  Future<String?> _showBanDialog(UserDto user) async {
     final controller = TextEditingController();
     final reason = await showDialog<String>(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: Text('Ban ${user.displayName}'),
-          content: TextField(
+          title: Text('Ban ${_userDisplayName(user)}'),
+          content: AppTextField(
             controller: controller,
-            autofocus: true,
+            label: 'Reason',
+            hint: 'Enter the reason for this ban',
             minLines: 2,
             maxLines: 4,
-            decoration: const InputDecoration(
-              labelText: 'Reason',
-              hintText: 'Enter the reason for this ban',
-            ),
           ),
           actions: [
             TextButton(
@@ -431,38 +659,9 @@ class _AdminScreenState extends State<AdminScreen> {
     return reason;
   }
 
-  List<_AdminUserRecord> _parseUsers(dynamic payload) {
-    final rawList = switch (payload) {
-      final List<dynamic> items => items,
-      final Map<String, dynamic> map =>
-        (map['result'] ?? map['items'] ?? map['data']) as List<dynamic>? ??
-            const <dynamic>[],
-      _ => const <dynamic>[],
-    };
-
-    return rawList
-        .map(_coerceMap)
-        .where((item) => item.isNotEmpty)
-        .map(_AdminUserRecord.fromJson)
-        .toList();
-  }
-
-  Map<String, dynamic> _coerceMap(dynamic item) {
-    if (item is Map<String, dynamic>) {
-      return item;
-    }
-
-    if (item is Map) {
-      return item.map((key, value) => MapEntry(key.toString(), value));
-    }
-
-    return const <String, dynamic>{};
-  }
-
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+  String _userDisplayName(UserDto user) {
+    final name = '${user.firstName} ${user.lastName}'.trim();
+    return name.isNotEmpty ? name : user.username;
   }
 
   void _goBackHome() {
@@ -476,12 +675,13 @@ class _AdminScreenState extends State<AdminScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        leading: const CustomBackButton(),
         title: const Text('Admin Console'),
         actions: [
-          IconButton(
+          AppIconButton(
+            icon: Icons.refresh_rounded,
             tooltip: 'Refresh',
-            onPressed: _isLoading || _isSubmitting ? null : _refresh,
-            icon: const Icon(Icons.refresh_rounded),
+            onTap: _isLoading || _isSubmitting ? () {} : _refresh,
           ),
           const SizedBox(width: 8),
         ],
@@ -520,6 +720,8 @@ class _AdminScreenState extends State<AdminScreen> {
           _buildUsersSection(),
           const SizedBox(height: 24),
           _buildCategoriesSection(),
+          const SizedBox(height: 24),
+          _buildLocationsSection(),
           const SizedBox(height: 24),
           _buildTenderSection(),
         ],
@@ -565,6 +767,106 @@ class _AdminScreenState extends State<AdminScreen> {
     );
   }
 
+  Widget _buildLocationsSection() {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Location management',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            FilledButton.icon(
+              onPressed: _isSubmitting ? null : _handleAddLocation,
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Add location'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (_locations.isEmpty)
+          ScreenEmptyState(
+            icon: Icons.location_on_outlined,
+            title: 'No locations found',
+            description: 'Create a location for tender filtering and posting.',
+            actionLabel: 'Add location',
+            onAction: _handleAddLocation,
+          )
+        else
+          ..._locations.map(_buildLocationCard),
+      ],
+    );
+  }
+
+  Widget _buildLocationCard(LocationDto location) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final subtitle = location.region != null && location.region!.isNotEmpty
+        ? '${location.country} • ${location.region}'
+        : location.country;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    location.name,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            ActionButton(
+              label: 'Edit',
+              icon: Icons.edit_outlined,
+              isPrimary: true,
+              onTap: _isSubmitting
+                  ? null
+                  : () => _handleEditLocation(location),
+            ),
+            const SizedBox(width: 6),
+            ActionButton(
+              label: 'Delete',
+              icon: Icons.delete_outline_rounded,
+              isPrimary: false,
+              isDestructive: true,
+              onTap: _isSubmitting
+                  ? null
+                  : () => _handleDeleteLocation(location),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildCategoryCard(CategoryDto category) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -588,21 +890,23 @@ class _AdminScreenState extends State<AdminScreen> {
                 ),
               ),
             ),
-            TextButton.icon(
-              onPressed: _isSubmitting
+            ActionButton(
+              label: 'Edit',
+              icon: Icons.edit_outlined,
+              isPrimary: true,
+              onTap: _isSubmitting
                   ? null
                   : () => _handleEditCategory(category),
-              icon: const Icon(Icons.edit_outlined),
-              label: const Text('Edit'),
             ),
-            const SizedBox(width: 8),
-            TextButton.icon(
-              onPressed: _isSubmitting
+            const SizedBox(width: 6),
+            ActionButton(
+              label: 'Delete',
+              icon: Icons.delete_outline_rounded,
+              isPrimary: false,
+              isDestructive: true,
+              onTap: _isSubmitting
                   ? null
                   : () => _handleDeleteCategory(category),
-              icon: const Icon(Icons.delete_outline_rounded),
-              label: const Text('Delete'),
-              style: TextButton.styleFrom(foregroundColor: AppColors.error),
             ),
           ],
         ),
@@ -657,6 +961,11 @@ class _AdminScreenState extends State<AdminScreen> {
               value: _categories.length.toString(),
               icon: Icons.category_outlined,
             ),
+            _StatCard(
+              label: 'Locations',
+              value: _locations.length.toString(),
+              icon: Icons.location_on_outlined,
+            ),
           ],
         ),
       ],
@@ -696,7 +1005,7 @@ class _AdminScreenState extends State<AdminScreen> {
     );
   }
 
-  Widget _buildUserCard(_AdminUserRecord user) {
+  Widget _buildUserCard(UserDto user) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final statusColor = user.isBanned ? AppColors.error : AppColors.success;
@@ -730,28 +1039,17 @@ class _AdminScreenState extends State<AdminScreen> {
                     children: [
                       Expanded(
                         child: Text(
-                          user.displayName,
+                          _userDisplayName(user),
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: statusSurface,
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Text(
-                          user.isBanned ? 'Banned' : 'Active',
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            color: statusColor,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
+                      AppBadge(
+                        label: user.isBanned ? 'Banned' : 'Active',
+                        backgroundColor: statusSurface,
+                        foregroundColor: statusColor,
+                        borderColor: statusSurface,
                       ),
                     ],
                   ),
@@ -762,12 +1060,7 @@ class _AdminScreenState extends State<AdminScreen> {
                     spacing: 8,
                     runSpacing: 8,
                     children: user.roles
-                        .map(
-                          (role) => Chip(
-                            label: Text(role),
-                            visualDensity: VisualDensity.compact,
-                          ),
-                        )
+                        .map((role) => AppBadge(label: role))
                         .toList(),
                   ),
                 ],
@@ -890,7 +1183,7 @@ class _AdminScreenState extends State<AdminScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${tender.categoryName} • ${tender.locationName}, ${tender.country}',
+                        '${tender.categoryName} • ${tender.location.name}, ${tender.location.country}',
                         style: theme.textTheme.bodySmall,
                       ),
                       const SizedBox(height: 12),
@@ -911,22 +1204,11 @@ class _AdminScreenState extends State<AdminScreen> {
                     ],
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.infoSurface,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    tender.status.name.toUpperCase(),
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: AppColors.primaryDark,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
+                AppBadge(
+                  label: tender.status.label,
+                  backgroundColor: tender.status.badgeBg,
+                  foregroundColor: tender.status.badgeFg,
+                  borderColor: tender.status.badgeBg,
                 ),
               ],
             ),
@@ -935,19 +1217,19 @@ class _AdminScreenState extends State<AdminScreen> {
               spacing: 16,
               runSpacing: 10,
               children: [
-                _MetaPill(
+                TenderMetaItem(
                   icon: Icons.account_circle_outlined,
                   label: tender.createdByFullname,
                 ),
-                _MetaPill(
+                TenderMetaItem(
                   icon: Icons.gavel_rounded,
                   label: '${tender.totalBids} bids',
                 ),
-                _MetaPill(
+                TenderMetaItem(
                   icon: Icons.payments_outlined,
                   label: '${tender.maxBudget.toStringAsFixed(0)} KM',
                 ),
-                _MetaPill(
+                TenderMetaItem(
                   icon: Icons.event_outlined,
                   label: 'Deadline ${_formatDate(tender.deadline)}',
                 ),
@@ -966,70 +1248,19 @@ class _AdminScreenState extends State<AdminScreen> {
   }
 }
 
-enum _TenderBucket { all, active, closed, cancelled }
+class _LocationFormValues {
+  final String name;
+  final String country;
+  final String? region;
 
-class _AdminUserRecord {
-  final String id;
-  final String username;
-  final String email;
-  final List<String> roles;
-  final bool isBanned;
-
-  const _AdminUserRecord({
-    required this.id,
-    required this.username,
-    required this.email,
-    required this.roles,
-    required this.isBanned,
+  const _LocationFormValues({
+    required this.name,
+    required this.country,
+    this.region,
   });
-
-  factory _AdminUserRecord.fromJson(Map<String, dynamic> json) {
-    final roles = json['roles'] is List
-        ? List<String>.from(
-            (json['roles'] as List).map((role) => role.toString()),
-          )
-        : const <String>[];
-
-    final username = (json['username'] ?? json['userName'] ?? json['fullName'])
-        ?.toString()
-        .trim();
-
-    final email = json['email']?.toString().trim();
-    final id = json['id']?.toString().trim();
-
-    return _AdminUserRecord(
-      id: id == null || id.isEmpty ? '' : id,
-      username: username == null || username.isEmpty
-          ? 'Unknown user'
-          : username,
-      email: email == null || email.isEmpty ? 'No email' : email,
-      roles: roles,
-      isBanned:
-          json['isBanned'] == true ||
-          json['banned'] == true ||
-          json['isBlocked'] == true,
-    );
-  }
-
-  String get displayName => username;
-
-  String get initials {
-    if (displayName.isEmpty) {
-      return 'U';
-    }
-
-    final parts = displayName
-        .split(' ')
-        .where((part) => part.trim().isNotEmpty)
-        .toList();
-
-    if (parts.length >= 2) {
-      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-    }
-
-    return displayName[0].toUpperCase();
-  }
 }
+
+enum _TenderBucket { all, active, closed, cancelled }
 
 class _StatCard extends StatelessWidget {
   final String label;
@@ -1081,30 +1312,3 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-class _MetaPill extends StatelessWidget {
-  final IconData icon;
-  final String label;
-
-  const _MetaPill({required this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceVariant,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: AppColors.textSecondary),
-          const SizedBox(width: 8),
-          Text(label, style: theme.textTheme.labelMedium),
-        ],
-      ),
-    );
-  }
-}

@@ -1,21 +1,24 @@
 import 'package:flutter/material.dart';
-import 'package:tendergo/admin/widgets/common/app_dialogs.dart';
+import 'package:provider/provider.dart';
+import 'package:tendergo/shared/controllers/bids_list_controller.dart';
+import 'package:tendergo/shared/core/actions/back_button.dart';
+import 'package:tendergo/shared/core/utils/extensions/string_extensions.dart';
 import 'package:tendergo/shared/models/dto/bid_dto.dart';
+import 'package:tendergo/shared/providers/tender_provider.dart';
 import 'package:tendergo/shared/routes/routes.dart';
 import 'package:tendergo/shared/services/bid_service.dart';
-import 'package:tendergo/shared/services/tender_service.dart';
 import 'package:tendergo/shared/widgets/feedback/snackbar_helper.dart';
 import 'package:tendergo/shared/widgets/feedback/screen_state_widget.dart';
+import 'package:tendergo/shared/widgets/common/app_dialogs.dart';
+import 'package:tendergo/shared/widgets/common/app_icon.dart';
+import 'package:tendergo/shared/widgets/tender/tender_meta_item.dart';
 
 class MyBidsScreen extends StatefulWidget {
   final BidService _bidService;
-  final TenderService _tenderService;
   const MyBidsScreen({
     super.key,
     required BidService bidService,
-    required TenderService tenderService,
-  }) : _bidService = bidService,
-       _tenderService = tenderService;
+  }) : _bidService = bidService;
 
   @override
   State<MyBidsScreen> createState() => _MyBidsScreenState();
@@ -23,76 +26,29 @@ class MyBidsScreen extends StatefulWidget {
 
 class _MyBidsScreenState extends State<MyBidsScreen> {
   // ── state ──────────────────────────────────────────────────────────────────
-  final List<BidDto> _bids = [];
-  bool _isLoading = false;
-  bool _hasError = false;
-  String _errorMessage = '';
-  bool _hasMore = true;
-
-  int _currentPage = 1;
-  static const int _pageSize = 10;
-
-  final ScrollController _scrollController = ScrollController();
+  late BidsListController _controller;
 
   
   // ── lifecycle ──────────────────────────────────────────────────────────────
   @override
   void initState() {
     super.initState();
-    _fetchBids();
-    _scrollController.addListener(_onScroll);
+    _controller = BidsListController(widget._bidService);
+    _controller.initialize();
+    _controller.fetchInitial();
   }
 
   @override
   void dispose() {
-    _scrollController.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
   // ── data fetching ──────────────────────────────────────────────────────────
-  Future<void> _fetchBids({bool refresh = false}) async {
-    if (_isLoading) return;
-    if (refresh) {
-      setState(() {
-        _currentPage = 1;
-        _bids.clear();
-        _hasMore = true;
-        _hasError = false;
-      });
-    }
-
-    setState(() => _isLoading = true);
-
-    try {
-      final fetched = await widget._bidService.getMyBids(
-        page: _currentPage,
-        pageSize: _pageSize,
-      );
-
-
-      setState(() {
-        _bids.addAll(fetched);
-        _hasMore = fetched.length == _pageSize;
-        _currentPage++;
-        _hasError = false;
-      });
-    } catch (e) {
-      setState(() {
-        _hasError = true;
-        _errorMessage = e.toString();
-      });
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  void _onScroll() {
-    if (_scrollController.position.pixels >=
-            _scrollController.position.maxScrollExtent - 200 &&
-        !_isLoading &&
-        _hasMore) {
-      _fetchBids();
-    }
+  void _refresh() {
+    _controller.refresh().then((_) {
+      if (mounted) setState(() {});
+    });
   }
 
   Future<void> _cancelBid(BidDto bid) async {
@@ -111,9 +67,9 @@ class _MyBidsScreenState extends State<MyBidsScreen> {
       if (!mounted) return;
 
       setState(() {
-        final index = _bids.indexWhere((b) => b.id == bid.id);
+        final index = _controller.items.indexWhere((b) => b.id == bid.id);
         if (index != -1) {
-          _bids[index] = updated;
+          _controller.items[index] = updated;
         }
       });
 
@@ -129,44 +85,23 @@ class _MyBidsScreenState extends State<MyBidsScreen> {
   }
 
   Future<void> _openRateUser(BidDto bid) async {
-    final bidderId = bid.submittedByUserId.trim();
-    var ratedUserId = bid.tenderCreatedByUserId.trim();
-    var ratedUserName = (bid.tenderCreatedByUserName ?? '').trim();
+  final tenderProvider = context.read<TenderProvider>();
+  
+  final args = await tenderProvider.prepareRatingArguments(bid);
 
-    if (ratedUserId.isEmpty || ratedUserId == bidderId) {
-      try {
-        final tender = await widget._tenderService.getById(bid.tenderId);
-        ratedUserId = tender.createdByUserId.trim();
-        final ownerName = tender.createdByFullname.trim();
-        if (ownerName.isNotEmpty) {
-          ratedUserName = ownerName;
-        }
-      } catch (_) {
-        // Ignore and keep fallback validation below.
-      }
-    }
+  if (!mounted) return;
 
-    if (!mounted) return;
-
-    if (ratedUserId.isEmpty || ratedUserId == bidderId) {
-      SnackbarHelper.show(
-        context,
-        'Unable to resolve tender owner for rating on this bid.',
-        isError: true,
-      );
-      return;
-    }
-
-    Navigator.of(context).pushNamed(
-      AppRoutes.rateUser,
-      arguments: {
-        'tenderId': bid.tenderId.toString(),
-        'ratedUserId': ratedUserId,
-        'ratedUserName': ratedUserName.isEmpty ? null : ratedUserName,
-      },
+  if (args == null) {
+    SnackbarHelper.show(
+      context,
+      'Unable to resolve tender owner for rating.',
+      isError: true,
     );
+    return;
   }
 
+  Navigator.of(context).pushNamed(AppRoutes.rateUser, arguments: args);
+}
   // ── build ──────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
@@ -179,6 +114,7 @@ class _MyBidsScreenState extends State<MyBidsScreen> {
         backgroundColor: colorScheme.surface,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
+        leading: const CustomBackButton(),
         title: Text(
           'My Bids',
           style: theme.textTheme.headlineSmall?.copyWith(
@@ -187,57 +123,59 @@ class _MyBidsScreenState extends State<MyBidsScreen> {
           ),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            tooltip: 'Refresh',
-            onPressed: () => _fetchBids(refresh: true),
+          AppIconButton(
+            icon: Icons.refresh_rounded,
+            onTap: _refresh,
           ),
           const SizedBox(width: 8),
         ],
       ),
-      body: _buildBody(colorScheme),
+      body: ListenableBuilder(
+        listenable: _controller,
+        builder: (context, _) => _buildBody(colorScheme),
+      ),
     );
   }
 
   Widget _buildBody(ColorScheme colorScheme) {
-    if (_hasError && _bids.isEmpty) {
+    if (_controller.hasError && _controller.items.isEmpty) {
       return ScreenErrorState(
-        message: _errorMessage,
-        onRetry: () => _fetchBids(refresh: true),
+        message: _controller.errorMessage,
+        onRetry: _refresh,
       );
     }
 
-    if (_isLoading && _bids.isEmpty) {
+    if (_controller.isLoading && _controller.items.isEmpty) {
       return const ScreenLoadingState();
     }
 
-    if (_bids.isEmpty) {
+    if (_controller.items.isEmpty) {
       return ScreenEmptyState(
         icon: Icons.gavel_rounded,
         title: 'No bids yet',
         description: 'Bids you submit will appear here.',
-        onAction: () => _fetchBids(refresh: true),
+        onAction: _refresh,
       );
     }
 
     return RefreshIndicator(
-      onRefresh: () => _fetchBids(refresh: true),
+      onRefresh: _controller.refresh,
       child: ListView.separated(
-        controller: _scrollController,
+        controller: _controller.scrollController,
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-        itemCount: _bids.length + (_hasMore ? 1 : 0),
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
+        itemCount: _controller.items.length + (_controller.hasMore ? 1 : 0),
+        separatorBuilder: (context, index) => const SizedBox(height: 12),
         itemBuilder: (context, index) {
-          if (index >= _bids.length) {
+          if (index >= _controller.items.length) {
             return const Padding(
               padding: EdgeInsets.symmetric(vertical: 24),
               child: Center(child: CircularProgressIndicator()),
             );
           }
           return _BidCard(
-            bid: _bids[index],
-            onRateUser: () => _openRateUser(_bids[index]),
-            onCancel: () => _cancelBid(_bids[index]),
+            bid: _controller.items[index],
+            onRateUser: () => _openRateUser(_controller.items[index]),
+            onCancel: () => _cancelBid(_controller.items[index]),
           );
         },
       ),
@@ -294,9 +232,6 @@ class _BidCard extends StatelessWidget {
           color: colorScheme.surfaceContainerLowest,
           child: InkWell(
             borderRadius: BorderRadius.circular(16),
-            onTap: () {
-              // Navigate to bid detail page
-            },
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -313,7 +248,7 @@ class _BidCard extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              bid.tenderDisplayTitle,
+                              bid.tenderTitle ?? 'Unknown tender',
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: theme.textTheme.titleMedium?.copyWith(
@@ -369,12 +304,12 @@ class _BidCard extends StatelessWidget {
                     spacing: 16,
                     runSpacing: 8,
                     children: [
-                      _MetaItem(
+                      TenderMetaItem(
                         icon: Icons.schedule_rounded,
-                        label: _timeAgo(bid.submittedAt),
+                        label: bid.submittedAt.toTimeAgo(),
                       ),
                       if (bid.deliveryDays != null)
-                        _MetaItem(
+                        TenderMetaItem(
                           icon: Icons.local_shipping_rounded,
                           label: '${bid.deliveryDays} days delivery',
                         ),
@@ -448,12 +383,7 @@ class _BidCard extends StatelessWidget {
     );
   }
 
-  String _timeAgo(DateTime date) {
-    final diff = DateTime.now().difference(date);
-    if (diff.inDays > 0) return '${diff.inDays}d ago';
-    if (diff.inHours > 0) return '${diff.inHours}h ago';
-    return '${diff.inMinutes}m ago';
-  }
+
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -535,28 +465,3 @@ class _StatusChip extends StatelessWidget {
   }
 }
 
-class _MetaItem extends StatelessWidget {
-  const _MetaItem({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 14, color: colorScheme.onSurfaceVariant),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-        ),
-      ],
-    );
-  }
-}

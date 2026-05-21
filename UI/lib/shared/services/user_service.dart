@@ -1,7 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:tendergo/shared/core/network/constants/user_endpoints.dart';
-import 'package:tendergo/shared/models/dto/update_profile_request.dart';
+import 'package:tendergo/shared/models/dto/user_public_dto.dart';
+import 'package:tendergo/shared/models/requests/rate_user_request.dart';
+import 'package:tendergo/shared/models/requests/update_profile_request.dart';
 import 'package:tendergo/shared/models/dto/user_dto.dart';
 
 class UserService {

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:tendergo/shared/core/error/bid_error_handler.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
 import 'package:tendergo/shared/models/dto/bid_dto.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
+import 'package:tendergo/shared/models/requests/bid_insert_request.dart';
+import 'package:tendergo/shared/providers/auth_provider.dart';
 import 'package:tendergo/shared/services/bid_service.dart';
 
 /// Self-contained bid form. Manages its own controllers and submission state.
@@ -43,13 +46,22 @@ class _TenderBidFormState extends State<TenderBidForm> {
   }
 
   Future<void> _submit() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+  final user = authProvider.currentUser;
+
+  if (user == null) {
+    throw Exception("User not logged in");
+  }
+
+  final userId = user.id;
+  
     if (!_formKey.currentState!.validate()) return;
 
     final offeredPrice = double.parse(
       _priceController.text.replaceAll(',', '.').trim(),
     );
     final proposalText = _proposalController.text.trim();
-
+    final deliveryDays = int.parse(_deliveryDaysController.text.trim());
     setState(() {
       _isSubmitting = true;
       _error = null;
@@ -63,6 +75,8 @@ class _TenderBidFormState extends State<TenderBidForm> {
           tenderId: widget.tender.id,
           price: offeredPrice,
           note: proposalText.isEmpty ? null : proposalText,
+          userId: userId,
+          deliveryDays: deliveryDays,
         ),
       );
       submitted = true;
@@ -98,6 +112,10 @@ class _TenderBidFormState extends State<TenderBidForm> {
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = context.watch<AuthProvider>();
+    final currentUser = authProvider.currentUser;
+
+    final isMyTender = currentUser != null && widget.tender.createdByUserId == currentUser.id;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -111,6 +129,7 @@ class _TenderBidFormState extends State<TenderBidForm> {
           children: [
             TextFormField(
               controller: _priceController,
+              enabled: !isMyTender,
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
@@ -134,15 +153,18 @@ class _TenderBidFormState extends State<TenderBidForm> {
             const SizedBox(height: 12),
             TextFormField(
               controller: _deliveryDaysController,
+              enabled: !isMyTender,
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               decoration: const InputDecoration(
-                labelText: 'Delivery days (optional)',
+                labelText: 'Delivery days',
                 hintText: 'e.g. 30',
               ),
               validator: (value) {
                 final text = (value ?? '').trim();
-                if (text.isEmpty) return null;
+                if (text.isEmpty) {
+                  return 'Delivery days is required.';
+                }
                 final parsed = int.tryParse(text);
                 if (parsed == null || parsed <= 0) {
                   return 'Delivery days must be a positive number.';
@@ -153,6 +175,7 @@ class _TenderBidFormState extends State<TenderBidForm> {
             const SizedBox(height: 12),
             TextFormField(
               controller: _proposalController,
+              enabled: !isMyTender,
               minLines: 4,
               maxLines: 6,
               decoration: const InputDecoration(
@@ -173,6 +196,36 @@ class _TenderBidFormState extends State<TenderBidForm> {
               ),
             ],
             const SizedBox(height: 16),
+
+            SizedBox(
+              width: double.infinity,
+              child: isMyTender
+                  ? Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.shade100,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.amber.shade800),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.warning_amber_rounded, color: Colors.amber.shade900),
+                          const SizedBox(width: 10),
+                          const Expanded(
+                            child: Text(
+                              'You cannot submit a bid for your own tender.',
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+
+                    /*
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -188,6 +241,20 @@ class _TenderBidFormState extends State<TenderBidForm> {
                       )
                     : const Text('Submit bid'),
               ),
+            ),
+            */: ElevatedButton(
+                      onPressed: _isSubmitting ? null : _submit,
+                      child: _isSubmitting
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text('Submit bid'),
+                    ),
             ),
           ],
         ),

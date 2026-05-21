@@ -14,12 +14,14 @@ class MobileTenderCardWidget extends StatelessWidget {
     this.onTap,
     this.onSave,
     this.isSaved = false,
+    this.onCancelTender,
   });
 
   final TenderCardModel tender;
   final VoidCallback? onTap;
   final VoidCallback? onSave;
   final bool isSaved;
+  final VoidCallback? onCancelTender;
 
   @override
   Widget build(BuildContext context) {
@@ -36,10 +38,40 @@ class MobileTenderCardWidget extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            TenderCardImage(
-              imageUrl: tender.imageUrl,
-              theme: themeForCategory(tender.category),
-              height: 130,
+            Stack(
+              children: [
+                TenderCardImage(
+                  imageUrl: tender.imageUrl,
+                  theme: themeForCategory(tender.category),
+                  height: 130,
+                ),
+                if (onCancelTender != null)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Material(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      shape: const CircleBorder(),
+                      clipBehavior: Clip.antiAlias,
+                      child: PopupMenuButton<String>(
+                        icon: const Icon(Icons.more_vert, size: 20),
+                        padding: EdgeInsets.zero,
+                        onSelected: (value) {
+                          if (value == 'cancel') onCancelTender!();
+                        },
+                        itemBuilder: (context) => [
+                          const PopupMenuItem<String>(
+                            value: 'cancel',
+                            child: Text(
+                              'Cancel tender',
+                              style: TextStyle(color: Colors.red),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
             ),
             _CardBody(tender: tender),
             CardActions(
@@ -113,7 +145,7 @@ class _CardBody extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      timeAgo(tender.postedAt),
+                      tender.postedAt.toTimeAgo(),
                       style: const TextStyle(
                         fontSize: 11,
                         color: Color(0xFFB4B2A9),
@@ -129,7 +161,7 @@ class _CardBody extends StatelessWidget {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          formatDeadline(tender.deadline),
+                          tender.deadline.formatDeadline(),
                           style: const TextStyle(
                             fontSize: 12,
                             color: Color(0xFF5F5E5A),
@@ -142,7 +174,7 @@ class _CardBody extends StatelessWidget {
                 ),
               ),
               Text(
-                formatValue(tender.valueKM),
+                tender.valueKM.formatCurrency(),
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,

@@ -1,8 +1,11 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 using System.Net;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using TenderGo.Services.Services.Exceptions;
 
@@ -87,6 +90,15 @@ public sealed class ErrorFilter : Attribute, IAsyncExceptionFilter, IAsyncResult
         if (ex is UnauthorizedAccessException)
         {
             return ((int)HttpStatusCode.Unauthorized, "Unauthorized.", null);
+        }
+
+        if (ex is DbUpdateException dbEx)
+        {
+            var sqlException = dbEx.InnerException as SqlException;
+            if (sqlException != null && sqlException.Number == 547) 
+            {
+                return ((int)HttpStatusCode.BadRequest, "Record cant be deleted because other records are using it in the system.", new[] { "Referential integrity violation." });
+            }
         }
 
         // Unknown/unhandled -> generic 500 (log real exception)

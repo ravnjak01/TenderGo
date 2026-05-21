@@ -5,14 +5,17 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.NetworkInformation;
+using System.Reflection.Metadata;
 using System.Security.Claims;
 using System.Text;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using TenderGo.Api.Database;
 using TenderGo.Models.DTOs;
@@ -33,14 +36,17 @@ namespace TenderGo.Services.Services
         protected readonly IServiceProvider _serviceProvider;
         protected readonly IImageService _imageService;
         protected readonly IBidService _bidService;
+        private readonly IMemoryCache _cache;
 
-        public TenderService(TenderGoContext context, IMapper mapper, IHttpContextAccessor httpContextAccessor, IAuthService authService, ILogger<TenderService> logger, IServiceProvider serviceProvider, IImageService imageService, IBidService bidService) : base(context, mapper, httpContextAccessor)
+        private const string CacheKey = "active_tenders";
+        public TenderService(TenderGoContext context, IMapper mapper, IHttpContextAccessor httpContextAccessor, IAuthService authService, ILogger<TenderService> logger, IServiceProvider serviceProvider, IImageService imageService, IBidService bidService,IMemoryCache cache) : base(context, mapper, httpContextAccessor)
         {
             _logger = logger;
             _authService = authService;
             _serviceProvider = serviceProvider;
             _imageService = imageService;
             _bidService = bidService;
+            _cache = cache;
         }
 
         protected override IQueryable<Tender> AddIncludes(IQueryable<Tender> query)
@@ -49,40 +55,32 @@ namespace TenderGo.Services.Services
                 .Include(t => t.Category)
                 .Include(t => t.CreatedByUser)
                 .Include(t => t.Bids)
-                .Include(t => t.Images);
+                .Include(t => t.Images)
+                .Include(t=>t.Location);
         }
 
         public async Task<IEnumerable<TenderDTO>> GetActiveTenders()
         {
-            var tenders = await _context.Tenders
-                .Include(t => t.Category)
-                .Include(t => t.CreatedByUser)  
-                .Include(t => t.Images)
+           return await _context.Tenders
                 .Where(t => t.Status == TenderStatus.Open)
+                .ProjectTo<TenderDTO>(_mapper.ConfigurationProvider) 
                 .ToListAsync();
-            return _mapper.Map<IEnumerable<TenderDTO>>(tenders);
         }
         public async Task<IEnumerable<TenderDTO>> GetClosedTenders()
         {
-            var tenders = await _context.Tenders
-                .Include(t => t.Category)
-                .Include(t => t.CreatedByUser)
-                .Include(t => t.Images)
+            return await _context.Tenders
                 .Where(t => t.Status == TenderStatus.Closed)
+                .ProjectTo<TenderDTO>(_mapper.ConfigurationProvider) 
                 .ToListAsync();
-            return _mapper.Map<IEnumerable<TenderDTO>>(tenders);
         }
 
       
         public async Task<IEnumerable<TenderDTO>> GetCancelledTenders()
         {
-            var tenders = await _context.Tenders
-                .Include(t => t.Category)
-                .Include(t => t.CreatedByUser)
-                .Include(t => t.Images)
+            return await _context.Tenders
                 .Where(t => t.Status == TenderStatus.Cancelled)
+                .ProjectTo<TenderDTO>(_mapper.ConfigurationProvider) 
                 .ToListAsync();
-            return _mapper.Map<IEnumerable<TenderDTO>>(tenders);
         }
 
         public async Task<IEnumerable<TenderDTO>> GetTendersByCategory(int id)
@@ -91,25 +89,27 @@ namespace TenderGo.Services.Services
             if (!categoryExists)
                 throw new NotFoundException("Category not found", new { CategoryId = id });
 
-            var tenders = await _context.Tenders
-                .Include(t => t.Category)
-                .Include(t => t.CreatedByUser)
-                .Include(t => t.Images)
+            return await _context.Tenders
                 .Where(t => t.CategoryId == id)
+                .ProjectTo<TenderDTO>(_mapper.ConfigurationProvider)
                 .ToListAsync();
-            return _mapper.Map<IEnumerable<TenderDTO>>(tenders);
         }
 
         public async Task<List<TenderDTO>> GetTendersByUser(string userId)
         {
-            var tenders = await _context.Tenders
-                .Include(t => t.Category)
-                .Include(t => t.CreatedByUser)
-                .Include(t => t.Images)
+            var currentUserId = _authService.GetCurrentUserId();
+            bool isAdmin = _authService.IsInRole(AppRoles.Admin);
+
+            if (userId != currentUserId && !isAdmin)
+            {
+                throw new UnauthorizedException("You dont have permission to see other's tenders.");
+
+            }
+            return await _context.Tenders
                 .Where(t => t.CreatedByUserId == userId)
                 .OrderByDescending(t => t.CreatedAt)
+                .ProjectTo<TenderDTO>(_mapper.ConfigurationProvider)
                 .ToListAsync();
-            return _mapper.Map<List<TenderDTO>>(tenders);
         }
 
 
@@ -122,17 +122,23 @@ namespace TenderGo.Services.Services
 
             try  
             {
-                var entity = _mapper.Map<Tender>(request);
-                _logger.LogInformation("ImageUrls in request: {Count}", request.ImageBytes?.Count ?? 0);
-                _logger.LogInformation("Images mapped to entity: {Count}", entity.Images?.Count ?? 0);
+               
 
-                if (!string.IsNullOrWhiteSpace(request.LocationName))
-                {
-                    var parts = request.LocationName.Split(',');
-                    entity.LocationName = parts.Length >= 2 ? parts[0].Trim() : request.LocationName.Trim();
-                    entity.Country = parts.Length >= 2 ? parts[1].Trim() : "Unknown";
+                if(request.LocationId <= 0)
+{
+                    throw new UserException("Location is required.");
                 }
 
+                var location = await _context.Locations.FindAsync(request.LocationId);
+                if (location == null)
+                {
+                    throw new UserException("The selected location does not exist in our database.");
+                }
+
+                var entity = _mapper.Map<Tender>(request);
+
+
+                entity.LocationId = location.Id;
                 entity.Status = TenderStatus.Open;
                 entity.PostedAt = DateTime.UtcNow;
                 entity.CreatedAt = DateTime.UtcNow;
@@ -176,14 +182,10 @@ namespace TenderGo.Services.Services
 
                 await _context.SaveChangesAsync();
 
-                var saved = await _context.Tenders
-                    .Include(t => t.CreatedByUser)
-                    .Include(t => t.Category)
-                    .Include(t => t.Images)
-                    .Include(t => t.Bids)
-                    .FirstAsync(t => t.Id == entity.Id);
-
-                return _mapper.Map<TenderDTO>(saved);
+                return await _context.Tenders
+                .Where(t => t.Id == entity.Id)
+                .ProjectTo<TenderDTO>(_mapper.ConfigurationProvider)
+                .FirstAsync();
             }
             catch (Exception ex)
             {
@@ -197,15 +199,20 @@ namespace TenderGo.Services.Services
 
         public override async Task<TenderDTO> Update(int id, TenderUpdateRequest request)
         {
-
             _logger.LogInformation("Attempting to update tender with ID {TenderId}", id);
 
-
-
-            var tender = await _context.Tenders.FindAsync(id)
+            var tender = await AddIncludes(_context.Tenders)
+            .FirstOrDefaultAsync(t=>t.Id==id)
                 ?? throw new NotFoundException("Tender not found", new { Entity = "Tender", Id = id });
 
-         
+            var currentUserId = _authService.GetCurrentUserId();
+            bool isAdmin = _authService.IsInRole(AppRoles.Admin);
+
+            if (tender.CreatedByUserId != currentUserId && !isAdmin)
+            {
+                throw new ForbiddenException(); 
+            }
+
             var state = CreateState(tender.Status);
              return await state.Update(id, request);
         }
@@ -214,22 +221,31 @@ namespace TenderGo.Services.Services
 
         public async Task<TenderDTO> Cancel(int id)
         {
-            var entity = await _context.Tenders
+            var entity = await AddIncludes(_context.Tenders)
                 .Include(t => t.Bids) 
                 .FirstOrDefaultAsync(t => t.Id == id)
                 ?? throw new NotFoundException("Tender not found", new { Entity = "Tender", Id = id });
+
+            var currentUserId = _authService.GetCurrentUserId();
+            bool isAdmin = _authService.IsInRole(AppRoles.Admin);
+
+            if (entity.CreatedByUserId != currentUserId && !isAdmin)
+            {
+                throw new ForbiddenException();
+            }
+
+            var state = CreateState(entity.Status);
+            var result = await state.Cancel(id);
 
             if (entity.Bids != null && entity.Bids.Any())
             {
                 foreach (var bid in entity.Bids)
                 {
                    
-                    await _bidService.Cancel(bid.Id); 
+                    bid.Status = ApplicationStatus.Cancelled; 
+                     _context.Entry(bid).State = EntityState.Modified;
                 }
             }
-
-            var state = CreateState(entity.Status);
-            var result = await state.Cancel(id);
 
             await _context.SaveChangesAsync();
 
@@ -239,10 +255,17 @@ namespace TenderGo.Services.Services
 
         public async Task<TenderDTO> Award(int id, int bidId)
         {
-            var tender = await _context.Tenders
-        .Include(t => t.Bids)
-        .FirstOrDefaultAsync(t => t.Id == id)
-        ?? throw new NotFoundException("Tender not found", new { Entity = "Tender", Id = id });
+            var tender = await AddIncludes(_context.Tenders)
+                .FirstOrDefaultAsync(t => t.Id == id)
+                ?? throw new NotFoundException("Tender not found", new { Entity = "Tender", Id = id });
+
+            var currentUserId = _authService.GetCurrentUserId();
+            bool isAdmin = _authService.IsInRole(AppRoles.Admin);
+
+            if (tender.CreatedByUserId != currentUserId && !isAdmin)
+            {
+                throw new ForbiddenException();
+            }
 
             var state = CreateState(tender.Status);
 
@@ -256,10 +279,9 @@ namespace TenderGo.Services.Services
 
         public async Task<List<string>> AllowedActions(int id)
         {
-            var entity = await _context.Tenders
-           .Include(t => t.Bids) 
-           .FirstOrDefaultAsync(t => t.Id == id)
-                         ?? throw new NotFoundException("Tender not found", new { Entity = "Tender", Id = id });
+            var entity = await AddIncludes(_context.Tenders)
+                .FirstOrDefaultAsync(t => t.Id == id)
+                ?? throw new NotFoundException("Tender not found", new { Entity = "Tender", Id = id });
 
 
 
@@ -281,8 +303,6 @@ namespace TenderGo.Services.Services
 
                 query = query.Where(t =>
                     EF.Functions.Like(t.Title.ToLower(), term) ||
-                    EF.Functions.Like(t.LocationName.ToLower(), term)  ||
-                    EF.Functions.Like(t.Country.ToLower(), term) || 
                      EF.Functions.Like(t.Description.ToLower(), term)
                 );
             }
@@ -300,8 +320,7 @@ namespace TenderGo.Services.Services
             };
         }
 
-
-
+       
         public BaseState CreateState(TenderStatus status)
         {
             return status switch

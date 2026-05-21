@@ -7,6 +7,7 @@ import 'package:tendergo/shared/services/bid_service.dart';
 import 'package:tendergo/shared/services/image_service.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
 import 'package:tendergo/shared/services/category_service.dart';
+import 'package:tendergo/shared/services/location_service.dart';
 import 'package:tendergo/shared/services/user_service.dart';
 
 
@@ -20,10 +21,10 @@ void main() async {
   final imageService = ImageService(dio);
   final tenderService = TenderService(dio, imageService);
   final categoryService = CategoryService(dio);
+  final locationService = LocationService(dio);
   final userService = UserService(dio);
 
   final bool isLoggedIn = await AuthService.isLoggedIn();
-
   runApp(
     AdminApp(
       isLoggedIn: isLoggedIn,
@@ -34,6 +35,7 @@ void main() async {
       tenderService: tenderService,
       userService: userService,
       categoryService: categoryService,
+      locationService: locationService,
     ),
   );
 }

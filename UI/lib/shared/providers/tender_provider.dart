@@ -1,174 +1,224 @@
-// lib/providers/tender_provider.dart
+// lib/providers/tender_provider.dart  (refactored)
 
 import 'package:file_picker/file_picker.dart';
-import 'package:tendergo/shared/models/dto/category_dto.dart';
-import 'package:tendergo/shared/models/dto/tender_image_dto.dart';
-import 'package:tendergo/shared/services/category_service.dart';
-
-import '../models/dto/tender_dto.dart';
-import '../models/dto/tender_post_dto.dart';
-import '../models/enums/tenderstatus.dart';
-import '../services/tender_service.dart';
 import 'package:flutter/material.dart';
+import 'package:tendergo/shared/models/dto/bid_dto.dart';
+import 'package:tendergo/shared/models/dto/category_dto.dart';
+import 'package:tendergo/shared/models/dto/tender_dto.dart';
+import 'package:tendergo/shared/models/requests/tender_insert_request.dart';
+import 'package:tendergo/shared/models/requests/tender_search_request.dart';
+import 'package:tendergo/shared/models/ui/location_filter_selection.dart';
+import 'package:tendergo/shared/models/enums/tenderstatus.dart';
+import 'package:tendergo/shared/providers/base_provider.dart';
+import 'package:tendergo/shared/services/category_service.dart';
+import 'package:tendergo/shared/services/tender_service.dart';
 
-class TenderProvider extends ChangeNotifier {
+class TenderProvider extends BaseProvider {
   final TenderService _service;
   final CategoryService _categoryService;
 
   TenderProvider(this._service, this._categoryService);
 
-  // --- State ---
   List<TenderDto> _tenders = [];
   List<CategoryDto> _categories = [];
-  final Set<String> _selectedCategories = {'All'}; 
-
+  final Set<String> _selectedCategories = {'All'};
   List<TenderDto>? _searchResults;
   String _searchQuery = '';
+  LocationFilterSelection? _locationFilter;
 
-  bool _isLoading = false;
-  String? _error;
-
-  
   List<TenderDto> get tenders => _tenders;
   List<CategoryDto> get categories => _categories;
   Set<String> get selectedCategories => _selectedCategories;
-  bool get isLoading => _isLoading;
-  String? get error => _error;
   bool get isSearchActive => _searchQuery.isNotEmpty;
+  LocationFilterSelection? get locationFilter => _locationFilter;
 
-  
+  TenderService get tenderService => _service;
+
   List<TenderDto> get filteredTenders {
-    final base = _searchResults ?? _tenders;
-    if (_selectedCategories.contains('All') || _selectedCategories.isEmpty) {
-      return base;
+    var list = List<TenderDto>.from(_searchResults ?? _tenders);
+
+    if (!_selectedCategories.contains('All') && _selectedCategories.isNotEmpty) {
+      list = list
+          .where((t) => _selectedCategories.contains(t.categoryName))
+          .toList();
     }
-    return base
-        .where((t) => _selectedCategories.contains(t.categoryName))
-        .toList();
+
+    final filter = _locationFilter;
+    if (filter != null) {
+      if (filter.locationId != null) {
+        list = list.where((t) => t.location.id == filter.locationId).toList();
+      } else if (filter.region != null) {
+        list = list
+            .where(
+              (t) =>
+                  t.location.country.toLowerCase() == filter.country.toLowerCase() &&
+                  (t.location.region ?? '').toLowerCase() ==
+                      filter.region!.toLowerCase(),
+            )
+            .toList();
+      } else {
+        list = list
+            .where(
+              (t) => t.location.country.toLowerCase() == filter.country.toLowerCase(),
+            )
+            .toList();
+      }
+    }
+
+    return list;
   }
 
-  // --- Actions ---
-
-  // Učitavanje kategorija
-  Future<void> fetchCategories() async {
-     _categories = await _categoryService.getAll();
-      notifyListeners();
+  void setLocationFilter(LocationFilterSelection? filter) {
+    _locationFilter = filter;
+    safeNotify();
   }
 
-  // Promjena kategorije (logika koju si imao u setState)
+  void clearLocationFilter() {
+    if (_locationFilter == null) return;
+    _locationFilter = null;
+    safeNotify();
+  }
+
+ 
+
   void toggleCategory(String category) {
     if (category == 'All') {
-      _selectedCategories.clear();
-      _selectedCategories.add('All');
+      _selectedCategories
+        ..clear()
+        ..add('All');
     } else {
       _selectedCategories.remove('All');
-
       if (_selectedCategories.contains(category)) {
         _selectedCategories.remove(category);
       } else {
         _selectedCategories.add(category);
       }
-
-      // Ako je sve odznačeno, vrati na 'All'
-      if (_selectedCategories.isEmpty) {
-        _selectedCategories.add('All');
-      }
+      if (_selectedCategories.isEmpty) _selectedCategories.add('All');
     }
-    notifyListeners();
+    safeNotify();
   }
 
-  // Metoda koja setuje loading i obavještava UI
-  void _setLoading(bool value) {
-    _isLoading = value;
-    notifyListeners();
-  }
+  Future<void> fetchActiveTenders({bool silent = false}) =>
+      handleAsync(() async {
+        _tenders = await _service.getActive();
+      }, silent: silent);
 
-  // Fetch aktivne tendere
-  Future<void> fetchActiveTenders() async {
-    _setLoading(true);
-    try {
-      _tenders = await _service.getActive();
-      _error = null;
-    } catch (e) {
-      _error = e.toString().replaceFirst('Exception: ', '');
-      _tenders = []; // po grešci prazna lista
-    } finally {
-      _setLoading(false);
-    }
-  }
+  Future<void> fetchAllTenders() =>
+      handleAsync(() async {
+        _tenders = await _service.getAll();
+      });
 
-  Future<void> fetchAllTenders() async {
-    _setLoading(true);
-    try {
-      _tenders = await _service.getAll(); 
-      _error = null;
-    } catch (e) {
-      _error = e.toString().replaceFirst('Exception: ', '');
-    } finally {
-      _setLoading(false);
-    }
-  }
-
-  Future<TenderDto> createTender(
+  Future<TenderDto?> createTender(
     TenderInsertRequest request, {
     List<PlatformFile>? imageFiles,
-  }) async {
-    final createdTender = await _service.create(
-      request,
-      imageFiles: imageFiles,
-    );
-    _error = null;
-
-    if (createdTender.status == TenderStatus.open) {
-      final existingIndex = _tenders.indexWhere(
-        (t) => t.id == createdTender.id,
-      );
-      if (existingIndex >= 0) {
-        _tenders[existingIndex] = createdTender;
-      } else {
-        _tenders = [createdTender, ..._tenders];
-      }
-      notifyListeners();
-    }
-
-    return createdTender;
-  }
+  }) =>
+      handleAsync(() async {
+        final created = await _service.create(request, imageFiles: imageFiles);
+        _tenders.removeWhere((t) => t.id == created.id);
+        _tenders.insert(0, created);
+        return created;
+      }, silent: true);
 
   Future<void> searchTenders(String query) async {
     _searchQuery = query.trim();
     if (_searchQuery.isEmpty) {
       _searchResults = null;
-      notifyListeners();
+      // Defer the notify to avoid calling during build
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+       // if (!_disposed) safeNotify();
+      });
       return;
     }
-    _setLoading(true);
-    try {
+    await handleAsync(() async {
       _searchResults = await _service.search(
         TenderSearchRequest(searchTerm: _searchQuery),
       );
-      _error = null;
-    } catch (e) {
-      _error = e.toString().replaceFirst('Exception: ', '');
-      _searchResults = [];
-    } finally {
-      _setLoading(false);
-    }
+    });
   }
 
   void clearSearch() {
     _searchQuery = '';
     _searchResults = null;
     notifyListeners();
+    // Defer the notify to avoid calling during build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      safeNotify();
+    });
   }
 
   Future<bool> deleteTender(int id) async {
-    try {
+    final result = await handleAsync(() async {
       await _service.delete(id);
       _tenders.removeWhere((t) => t.id == id);
-      notifyListeners();
+    });
+    return result != null; // null means an error was caught
+  }
+
+  Future<bool> cancelTender(int id) async {
+    final result = await handleAsync(() async {
+      await _service.cancel(id);
+      _tenders.removeWhere((t) => t.id == id);
+      _searchResults?.removeWhere((t) => t.id == id);
       return true;
-    } catch (_) {
-      return false;
+    });
+    return result ?? false;
+  }
+
+  bool _isCategoryLoading = false;
+  String? _categoryLoadError;
+
+  bool get isCategoryLoading => _isCategoryLoading;
+  String? get categoryLoadError => _categoryLoadError;
+
+  Future<void> fetchCategories() async {
+    _isCategoryLoading = true;
+    _categoryLoadError = null;
+    // Defer the notify to avoid calling during build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+     // if (!_disposed) safeNotify();
+    });
+    try {
+      _categories = await _categoryService.getAll();
+    } catch (e) {
+      _categoryLoadError = e.toString().replaceFirst('Exception: ', '').trim();
+    } finally {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+      safeNotify();
+    });
     }
   }
+
+// Unutar TenderProvider-a
+Future<Map<String, dynamic>?> prepareRatingArguments(BidDto bid) async {
+  final bidderId = bid.submittedByUserId.trim();
+
+ try {
+    // Pošto BidDto nema informacije o kreatoru tendera, povlačimo ih direktno iz izvornog tendera
+    final tender = await _service.getById(bid.tenderId);
+    
+    final ratedUserId = tender.createdByUserId.trim();
+    final ratedUserName = tender.createdByFullname.trim();
+
+    // Validacija: Ne možeš ocijeniti sam sebe (kreator tendera ne ocjenjuje sebe)
+    if (ratedUserId.isEmpty || ratedUserId == bidderId) {
+      return null; 
+    }
+
+    return {
+      'tenderId': bid.tenderId.toString(),
+      'ratedUserId': ratedUserId,
+      'ratedUserName': ratedUserName.isEmpty ? null : ratedUserName,
+    };
+    
+  } catch (_) {
+    return null; // Bezbjedan povratak ako mrežni poziv padne
+  }
+}
+
+void setSelectedCategories(Set<String> categories) {
+  _selectedCategories
+    ..clear()
+    ..addAll(categories);
+  safeNotify();
+}
 }

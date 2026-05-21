@@ -17,6 +17,7 @@ import 'package:tendergo/shared/screens/rate_user_screen.dart';
 import 'package:tendergo/shared/screens/user_profile_public_screen.dart';
 import 'package:tendergo/shared/services/auth_service.dart';
 import 'package:tendergo/shared/services/bid_service.dart';
+import 'package:tendergo/shared/services/category_service.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
 import 'package:tendergo/shared/services/user_service.dart';
 
@@ -26,6 +27,7 @@ class MobileRoutes {
     required BidService bidService,
     required TenderService tenderService,
     required UserService userService,
+    required CategoryService categoryService,
   }) {
     return {
       AppRoutes.splash: (context) => const SplashScreen(),
@@ -46,7 +48,6 @@ class MobileRoutes {
           MyTendersScreen(tenderService: tenderService),
       AppRoutes.myBids: (context) => MyBidsScreen(
         bidService: bidService,
-        tenderService: tenderService,
       ),
       AppRoutes.userPublicProfile: (context) {
         final args = ModalRoute.of(context)?.settings.arguments;
@@ -61,7 +62,10 @@ class MobileRoutes {
       },
       AppRoutes.rateUser: (context) {
         final args = ModalRoute.of(context)?.settings.arguments;
-        final tenderId = args is Map ? (args['tenderId'] ?? '').toString() : '';
+        final rawTenderId = args is Map ? args['tenderId'] : null;
+        final int tenderId = rawTenderId is int 
+        ? rawTenderId 
+        : int.tryParse(rawTenderId?.toString() ?? '') ?? 0;
         final ratedUserId = args is Map
             ? (args['ratedUserId'] ?? args['userId'] ?? '').toString()
             : '';
@@ -84,7 +88,7 @@ class MobileRoutes {
             : null;
         return RecommendedForYouScreen(onTenderTapped: onTap);
       },
-      AppRoutes.notifications: (context) => const NotificationScreen(),
+   //   AppRoutes.notifications: (context) => const NotificationScreen(),
     };
   }
 }

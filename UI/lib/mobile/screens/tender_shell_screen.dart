@@ -5,11 +5,12 @@ import 'package:tendergo/mobile/screens/tender_details_screen.dart';
 import 'package:tendergo/shared/screens/user_profile_screen.dart';
 import 'package:tendergo/mobile/screens/tenders_list_screen.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
-import 'package:tendergo/shared/providers/notification_provider.dart';
+import 'package:tendergo/shared/providers/auth_provider.dart';
+import 'package:tendergo/shared/providers/tender_provider.dart';
 import 'package:tendergo/shared/routes/routes.dart';
 import 'package:tendergo/shared/services/auth_service.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
-import 'package:tendergo/shared/widgets/common/notification_bell_widget.dart';
+import 'package:tendergo/shared/widgets/feedback/snackbar_helper.dart';
 
 class MobileTenderShellScreen extends StatefulWidget {
   const MobileTenderShellScreen({
@@ -26,23 +27,13 @@ class MobileTenderShellScreen extends StatefulWidget {
 }
 
 class _MobileTenderShellScreenState extends State<MobileTenderShellScreen> {
-  int _listVersion = 0;
-  NotificationProvider? _notificationProvider;
-
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      _notificationProvider = context.read<NotificationProvider>();
-      _notificationProvider!.startPolling();
+      context.read<AuthProvider>().loadUser();
     });
-  }
-
-  @override
-  void dispose() {
-    _notificationProvider?.stopPolling();
-    super.dispose();
   }
 
   Future<void> _openPostTender() async {
@@ -53,8 +44,18 @@ class _MobileTenderShellScreenState extends State<MobileTenderShellScreen> {
     );
 
     if (result == true && mounted) {
-      setState(() {
-        _listVersion++;
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+        final provider = context.read<TenderProvider>();
+        await provider.fetchActiveTenders(silent: true);
+        if (!mounted) return;
+        if (provider.error != null) {
+          SnackbarHelper.show(
+            context,
+            'Tender posted, but list refresh failed.',
+            isError: true,
+          );
+        }
       });
     }
   }
@@ -97,7 +98,6 @@ class _MobileTenderShellScreenState extends State<MobileTenderShellScreen> {
           ),
         ),
         actions: [
-          const NotificationBell(iconColor: AppColors.textPrimary),
           IconButton(
             onPressed: _openRecommendations,
             icon: const Icon(Icons.recommend_outlined),
@@ -117,7 +117,6 @@ class _MobileTenderShellScreenState extends State<MobileTenderShellScreen> {
         ),
       ),
       body: MobileTenderListScreen(
-        key: ValueKey(_listVersion),
         tenderService: widget.tenderService,
         embedded: true,
         onTenderSelected: _openTenderDetails,

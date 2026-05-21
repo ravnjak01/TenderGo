@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:tendergo/admin/widgets/common/auth_scaffold.dart';
+import 'package:provider/provider.dart'; // ili paket koji koristiš za context.read
 import 'package:tendergo/shared/core/theme/app_theme.dart';
-import 'package:tendergo/shared/models/dto/auth_dto.dart';
+import 'package:tendergo/shared/models/dto/address_dto.dart';
+import 'package:tendergo/shared/models/requests/reset_password_request.dart';
 import 'package:tendergo/shared/providers/auth_provider.dart';
 import 'package:tendergo/shared/routes/routes.dart';
+import 'package:tendergo/shared/widgets/common/auth_scaffold.dart';
 import 'package:tendergo/shared/widgets/feedback/snackbar_helper.dart';
 import 'package:tendergo/shared/widgets/inputs/auth_widget.dart';
+import 'package:tendergo/shared/widgets/inputs/custom_auth_field.dart'; // Uvezi fajl sa dugmićima
 
 class MobileResetPasswordScreen extends StatefulWidget {
   const MobileResetPasswordScreen({super.key});
@@ -21,10 +23,8 @@ class _MobileResetPasswordScreenState extends State<MobileResetPasswordScreen> {
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
-  bool _hideNewPassword = true;
-  bool _hideConfirmPassword = true;
+  // VIŠEKRATNE VARIJABLE ZA HIDE/SHOW SU UKLONJENE JER IM STANJEM SADA UPRAVLJA WIDGET INTERNO
   bool _hasResolvedContext = false;
-
   String _token = '';
   String _email = '';
 
@@ -96,6 +96,7 @@ class _MobileResetPasswordScreenState extends State<MobileResetPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     final hasValidContext = _token.isNotEmpty && _email.isNotEmpty;
+    final auth = context.watch<AuthProvider>(); // Pretpostavka za loading stanje dugmeta
 
     return AuthScaffold(
       maxWidth: 460,
@@ -140,15 +141,14 @@ class _MobileResetPasswordScreenState extends State<MobileResetPasswordScreen> {
               ),
             ],
             const SizedBox(height: 24),
-            AuthField(
+
+            // 1. NOVO POLJE ZA NOVU LOZINKU
+            CustomTextField(
               label: 'New Password',
               hint: 'Enter new password',
               controller: _newPasswordController,
-              obscure: _hideNewPassword,
-              showToggle: true,
-              onToggle: () => setState(() {
-                _hideNewPassword = !_hideNewPassword;
-              }),
+              isPasswordField: true,
+              prefixIcon: Icons.lock_outline,
               validator: (value) {
                 if (value == null || value.isEmpty) {
                   return 'New password is required';
@@ -159,15 +159,14 @@ class _MobileResetPasswordScreenState extends State<MobileResetPasswordScreen> {
                 return null;
               },
             ),
-            AuthField(
+
+            // 2. NOVO POLJE ZA POTVRDU LOZINKE
+            CustomTextField(
               label: 'Confirm Password',
               hint: 'Confirm new password',
               controller: _confirmPasswordController,
-              obscure: _hideConfirmPassword,
-              showToggle: true,
-              onToggle: () => setState(() {
-                _hideConfirmPassword = !_hideConfirmPassword;
-              }),
+              isPasswordField: true,
+              prefixIcon: Icons.lock_clock_outlined,
               validator: (value) {
                 if (value == null || value.isEmpty) {
                   return 'Please confirm your password';
@@ -178,47 +177,14 @@ class _MobileResetPasswordScreenState extends State<MobileResetPasswordScreen> {
                 return null;
               },
             ),
+
             const SizedBox(height: 8),
-            Consumer<AuthProvider>(
-              builder: (context, auth, child) {
-                return SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: auth.isLoading ? null : _handleResetPassword,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    child: auth.isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Text('Reset Password'),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 16),
-            Center(
-              child: TextButton(
-                onPressed: () => Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  AppRoutes.login,
-                  (route) => false,
-                ),
-                child: const Text(
-                  'Back to Sign In',
-                  style: TextStyle(color: AppColors.primary),
-                ),
-              ),
+
+            // 3. DOVRŠENO INPUT DUGME (Dodano pošto je falio kraj u tvom kodu)
+            AuthSubmitButton(
+              label: 'Reset Password',
+              isLoading: auth.isLoading,
+              onPressed: hasValidContext ? _handleResetPassword : null,
             ),
           ],
         ),

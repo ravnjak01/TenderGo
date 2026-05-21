@@ -2,24 +2,32 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:tendergo/shared/core/actions/back_button.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
-import 'package:tendergo/shared/models/dto/tender_post_dto.dart';
+import 'package:tendergo/shared/models/requests/tender_insert_request.dart';
 import 'package:tendergo/shared/providers/tender_provider.dart';
+import 'package:tendergo/shared/services/location_service.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
+import 'package:tendergo/shared/widgets/common/app_card.dart';
+import 'package:tendergo/shared/widgets/common/app_text_field.dart';
+import 'package:tendergo/shared/widgets/common/error_banner_widget.dart';
 import 'package:tendergo/shared/widgets/tender/category_section_widget.dart';
+import 'package:tendergo/shared/widgets/tender/location_section_widget.dart';
 import 'package:tendergo/shared/widgets/tender/image_upload_section_widget.dart';
 import 'package:tendergo/shared/widgets/tender/datepicker_widget.dart';
-import 'package:tendergo/admin/widgets/error_banner.widget.dart';
-import 'package:tendergo/admin/widgets/common/app_card.dart';
-import 'package:tendergo/admin/widgets/common/app_text_field.dart';
 import 'package:tendergo/shared/widgets/feedback/fade_in_widget.dart';
 import 'package:tendergo/shared/widgets/feedback/snackbar_helper.dart';
 import 'package:tendergo/shared/widgets/tender/submit_row_widget.dart';
 
 class TenderPostScreen extends StatefulWidget {
   final TenderService tenderService;
+  final LocationService locationService;
 
-  const TenderPostScreen({super.key, required this.tenderService});
+  const TenderPostScreen({
+    super.key,
+    required this.tenderService,
+    required this.locationService,
+  });
 
   @override
   State<TenderPostScreen> createState() => _TenderPostScreenState();
@@ -30,10 +38,10 @@ class _TenderPostScreenState extends State<TenderPostScreen>
   final _formKey = GlobalKey<FormState>();
   final _titleCtrl = TextEditingController();
   final _budgetCtrl = TextEditingController();
-  final _locationCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
 
   int? _selectedCategoryId;
+  int? _selectedLocationId;
   DateTime? _deadline;
   final List<PlatformFile> _imageFiles = [];
   bool _isCategoryLoading = true;
@@ -77,15 +85,9 @@ class _TenderPostScreenState extends State<TenderPostScreen>
   void dispose() {
     _titleCtrl.dispose();
     _budgetCtrl.dispose();
-    _locationCtrl.dispose();
     _descCtrl.dispose();
     super.dispose();
-  }
-
- 
- //dosao do refaktorisanja ,zadnje obrisao metodu _pickDeadline jer je 
- //DatepickerWidget samostalno preuzeo tu funkcionalnost, pa je nije potrebno duplicirati. Također, metoda _buildSubmitRow je uklonjena jer se sada koristi TenderSubmitRow widget koji ima ugrađenu podršku za loading state i onPressed funkcije. Ove promjene su napravljene kako bi se pojednostavio kod i smanjila duplikacija funkcionalnosti.
- 
+  } 
 
   Future<void> _pickImagesFromDisk() async {
     try {
@@ -140,6 +142,10 @@ class _TenderPostScreenState extends State<TenderPostScreen>
       SnackbarHelper.show(context, 'Please select a category', isError: true);
       return;
     }
+    if (_selectedLocationId == null) {
+      SnackbarHelper.show(context, 'Please select a location', isError: true);
+      return;
+    }
 
     setState(() => _isLoading = true);
 
@@ -147,7 +153,7 @@ class _TenderPostScreenState extends State<TenderPostScreen>
       final request = TenderInsertRequest(
         title: _titleCtrl.text.trim(),
         maxBudget: double.parse(_budgetCtrl.text.trim()),
-        locationName: _locationCtrl.text.trim(),
+        locationId: _selectedLocationId!,
         description: _descCtrl.text.trim().isEmpty
             ? null
             : _descCtrl.text.trim(),
@@ -232,14 +238,21 @@ class _TenderPostScreenState extends State<TenderPostScreen>
                       ),
                     ),
                     _cardField(
-                      AppTextField(
-                        controller: _locationCtrl,
-                        label: 'Location *',
-                        hint: 'e.g. Sarajevo, Bosnia',
-                        prefixIcon: Icons.place_outlined,
-                        validator: (v) => (v == null || v.trim().isEmpty)
-                            ? 'Location is required'
-                            : null,
+                      TenderLocationSection(
+                        locationService: widget.locationService,
+                        selectedLocationId: _selectedLocationId,
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedLocationId = value;
+                            _errorMessage = null;
+                          });
+                        },
+                        validator: (value) {
+                          if (value == null) {
+                            return 'Please select a city';
+                          }
+                          return null;
+                        },
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -322,14 +335,7 @@ class _TenderPostScreenState extends State<TenderPostScreen>
     elevation: 0,
     centerTitle: false,
     systemOverlayStyle: SystemUiOverlayStyle.dark,
-    leading: IconButton(
-      icon: const Icon(
-        Icons.arrow_back_ios_new_rounded,
-        size: 17,
-        color: AppColors.textSecondary,
-      ),
-      onPressed: () => Navigator.pop(context),
-    ),
+    leading: const CustomBackButton(),
     title: Row(
       children: [
         Container(

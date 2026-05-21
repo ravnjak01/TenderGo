@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:tendergo/shared/core/actions/back_button.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
 import 'package:tendergo/shared/models/dto/user_dto.dart';
 import 'package:tendergo/shared/models/dto/bid_dto.dart';
@@ -13,8 +14,7 @@ import 'package:tendergo/shared/services/dio_client.dart';
 import 'package:tendergo/shared/services/image_service.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
 import 'package:tendergo/shared/services/user_service.dart';
-import 'package:tendergo/shared/models/dto/update_profile_request.dart';
-import 'package:tendergo/admin/widgets/common/app_dialogs.dart';
+import 'package:tendergo/shared/widgets/common/app_dialogs.dart';
 import 'package:tendergo/shared/widgets/feedback/screen_state_widget.dart';
 import 'package:tendergo/shared/widgets/profile/user_profile_layouts.dart';
 import 'package:provider/provider.dart';
@@ -153,6 +153,12 @@ class _UserProfileScreenState extends State<UserProfileScreen>
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      appBar: AppBar(
+         backgroundColor: AppColors.background,
+         elevation: 0,
+         leading: const CustomBackButton(),
+         title: const Text('Profile'),
+       ),
       body: SafeArea(
         child: _loading
             ? _buildLoading()

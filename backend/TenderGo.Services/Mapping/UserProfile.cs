@@ -19,7 +19,10 @@ namespace TenderGo.Services.Mapping
              .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.Email));
 
             CreateMap<ApplicationUser, UserDTO>()
-             .ForMember(dest => dest.Roles, opt => opt.Ignore());
+             .ForMember(dest => dest.Roles, opt => opt.Ignore())
+             .ForMember(dest => dest.Address, opt => opt.MapFrom(src =>
+                  src.Address != null ? src.Address : null));
+             
 
             CreateMap<UpdateProfileRequest, ApplicationUser>()
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
@@ -33,7 +36,7 @@ namespace TenderGo.Services.Mapping
             src.CreatedTenders != null ? src.CreatedTenders.Count : 0))
         .ForMember(dest => dest.BidsCount, opt => opt.Ignore());
 
-            CreateMap<UpdateAddressDTO, Address>()
+            CreateMap<UpdateAddressRequest, Address>()
     .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
 
             CreateMap<UpdateProfileRequest, ApplicationUser>()

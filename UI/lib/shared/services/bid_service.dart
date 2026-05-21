@@ -4,6 +4,7 @@ import 'package:tendergo/shared/core/error/bid_error_handler.dart';
 import 'package:tendergo/shared/core/error/error_handler.dart';
 import 'package:tendergo/shared/core/network/constants/bid_api_endpoints.dart';
 import 'package:tendergo/shared/models/dto/bid_dto.dart';
+import 'package:tendergo/shared/models/requests/bid_insert_request.dart';
 
 class BidService {
 	final Dio _dio;
@@ -41,7 +42,10 @@ class BidService {
 				options: await _options(),
 			);
 
-			return BidDto.parseBidList(response.data);
+			final rawList = response.data as List;
+			return rawList
+				.map((item) => BidDto.fromJson(item as Map<String, dynamic>))
+				.toList();
 		} on DioException catch (e) {
 			final message = ErrorHandler.extractErrorMessage(e.response?.data) ?? 'Error fetching bids';
 			if (BidErrorHandler.isDuplicateBidError(e, message)) {
@@ -66,7 +70,11 @@ class BidService {
 				options: await _options(),
 			);
 
-			return BidDto.parseBidList(response.data);
+			
+			final rawList = response.data as List;
+			return rawList
+				.map((item) => BidDto.fromJson(item as Map<String, dynamic>))
+				.toList();
 		} on DioException catch (e) {
 			// Some environments may not expose a dedicated "by user" endpoint.
 			if (e.response?.statusCode == 404 || e.response?.statusCode == 405) {
@@ -99,7 +107,10 @@ class BidService {
 				options: await _options(),
 			);
 
-			return BidDto.parseBidList(response.data);
+			final rawList = response.data as List;
+			return rawList
+				.map((item) => BidDto.fromJson(item as Map<String, dynamic>))
+				.toList();
 		} on DioException catch (e) {
 			final message = ErrorHandler.extractErrorMessage(e.response?.data) ?? 'Error fetching current user bids';
 			if (BidErrorHandler.isDuplicateBidError(e, message)) {
@@ -120,7 +131,7 @@ class BidService {
 				options: await _options(),
 			);
 
-			return BidDto.parseBid(response.data);
+			return BidDto.fromJson(response.data as Map<String,dynamic>);
 		} on DioException catch (e) {
 			final message = ErrorHandler.extractErrorMessage(e.response?.data) ?? 'Error fetching bid';
 			if (BidErrorHandler.isDuplicateBidError(e, message)) {
@@ -142,7 +153,7 @@ class BidService {
       options: await _options(),
     );
 
-    return BidDto.parseBid(response.data);
+    return BidDto.fromJson(response.data as Map<String, dynamic>);
   } on DioException catch (e) {
     final message = ErrorHandler.extractErrorMessage(e.response?.data) ?? 'Error creating bid';
 
@@ -205,23 +216,30 @@ class BidService {
 
 	// ===== BY TENDER =====
 	Future<List<BidDto>> getByTender(int tenderId) async {
-		try {
-			final response = await _dio.get(
-				BidApiEndpoints.getByTender(tenderId),
-				options: await _options(),
-			);
-     if (response.data == null) return [];
-			return BidDto.parseBidList(response.data);
-		} on DioException catch (e) {
-      if (e.response?.statusCode == 404) return [];
-      if (e.response?.statusCode == 403) {
-        throw Exception(
-          'You are not allowed to view bids for this tender.',
-        );
-      }
-			throw Exception(e.response?.data ?? 'Error fetching bids by tender');
-		}
-	}
+  try {
+    final response = await _dio.get(
+      BidApiEndpoints.getByTender(tenderId),
+      options: await _options(),
+    );
+
+    if (response.data == null) return [];
+
+    final rawList = response.data as List;
+
+    return rawList
+        .map((jsonItem) => BidDto.fromJson(jsonItem as Map<String, dynamic>))
+        .toList();
+
+  } on DioException catch (e) {
+    if (e.response?.statusCode == 404) return [];
+    if (e.response?.statusCode == 403) {
+      throw Exception(
+        'You are not allowed to view bids for this tender.',
+      );
+    }
+    throw Exception(e.response?.data ?? 'Error fetching bids by tender');
+  }
+}
 
     Future<BidDto> cancel(int id) async {
     try {
@@ -230,7 +248,7 @@ class BidService {
         options: await _options(),
       );
 
-      return BidDto.parseBid(response.data);
+      return BidDto.fromJson(response.data as Map<String,dynamic>);
     } on DioException catch (e) {
       throw Exception(e.response?.data ?? 'Error canceling tender');
     }

@@ -10,13 +10,29 @@ enum TenderStatus {
   final int value;
   const TenderStatus(this.value);
 
-  /// Helper metoda za konverziju integera sa API-ja u Enum
-  static TenderStatus fromInt(int value) {
-    return TenderStatus.values.firstWhere(
-      (e) => e.value == value,
-      orElse: () => TenderStatus.open,
-    );
+  static TenderStatus fromValue(dynamic val) {
+    if (val is int) {
+      return TenderStatus.values.firstWhere(
+        (e) => e.value == val,
+        orElse: () => TenderStatus.open,
+      );
+    }
+    if (val is String) {
+      final normalized = val.trim().toLowerCase();
+      for (final status in TenderStatus.values) {
+        if (status.name.toLowerCase() == normalized) return status;
+      }
+      const labels = {
+        'open': TenderStatus.open,
+        'closed': TenderStatus.closed,
+        'awarded': TenderStatus.awarded,
+        'cancelled': TenderStatus.cancelled,
+      };
+      return labels[normalized] ?? TenderStatus.open;
+    }
+    return TenderStatus.open;
   }
+  
 }
 
 /// 2. Ekstenzija koja dodaje UI logiku (boje i tekst) na TenderStatus
@@ -47,5 +63,7 @@ extension TenderStatusX on TenderStatus {
       case TenderStatus.cancelled: return const Color(0xFFD32F2F); 
     }
   }
+
+ 
 }
 

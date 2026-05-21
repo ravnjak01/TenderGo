@@ -18,12 +18,17 @@ public class TenderController
 
     private readonly ITenderService _tenderService;
 
+
     public TenderController(ITenderService tenderService, ILogger<TenderController> logger,IAuthService authservice)
         : base(tenderService, tenderService,logger)
     {
         _tenderService = tenderService;
     }
 
+    protected override string InsertSuccessMessage => "Tender posted successfully.";
+
+
+   
 
     [HttpGet("search")]
     public async Task<ActionResult<PagedResult<TenderDTO>>> Search([FromQuery] TenderSearchRequest request)
@@ -31,6 +36,8 @@ public class TenderController
         var result = await _tenderService.SearchAsync(request);
         return Ok(result);
     }
+
+   
 
     [HttpGet("active")]
     public async Task<ActionResult<List<TenderDTO>>> GetActive()
@@ -51,6 +58,7 @@ public class TenderController
         => Ok(await _tenderService.GetTendersByCategory(id));
 
     [HttpGet("user/{userId}")]
+    [Authorize]
     public async Task<ActionResult<List<TenderDTO>>> GetByUser(string userId)
     {
         var tenders = await _tenderService.GetTendersByUser(userId);
@@ -62,8 +70,6 @@ public class TenderController
     }
 
 
-   
-    [Authorize(Roles = $"{AppRoles.Admin},{AppRoles.User}")]
     [HttpPatch("{id}/cancel")]
     public async Task<ActionResult<TenderDTO>> Cancel(int id)
     {

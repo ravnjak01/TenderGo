@@ -23,6 +23,7 @@ public abstract class BaseController<T,TDb, TInsert, TUpdate>
         _logger = logger;
     }
 
+    protected virtual string InsertSuccessMessage => "Insert successful.";
 
     [HttpGet]
     public async Task<ActionResult<PagedResult<T>>> GetAll([FromQuery] PagedResult<T> pagedResult)
@@ -36,7 +37,7 @@ public abstract class BaseController<T,TDb, TInsert, TUpdate>
     public virtual async Task<ActionResult<T>> Insert( [FromBody]TInsert request)
     {
         var result = await _writeService.Insert(request);
-        return Ok(result);
+        return Ok(new { message = InsertSuccessMessage, data = result });
     }
 
     [HttpPatch("{id}")]

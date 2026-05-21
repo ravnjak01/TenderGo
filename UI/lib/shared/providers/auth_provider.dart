@@ -1,105 +1,79 @@
-import 'package:flutter/material.dart';
-import 'package:tendergo/shared/models/dto/auth_dto.dart';
+import 'package:tendergo/shared/models/requests/login_request.dart';
+import 'package:tendergo/shared/models/requests/register_request.dart';
+import 'package:tendergo/shared/models/requests/reset_password_request.dart';
+import 'package:tendergo/shared/models/ui/api_response.dart';
+import 'package:tendergo/shared/providers/base_provider.dart';
+import 'package:tendergo/shared/models/dto/address_dto.dart';
 import 'package:tendergo/shared/models/dto/user_dto.dart';
 import 'package:tendergo/shared/models/ui/auth_result.dart';
 import 'package:tendergo/shared/services/auth_service.dart';
 
-class AuthProvider extends ChangeNotifier {
+class AuthProvider extends BaseProvider {
   final AuthService _authService;
-  
-  bool _isLoading = false;
-  bool get isLoading => _isLoading;
-
-  // Dodajemo polja za korisnika i error poruku
-  UserDto? _currentUser;
-  UserDto? get currentUser => _currentUser;
-
-  String? _errorMessage;
-  String? get errorMessage => _errorMessage;
 
   AuthProvider(this._authService);
 
-  // --- NOVA METODA: loadUser ---
-  Future<AuthResult> loadUser() async {
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
+  UserDto? _currentUser;
+  UserDto? get currentUser => _currentUser;
 
-    try {
-      final result = await _authService.getCurrentUser();
-      
-      if (result.success) {
-        _currentUser = result.data;
-      } else {
-        _errorMessage = result.message;
-      }
-      return result;
-    } catch (e) {
-      _errorMessage = "Failed to load user data.";
-      return AuthResult(success: false, message: _errorMessage!);
-    } finally {
-      _isLoading = false;
-      notifyListeners();
+
+  String? get errorMessage => error;
+
+  bool get isAdmin {
+      final roles = _currentUser?.roles ?? const <String>[];
+      return roles.any((role) => role.toLowerCase() == 'admin');
     }
+
+
+  Future<ApiResponse> loadUser() async {
+    final result = await handleAsync(() => _authService.getCurrentUser());
+    if (result != null && result.success) {
+    _currentUser = result.data;
+    notifyListeners();
+  } else {
+    // Ako loadUser ne uspije (npr. backend vrati ACCOUNT_BANNED)
+    // Obavezno čistimo lokalno stanje i token da aplikacija ne upadne u beskonačnu petlju
+    await _authService.logout();
+    _currentUser = null;
+    notifyListeners();
+  }
+  
+ return result ?? ApiResponse.failure(
+    error ?? 'Failed to load user', 
+    statusCode: 400, 
+  );
   }
 
-  // --- POSTOJEĆE METODE ---
-
-  Future<bool> login(String email, String password) async {
-    // Ovdje bi bilo dobro dodati isLoading ako login traje dugo
-    return await _authService.login(
+  Future<ApiResponse> login(String email, String password) async {
+    final result = await _authService.login(
       LoginRequest(email: email, password: password),
     );
+    if (!result.success) {
+      await _authService.logout();
+      _currentUser = null;         
+    notifyListeners();
+      return result;
+    }
+    return loadUser();
   }
 
   Future<bool> registerUser(RegisterRequest request) async {
-    _isLoading = true;
-    notifyListeners(); 
-
-    try {
-      final success = await _authService.register(request);
-      return success;
-    } catch (e) {
-      return false;
-    } finally {
-      _isLoading = false;
-      notifyListeners(); 
-    }
+    final result = await handleAsync(() => _authService.register(request));
+    return result ?? false;
   }
 
-  Future<AuthResult> resetPassword(ResetPasswordRequest request) async {
-    _isLoading = true;
-    notifyListeners();
-
-    try {
-      final result = await _authService.resetPassword(request);
-      return result; 
-    } catch (e) {
-      return AuthResult(success: false, message: "Something went wrong");
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
+  Future<ApiResponse> resetPassword(ResetPasswordRequest request) async {
+    final result = await handleAsync(() => _authService.resetPassword(request));
+    return result ?? ApiResponse.failure(error ?? 'Something went wrong', statusCode: 400);
   }
 
-  Future<AuthResult> sendForgotPasswordEmail(String email) async {
-    _isLoading = true;
-    notifyListeners(); 
-
-    try {
-      final result = await _authService.forgotPassword(email);
-      return result;
-    } catch (e) {
-      return AuthResult(success: false, message: "Something went wrong.");
-    } finally {
-      _isLoading = false;
-      notifyListeners(); 
-    }
+  Future<ApiResponse> sendForgotPasswordEmail(String email) async {
+    final result = await handleAsync(() => _authService.forgotPassword(email));
+    return result ?? ApiResponse.failure(error ?? 'Something went wrong', statusCode: 400);
   }
 
-  // Bonus: Metoda za logout kako bi očistio podatke
   void logout() {
     _currentUser = null;
-    notifyListeners();
+    safeNotify();
   }
 }

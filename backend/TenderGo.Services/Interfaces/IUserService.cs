@@ -10,10 +10,10 @@ namespace TenderGo.Services.Interfaces
 {
     public interface IUserService
     {   
-            Task<bool> ChangePasswordAsync(string userId, ChangePasswordDTO dto);
+            Task<bool> ChangePasswordAsync( ChangePasswordRequest dto);
 
             Task UpdateProfileAsync(string userId, UpdateProfileRequest dto);
-        Task<bool> RateUserAsync(string ratedByUserId, RateUserDTO dto);
+        Task<bool> RateUserAsync(string ratedByUserId, RateUserRequest dto);
         Task<UserPublicDTO> GetPublicByIdAsync(string id);
     
 

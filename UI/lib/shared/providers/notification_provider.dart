@@ -1,34 +1,36 @@
+// lib/shared/providers/notification_provider.dart  (refactored)
+/*
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:tendergo/shared/models/dto/notification_dto.dart';
+import 'package:tendergo/shared/providers/base_provider.dart';
 import 'package:tendergo/shared/services/notification_service.dart';
 
 enum NotificationLoadState { idle, loading, loaded, error }
 
-class NotificationProvider extends ChangeNotifier {
+class NotificationProvider extends BaseProvider {
   final NotificationService _service;
 
   NotificationProvider(this._service);
 
-  // ── State ────────────────────────────────────────────────────────────────
-
   NotificationLoadState _state = NotificationLoadState.idle;
   List<NotificationDto> _notifications = [];
-  String? _error;
   Timer? _pollingTimer;
+  bool _isFetching = false;
 
   static const _pollingInterval = Duration(seconds: 30);
 
   NotificationLoadState get state => _state;
   List<NotificationDto> get notifications => _notifications;
-  String? get error => _error;
+
+  // isLoading and error already come from BaseProvider.
+  // Override isLoading to also check the enum state for compatibility.
+  @override
   bool get isLoading => _state == NotificationLoadState.loading;
+
   int get unreadCount => _notifications.where((n) => !n.isRead).length;
 
-  // ── Polling ──────────────────────────────────────────────────────────────
-
-  /// Call from the shell screen's initState.
   void startPolling() {
+    if (_pollingTimer?.isActive ?? false) return;
     _pollingTimer?.cancel();
     loadNotifications();
     _pollingTimer = Timer.periodic(_pollingInterval, (_) {
@@ -36,36 +38,29 @@ class NotificationProvider extends ChangeNotifier {
     });
   }
 
-  /// Call from the shell screen's dispose.
   void stopPolling() {
     _pollingTimer?.cancel();
     _pollingTimer = null;
   }
 
-  // ── Actions ──────────────────────────────────────────────────────────────
-
-  /// Fetches all notifications. When [silent] is true the loading indicator
-  /// is not shown (used for background polls).
   Future<void> loadNotifications({bool silent = false}) async {
-    if (!silent) {
-      _state = NotificationLoadState.loading;
-      _error = null;
-      notifyListeners();
-    }
+    if (_isFetching) return;
+    _isFetching = true;
 
-    try {
-      _notifications = await _service.getMyNotifications();
-      _state = NotificationLoadState.loaded;
-      _error = null;
-    } catch (e) {
-      _error = e.toString();
-      _state = NotificationLoadState.error;
-    }
+    if (!silent) _state = NotificationLoadState.loading;
 
-    notifyListeners();
+    await handleAsync(
+      () async {
+        _notifications = await _service.getMyNotifications();
+        _state = NotificationLoadState.loaded;
+      },
+      silent: silent,
+      onError: (_) => _state = NotificationLoadState.error,
+    );
+
+    _isFetching = false;
   }
 
-  /// Marks one notification as read both optimistically and on the server.
   Future<void> markAsRead(int id) async {
     final idx = _notifications.indexWhere((n) => n.id == id);
     if (idx == -1 || _notifications[idx].isRead) return;
@@ -73,53 +68,48 @@ class NotificationProvider extends ChangeNotifier {
     // Optimistic update
     _notifications = List.of(_notifications)
       ..[idx] = _notifications[idx].copyWith(isRead: true);
-    notifyListeners();
+    safeNotify();
 
     try {
       await _service.markAsRead(id);
     } catch (_) {
-      // Revert on failure
+      // Roll back
       _notifications = List.of(_notifications)
         ..[idx] = _notifications[idx].copyWith(isRead: false);
-      notifyListeners();
+      safeNotify();
     }
   }
 
-  /// Marks all notifications as read.
   Future<void> markAllAsRead() async {
     final previous = List<NotificationDto>.from(_notifications);
-
-    // Optimistic update
     _notifications = _notifications.map((n) => n.copyWith(isRead: true)).toList();
-    notifyListeners();
+    safeNotify();
 
     try {
       await _service.markAllAsRead();
     } catch (_) {
       _notifications = previous;
-      notifyListeners();
+      safeNotify();
     }
   }
 
-  /// Deletes a notification.
   Future<void> deleteNotification(int id) async {
     final previous = List<NotificationDto>.from(_notifications);
-
-    // Optimistic removal
     _notifications = _notifications.where((n) => n.id != id).toList();
-    notifyListeners();
+    safeNotify();
 
     try {
       await _service.delete(id);
     } catch (_) {
       _notifications = previous;
-      notifyListeners();
+      safeNotify();
     }
   }
 
   @override
   void dispose() {
     _pollingTimer?.cancel();
-    super.dispose();
+    super.dispose(); // sets _disposed = true via BaseProvider
   }
 }
+*/

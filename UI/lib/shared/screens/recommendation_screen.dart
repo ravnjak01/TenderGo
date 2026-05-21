@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:provider/provider.dart';
+import 'package:tendergo/shared/core/actions/back_button.dart';
 import 'package:tendergo/shared/routes/routes.dart';
 import 'package:tendergo/shared/widgets/tender/tender_recommendation_card_widget.dart';
 import '../providers/recommendation_provider.dart';
@@ -54,6 +55,7 @@ class _RecommendedForYouScreenState extends State<RecommendedForYouScreen> {
       value: _provider,
       child: Scaffold(
         appBar: AppBar(
+          leading: const CustomBackButton(),
           title: const Text('Recommended For You'),
           actions: [
             Consumer<RecommendationProvider>(

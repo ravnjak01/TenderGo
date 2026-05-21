@@ -70,7 +70,7 @@ class TenderInfoSection extends StatelessWidget {
             ),
             TenderMetaItem(
               icon: Icons.location_on_outlined,
-              label: tender.locationName,
+              label: tender.location.name,
             ),
             TenderMetaItem(
               icon: Icons.account_balance_wallet_outlined,

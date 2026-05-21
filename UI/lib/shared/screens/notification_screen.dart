@@ -1,3 +1,5 @@
+
+/*
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
@@ -8,8 +10,33 @@ import 'package:tendergo/shared/routes/routes.dart';
 const double _kDesktopBreakpoint = 720;
 const double _kMaxContentWidth = 800;
 
-class NotificationScreen extends StatelessWidget {
+
+
+class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
+
+  @override
+  State<NotificationScreen> createState() => _NotificationScreenState();
+}
+
+class _NotificationScreenState extends State<NotificationScreen> {
+  NotificationProvider? _provider;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _provider = context.read<NotificationProvider>();
+      // _provider!.startPolling(); // disabled polling
+    });
+  }
+
+  @override
+  void dispose() {
+    _provider?.stopPolling();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -264,3 +291,4 @@ class _NotificationIcon extends StatelessWidget {
     };
   }
 }
+*/

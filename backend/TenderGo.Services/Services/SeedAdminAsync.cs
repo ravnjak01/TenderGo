@@ -2,7 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using TenderGo.Models.Entities;
 
-namespace TenderGo.Data // Dodaj namespace tvog projekta
+namespace TenderGo.Data 
 {
     public static class SeedData
     {
@@ -11,7 +11,6 @@ namespace TenderGo.Data // Dodaj namespace tvog projekta
             var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
             var userManager = serviceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
-            // 1. Kreiraj ulogu ako ne postoji
             if (!await roleManager.RoleExistsAsync("Admin"))
             {
                 await roleManager.CreateAsync(new IdentityRole("Admin"));

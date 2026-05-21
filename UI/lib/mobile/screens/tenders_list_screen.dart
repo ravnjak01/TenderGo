@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:tendergo/mobile/widgets/tender_widget.dart';
 import 'package:tendergo/shared/controllers/tender_list_controller.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
+import 'package:tendergo/shared/models/enums/tenderstatus.dart';
+import 'package:tendergo/shared/providers/auth_provider.dart';
+import 'package:tendergo/shared/providers/tender_provider.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
+import 'package:tendergo/shared/widgets/common/app_dialogs.dart';
 import 'package:tendergo/shared/widgets/feedback/screen_state_widget.dart';
+import 'package:tendergo/shared/widgets/feedback/snackbar_helper.dart';
+import 'package:tendergo/shared/widgets/tender/filter_bar_widget.dart';
 import 'package:tendergo/shared/widgets/tender/search_bar_widget.dart';
-
 
 class MobileTenderListScreen extends StatefulWidget {
   final TenderService tenderService;
@@ -26,90 +32,40 @@ class MobileTenderListScreen extends StatefulWidget {
 class _MobileTenderListScreenState extends State<MobileTenderListScreen> {
   final Set<int> _savedIds = <int>{};
   final TenderListController _controller = TenderListController();
-
-  bool _isLoading = false;
-  bool _isSearching = false;
-  String? _error;
-  List<TenderDto> _tenders = const [];
-  List<TenderDto>? _searchResults;
-  String _selectedCategory = 'All';
-
-  List<TenderDto> get _base => _searchResults ?? _tenders;
-
-  List<String> get _categories {
-    final unique = _base.map((t) => t.categoryName).toSet().toList()..sort();
-    return ['All', ...unique];
-  }
-
-  List<TenderDto> get _filteredTenders {
-    if (_selectedCategory == 'All') return _base;
-    return _base.where((t) => t.categoryName == _selectedCategory).toList();
-  }
+  bool _initialLoadDone = false;
 
   @override
   void initState() {
     super.initState();
-    _loadTenders();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _initialLoad());
   }
 
-  Future<void> _loadTenders() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
-    try {
-      final tenders = await widget.tenderService.getActive();
-      if (!mounted) return;
-      setState(() {
-        _tenders = tenders;
-        _searchResults = null;
-        _controller.searchController.clear();
-        _selectedCategory = 'All';
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = e.toString().replaceFirst('Exception: ', '');
-      });
-    } finally {
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-      });
+  Future<void> _initialLoad() async {
+    if (!mounted) return;
+    context.read<AuthProvider>().loadUser();
+    final p = Provider.of<TenderProvider>(context, listen: false);
+    await p.fetchActiveTenders();
+    await p.fetchCategories();
+    if (mounted) {
+      setState(() => _initialLoadDone = true);
     }
   }
 
+  Future<void> _loadTenders() {
+    return context.read<TenderProvider>().fetchActiveTenders();
+  }
+
   void _onSearchChanged(String query) {
-    _controller.onSearchChanged(
-      query,
-      onClear: () {
-        if (!mounted) return;
-        setState(() {
-          _searchResults = null;
-          _selectedCategory = 'All';
-        });
-      },
-      onSearch: (q) async {
-        if (!mounted) return;
-        setState(() => _isSearching = true);
-        try {
-          final results = await widget.tenderService.search(
-            TenderSearchRequest(searchTerm: q),
-          );
-          if (!mounted) return;
-          setState(() {
-            _searchResults = results;
-            _selectedCategory = 'All';
-          });
-        } catch (_) {
-          if (!mounted) return;
-          setState(() => _searchResults = []);
-        } finally {
-          if (mounted) setState(() => _isSearching = false);
-        }
-      },
-    );
+    final provider = context.read<TenderProvider>();
+    if (query.isEmpty) {
+      provider.clearSearch();
+    } else {
+      _controller.onSearchChanged(
+        query,
+        onClear: () => provider.clearSearch(),
+        onSearch: (q) => provider.searchTenders(q),
+      );
+    }
   }
 
   @override
@@ -118,155 +74,141 @@ class _MobileTenderListScreenState extends State<MobileTenderListScreen> {
     super.dispose();
   }
 
-  void _toggleSaved(int id) {
-    setState(() {
-      if (_savedIds.contains(id)) {
-        _savedIds.remove(id);
-      } else {
-        _savedIds.add(id);
-      }
-    });
-  }
-
   void _openTender(TenderDto tender) {
     if (widget.onTenderSelected != null) {
       widget.onTenderSelected!(tender.id);
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const ScreenLoadingState(message: 'Loading tenders...');
-    }
+  Future<void> _cancelTender(TenderDto tender) async {
+    final confirmed = await AppDialogs.showConfirm(
+      context: context,
+      title: 'Cancel tender',
+      content: 'Are you sure you want to cancel this tender?',
+      cancelLabel: 'No',
+      confirmLabel: 'Yes, Cancel',
+      isDestructive: true,
+    );
+    if (!confirmed || !mounted) return;
 
-    if (_error != null) {
-      return ScreenErrorState(message: _error!, onRetry: _loadTenders);
-    }
+    final provider = context.read<TenderProvider>();
+    final ok = await provider.cancelTender(tender.id);
+    if (!mounted) return;
 
-    if (_tenders.isEmpty) {
-      return ScreenEmptyState(
-        icon: Icons.inbox_rounded,
-        title: 'No active tenders',
-        description: 'There are no tenders available right now.',
-        onAction: _loadTenders,
+    if (ok) {
+      SnackbarHelper.show(context, 'Tender canceled successfully.');
+    } else {
+      SnackbarHelper.show(
+        context,
+        provider.error ?? 'Failed to cancel tender',
+        isError: true,
       );
     }
-
-    final filtered = _filteredTenders;
-
-    return Container(
-      color: const Color(0xFFF4F2EB),
-      child: RefreshIndicator(
-        onRefresh: _loadTenders,
-        child: CustomScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          slivers: [
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    TenderSearchBar(
-                      controller: _controller.searchController,
-                      onChanged: _onSearchChanged,
-                      onClear: () => _controller.clearSearch(() {
-                        if (!mounted) return;
-                        setState(() {
-                          _searchResults = null;
-                          _selectedCategory = 'All';
-                        });
-                      }),
-                      isLoading: _isSearching,
-                    ),
-                    const SizedBox(height: 10),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: _categories.map((category) {
-                          final isSelected = category == _selectedCategory;
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: ChoiceChip(
-                              label: Text(category),
-                              selected: isSelected,
-                              onSelected: (_) {
-                                setState(() {
-                                  _selectedCategory = category;
-                                });
-                              },
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      '${filtered.length} ${_controller.searchController.text.isNotEmpty ? 'results' : 'active tenders'}',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF5F5E5A),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            if (filtered.isEmpty)
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: _controller.searchController.text.isNotEmpty
-                    ? ScreenEmptyState(
-                        icon: Icons.search_off_rounded,
-                        title: 'No results found',
-                        description: 'Try different keywords.',
-                        actionLabel: 'Clear search',
-                        onAction: () => _controller.clearSearch(() {
-                          if (!mounted) return;
-                          setState(() {
-                            _searchResults = null;
-                            _selectedCategory = 'All';
-                          });
-                        }),
-                      )
-                    : ScreenEmptyState(
-                        icon: Icons.filter_alt_off_rounded,
-                        title: 'No matches found',
-                        description: 'Try a different category filter.',
-                        actionLabel: 'Clear filter',
-                        onAction: () {
-                          setState(() {
-                            _selectedCategory = 'All';
-                          });
-                        },
-                      ),
-              )
-            else
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                sliver: SliverList.separated(
-                  itemBuilder: (context, index) {
-                    final dto = filtered[index];
-                    final model = dto.toCardModel(dto);
-
-                    return MobileTenderCardWidget(
-                      tender: model,
-                      isSaved: _savedIds.contains(dto.id),
-                      onTap: () => _openTender(dto),
-                      onSave: () => _toggleSaved(dto.id),
-                    );
-                  },
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
-                  itemCount: filtered.length,
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
   }
 
-}
+  @override
+  Widget build(BuildContext context) {
+    final isAdmin = context.watch<AuthProvider>().isAdmin;
 
+    return Consumer<TenderProvider>(
+      builder: (context, provider, child) {
+        if (!_initialLoadDone && provider.isLoading) {
+          return const ScreenLoadingState(message: 'Loading tenders...');
+        }
+
+        if (provider.error != null && provider.tenders.isEmpty) {
+          return ScreenErrorState(
+            message: provider.error!,
+            onRetry: _loadTenders,
+          );
+        }
+
+        final filtered = provider.filteredTenders;
+        final isSearching = _controller.searchController.text.isNotEmpty;
+
+        return Container(
+          color: const Color(0xFFF4F2EB),
+          child: RefreshIndicator(
+            onRefresh: _loadTenders,
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        TenderSearchBar(
+                          controller: _controller.searchController,
+                          onChanged: _onSearchChanged,
+                          onClear: () => _controller.clearSearch(
+                            () => provider.clearSearch(),
+                          ),
+                          isLoading: provider.isLoading,
+                        ),
+                        const SizedBox(height: 10),
+                        // ↓ TenderFilterBar replaces category chips + count text
+                        TenderFilterBar(
+                          tenderCount: filtered.length,
+                          useDropdown: true,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                if (filtered.isEmpty)
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: isSearching
+                        ? ScreenEmptyState(
+                            icon: Icons.search_off_rounded,
+                            title: 'No results found',
+                            description: 'Try different keywords.',
+                            actionLabel: 'Clear search',
+                            onAction: () => _controller.clearSearch(
+                              () => provider.clearSearch(),
+                            ),
+                          )
+                        : ScreenEmptyState(
+                            icon: Icons.filter_alt_off_rounded,
+                            title: 'No matches found',
+                            description:
+                                'Try a different category or location filter.',
+                            actionLabel: 'Clear filters',
+                            onAction: () {
+                              provider.toggleCategory('All');
+                              provider.clearLocationFilter();
+                            },
+                          ),
+                  )
+                else
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                    sliver: SliverList.separated(
+                      itemBuilder: (context, index) {
+                        final dto = filtered[index];
+                        final model = dto.toCardModel();
+
+                        return MobileTenderCardWidget(
+                          tender: model,
+                          isSaved: _savedIds.contains(dto.id),
+                          onTap: () => _openTender(dto),
+                          onCancelTender: isAdmin &&
+                                  dto.status == TenderStatus.open
+                              ? () => _cancelTender(dto)
+                              : null,
+                        );
+                      },
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemCount: filtered.length,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}

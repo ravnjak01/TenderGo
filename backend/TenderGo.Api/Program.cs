@@ -119,6 +119,8 @@ builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddTransient<ICategoryService, CategoryService>();
+builder.Services.AddTransient<ILocationService, LocationService>();
+
 builder.Services.AddHostedService<TenderExpiryJob>();
 builder.Services.AddScoped<IImageService, ImageService>();
 builder.Services.AddSingleton<RecommenderService>();
@@ -136,10 +138,20 @@ builder.Services.AddScoped<FinalBidState>();
 
 builder.Services.AddEasyNetQ("host=localhost");
 
+builder.Services.AddMemoryCache();
 
-builder.Services.AddCors(options => {
-    options.AddPolicy("AllowAll", policy => {
-        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+var allowedOrigins = builder.Configuration
+    .GetSection("CorsSettings:AllowedOrigins")
+    .Get<string[]>();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("TenderGoPolicy", policy =>
+    {
+        policy.WithOrigins(allowedOrigins) 
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
     });
 });
 
@@ -153,32 +165,37 @@ builder.Services.AddCors(options => {
 
 // --- OVDE SE ZAKLJUČAVAJU SERVISI ---
 var app = builder.Build();
-//app.UseMiddleware<GlobalExceptionMiddleware>();
 
-app.UseStaticFiles(); 
+app.UseStaticFiles();
 
 
-app.UseSwagger();
-app.UseSwaggerUI(c => {
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "TenderGo API V1");
-    c.RoutePrefix = "swagger"; 
-  
-});
-
-if (!app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(c => {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "TenderGo API V1");
+        c.RoutePrefix = "swagger";
+    });
+}
+else
 {
     app.UseHttpsRedirection();
+
+    app.UseHsts();
 }
 
+//zadnje napsiao location servis kontroler ,na FE isto napisan implementirati dalje lokaciju, onda se moze otkomentarisati
 
 
-app.UseCors("AllowAll"); 
+
+app.UseCors("TenderGoPolicy"); 
 
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapControllers(); 
+app.MapControllers();
+
 
 using (var scope = app.Services.CreateScope())
 {
@@ -207,14 +224,16 @@ using (var scope = app.Services.CreateScope())
                 logger.LogError(ex, "Error after 10 tries.");
                 throw;
             }
-            Thread.Sleep(5000); 
+            Thread.Sleep(5000);
         }
     }
 }
-   
+
 app.Run();
 
 
-   
+
+
+
 
 

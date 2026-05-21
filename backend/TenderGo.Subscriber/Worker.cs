@@ -24,7 +24,6 @@ namespace TenderGo.Subscriber
 
             _logger.LogInformation("RabbitMQ subscriber started with ID: {Id}", subscriptionId);
 
-            // drži servis živim dok se ne ugasi
             await Task.Delay(Timeout.Infinite, stoppingToken);
         }
     }

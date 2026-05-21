@@ -9,8 +9,10 @@ namespace TenderGo.Models.Requests
 {
     public class LoginRequest
     {
-        [Required(ErrorMessage = "Email is required.")]
-        public string Email { get; set; }
+        [Required(ErrorMessage = "Email address is required")]
+        [EmailAddress(ErrorMessage = "Invalid email address format")]
+        [RegularExpression(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", ErrorMessage = "Email must be in a valid format (e.g. user@example.com)")]
+        public string Email { get; set; } = string.Empty;
         [Required(ErrorMessage = "Password is required.")]
         public string Password { get; set; }
     }

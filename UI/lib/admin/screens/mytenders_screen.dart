@@ -1,15 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:tendergo/admin/widgets/common/app_dialogs.dart';
+import 'package:tendergo/admin/screens/tender_bids_screen.dart';
+import 'package:tendergo/shared/controllers/my_tenders_controller.dart';
+import 'package:tendergo/shared/core/actions/back_button.dart';
+import 'package:tendergo/shared/core/utils/extensions/string_extensions.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
 import 'package:tendergo/shared/models/enums/tenderstatus.dart';
-import 'package:tendergo/admin/screens/tender_bids_screen.dart';
-import 'package:tendergo/shared/services/auth_service.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
-import 'package:tendergo/shared/widgets/feedback/snackbar_helper.dart';
+import 'package:tendergo/shared/widgets/common/action_button.dart';
+import 'package:tendergo/shared/widgets/common/app_badge.dart';
+import 'package:tendergo/shared/widgets/common/app_card.dart';
+import 'package:tendergo/shared/widgets/common/app_dialogs.dart';
+import 'package:tendergo/shared/widgets/common/app_icon.dart';
 import 'package:tendergo/shared/widgets/feedback/screen_state_widget.dart';
+import 'package:tendergo/shared/widgets/feedback/snackbar_helper.dart';
+import 'package:tendergo/shared/widgets/tender/tender_meta_item.dart';
 
 class MyTendersScreen extends StatefulWidget {
   final TenderService _tenderService;
+
   const MyTendersScreen({super.key, required TenderService tenderService})
     : _tenderService = tenderService;
 
@@ -18,92 +26,19 @@ class MyTendersScreen extends StatefulWidget {
 }
 
 class _MyTendersScreenState extends State<MyTendersScreen> {
-  // ── state ──────────────────────────────────────────────────────────────────
-  final List<TenderDto> _tenders = [];
-  bool _isLoading = false;
-  bool _hasError = false;
-  String _errorMessage = '';
-  bool _hasMore = true;
+  late final MyTendersController _controller;
 
-  int _currentPage = 1;
-  static const int _pageSize = 10;
-
-  final ScrollController _scrollController = ScrollController();
-
-  // ── lifecycle ──────────────────────────────────────────────────────────────
   @override
   void initState() {
     super.initState();
-    _fetchTenders();
-    _scrollController.addListener(_onScroll);
+    _controller = MyTendersController(widget._tenderService);
+    _controller.initialize();
   }
 
   @override
   void dispose() {
-    _scrollController.dispose();
+    _controller.dispose();
     super.dispose();
-  }
-
-  // ── data fetching ──────────────────────────────────────────────────────────
-  Future<void> _fetchTenders({bool refresh = false}) async {
-    if (_isLoading) return;
-    if (refresh) {
-      setState(() {
-        _currentPage = 1;
-        _tenders.clear();
-        _hasMore = true;
-        _hasError = false;
-      });
-    }
-
-    setState(() => _isLoading = true);
-
-    try {
-      final currentUserId = await AuthService.getCurrentUserId();
-      if (currentUserId == null || currentUserId.isEmpty) {
-        throw Exception('Session expired. Please log in again to view your tenders.');
-      }
-
-      final fetchedRaw = await widget._tenderService.getByUser(currentUserId);
-      final fetchedDtos = fetchedRaw
-          .whereType<Map<String, dynamic>>()
-          .map(TenderDto.fromJson)
-          .toList();
-
-      if (!mounted) return;
-
-      setState(() {
-        if (refresh) {
-          _tenders
-            ..clear()
-            ..addAll(fetchedDtos);
-        } else {
-          _tenders.addAll(fetchedDtos);
-        }
-        _hasMore = false;
-        _currentPage = 2;
-        _hasError = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _hasError = true;
-        _errorMessage = e.toString().replaceFirst('Exception: ', '');
-      });
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  void _onScroll() {
-    if (_scrollController.position.pixels >=
-            _scrollController.position.maxScrollExtent - 200 &&
-        !_isLoading &&
-        _hasMore) {
-      _fetchTenders();
-    }
   }
 
   Future<void> _cancelTender(TenderDto tender) async {
@@ -118,16 +53,8 @@ class _MyTendersScreenState extends State<MyTendersScreen> {
     if (!confirmed || !mounted) return;
 
     try {
-      final updated = await widget._tenderService.cancel(tender.id);
+      await _controller.cancelTender(tender);
       if (!mounted) return;
-
-      setState(() {
-        final index = _tenders.indexWhere((t) => t.id == tender.id);
-        if (index != -1) {
-          _tenders[index] = updated;
-        }
-      });
-
       SnackbarHelper.show(context, 'Tender canceled successfully.');
     } catch (e) {
       if (!mounted) return;
@@ -139,7 +66,6 @@ class _MyTendersScreenState extends State<MyTendersScreen> {
     }
   }
 
-  // ── build ──────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -151,6 +77,7 @@ class _MyTendersScreenState extends State<MyTendersScreen> {
         backgroundColor: colorScheme.surface,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
+        leading: const CustomBackButton(),
         title: Text(
           'My Tenders',
           style: theme.textTheme.headlineSmall?.copyWith(
@@ -159,71 +86,68 @@ class _MyTendersScreenState extends State<MyTendersScreen> {
           ),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded),
+          AppIconButton(
+            icon: Icons.refresh_rounded,
             tooltip: 'Refresh',
-            onPressed: () => _fetchTenders(refresh: true),
+            onTap: _controller.refresh,
           ),
           const SizedBox(width: 8),
         ],
       ),
-      body: _buildBody(colorScheme),
+      body: ListenableBuilder(
+        listenable: _controller,
+        builder: (context, _) => _buildBody(),
+      ),
     );
   }
 
-  Widget _buildBody(ColorScheme colorScheme) {
-    // ── initial load error ──────────────────────────────────────────────────
-    if (_hasError && _tenders.isEmpty) {
+  Widget _buildBody() {
+    if (_controller.hasError && _controller.items.isEmpty) {
       return ScreenErrorState(
-        message: _errorMessage,
-        onRetry: () => _fetchTenders(refresh: true),
+        message: _controller.errorMessage,
+        onRetry: _controller.refresh,
       );
     }
 
-    // ── initial loading ─────────────────────────────────────────────────────
-    if (_isLoading && _tenders.isEmpty) {
+    if (_controller.isLoading && _controller.items.isEmpty) {
       return const ScreenLoadingState();
     }
 
-    // ── empty state ─────────────────────────────────────────────────────────
-    if (_tenders.isEmpty) {
+    if (_controller.items.isEmpty) {
       return ScreenEmptyState(
         icon: Icons.inbox_rounded,
         title: 'No tenders yet',
         description: 'Your published tenders will appear here.',
-        onAction: () => _fetchTenders(refresh: true),
+        onAction: _controller.refresh,
       );
     }
 
-    // ── list ────────────────────────────────────────────────────────────────
     return RefreshIndicator(
-      onRefresh: () => _fetchTenders(refresh: true),
+      onRefresh: _controller.refresh,
       child: ListView.separated(
-        controller: _scrollController,
+        controller: _controller.scrollController,
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-        itemCount: _tenders.length + (_hasMore ? 1 : 0),
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
+        itemCount: _controller.items.length + (_controller.hasMore ? 1 : 0),
+        separatorBuilder: (context, index) => const SizedBox(height: 12),
         itemBuilder: (context, index) {
-          if (index >= _tenders.length) {
+          if (index >= _controller.items.length) {
             return const Padding(
               padding: EdgeInsets.symmetric(vertical: 24),
               child: Center(child: CircularProgressIndicator()),
             );
           }
+
+          final tender = _controller.items[index];
           return _TenderCard(
-            tender: _tenders[index],
+            tender: tender,
             tenderService: widget._tenderService,
-            onCancel: () => _cancelTender(_tenders[index]),
+            onCancel: () => _cancelTender(tender),
           );
         },
       ),
     );
   }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Tender Card
-// ─────────────────────────────────────────────────────────────────────────────
 
 class _TenderCard extends StatelessWidget {
   const _TenderCard({
@@ -238,34 +162,25 @@ class _TenderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final model = tender.toCardModel(tender);
+    final model = tender.toCardModel();
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final isOpen = model.status == TenderStatus.open;
+    final status = model.status;
+    final isOpen = status == TenderStatus.open;
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final isCompact = constraints.maxWidth < 360;
 
-        return Card(
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: colorScheme.outlineVariant, width: 1),
-          ),
-          color: colorScheme.surfaceContainerLowest,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(16),
-            onTap: () {
-              // Navigate to tender detail page
-              // Navigator.of(context).push(...)
-            },
-            child: Padding(
+        return AppCard(
+          title: model.category,
+          icon: Icons.assignment_outlined,
+          children: [
+            Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── header row ──────────────────────────────────────────
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -281,51 +196,37 @@ class _TenderCard extends StatelessWidget {
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              model.category,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: colorScheme.primary,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
                             if (isCompact) ...[
                               const SizedBox(height: 8),
-                              _StatusChip(isOpen: isOpen),
+                              _TenderStatusBadge(status: status),
                             ],
                           ],
                         ),
                       ),
                       if (!isCompact) ...[
                         const SizedBox(width: 8),
-                        _StatusChip(isOpen: isOpen),
+                        _TenderStatusBadge(status: status),
                       ],
                     ],
                   ),
-
                   const SizedBox(height: 14),
                   const Divider(height: 1),
                   const SizedBox(height: 14),
-
-                  // ── meta row ────────────────────────────────────────────
                   Wrap(
                     spacing: 16,
                     runSpacing: 8,
                     children: [
-                      _MetaItem(
+                      TenderMetaItem(
                         icon: Icons.location_on_rounded,
                         label: model.locationName,
                       ),
-                      _MetaItem(
+                      TenderMetaItem(
                         icon: Icons.calendar_today_rounded,
-                        label: _formatDate(model.deadline),
+                        label: model.deadline.formatDate(),
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 12),
-
-                  // ── budget + posted ─────────────────────────────────────
                   Wrap(
                     alignment: WrapAlignment.spaceBetween,
                     runSpacing: 8,
@@ -352,7 +253,7 @@ class _TenderCard extends StatelessWidget {
                         ],
                       ),
                       Text(
-                        'Posted ${_timeAgo(model.postedAt)}',
+                        'Posted ${model.postedAt.toTimeAgo()}',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                         ),
@@ -363,145 +264,61 @@ class _TenderCard extends StatelessWidget {
                   Wrap(
                     alignment: WrapAlignment.end,
                     runSpacing: 8,
-                    spacing: 8,
+                    spacing: 6,
                     children: [
                       if (isOpen)
-                        SizedBox(
-                          height: 32,
-                          child: OutlinedButton.icon(
-                            onPressed: onCancel,
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                              ),
-                              side: const BorderSide(color: Colors.red),
-                              foregroundColor: Colors.red,
-                            ),
-                            icon: const Icon(Icons.cancel_outlined, size: 16),
-                            label: const Text(
-                              'Cancel',
-                              style: TextStyle(fontSize: 12),
-                            ),
-                          ),
+                        ActionButton(
+                          label: 'Cancel',
+                          icon: Icons.cancel_outlined,
+                          isPrimary: false,
+                          isDestructive: true,
+                          width: 100,
+                          showLabel: true,
+                          onTap: onCancel,
                         ),
-                      SizedBox(
-                        height: 32,
-                        child: OutlinedButton.icon(
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => TenderBidsScreen(
-                                  tenderId: model.id,
-                                  tenderTitle: model.title,
-                                  tenderDto: tender,
-                                  tenderService: tenderService,
-                                ),
+                      ActionButton(
+                        label: 'See bids',
+                        icon: Icons.gavel_rounded,
+                        isPrimary: true,
+                        width: 100,
+                        showLabel: true,
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => TenderBidsScreen(
+                                tenderId: model.id,
+                                tenderTitle: model.title,
+                                tenderDto: tender,
+                                tenderService: tenderService,
                               ),
-                            );
-                          },
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
                             ),
-                          ),
-                          icon: const Icon(Icons.gavel_rounded, size: 16),
-                          label: const Text(
-                            'See bids',
-                            style: TextStyle(fontSize: 12),
-                          ),
-                        ),
+                          );
+                        },
                       ),
                     ],
                   ),
                 ],
               ),
             ),
-          ),
+          ],
         );
       },
     );
   }
-
-  String _formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}';
-  }
-
-  String _timeAgo(DateTime date) {
-    final diff = DateTime.now().difference(date);
-    if (diff.inDays > 0) return '${diff.inDays}d ago';
-    if (diff.inHours > 0) return '${diff.inHours}h ago';
-    return '${diff.inMinutes}m ago';
-  }
 }
 
-//dosao do refaktorisanja projekta,exportovati _timeAgo i 
-//_formatDate metode u neki utils file jer se koriste na vise mjesta
-// ─────────────────────────────────────────────────────────────────────────────
-// Sub-widgets
-// ─────────────────────────────────────────────────────────────────────────────
+class _TenderStatusBadge extends StatelessWidget {
+  const _TenderStatusBadge({required this.status});
 
-class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.isOpen});
-
-  final bool isOpen;
-
-
-//zadnje implementirao cancel metodu
-//razmisliti o prikazu lokacije,jer je  trenutno implementirano da se priakzuje 
-//samo grad tj. locationName a ne i country
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    final bg = isOpen
-        ? colorScheme.primaryContainer
-        : colorScheme.errorContainer;
-    final fg = isOpen
-        ? colorScheme.onPrimaryContainer
-        : colorScheme.onErrorContainer;
-    final label = isOpen ? 'Open' : 'Closed';
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: fg,
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.4,
-        ),
-      ),
-    );
-  }
-}
-
-class _MetaItem extends StatelessWidget {
-  const _MetaItem({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
+  final TenderStatus status;
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 14, color: colorScheme.onSurfaceVariant),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: Theme.of(
-            context,
-          ).textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
-        ),
-      ],
+    return AppBadge(
+      label: status.label,
+      backgroundColor: status.badgeBg,
+      foregroundColor: status.badgeFg,
+      borderColor: status.badgeBg,
     );
   }
 }

@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -20,12 +21,15 @@ namespace TenderGo.Services.Services
         private readonly IAuthService _authService;
         protected readonly ILogger<CategoryService> _logger;
         protected readonly IServiceProvider _serviceProvider;
+     
         public CategoryService(TenderGoContext context, IMapper mapper, IHttpContextAccessor httpContextAccessor, IAuthService authService, ILogger<CategoryService> logger, IServiceProvider serviceProvider) : base(context, mapper, httpContextAccessor)
         {
             _logger = logger;
             _authService = authService;
             _serviceProvider = serviceProvider;
+            
         }
+       
 
     }
 }

@@ -8,7 +8,7 @@ namespace TenderGo.Api.Controllers
 {
     [ApiController]
     [Route("api/admin")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = AppRoles.Admin)]
     public class AdminController : ControllerBase
     {
         private readonly IAdminService _adminService;
@@ -59,6 +59,14 @@ namespace TenderGo.Api.Controllers
                 return NotFound();
 
             return Ok(new { message = "Tender removed successfully" });
+        }
+
+        [HttpPut("users/{userId}/reset-password")]
+        public async Task<IActionResult> AdminResetPassword(string userId, [FromBody] AdminResetPasswordRequest request)
+        {
+            await _adminService.AdminResetPasswordAsync(userId, request.NewPassword);
+
+            return Ok(new { Message = "User password has been successfully reset by administrator." });
         }
     }
 

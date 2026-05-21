@@ -1,4 +1,8 @@
+import 'package:flutter/material.dart';
 class AppRoutes{
+
+  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
   static const String splash = '/splash';
   static const String login = '/login';
   static const String registration = '/registration';

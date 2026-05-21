@@ -15,7 +15,8 @@ public class TenderFeatureVector
 
     // From Location
     public string Country { get; set; } = null!;        // e.g. "BA"
-    public string LocationName { get; set; } = null!;   // e.g. "Sarajevo"
+    public string City { get; set; } = null!;   // e.g. "Sarajevo"
+    public string Region { get; set; }
 
     // From Budget — bucketed so nearby budgets score as similar
     public string BudgetBucket { get; set; } = null!;   // e.g. "10k-50k"

@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -9,19 +10,25 @@ namespace TenderGo.Models.Entities
 {
     public class ApplicationUser:IdentityUser
     {
+        [Required]
         public string FirstName { get; set; }=string.Empty;
+        [Required]
         public string LastName { get; set; } = string.Empty;
 
         public string? ProfileImageUrl { get; set; }
 
+        [Required]
         public Address Address { get; set; } 
+        [Required]
         public DateTime CreatedAt { get; set; }
         public string? CreatedBy { get; set; }
 
         public DateTime? UpdatedAt { get; set; }
         public DateTime? UpdatedBy { get; set; }
 
-        public bool? IsDeleted { get; set; }=false;
+        [Required]
+
+        public bool IsDeleted { get; set; }=false;
 
         public virtual ICollection<Tender> CreatedTenders { get; set; } = new List<Tender>();
 
@@ -29,12 +36,19 @@ namespace TenderGo.Models.Entities
         public virtual ICollection<Rating> RatingsReceived { get; set; } = new List<Rating>();
         public virtual ICollection<Rating> RatingsGiven { get; set; } = new List<Rating>();
 
+        [Required]
+
         public double AverageRating { get; set; } = 0;
+        [Required]
+
         public int RatingCount { get; set; } = 0;
 
+        [Required]
         public bool IsBanned { get; set; } = false;
         public string? BanReason { get; set; }
         public DateTime? BannedAt { get; set; }
+
+        [Required]
 
         public int NameChangeCount { get; set; } = 0;
     }

@@ -1,4 +1,6 @@
-class AuthResult<T> {
+
+/*
+/class AuthResult<T> {
   final bool success;
   final String message;
   final T? data;
@@ -27,3 +29,4 @@ class AuthResult<T> {
     );
   }
 }
+*/

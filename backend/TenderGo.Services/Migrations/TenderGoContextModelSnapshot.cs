@@ -232,7 +232,7 @@ namespace TenderGo.Services.Migrations
                     b.Property<bool>("IsBanned")
                         .HasColumnType("bit");
 
-                    b.Property<bool?>("IsDeleted")
+                    b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
                     b.Property<string>("LastName")
@@ -373,6 +373,33 @@ namespace TenderGo.Services.Migrations
                     b.ToTable("Categories");
                 });
 
+            modelBuilder.Entity("TenderGo.Models.Entities.Location", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Country")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Region")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Locations", (string)null);
+                });
+
             modelBuilder.Entity("TenderGo.Models.Entities.Notification", b =>
                 {
                     b.Property<int>("Id")
@@ -391,11 +418,17 @@ namespace TenderGo.Services.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("UserId")
+                    b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("Notifications");
                 });
@@ -409,8 +442,7 @@ namespace TenderGo.Services.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Comment")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -500,10 +532,6 @@ namespace TenderGo.Services.Migrations
                     b.Property<int>("CategoryId")
                         .HasColumnType("int");
 
-                    b.Property<string>("Country")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
@@ -526,9 +554,8 @@ namespace TenderGo.Services.Migrations
                     b.Property<bool>("IsEdited")
                         .HasColumnType("bit");
 
-                    b.Property<string>("LocationName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("LocationId")
+                        .HasColumnType("int");
 
                     b.Property<decimal>("MaxBudget")
                         .HasColumnType("decimal(18, 2)");
@@ -560,6 +587,8 @@ namespace TenderGo.Services.Migrations
                     b.HasIndex("CategoryId");
 
                     b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("LocationId");
 
                     b.HasIndex("WinningBidId");
 
@@ -677,7 +706,7 @@ namespace TenderGo.Services.Migrations
                     b.HasOne("TenderGo.Models.Entities.ApplicationUser", "SubmittedByUser")
                         .WithMany()
                         .HasForeignKey("SubmittedByUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("TenderGo.Models.Entities.Tender", "Tender")
@@ -689,6 +718,17 @@ namespace TenderGo.Services.Migrations
                     b.Navigation("SubmittedByUser");
 
                     b.Navigation("Tender");
+                });
+
+            modelBuilder.Entity("TenderGo.Models.Entities.Notification", b =>
+                {
+                    b.HasOne("TenderGo.Models.Entities.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("TenderGo.Models.Entities.Rating", b =>
@@ -734,12 +774,18 @@ namespace TenderGo.Services.Migrations
                     b.HasOne("TenderGo.Models.Entities.Category", "Category")
                         .WithMany()
                         .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("TenderGo.Models.Entities.ApplicationUser", "CreatedByUser")
                         .WithMany("CreatedTenders")
                         .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TenderGo.Models.Entities.Location", "Location")
+                        .WithMany()
+                        .HasForeignKey("LocationId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -751,6 +797,8 @@ namespace TenderGo.Services.Migrations
                     b.Navigation("Category");
 
                     b.Navigation("CreatedByUser");
+
+                    b.Navigation("Location");
 
                     b.Navigation("WinningBid");
                 });

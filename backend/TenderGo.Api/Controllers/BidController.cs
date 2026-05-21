@@ -10,13 +10,13 @@ namespace TenderGo.Api.Controllers
 {
 
     [Route("api/bid")]
-    [Authorize(Roles = "User,Admin")]
-    public class BidController : BaseController<BidDTO, Bid, BidInsertRequest, BidUpdateRequest>
+    [Authorize(Roles = AppRoles.Admin + "," + AppRoles.User)]
+    public class BidController : ControllerBase
     {
         private readonly IBidService _bidService;
 
         public BidController(IBidService bidService, ILogger<BidController> logger)
-       : base(bidService, bidService, logger)
+      // : base(bidService, bidService, logger)
         {
             _bidService = bidService;
         }
@@ -25,10 +25,25 @@ namespace TenderGo.Api.Controllers
 
 
 
-        [HttpPatch("{id}")]
-        public override async Task<IActionResult> Update(int id, [FromBody] BidUpdateRequest request)
+        //[HttpPatch("{id}")]
+        //public override async Task<IActionResult> Update(int id, [FromBody] BidUpdateRequest request)
+        //{
+        //    var result = await _bidService.Update(id, request);
+        //    return Ok(result);
+        //}
+        [HttpGet("{id}")]
+        public async Task<ActionResult<BidDTO>> GetById(int id)
         {
-            var result = await _bidService.Update(id, request);
+            return Ok(await _bidService.GetById(id));
+        }
+
+
+        //PROVJERITI DA LI OVAJ KONTROLER TREBA DA NASLJEDJUJE BAZNI I STA VRACAJU SVI KONTROLERI DA LI NEKI GLOBALNI OMOTAC ILI DIREKTNI REZULTAT TIPA
+        //return Ok(result);
+        [HttpPost]
+        public async Task<ActionResult<BidDTO>> Insert([FromBody] BidInsertRequest request)
+        {
+            var result = await _bidService.Insert(request);
             return Ok(result);
         }
 

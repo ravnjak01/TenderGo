@@ -1,0 +1,40 @@
+import 'package:tendergo/shared/core/utils/json_parser.dart';
+
+class LocationDto {
+  final int id;
+  final String name;
+  final String country;
+  final String? region;
+
+  LocationDto({
+    required this.id,
+    required this.name,
+    required this.country,
+    this.region,
+  });
+
+  String get displayLabel {
+    if (region != null && region!.isNotEmpty) {
+      return '$name, $region ($country)';
+    }
+    return '$name ($country)';
+  }
+
+  factory LocationDto.fromJson(Map<String, dynamic> json) {
+    return LocationDto(
+      id: JsonParser.readInt(json['id']),
+      name: JsonParser.readString(json['name'], fallback: 'Unknown'),
+      country: JsonParser.readString(json['country'], fallback: 'Unknown'),
+      region: json['region'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'country': country,
+      if (region != null) 'region': region,
+    };
+  }
+}

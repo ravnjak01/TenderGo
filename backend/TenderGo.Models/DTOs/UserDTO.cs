@@ -14,9 +14,10 @@ namespace TenderGo.Models.DTOs
 
         public string FirstName { get; set; } 
         public string LastName { get; set; }
-        public string ProfileImageUrl { get; set; }
+        public string? ProfileImageUrl { get; set; }
 
-        public AddressDTO Address { get; set; }
+        public AddressDTO? Address { get; set; }
         public List<string> Roles { get; set; } = new();
+        public bool IsBanned { get; set; }
     }
 }

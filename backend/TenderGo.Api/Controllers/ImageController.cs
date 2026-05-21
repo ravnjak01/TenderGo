@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using TenderGo.Services.Interfaces;
 
 [Route("api/[controller]")]
 [ApiController]
+[Authorize]
 public class ImagesController : ControllerBase
 {
     private readonly IImageService _imageService;
