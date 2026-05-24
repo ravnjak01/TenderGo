@@ -1,35 +1,31 @@
-﻿using EasyNetQ;
+﻿using System.Security.Claims;
+using System.Text;
+using AutoMapper;
+using DotNetEnv;
+using EasyNetQ;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using System.Reflection.Emit;
-using System.Security.Claims;
-using System.Text;
 using TenderGo.Api.Database;
 using TenderGo.Api.Filters;
-using TenderGo.Api.Middleware;
 using TenderGo.Data;
 using TenderGo.Models.Entities;
+using TenderGo.Recommender;
 using TenderGo.Services.Interfaces;
+using TenderGo.Services.Mapping;
 using TenderGo.Services.Services;
 using TenderGo.Services.StateMachines.BidStates;
 using TenderGo.Services.StateMachines.TenderStates;
-using DotNetEnv;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-using TenderGo.Services.Mapping;
-using AutoMapper;
-using TenderGo.Recommender;
 
 var builder = WebApplication.CreateBuilder(args);
 
-DotNetEnv.Env.Load();
+// Učitavanje .env datoteke za Docker okruženje
+Env.Load();
 
-// 1. Konfiguracija baze
-var connectionString =
-   builder.Configuration.GetConnectionString("DefaultConnection");
-
+// 1. Konfiguracija baze podataka
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<TenderGoContext>(options => options.UseSqlServer(connectionString, b =>
 {
     b.MigrationsAssembly("TenderGo.Services");
@@ -46,12 +42,10 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
     options.Lockout.MaxFailedAccessAttempts = 5;
 })
-    .AddEntityFrameworkStores<TenderGoContext>()
-    .AddDefaultTokenProviders();
+.AddEntityFrameworkStores<TenderGoContext>()
+.AddDefaultTokenProviders();
 
-// 3. Autentifikacija i JWT
-
-
+// 3. Autentifikacija i JWT konfiguracija
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -72,16 +66,12 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// 4. Registracija ostalih servisa 
-builder.Services.AddControllers(x =>
-{
-    x.Filters.Add<ErrorFilter>();
-}); 
+// 4. Registracija API servisa i Swagger-a
+builder.Services.AddControllers(x => x.Filters.Add<ErrorFilter>());
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(opt =>
 {
     opt.SwaggerDoc("v1", new OpenApiInfo { Title = "TenderGo API", Version = "v1" });
-
     opt.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         In = ParameterLocation.Header,
@@ -91,88 +81,80 @@ builder.Services.AddSwaggerGen(opt =>
         BearerFormat = "JWT",
         Scheme = "bearer"
     });
-
     opt.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
             new OpenApiSecurityScheme
             {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
+                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
             },
-            new string[]{}
+            Array.Empty<string>()
         }
     });
 });
+
 builder.Services.AddHttpContextAccessor();
-//  custom servisi
-builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddMemoryCache();
+
+// 5. Registracija Custom Servisa i Infrastrukture
 builder.Services.AddAutoMapper(typeof(MappingProfile));
+builder.Services.AddScoped(typeof(IBaseService<,,,>), typeof(BaseService<,,,>));
+builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITenderService, TenderService>();
 builder.Services.AddScoped<IBidService, BidService>();
-builder.Services.AddScoped(typeof(IBaseService<,,,>), typeof(BaseService<,,,>));
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
-builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
-builder.Services.AddScoped<EmailService>();
+builder.Services.AddScoped<IImageService, ImageService>();
 builder.Services.AddTransient<ICategoryService, CategoryService>();
 builder.Services.AddTransient<ILocationService, LocationService>();
-
+builder.Services.AddScoped<INotificationService, NotificationService>();
+// Email i Background poslovi
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+builder.Services.AddScoped<EmailService>();
 builder.Services.AddHostedService<TenderExpiryJob>();
-builder.Services.AddScoped<IImageService, ImageService>();
+
+// Recommender i Pametni moduli
 builder.Services.AddSingleton<RecommenderService>();
 builder.Services.AddSingleton<TenderVectorBuilder>();
 
+// State Machine registracije
 builder.Services.AddTransient<BaseState>();
 builder.Services.AddTransient<OpenTenderState>();
 builder.Services.AddTransient<ClosedTenderState>();
 builder.Services.AddTransient<AwardedTenderState>();
 builder.Services.AddTransient<CancelledTenderState>();
-
-
 builder.Services.AddScoped<PendingBidState>();
 builder.Services.AddScoped<FinalBidState>();
 
-builder.Services.AddEasyNetQ("host=localhost");
+// 6. RabbitMQ i CORS konfiguracija
+// Čita "ConnectionStrings:RabbitMQ" iz appsettings/okruženja
+var rabbitConnectionString = builder.Configuration.GetConnectionString("RabbitMQ") 
+                             ?? "host=localhost;username=guest;password=guest;timeout=30";
 
-builder.Services.AddMemoryCache();
+builder.Services.AddEasyNetQ(rabbitConnectionString).UseSystemTextJson();
 
-var allowedOrigins = builder.Configuration
-    .GetSection("CorsSettings:AllowedOrigins")
-    .Get<string[]>();
-
+var allowedOrigins = builder.Configuration.GetSection("CorsSettings:AllowedOrigins").Get<string[]>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("TenderGoPolicy", policy =>
     {
-        policy.WithOrigins(allowedOrigins) 
+        policy.WithOrigins(allowedOrigins!)
               .AllowAnyMethod()
               .AllowAnyHeader()
               .AllowCredentials();
     });
 });
 
-
-
-
-//builder.Entity<Rating>()
-//  .HasCheckConstraint("CK_Rating_Score", "Score BETWEEN 1 AND 5");
-
-
-
-// --- OVDE SE ZAKLJUČAVAJU SERVISI ---
+// --- HTTP PIPELINE SLUŽBENO POČINJE OVDJE ---
 var app = builder.Build();
 
 app.UseStaticFiles();
 
-
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI(c => {
+    app.UseSwaggerUI(c =>
+    {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "TenderGo API V1");
         c.RoutePrefix = "swagger";
     });
@@ -180,29 +162,21 @@ if (app.Environment.IsDevelopment())
 else
 {
     app.UseHttpsRedirection();
-
     app.UseHsts();
 }
 
-//zadnje napsiao location servis kontroler ,na FE isto napisan implementirati dalje lokaciju, onda se moze otkomentarisati
-
-
-
-app.UseCors("TenderGoPolicy"); 
-
+app.UseCors("TenderGoPolicy");
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
 
-
+// 7. Migracije i Seeding baze podataka prilikom podizanja (Retry mehanizam)
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     var logger = services.GetRequiredService<ILogger<Program>>();
 
-    // Pokušaj 10 puta sa pauzom od 5 sekundi
     for (int i = 0; i < 10; i++)
     {
         try
@@ -210,7 +184,6 @@ using (var scope = app.Services.CreateScope())
             var context = services.GetRequiredService<TenderGoContext>();
             context.Database.Migrate();
 
-            // Pozivamo novu metodu koja radi i role i admina
             await IdentitySeeder.SeedRolesAndAdminAsync(services);
 
             logger.LogInformation("Database migrated and seeded successfully.");
@@ -219,9 +192,9 @@ using (var scope = app.Services.CreateScope())
         catch (Exception ex)
         {
             logger.LogWarning($"Try {i + 1}: SQL Server still not ready... Waiting.");
-            if (i == 9) // 
+            if (i == 9)
             {
-                logger.LogError(ex, "Error after 10 tries.");
+                logger.LogError(ex, "Database migration failed after 10 attempts.");
                 throw;
             }
             Thread.Sleep(5000);
@@ -230,10 +203,3 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.Run();
-
-
-
-
-
-
-

@@ -305,7 +305,7 @@ namespace TenderGo.Services.Services
                 return;
             }
 
-            var frontendUrl = _configuration["AppSettings:FrontendUrl"];
+            var frontendUrl = Environment.GetEnvironmentVariable("AppSettings__FrontendUrl") ?? _configuration["AppSettings:FrontendUrl"];
 
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
                 var resetLink = $"{frontendUrl}/#/reset-password?token={Uri.EscapeDataString(token)}&email={Uri.EscapeDataString(user.Email)}";

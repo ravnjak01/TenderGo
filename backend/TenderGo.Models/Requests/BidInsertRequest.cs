@@ -20,6 +20,5 @@ namespace TenderGo.Models.Requests
         [Required]
         public int DeliveryDays { get; set; }
 
-        //ne zaboraviti uraditi migraciju zbog delivery days
     }
 }

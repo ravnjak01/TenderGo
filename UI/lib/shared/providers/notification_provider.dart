@@ -1,5 +1,5 @@
 // lib/shared/providers/notification_provider.dart  (refactored)
-/*
+
 import 'dart:async';
 import 'package:tendergo/shared/models/dto/notification_dto.dart';
 import 'package:tendergo/shared/providers/base_provider.dart';
@@ -112,4 +112,3 @@ class NotificationProvider extends BaseProvider {
     super.dispose(); // sets _disposed = true via BaseProvider
   }
 }
-*/

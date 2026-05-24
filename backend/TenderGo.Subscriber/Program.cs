@@ -1,4 +1,5 @@
 ﻿using EasyNetQ;
+using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -7,35 +8,61 @@ using TenderGo.Api.Database;
 using TenderGo.Subscriber;
 using TenderGo.Subscriber.Models;
 
-var envPath = Path.Combine(AppContext.BaseDirectory, ".env");
-if (File.Exists(envPath))
-    Env.Load(envPath);
+static void LoadEnvFile()
+{
 
-// Read what docker-compose actually sets
-var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
-var rabbitHost = Environment.GetEnvironmentVariable("RabbitMQ__Host") ?? "localhost";
-var rabbitUser = Environment.GetEnvironmentVariable("RabbitMQ__Username") ?? "guest";
-var rabbitPass = Environment.GetEnvironmentVariable("RabbitMQ__Password") ?? "guest";
+    if (Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true")
+        return;
 
-Console.WriteLine("DB = " + connectionString);
-if (string.IsNullOrEmpty(connectionString))
-    throw new Exception("DB_CONNECTION is missing!");
+    var candidates = new[]
+    {
+        Path.Combine(AppContext.BaseDirectory, ".env"),
+        Path.Combine(Directory.GetCurrentDirectory(), ".env"),
+        Path.Combine(Directory.GetCurrentDirectory(), "..", ".env"),
+        Path.Combine(Directory.GetCurrentDirectory(), "..", "..", ".env"),
+    };
 
-var host = Host.CreateDefaultBuilder(args)
+    foreach (var path in candidates)
+    {
+        var fullPath = Path.GetFullPath(path);
+        if (File.Exists(fullPath))
+        {
+            Env.Load(fullPath);
+            return;
+        }
+    }
+}
+
+LoadEnvFile();
+
+var hostBuilder = Host.CreateDefaultBuilder(args);
+
+var host = hostBuilder
     .ConfigureServices((context, services) =>
     {
+       var connectionString = context.Configuration.GetConnectionString("DefaultConnection") 
+                       ?? Environment.GetEnvironmentVariable("DB_CONNECTION");
+
+        // .NET automatski mapira ConnectionStrings__RabbitMQ iz .env-a ovdje
+        var rabbitConnectionString = context.Configuration.GetConnectionString("RabbitMQ")
+                                     ?? "host=localhost;username=guest;password=guest;timeout=30";
+
+        Console.WriteLine($"[Subscriber] Učitani RabbitMQ Connection String: {rabbitConnectionString}");
+        Console.WriteLine($"[Subscriber] Učitana Baza Podataka: {connectionString}");
+
+        if (string.IsNullOrEmpty(connectionString))
+            throw new Exception("DefaultConnection is missing from configuration!");
+
         services.AddDbContext<TenderGoContext>(options =>
             options.UseSqlServer(connectionString, b =>
             {
                 b.MigrationsAssembly("TenderGo.Services");
             }));
 
-        services.AddDbContext<NotificationDbContext>(options =>
+        services.AddDbContext<TenderGoContext>(options =>
             options.UseSqlServer(connectionString));
 
-        // Use credentials from env
-        services.AddEasyNetQ($"host={rabbitHost};username={rabbitUser};password={rabbitPass}")
-                .UseSystemTextJson();
+            services.AddEasyNetQ(rabbitConnectionString);
 
         services.AddSingleton<TenderSubscriber>();
         services.AddHostedService<Worker>();

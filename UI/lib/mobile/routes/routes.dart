@@ -88,7 +88,7 @@ class MobileRoutes {
             : null;
         return RecommendedForYouScreen(onTenderTapped: onTap);
       },
-   //   AppRoutes.notifications: (context) => const NotificationScreen(),
+      AppRoutes.notifications: (context) => const NotificationScreen(),
     };
   }
 }

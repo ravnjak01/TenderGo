@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TenderGo.Api.Database;
 
@@ -11,9 +12,11 @@ using TenderGo.Api.Database;
 namespace TenderGo.Services.Migrations
 {
     [DbContext(typeof(TenderGoContext))]
-    partial class TenderGoContextModelSnapshot : ModelSnapshot
+    [Migration("20260521180450_MinorFix")]
+    partial class MinorFix
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -153,6 +156,42 @@ namespace TenderGo.Services.Migrations
                     b.HasKey("UserId", "LoginProvider", "Name");
 
                     b.ToTable("AspNetUserTokens", (string)null);
+                });
+
+            modelBuilder.Entity("TenderGo.Models.Entities.Address", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("City")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Country")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PostalCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Street")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("Address");
                 });
 
             modelBuilder.Entity("TenderGo.Models.Entities.ApplicationUser", b =>
@@ -654,44 +693,15 @@ namespace TenderGo.Services.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("TenderGo.Models.Entities.ApplicationUser", b =>
+            modelBuilder.Entity("TenderGo.Models.Entities.Address", b =>
                 {
-                    b.OwnsOne("TenderGo.Models.Entities.Address", "Address", b1 =>
-                        {
-                            b1.Property<string>("UserId")
-                                .HasColumnType("nvarchar(450)");
-
-                            b1.Property<string>("City")
-                                .IsRequired()
-                                .HasColumnType("nvarchar(max)");
-
-                            b1.Property<string>("Country")
-                                .IsRequired()
-                                .HasColumnType("nvarchar(max)");
-
-                            b1.Property<int>("Id")
-                                .HasColumnType("int");
-
-                            b1.Property<string>("PostalCode")
-                                .IsRequired()
-                                .HasColumnType("nvarchar(max)");
-
-                            b1.Property<string>("Street")
-                                .IsRequired()
-                                .HasColumnType("nvarchar(max)");
-
-                            b1.HasKey("UserId");
-
-                            b1.ToTable("AspNetUsers");
-
-                            b1.WithOwner("User")
-                                .HasForeignKey("UserId");
-
-                            b1.Navigation("User");
-                        });
-
-                    b.Navigation("Address")
+                    b.HasOne("TenderGo.Models.Entities.ApplicationUser", "User")
+                        .WithOne("Address")
+                        .HasForeignKey("TenderGo.Models.Entities.Address", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("TenderGo.Models.Entities.Bid", b =>
@@ -809,6 +819,9 @@ namespace TenderGo.Services.Migrations
 
             modelBuilder.Entity("TenderGo.Models.Entities.ApplicationUser", b =>
                 {
+                    b.Navigation("Address")
+                        .IsRequired();
+
                     b.Navigation("CreatedTenders");
 
                     b.Navigation("RatingsGiven");

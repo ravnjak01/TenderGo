@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:tendergo/shared/core/error/bid_error_handler.dart';
@@ -147,6 +149,8 @@ class BidService {
 	// ===== CREATE =====
 	Future<BidDto> create(BidInsertRequest data) async {
   try {
+    // DODAJ OVO SAMO ZA DEBUG:
+    print("ŠALJEM NA BACKEND: ${jsonEncode(data.toJson())}");
     final response = await _dio.post(
       BidApiEndpoints.insert,
       data: data.toJson(),
@@ -155,6 +159,7 @@ class BidService {
 
     return BidDto.fromJson(response.data as Map<String, dynamic>);
   } on DioException catch (e) {
+    print("SIROVI BACKEND ODGOVOR ZA GREŠKU: ${e.response?.data}");
     final message = ErrorHandler.extractErrorMessage(e.response?.data) ?? 'Error creating bid';
 
     // Logika za specifične izuzetke
