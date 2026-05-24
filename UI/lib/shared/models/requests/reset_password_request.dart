@@ -1,15 +1,15 @@
 class ResetPasswordRequest {
   final String email;
-  final String token;
+  final String code;
   final String newPassword;
 
   ResetPasswordRequest({
     required this.email,
-    required this.token,
+    required this.code,
     required this.newPassword,
   });
 
   Map<String, dynamic> toJson() {
-    return {'email': email, 'token': token, 'newPassword': newPassword};
+    return {'email': email, 'code': code, 'newPassword': newPassword};
   }
 }

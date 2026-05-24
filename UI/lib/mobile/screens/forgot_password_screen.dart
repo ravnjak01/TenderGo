@@ -28,12 +28,14 @@ class _MobileForgotPasswordScreenState
     super.dispose();
   }
 
-  Future<void> _handleForgotPassword() async {
+ Future<void> _handleForgotPassword() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
+    final emailInput = _emailController.text.trim();
+
     final result = await context.read<AuthProvider>().sendForgotPasswordEmail(
-      _emailController.text.trim(),
-    );
+          emailInput,
+        );
 
     if (!mounted) return;
 
@@ -43,7 +45,12 @@ class _MobileForgotPasswordScreenState
 
     Future.delayed(const Duration(seconds: 2), () {
       if (!mounted) return;
-      Navigator.pushReplacementNamed(context, AppRoutes.login);
+      
+      Navigator.pushReplacementNamed(
+        context, 
+        AppRoutes.resetPassword, 
+        arguments: {'email': emailInput},
+      );
     });
   }
 
@@ -71,7 +78,7 @@ class _MobileForgotPasswordScreenState
             const SizedBox(height: 8),
             const Center(
               child: Text(
-                'Enter your email and we will send you a link to reset your password.',
+                'Enter your email and we will send you a code.',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
               ),

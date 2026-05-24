@@ -240,6 +240,19 @@ public sealed class ErrorFilter : Attribute, IAsyncExceptionFilter, IAsyncResult
 
     private static bool TryExtractErrorsFromBadRequestValue(object? value, out IReadOnlyList<string> errors)
     {
+            if (value is Microsoft.AspNetCore.Identity.IdentityResult identityResult)
+        {
+            errors = identityResult.Errors.Select(e => e.Description).ToArray();
+            return true;
+        }
+
+        // Ponekad se Identity greške mapiraju kroz anonimne objekte ili Microsoftov podrazumijevani format (IEnumerable<IdentityError>)
+        if (value is IEnumerable<Microsoft.AspNetCore.Identity.IdentityError> identityErrors)
+        {
+            errors = identityErrors.Select(e => e.Description).ToArray();
+            return true;
+        }
+
         // BadRequest(ModelState) typically becomes SerializableError
         if (value is SerializableError se)
         {

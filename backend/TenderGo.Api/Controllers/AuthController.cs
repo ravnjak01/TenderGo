@@ -44,13 +44,13 @@ namespace TenderGo.Api.Controllers
             return Ok(new { Message = "User logged out successfully" });
         }
 
-        [AllowAnonymous]
+      [AllowAnonymous]
         [HttpPost("forgot-password")]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest model)
         {
-                var baseUrl = $"{Request.Scheme}://{Request.Host}";
-                await _authService.ForgotPasswordAsync(model, baseUrl, HttpContext.RequestAborted);
-                return Ok(new { message = " If an account with mentioned email exists,link with instructions was sent." });
+            await _authService.ForgotPasswordAsync(model, HttpContext.RequestAborted);
+            
+            return Ok(new { message = "If an account with the mentioned email exists, a verification code was sent." });
         }
         [AllowAnonymous]
         [HttpPost("reset-password")]
@@ -67,7 +67,7 @@ namespace TenderGo.Api.Controllers
                 return Ok(new { message = "Password was reset successfully." });
             }
 
-            return BadRequest(result.Errors);
+            return BadRequest(result);
 
         }
         [HttpGet("me")]

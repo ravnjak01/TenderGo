@@ -296,31 +296,78 @@ namespace TenderGo.Services.Services
             return response;
         }
 
-        public async Task ForgotPasswordAsync(ForgotPasswordRequest model, string baseUrl,CancellationToken cancellationToken)
-        {
-            var user = await _userManager.FindByEmailAsync(model.Email);
-            if (user == null)
+       public async Task ForgotPasswordAsync(ForgotPasswordRequest model, CancellationToken cancellationToken)
             {
-                _logger.LogWarning($"Trying to reset for nonexisting email : {model.Email}");
-                return;
+                var user = await _userManager.FindByEmailAsync(model.Email);
+
+                if (user == null)
+                {
+                    _logger.LogWarning($"Reset attempt for non-existing email: {model.Email}");
+                    return;
+                }
+
+                var activeOldCodes = await _context.PasswordResetCodes
+                    .Where(x => x.UserId == user.Id && !x.IsUsed && !x.IsInvalidated)
+                    .ToListAsync(cancellationToken);
+
+                foreach (var oldCode in activeOldCodes)
+                {
+                    oldCode.IsInvalidated = true;
+                }
+
+                var code = RandomNumberGenerator.GetInt32(100000, 999999).ToString();
+
+                var resetCode = new PasswordResetCode
+                {
+                    UserId = user.Id,
+                    Code = code,
+                    CreatedAt = DateTime.UtcNow,
+                    ExpiryTime = DateTime.UtcNow.AddMinutes(10),
+                    IsUsed = false,
+                    IsInvalidated = false,
+                    Attempts = 0 
+                };
+
+                await _context.PasswordResetCodes.AddAsync(resetCode, cancellationToken);
+                await _context.SaveChangesAsync(cancellationToken);
+
+                var message = $"Your password reset code is: {code}. It is valid for 10 minutes.";
+                await _emailService.SendResetPasswordEmail(user.Email, message, cancellationToken);
             }
 
-            var frontendUrl = Environment.GetEnvironmentVariable("AppSettings__FrontendUrl") ?? _configuration["AppSettings:FrontendUrl"];
-
-            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-                var resetLink = $"{frontendUrl}/#/reset-password?token={Uri.EscapeDataString(token)}&email={Uri.EscapeDataString(user.Email)}";
-
-           await _emailService.SendResetPasswordEmail(user.Email, resetLink, cancellationToken);
-        }
-
-        public async Task<IdentityResult> ResetPasswordAsync(ResetPasswordRequest model)
+       public async Task<IdentityResult> ResetPasswordAsync(ResetPasswordRequest model)
         {
             var user = await _userManager.FindByEmailAsync(model.Email);
+
             if (user == null)
                 return IdentityResult.Failed(new IdentityError { Description = "User not found." });
-            var result = await _userManager.ResetPasswordAsync(user, model.Token, model.NewPassword);
-            return result;
 
+            var resetRecord = await _context.PasswordResetCodes
+                .FirstOrDefaultAsync(x =>
+                    x.UserId == user.Id &&
+                    x.Code == model.Code &&
+                    !x.IsUsed
+                    && !x.IsInvalidated
+                    );
+
+            if (resetRecord == null)
+                return IdentityResult.Failed(new IdentityError { Description = "Invalid code." });
+
+            if (resetRecord.ExpiryTime < DateTime.UtcNow)
+                return IdentityResult.Failed(new IdentityError { Description = "Code expired." });
+
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+
+            var result = await _userManager.ResetPasswordAsync(user, token, model.NewPassword);
+
+            if (result.Succeeded)
+            {
+                resetRecord.UsedAt=DateTime.UtcNow;
+                resetRecord.IsUsed = true;
+                await _context.SaveChangesAsync();
+            }
+
+            return result;
         }
 
         public bool IsInRole(string role)

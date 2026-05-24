@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart'; // ili paket koji koristiš za context.read
+import 'package:provider/provider.dart';
+import 'package:tendergo/shared/core/actions/back_button.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
-import 'package:tendergo/shared/models/dto/address_dto.dart';
 import 'package:tendergo/shared/models/requests/reset_password_request.dart';
 import 'package:tendergo/shared/providers/auth_provider.dart';
 import 'package:tendergo/shared/routes/routes.dart';
 import 'package:tendergo/shared/widgets/common/auth_scaffold.dart';
 import 'package:tendergo/shared/widgets/feedback/snackbar_helper.dart';
 import 'package:tendergo/shared/widgets/inputs/auth_widget.dart';
-import 'package:tendergo/shared/widgets/inputs/custom_auth_field.dart'; // Uvezi fajl sa dugmićima
+import 'package:tendergo/shared/widgets/inputs/custom_auth_field.dart';
 
 class MobileResetPasswordScreen extends StatefulWidget {
   const MobileResetPasswordScreen({super.key});
@@ -22,15 +22,15 @@ class _MobileResetPasswordScreenState extends State<MobileResetPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _codeController = TextEditingController();
 
-  // VIŠEKRATNE VARIJABLE ZA HIDE/SHOW SU UKLONJENE JER IM STANJEM SADA UPRAVLJA WIDGET INTERNO
   bool _hasResolvedContext = false;
-  String _token = '';
   String _email = '';
 
   @override
   void dispose() {
     _newPasswordController.dispose();
+    _codeController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
   }
@@ -44,26 +44,19 @@ class _MobileResetPasswordScreenState extends State<MobileResetPasswordScreen> {
 
     final args = ModalRoute.of(context)?.settings.arguments;
     if (args is Map) {
-      _token = (args['token'] ?? '').toString();
       _email = (args['email'] ?? '').toString();
-    }
-
-    if (_token.isEmpty || _email.isEmpty) {
-      final uri = Uri.base;
-      _token = _token.isEmpty
-          ? Uri.decodeComponent(uri.queryParameters['token'] ?? '')
-          : _token;
-      _email = _email.isEmpty ? (uri.queryParameters['email'] ?? '') : _email;
     }
   }
 
   Future<void> _handleResetPassword() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
-    if (_token.isEmpty || _email.isEmpty) {
+    final codeInput = _codeController.text.trim();
+
+    if (codeInput.isEmpty || _email.isEmpty) {
       SnackbarHelper.show(
         context,
-        'Reset link is invalid or missing required data.',
+        'Missing required data. Please try again.',
         isError: true,
       );
       return;
@@ -73,7 +66,7 @@ class _MobileResetPasswordScreenState extends State<MobileResetPasswordScreen> {
     final result = await authProvider.resetPassword(
       ResetPasswordRequest(
         email: _email,
-        token: _token,
+        code: codeInput,
         newPassword: _newPasswordController.text,
       ),
     );
@@ -95,8 +88,8 @@ class _MobileResetPasswordScreenState extends State<MobileResetPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final hasValidContext = _token.isNotEmpty && _email.isNotEmpty;
-    final auth = context.watch<AuthProvider>(); // Pretpostavka za loading stanje dugmeta
+    final hasValidEmail = _email.isNotEmpty;
+    final auth = context.watch<AuthProvider>();
 
     return AuthScaffold(
       maxWidth: 460,
@@ -107,24 +100,42 @@ class _MobileResetPasswordScreenState extends State<MobileResetPasswordScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Center(
-              child: Text(
-                'Reset Password',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+            // --- GORNJI RED: BACK DUGME I NASLOV ---
+            Row(
+              children: [
+                CustomBackButton(
+                  onPressed: () {
+                    // Navigira nazad na login ili prethodni ekran
+                    Navigator.pushReplacementNamed(context, AppRoutes.login);
+                  },
                 ),
-              ),
+                const Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(right: 36.0), // Kompenzacija za širinu dugmeta kako bi naslov bio savršeno centriran
+                    child: Center(
+                      child: Text(
+                        'Reset Password',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             const Center(
               child: Text(
-                'Enter your new password below.',
+                'Enter the code sent to your email and your new password.',
                 style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                textAlign: TextAlign.center,
               ),
             ),
-            if (!hasValidContext) ...[
+            
+            if (!hasValidEmail) ...[
               const SizedBox(height: 16),
               Container(
                 width: double.infinity,
@@ -135,14 +146,28 @@ class _MobileResetPasswordScreenState extends State<MobileResetPasswordScreen> {
                   border: Border.all(color: AppColors.error),
                 ),
                 child: const Text(
-                  'Missing token or email. Open reset password from the link sent to your inbox.',
+                  'Missing email address. Please go back and request a new code.',
                   style: TextStyle(color: AppColors.error),
                 ),
               ),
             ],
             const SizedBox(height: 24),
 
-            // 1. NOVO POLJE ZA NOVU LOZINKU
+            CustomTextField(
+              label: 'Verification Code',
+              hint: 'Enter 6-digit code',
+              controller: _codeController,
+              prefixIcon: Icons.pin_outlined,
+              keyboardType: TextInputType.number, 
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Verification code is required';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+
             CustomTextField(
               label: 'New Password',
               hint: 'Enter new password',
@@ -159,8 +184,8 @@ class _MobileResetPasswordScreenState extends State<MobileResetPasswordScreen> {
                 return null;
               },
             ),
+            const SizedBox(height: 16),
 
-            // 2. NOVO POLJE ZA POTVRDU LOZINKE
             CustomTextField(
               label: 'Confirm Password',
               hint: 'Confirm new password',
@@ -178,13 +203,12 @@ class _MobileResetPasswordScreenState extends State<MobileResetPasswordScreen> {
               },
             ),
 
-            const SizedBox(height: 8),
+            const SizedBox(height: 24),
 
-            // 3. DOVRŠENO INPUT DUGME (Dodano pošto je falio kraj u tvom kodu)
             AuthSubmitButton(
               label: 'Reset Password',
               isLoading: auth.isLoading,
-              onPressed: hasValidContext ? _handleResetPassword : null,
+              onPressed: hasValidEmail ? _handleResetPassword : null,
             ),
           ],
         ),

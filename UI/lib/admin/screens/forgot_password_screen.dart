@@ -20,12 +20,14 @@ class _AdminForgotPasswordScreenState extends State<AdminForgotPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
 
-  Future<void> _handleForgotPassword() async {
+   Future<void> _handleForgotPassword() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
+    final emailInput = _emailController.text.trim();
+
     final result = await context.read<AuthProvider>().sendForgotPasswordEmail(
-      _emailController.text.trim(),
-    );
+          emailInput,
+        );
 
     if (!mounted) return;
 
@@ -34,7 +36,13 @@ class _AdminForgotPasswordScreenState extends State<AdminForgotPasswordScreen> {
     if (!result.success) return;
 
     Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) Navigator.pushReplacementNamed(context, AppRoutes.login);
+      if (!mounted) return;
+      
+      Navigator.pushReplacementNamed(
+        context, 
+        AppRoutes.resetPassword, 
+        arguments: {'email': emailInput},
+      );
     });
   }
 
@@ -59,7 +67,7 @@ class _AdminForgotPasswordScreenState extends State<AdminForgotPasswordScreen> {
             ),
             const SizedBox(height: 10),
             const Text(
-              'Enter your email and we will send you a link to reset your password.',
+              'Enter your email and we will send you a code.',
               style: TextStyle(color: Colors.grey),
             ),
             const SizedBox(height: 25),

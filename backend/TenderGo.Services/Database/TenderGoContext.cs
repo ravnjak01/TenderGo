@@ -22,7 +22,7 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
     public virtual DbSet<RefreshToken> RefreshTokens { get; set; }
     public DbSet<Notification> Notifications { get; set; }
     public DbSet<Location> Locations { get; set; }
-
+    public DbSet<PasswordResetCode>PasswordResetCodes {get;set;}
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {

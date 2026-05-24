@@ -131,7 +131,6 @@ class AuthService {
       // Koristimo novi konstruktor za uspjeh (data je null)
       return ApiResponse.success(
         null, 
-        message: 'If this email exists, a reset link was sent.',
       );
     } on DioException catch (e) {
       // Prepustamo ApiHelper-u da izvuče poruku i tačan status kod
@@ -141,19 +140,30 @@ class AuthService {
 
   // 7. Reset Password
   Future<ApiResponse<void>> resetPassword(ResetPasswordRequest request) async {
-    try {
-      await _dio.post(ApiEndpoints.resetPassword, data: request.toJson());
-      
-      // Koristimo novi konstruktor za uspjeh
-      return ApiResponse.success(
-        null, 
-        message: 'Password reset successfully.',
-      );
-    } on DioException catch (e) {
-      // Koristimo ApiHelper za uniformno rukovanje greškama
-      return ApiHelper.handleDioError<void>(e);
+  try {
+    await _dio.post(ApiEndpoints.resetPassword, data: request.toJson());
+    
+    return ApiResponse.success(
+      null, 
+      message: 'Password reset successfully.',
+    );
+  } on DioException catch (e) {
+    if (e.response != null && e.response?.data != null) {
+      final data = e.response!.data;
+
+      if (data is Map && data['errors'] != null && (data['errors'] as List).isNotEmpty) {
+        final firstError = data['errors'][0].toString();
+        
+        return ApiResponse.failure(
+           firstError, 
+        );
+      }
     }
+
+    // Ako struktura nije onakva kakvu očekujemo, pusti stari helper da odradi fallback
+    return ApiHelper.handleDioError<void>(e);
   }
+}
 Future<bool> refreshToken() async {
     try {
       final storedRefresh = await _storage.read(key: 'refresh_token');
