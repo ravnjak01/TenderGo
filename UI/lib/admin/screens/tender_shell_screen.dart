@@ -184,7 +184,7 @@ class _TenderShellScreenState extends State<TenderShellScreen> {
           child: const Text('+ Post a tender'),
         ),
         const SizedBox(width: 16),
-     //   NotificationBell(iconColor: Colors.black87),
+        NotificationBell(iconColor: Colors.black87),
         const SizedBox(width: 12),
         UserAvatarWidget(
           user: userFromProvider,

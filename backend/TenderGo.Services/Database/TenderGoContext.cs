@@ -71,11 +71,26 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
 
         modelBuilder.Entity<Tender>().Navigation(b => b.CreatedByUser).AutoInclude();//da se uvijek ucitava korisnik koji je kreirao tender
 
+        // Sakrij ponude čiji je tender obrisan
+        modelBuilder.Entity<Bid>().HasQueryFilter(b => !b.Tender.IsDeleted);
+
+        // Sakrij ocjene čiji je tender obrisan
+        modelBuilder.Entity<Rating>().HasQueryFilter(r => !r.Tender.IsDeleted);
+
+        // Sakrij slike čiji je tender obrisan
+        modelBuilder.Entity<TenderImage>().HasQueryFilter(ti => !ti.Tender.IsDeleted);
+
         modelBuilder.Entity<Tender>()
         .HasOne(t => t.Location)
         .WithMany() 
         .HasForeignKey(t => t.LocationId)
         .OnDelete(DeleteBehavior.Restrict);
+
+
+//zadnje dodao ovo za adresu
+        modelBuilder.Entity<ApplicationUser>()
+         .OwnsOne(u => u.Address);
+
         //rating
         modelBuilder.Entity<Rating>(entity =>
         {
@@ -94,6 +109,7 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
             modelBuilder.Entity<Rating>()
                 .HasIndex(r => new { r.TenderId, r.RatedByUserId, r.RatedUserId })
                  .IsUnique();
+        
         });
         OnModelCreatingPartial(modelBuilder);
 

@@ -7,8 +7,16 @@ import 'package:tendergo/shared/core/network/interceptors/auth_interceptor.dart'
 
 class DioClient {
 
+/*
   static const String _baseUrl = String.fromEnvironment(
     'BASE_URL',defaultValue: 'http://localhost:5180/api/'
+  );
+*/
+
+
+//kasnije vratiti na 5180 ,kao i u launchSettings.json:
+static const String _baseUrl = String.fromEnvironment(
+    'BASE_URL', defaultValue: 'http://localhost:8080/api/'
   );
 
   /// Server origin without the /api/ suffix, e.g. "http://localhost:5180".

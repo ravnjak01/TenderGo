@@ -7,7 +7,7 @@ import 'package:tendergo/shared/routes/routes.dart';
 /// Drop this wherever you need a notification bell (app bar, nav bar, etc.)
 /// 
 /// /*
-/*
+
 class NotificationBell extends StatelessWidget {
   final Color? iconColor;
 
@@ -66,4 +66,3 @@ class NotificationBell extends StatelessWidget {
     );
   }
 }
-*/

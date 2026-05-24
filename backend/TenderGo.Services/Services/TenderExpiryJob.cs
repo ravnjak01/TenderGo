@@ -9,7 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using TenderGo.Api.Database;
-using TenderGo.Models.DTOs;
+using TenderGo.Contracts;
 using TenderGo.Models.ENUMs;
 
 namespace TenderGo.Services.Services
@@ -61,18 +61,33 @@ namespace TenderGo.Services.Services
             {
                 tender.Status = TenderStatus.Closed;
                 tender.UpdatedAt = now;
-                tender.UpdatedByUserId = "SYSTEM.";
-
-                //await _pubSub.PublishAsync(new TenderExpiredEvent
-                //{
-                //    TenderId = tender.Id,
-                //    TenderTitle = tender.Title,
-                //    OwnerUserId = tender.CreatedByUserId,
-                //    ExpiredAt = DateTime.UtcNow
-                //}, cfg => cfg.WithTopic("tender_expired"));
+                tender.UpdatedByUserId = "SYSTEM";
             }
 
             await db.SaveChangesAsync(ct);
+            foreach (var tender in expiredTenders)
+            {
+                try
+                {
+                    await _pubSub.PublishAsync(
+                        new TenderExpiredEvent
+                        {
+                            TenderId = tender.Id,
+                            TenderTitle = tender.Title,
+                            OwnerUserId = tender.CreatedByUserId,
+                            ExpiredAt = DateTime.UtcNow
+                        },
+                        cfg => cfg.WithTopic("tender_expired"));
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(
+                        ex,
+                        "Tender {TenderId} expired but TenderExpiredEvent was not published",
+                        tender.Id);
+                }
+            }
+
             _logger.LogInformation("Auto-cancelled {Count} tenders.", expiredTenders.Count);
         }
     }

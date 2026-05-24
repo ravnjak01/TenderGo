@@ -1,5 +1,5 @@
 
-/*
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
@@ -291,4 +291,3 @@ class _NotificationIcon extends StatelessWidget {
     };
   }
 }
-*/

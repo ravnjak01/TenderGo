@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using TenderGo.Api.Database;
+using TenderGo.Contracts;
 using TenderGo.Models.DTOs;
 using TenderGo.Models.Entities;
 using TenderGo.Models.ENUMs;
@@ -30,7 +31,9 @@ namespace TenderGo.Services.StateMachines.TenderStates
 
         public override async Task<TenderDTO> Award(Tender tender, int bidId)
         {
-           
+
+            if (tender.Bids == null || !tender.Bids.Any())
+                _logger.LogWarning("Tender {Id} has no bids loaded — OtherUserIds will be empty", tender.Id);
 
             var authService = _serviceProvider.GetRequiredService<IAuthService>();
             if (tender.CreatedByUserId != authService.GetCurrentUserId())
@@ -53,17 +56,28 @@ namespace TenderGo.Services.StateMachines.TenderStates
 
             await _context.SaveChangesAsync();
 
-            //await _pubSub.PublishAsync(new TenderAwardedEvent
-            //{
-            //    TenderId = tender.Id,
-            //    TenderTitle = tender.Title,
-            //    WinnerUserId = winningBid.SubmittedByUserId,
-            //    OtherUserIds = tender.Bids
-            //    .Where(b => b.Id != bidId)
-            //    .Select(b => b.SubmittedByUserId)
-            //    .ToList()
-            //}, cfg => cfg.WithTopic("tender_awarded"));
-
+            try
+            {
+                await _pubSub.PublishAsync(
+                    new TenderAwardedEvent
+                    {
+                        TenderId = tender.Id,
+                        TenderTitle = tender.Title,
+                        WinnerUserId = winningBid.SubmittedByUserId,
+                        OtherUserIds = tender.Bids
+                            .Where(b => b.Id != bidId)
+                            .Select(b => b.SubmittedByUserId)
+                            .ToList()
+                    },
+                    cfg => cfg.WithTopic("tender_awarded"));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Tender {TenderId} awarded but TenderAwardedEvent was not published",
+                    tender.Id);
+            }
 
             return _mapper.Map<TenderDTO>(tender);
         }

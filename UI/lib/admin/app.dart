@@ -48,10 +48,10 @@ class AdminApp extends StatelessWidget {
           create: (_) => TenderProvider(tenderService, categoryService),
         ),
         ChangeNotifierProvider(create: (_) => AuthProvider(authService)),
-       // ChangeNotifierProvider(
-          //create: (_) =>
-            //    NotificationProvider(NotificationService(DioClient.getDio())),
-      //  ),
+        ChangeNotifierProvider(
+          create: (_) =>
+                NotificationProvider(NotificationService(DioClient.getDio())),
+        ),
       ],
       child: MaterialApp(
         initialRoute: AppRoutes.splash,

@@ -2,6 +2,7 @@
 using EasyNetQ;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic; 
 using System.Linq;
@@ -21,8 +22,19 @@ namespace TenderGo.Services.StateMachines.BidStates
     public class PendingBidState : BaseBidState
     {
         private readonly IPubSub _pubSub;
-        public PendingBidState(IServiceProvider serviceProvider, TenderGoContext context, IMapper mapper, IPubSub pubSub)
-            : base(serviceProvider, context, mapper) { _pubSub = pubSub; }
+        private readonly ILogger<PendingBidState> _logger;
+
+        public PendingBidState(
+            IServiceProvider serviceProvider,
+            TenderGoContext context,
+            IMapper mapper,
+            IPubSub pubSub,
+            ILogger<PendingBidState> logger)
+            : base(serviceProvider, context, mapper)
+        {
+            _pubSub = pubSub;
+            _logger = logger;
+        }
 
 
         public override async Task<BidDTO> Insert(BidInsertRequest request)
@@ -52,15 +64,25 @@ namespace TenderGo.Services.StateMachines.BidStates
             _context.Bids.Add(entity);
             await _context.SaveChangesAsync();
 
-            //rabbitmq zakomentarisan zasad
-
-            //await _pubSub.PublishAsync(new BidCreatedEvent
-            //{
-            //    TenderId = entity.TenderId,
-            //    OwnerUserId = tender.CreatedByUserId,
-            //    OfferedPrice = entity.OfferedPrice
-            //}, cfg => cfg.WithTopic("bid_created"));
-
+            try
+            {
+                await _pubSub.PublishAsync(
+                    new BidCreatedEvent
+                    {
+                        TenderId = entity.TenderId,
+                        OwnerUserId = tender.CreatedByUserId,
+                        OfferedPrice = entity.OfferedPrice,
+                        TenderTitle = tender.Title
+                    },
+                    cfg => cfg.WithTopic("bid_created"));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Bid saved but BidCreatedEvent was not published for tender {TenderId}",
+                    entity.TenderId);
+            }
 
             return _mapper.Map<BidDTO>(entity);
         }

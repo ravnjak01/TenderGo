@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   tendergo-sql:
     image: mcr.microsoft.com/mssql/server:2022-latest
@@ -12,7 +14,7 @@ services:
     ports:
       - "1401:1433"
     networks:
-     - tendergo-network
+      - tendergo-network
     healthcheck:
       test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P '${SA_PASSWORD}' -Q 'SELECT 1' -C"]
       interval: 10s
@@ -22,7 +24,6 @@ services:
     volumes:
       - tendergo-sql-data:/var/opt/mssql
   
-   
   tendergo-rabbitmq:
     image: rabbitmq:3-management
     restart: unless-stopped
@@ -40,9 +41,17 @@ services:
     deploy:
       resources:
         limits:
-          memory: 512M  # Ne dozvoli kontejneru više od 512MB RAM-a
+          memory: 512M
         reservations:
-          memory: 256M  # Rezerviši mu odmah 256MB
+          memory: 256M
+    volumes:
+      - tendergo-rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   tendergo-subscriber:
     build:
@@ -52,15 +61,17 @@ services:
     environment:
       - DOTNET_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=${DB_CONNECTION}
+      - ConnectionStrings__RabbitMQ=${ConnectionStrings__RabbitMQ}
       - RabbitMQ__Host=tendergo-rabbitmq
       - RabbitMQ__Username=${RABBITMQ_USER}
       - RabbitMQ__Password=${RABBITMQ_PASS}
     depends_on:
       tendergo-rabbitmq:
-        condition: service_started
+        condition: service_healthy
+      tendergo-sql:
+        condition: service_healthy
     networks:
       - tendergo-network
- 
 
   tendergo-api:
     restart: unless-stopped
@@ -70,9 +81,15 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=${DB_CONNECTION}
+      - ConnectionStrings__RabbitMQ=${ConnectionStrings__RabbitMQ}
       - RabbitMQ__Host=tendergo-rabbitmq
       - RabbitMQ__Username=${RABBITMQ_USER}
       - RabbitMQ__Password=${RABBITMQ_PASS}
+      - EmailSettings__From=${EmailSettings__From}
+      - EmailSettings__SmtpServer=${EmailSettings__SmtpServer}
+      - EmailSettings__Port=${EmailSettings__Port}
+      - EmailSettings__Username=${EmailSettings__Username}
+      - EmailSettings__Password=${EmailSettings__Password}
     ports:
       - "8080:8080"
     depends_on:                      
@@ -83,8 +100,6 @@ services:
     networks:
       - tendergo-network  
 
-  
-   
 networks:
   tendergo-network:
     driver: bridge
