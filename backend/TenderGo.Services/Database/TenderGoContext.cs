@@ -138,6 +138,9 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
             .HasForeignKey(b => b.SubmittedByUserId)
             .OnDelete(DeleteBehavior.Restrict);
         });
+        modelBuilder.Entity<Bid>()
+        .Property(b => b.Status)
+        .HasConversion<string>();
 
 
         //tender images

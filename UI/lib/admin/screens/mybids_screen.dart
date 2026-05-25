@@ -7,6 +7,8 @@ import 'package:tendergo/shared/models/dto/bid_dto.dart';
 import 'package:tendergo/shared/providers/tender_provider.dart';
 import 'package:tendergo/shared/routes/routes.dart';
 import 'package:tendergo/shared/services/bid_service.dart';
+import 'package:tendergo/shared/services/offer_report_screen.dart';
+import 'package:tendergo/shared/services/pdf_service.dart';
 import 'package:tendergo/shared/widgets/feedback/snackbar_helper.dart';
 import 'package:tendergo/shared/widgets/feedback/screen_state_widget.dart';
 import 'package:tendergo/shared/widgets/common/app_dialogs.dart';
@@ -339,16 +341,62 @@ class _BidCard extends StatelessWidget {
                   ),
 
                   if (_isAwardedStatus(bid.status.name)) ...[
-                    const SizedBox(height: 12),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: FilledButton.tonalIcon(
-                        onPressed: onRateUser,
-                        icon: const Icon(Icons.star_rate_rounded),
-                        label: const Text('Rate User'),
-                      ),
-                    ),
-                  ],
+  const SizedBox(height: 12),
+  Align(
+    alignment: Alignment.centerRight,
+    child: Row(
+      mainAxisSize: MainAxisSize.min, // Skuplja Row samo oko dugmadi
+      children: [
+        // 🌟 NOVO: Dugme za izvještaj
+        FilledButton.icon(
+          style: FilledButton.styleFrom(
+            backgroundColor: Colors.green[700], // Zelena boja za izvještaje/print
+          ),
+          onPressed: ()async {
+            /*
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                // Prosjeđujemo ID ponude u ekran koji smo ranije kreirali
+                builder: (context) => OfferReportScreen(offerId: bid.id),
+              ),
+            );
+            */
+           final pdfService = PdfService();
+        final bytes = await pdfService.fetchOfferPdf(bid.id);
+        
+        if (bytes != null) {
+          print("🎉 USPJEH! Dobijeni bajtovi iz baze, veličina: ${bytes.length} bajta.");
+          
+          // Tek kada smo sigurni da imamo bajtove, idemo na ekran
+          if (context.mounted) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => OfferReportScreen(offerId: bid.id),
+              ),
+            );
+          }
+        } else {
+          print("❌ Servis je vratio NULL. Provjeri API endpoint i .NET backend!");
+        }
+          },
+          icon: const Icon(Icons.picture_as_pdf_rounded),
+          label: const Text('Izvještaj'),
+        ),
+        
+        const SizedBox(width: 8), // Razmak između dva dugmeta
+        
+        // Postojeće dugme za ocjenjivanje
+        FilledButton.tonalIcon(
+          onPressed: onRateUser,
+          icon: const Icon(Icons.star_rate_rounded),
+          label: const Text('Rate User'),
+        ),
+      ],
+    ),
+  ),
+],
 
                   if (_isCancelableStatus(bid.status.name)) ...[
   const SizedBox(height: 8), // Smanjio sam malo i razmak iznad

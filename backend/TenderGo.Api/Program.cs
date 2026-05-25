@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using QuestPDF.Infrastructure;
 using TenderGo.Api.Database;
 using TenderGo.Api.Filters;
 using TenderGo.Data;
@@ -20,6 +21,8 @@ using TenderGo.Services.StateMachines.BidStates;
 using TenderGo.Services.StateMachines.TenderStates;
 
 var builder = WebApplication.CreateBuilder(args);
+// 🌟 DODAJ OVU LINIJU U Program.cs:
+QuestPDF.Settings.License = LicenseType.Community;
 
 // Učitavanje .env datoteke za Docker okruženje
 Env.Load();
@@ -108,6 +111,7 @@ builder.Services.AddScoped<IImageService, ImageService>();
 builder.Services.AddTransient<ICategoryService, CategoryService>();
 builder.Services.AddTransient<ILocationService, LocationService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+
 // Email i Background poslovi
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddScoped<EmailService>();

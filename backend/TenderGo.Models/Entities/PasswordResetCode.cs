@@ -6,7 +6,7 @@ public class PasswordResetCode
     
     public string UserId { get; set; }
     public virtual ApplicationUser User { get; set; } 
-
+    //zadnje promjenio reset lozinke metodu,da se salje code
     public string Code { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
