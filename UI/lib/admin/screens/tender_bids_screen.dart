@@ -8,7 +8,7 @@ import 'package:tendergo/shared/models/enums/application_status.dart';
 import 'package:tendergo/shared/models/enums/tenderstatus.dart';
 import 'package:tendergo/shared/services/bid_service.dart';
 import 'package:tendergo/shared/services/dio_client.dart';
-import 'package:tendergo/shared/services/offer_report_screen.dart';
+import 'package:tendergo/admin/screens/offer_report_screen.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
 import 'package:tendergo/shared/widgets/common/action_button.dart';
 import 'package:tendergo/shared/widgets/common/app_badge.dart';

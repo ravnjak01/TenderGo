@@ -14,6 +14,9 @@ import 'package:tendergo/shared/models/ui/api_response.dart';
 import 'package:tendergo/shared/models/ui/auth_result.dart';
 import 'package:tendergo/shared/providers/admin_provider.dart';
 import 'package:tendergo/shared/routes/routes.dart';
+import 'package:tendergo/admin/routes/routes.dart';
+
+import 'package:tendergo/shared/services/pdf_service.dart';
 import 'package:tendergo/shared/widgets/common/action_button.dart';
 import 'package:tendergo/shared/widgets/common/app_badge.dart';
 import 'package:tendergo/shared/widgets/common/app_dialogs.dart';
@@ -179,6 +182,36 @@ class _AdminScreenState extends State<AdminScreen> {
       );
     }
   }
+
+  // 🌟 Dodaj u _AdminScreenState klasu
+Future<void> _handleDownloadUserReport(UserDto user) async {
+  setState(() => _isSubmitting = true);
+
+  try {
+    // 1. Pozivamo tvoj PdfService koji smo kreirali u prethodnom koraku
+    final pdfBytes = await PdfService().fetchUserTendersReport(user.id.toString());
+
+    if (!mounted) return;
+    setState(() => _isSubmitting = false);
+
+    if (pdfBytes != null) {
+      // 2. Ako su bajtovi uspješno stigli, navigiramo na ekran za prikaz PDF-a
+      Navigator.of(context).pushNamed(
+      AppRoutes.pdfViewer, // 🌟 Popravljeno: koristi se klasa AppRoutes direktno
+      arguments: {
+        'pdfBytes': pdfBytes,
+        'title': 'Izvještaj: ${_userDisplayName(user)}',
+      },
+    );
+    } else {
+      SnackbarHelper.show(context, 'Greška pri generisanju PDF-a.', isError: true);
+    }
+  } catch (error) {
+    if (!mounted) return;
+    setState(() => _isSubmitting = false);
+    SnackbarHelper.show(context, 'Došlo je do greške: $error', isError: true);
+  }
+}
 
   Future<void> _handleDeleteCategory(CategoryDto category) async {
     final confirmed = await AppDialogs.showConfirm(
@@ -1065,7 +1098,13 @@ class _AdminScreenState extends State<AdminScreen> {
                   ),
                 ],
               ),
-            ),
+            ),IconButton(
+            icon: const Icon(Icons.picture_as_pdf_rounded, color: Colors.blueAccent),
+            tooltip: 'Generiši izvještaj',
+            onPressed: _isSubmitting 
+                ? null 
+                : () => _handleDownloadUserReport(user),
+          ),
             const SizedBox(width: 12),
             user.isBanned
                 ? FilledButton.tonalIcon(

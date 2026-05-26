@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:printing/printing.dart';
-import 'pdf_service.dart'; // Uvezi tvoj servis
+import '../../shared/services/pdf_service.dart'; // Uvezi tvoj servis
 
 class OfferReportScreen extends StatefulWidget {
   final int offerId;

@@ -8,6 +8,7 @@ using TenderGo.Services.Services;
 using QuestPDF.Fluent;
 using Microsoft.AspNetCore.Authorization;
 using TenderGo.Services.Services.Exceptions;
+using TenderGo.Models.Entities;
 
 namespace TenderGo.Api.Controllers
 {
@@ -62,6 +63,67 @@ namespace TenderGo.Api.Controllers
             var document = new OfferPdfDocument(offerData);
             byte[] pdfBytes = document.GeneratePdf();
             return File(pdfBytes, "application/pdf", $"{offerData.ReferenceNumber}.pdf");
+        }
+
+
+        [Authorize(Roles =AppRoles.Admin)]
+        // 🌟 NOVI ENDPOINT: Generisanje zbirnog izvještaja o tenderima i ponudama za korisnika
+        [HttpGet("user/{userId}/tenders")]
+        public async Task<IActionResult> DownloadUserTendersReport(string userId)
+        {
+            var currentUserId = _authService.GetCurrentUserId();
+            
+            // 🔒 Opcionalno: Dopusti preuzimanje samo Adminu ili korisniku koji je vlasnik profila
+            // Ako u sistemu imaš ugrađen Role management preko tokena, možeš otkomentarisati provjeru uloga
+          //  if (currentUserId != userId)
+            //{
+                // Primjer provjere ako želiš striktno admina (prilagodi svom User objektu ili Claimovima):
+             //   throw new ForbiddenException("Nemate dozvolu za pristup izvještaju ovog korisnika.");
+            //}
+
+            // 1. Dobavi osnovne podatke o korisniku (da imamo ime za naslov izvještaja)
+            var user = await _context.Users
+                .Where(u => u.Id == userId)
+                .Select(u => new { u.FirstName, u.LastName })
+                .FirstOrDefaultAsync();
+
+            if (user == null)
+            {
+                return NotFound($"Korisnik sa ID-jem {userId} ne postoji.");
+            }
+
+            // 2. Povuci sve tendere tog korisnika zajedno sa ugniježđenim ponudama (Bids) i ponuđačima
+            var tendersData = await _context.Tenders
+                .Where(t => t.CreatedByUserId == userId)
+                .Select(t => new TenderWithOffers
+                {
+                    TenderTitle = t.Title,
+                    Status = t.Status.ToString(),
+                    CreatedAt = t.CreatedAt,
+                    Offers = t.Bids.Select(b => new OfferItem
+                    {
+                        BidderName = b.SubmittedByUser.FirstName + " " + b.SubmittedByUser.LastName,
+                        Amount = b.OfferedPrice,
+                        Status = b.Status.ToString(),
+                        Date = b.SubmittedAt
+                    }).ToList()
+                })
+                .ToListAsync();
+
+            // 3. Spakuj sve podatke u glavni model izvještaja
+            var reportModel = new AdminUserTenderReportModel
+            {
+                UserName = $"{user.FirstName} {user.LastName}",
+                Tenders = tendersData
+            };
+
+            // 4. Proslijedi podatke u QuestPDF dokument i generiši bajtove
+            var document = new AdminUserTenderReportDocument(reportModel);
+            byte[] pdfBytes = document.GeneratePdf();
+
+            // 5. Vrati generisani fajl klijentu (Flutteru)
+            string fileName = $"Izvjestaj_Tenderi_{user.FirstName}_{user.LastName}.pdf";
+            return File(pdfBytes, "application/pdf", fileName);
         }
 
         

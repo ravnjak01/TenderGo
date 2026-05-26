@@ -1,4 +1,7 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:tendergo/admin/screens/admin_report_preview_screen.dart';
 import 'package:tendergo/admin/screens/admin_screen.dart';
 import 'package:tendergo/shared/providers/admin_provider.dart';
 import 'package:tendergo/admin/screens/forgot_password_screen.dart';
@@ -112,6 +115,20 @@ class AdminRoutes {
         return RecommendedForYouScreen(onTenderTapped: onTap);
       },
      AppRoutes.notifications: (context) => const NotificationScreen(),
+
+  
+    AppRoutes.pdfViewer: (context) {
+        final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+        
+        final Uint8List pdfBytes = args?['pdfBytes'] ?? Uint8List(0);
+        final String title = args?['title'] ?? 'Pregled izvještaja';
+
+        return AdminReportPreviewScreen(
+          pdfBytes: pdfBytes,
+          title: title,
+        );
+      },
+      
     };
   }
 }

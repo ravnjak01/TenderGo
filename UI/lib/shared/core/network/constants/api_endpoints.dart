@@ -24,4 +24,5 @@ class ApiEndpoints {
   //PDF
 
   static  String downloadPdf(int id)=>'/pdf/$id/download';
+  static String adminReport(String id)=>'pdf/user/$id/tenders';
 }

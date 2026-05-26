@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:tendergo/admin/screens/offer_report_screen.dart';
 import 'package:tendergo/shared/controllers/bids_list_controller.dart';
 import 'package:tendergo/shared/core/actions/back_button.dart';
 import 'package:tendergo/shared/core/utils/extensions/string_extensions.dart';
@@ -7,7 +8,6 @@ import 'package:tendergo/shared/models/dto/bid_dto.dart';
 import 'package:tendergo/shared/providers/tender_provider.dart';
 import 'package:tendergo/shared/routes/routes.dart';
 import 'package:tendergo/shared/services/bid_service.dart';
-import 'package:tendergo/shared/services/offer_report_screen.dart';
 import 'package:tendergo/shared/services/pdf_service.dart';
 import 'package:tendergo/shared/widgets/feedback/snackbar_helper.dart';
 import 'package:tendergo/shared/widgets/feedback/screen_state_widget.dart';
@@ -370,12 +370,13 @@ class _BidCard extends StatelessWidget {
           
           // Tek kada smo sigurni da imamo bajtove, idemo na ekran
           if (context.mounted) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => OfferReportScreen(offerId: bid.id),
-              ),
-            );
+            Navigator.of(context).pushNamed(
+        AppRoutes.pdfViewer,
+        arguments: {
+          'pdfBytes': bytes, // Tvoja varijabla koja drži bajtove PDF-a (provjeri kako se tačno zove u tvom kodu)
+          'title': 'Izvještaj o ponudi', 
+        },
+      );
           }
         } else {
           print("❌ Servis je vratio NULL. Provjeri API endpoint i .NET backend!");
