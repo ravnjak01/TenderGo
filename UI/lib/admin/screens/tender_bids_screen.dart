@@ -8,6 +8,7 @@ import 'package:tendergo/shared/models/enums/application_status.dart';
 import 'package:tendergo/shared/models/enums/tenderstatus.dart';
 import 'package:tendergo/shared/services/bid_service.dart';
 import 'package:tendergo/shared/services/dio_client.dart';
+import 'package:tendergo/shared/services/offer_report_screen.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
 import 'package:tendergo/shared/widgets/common/action_button.dart';
 import 'package:tendergo/shared/widgets/common/app_badge.dart';
@@ -199,6 +200,8 @@ class _BidCard extends StatelessWidget {
     final priceFormatted = '${bid.offeredPrice.toStringAsFixed(0)} KM';
     final dateFormatted = DateFormat('dd MMM yyyy, HH:mm').format(bid.submittedAt);
 
+    final isAccepted=bid.status==ApplicationStatus.accepted;
+
     return AppCard(
       title: 'Bidder',
       icon: Icons.person_outline_rounded,
@@ -251,18 +254,35 @@ class _BidCard extends StatelessWidget {
                 const SizedBox(height: 12),
                 _ProposalPreview(proposal: bid.proposal!),
               ],
-              if (canAward) ...[
+              if (canAward || isAccepted)   ...[
                 const SizedBox(height: 14),
                 const Divider(height: 1),
                 const SizedBox(height: 10),
                 Align(
                   alignment: Alignment.centerRight,
-                  child: ActionButton(
-                    label: 'Award',
-                    icon: Icons.emoji_events_rounded,
-                    isPrimary: true,
-                    onTap: onAward,
-                  ),
+                  child: canAward
+                      ? ActionButton(
+                          label: 'Award',
+                          icon: Icons.emoji_events_rounded,
+                          isPrimary: true,
+                          onTap: onAward,
+                        )
+                      : OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.green[700],
+                            side: BorderSide(color: Colors.green.shade700),
+                          ),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => OfferReportScreen(offerId: bid.id),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.picture_as_pdf_rounded),
+                          label: const Text('Izvještaj'),
+                        ),
                 ),
               ],
             ],

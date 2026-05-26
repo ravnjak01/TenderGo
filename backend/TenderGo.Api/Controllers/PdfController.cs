@@ -7,6 +7,7 @@ using TenderGo.Services.Interfaces;
 using TenderGo.Services.Services;
 using QuestPDF.Fluent;
 using Microsoft.AspNetCore.Authorization;
+using TenderGo.Services.Services.Exceptions;
 
 namespace TenderGo.Api.Controllers
 {
@@ -15,12 +16,12 @@ namespace TenderGo.Api.Controllers
     [Route("api/[controller]")]
     public class PdfController : ControllerBase
     {
-        private readonly IBidService _bidService;
+        private readonly IAuthService _authService;
         private readonly TenderGoContext _context;
 
-        public PdfController(IBidService bidService,TenderGoContext context)
+        public PdfController(IAuthService authService,TenderGoContext context)
         {
-            _bidService = bidService;
+            _authService = authService;
             _context = context;
 
         }
@@ -35,10 +36,16 @@ namespace TenderGo.Api.Controllers
                 .Where(o => o.Id == id && (int)o.Status == 2)
                 .FirstOrDefaultAsync();
 
-            if (bid == null) return NotFound("Bid nije pronađen.");
-            if (bid.Tender == null) return NotFound("Tender nije pronađen.");
-            if (bid.Tender.CreatedByUser == null) return NotFound("Client user nije pronađen.");
-            if (bid.SubmittedByUser == null) return NotFound("Submitted user nije pronađen.");
+            var currentUser=_authService.GetCurrentUserId();
+
+            bool isOwner=bid.Tender.CreatedByUserId==currentUser;
+            bool isBidder=bid.SubmittedByUserId==currentUser;
+
+
+            if(!isOwner && !isBidder)
+            {
+                throw new ForbiddenException("You dont have permission to access this document");
+            }
 
             var offerData = new OfferPdfModel
             {
