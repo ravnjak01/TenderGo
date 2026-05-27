@@ -1,19 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:tendergo/admin/screens/user_reviews_screen.dart';
+import 'package:tendergo/admin/screens/user_tenders.dart';
 import 'package:tendergo/shared/core/actions/back_button.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
 import 'package:tendergo/shared/core/utils/extensions/user_initials_extension.dart';
 import 'package:tendergo/shared/models/dto/user_dto.dart';
 import 'package:tendergo/shared/models/dto/user_public_dto.dart';
+import 'package:tendergo/shared/services/tender_service.dart';
 import 'package:tendergo/shared/services/user_service.dart';
 
 class UserProfilePublicScreen extends StatelessWidget {
   final String userId;
   final UserService userService;
+  final TenderService tenderService;
 
   const UserProfilePublicScreen({
     super.key,
     required this.userId,
     required this.userService,
+    required this.tenderService
   });
 
   String _initials(UserPublicDto user) {
@@ -61,38 +66,51 @@ class UserProfilePublicScreen extends StatelessWidget {
     );
   }
 
+  // 2. MODIFIKOVAN STAT TILE: Dodat VoidCallback? onTap na kraj i InkWell omotač
   Widget _buildStatTile(
     BuildContext context, {
     required IconData icon,
     required String label,
     required String value,
+    VoidCallback? onTap, // Opcionalni tap event
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       decoration: BoxDecoration(
         color: AppColors.background,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.outline),
       ),
-      child: Row(
-        children: [
-          Icon(icon, color: AppColors.primary, size: 20),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              label,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
-            ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12), // Da se talas zadrži unutar okvira
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+          child: Row(
+            children: [
+              Icon(icon, color: AppColors.primary, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  label,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+                ),
+              ),
+              Text(
+                value,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              // Ako je tile klikabilan, prikaži malu strelicu s desne strane
+              if (onTap != null) ...[
+                const SizedBox(width: 6),
+                const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary, size: 16),
+              ]
+            ],
           ),
-          Text(
-            value,
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -121,6 +139,7 @@ class UserProfilePublicScreen extends StatelessWidget {
           }
 
           final user = snapshot.data!;
+          final displayName = user.fullName.trim().isEmpty ? 'TenderGo User' : user.fullName;
 
           return SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
@@ -129,9 +148,7 @@ class UserProfilePublicScreen extends StatelessWidget {
                 _buildAvatarWidget(context, user),
                 const SizedBox(height: 12),
                 Text(
-                  user.fullName.trim().isEmpty
-                      ? 'TenderGo User'
-                      : user.fullName,
+                  displayName,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w700,
@@ -178,19 +195,45 @@ class UserProfilePublicScreen extends StatelessWidget {
                             ?.copyWith(fontWeight: FontWeight.w700),
                       ),
                       const SizedBox(height: 12),
+                      
+                      // 3. DODAN ONTAP NA RATING TILE
                       _buildStatTile(
                         context,
                         icon: Icons.star_rounded,
                         label: 'Rating',
                         value: user.rating.toStringAsFixed(1),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => UserReviewsScreen(
+                                userId: userId,
+                                userService: userService,
+                                userName: displayName,
+                              ),
+                            ),
+                          );
+                        },
                       ),
                       const SizedBox(height: 10),
-                      _buildStatTile(
-                        context,
-                        icon: Icons.assignment_outlined,
-                        label: 'Tenders',
-                        value: user.tenderCount.toString(),
-                      ),
+                    _buildStatTile(
+  context,
+  icon: Icons.assignment_outlined,
+  label: 'Tenders',
+  value: user.tenderCount.toString(),
+  onTap: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => UserTendersScreen(
+          userId: userId,
+          userName: displayName,
+          tenderService: tenderService, // Proslijedi instancu TenderService-a ovdje
+        ),
+      ),
+    );
+  },
+),
                       const SizedBox(height: 10),
                       _buildStatTile(
                         context,

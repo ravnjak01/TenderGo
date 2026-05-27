@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:tendergo/shared/core/network/constants/user_endpoints.dart';
+import 'package:tendergo/shared/models/dto/review_dto.dart';
 import 'package:tendergo/shared/models/dto/user_public_dto.dart';
 import 'package:tendergo/shared/models/requests/rate_user_request.dart';
 import 'package:tendergo/shared/models/requests/update_profile_request.dart';
@@ -75,4 +76,24 @@ class UserService {
     throw Exception(e.response?.data ?? 'Error updating profile');
   }
 }
+
+
+Future<List<ReviewDto>> getUserReviews(String userId) async {
+  try {
+    final response = await _dio.get(
+      UserEndpoints.getReviews(userId), 
+      options: await _options(),
+    );
+
+    final List<dynamic> data = response.data;
+
+    return data
+        .map((reviewJson) => ReviewDto.fromJson(reviewJson as Map<String, dynamic>))
+        .toList();
+        
+  } on DioException catch (e) {
+    throw Exception(e.response?.data ?? 'Greška pri učitavanju recenzija');
+  }
+}
+
 }

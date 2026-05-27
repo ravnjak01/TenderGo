@@ -97,14 +97,7 @@ namespace TenderGo.Services.Services
 
         public async Task<List<TenderDTO>> GetTendersByUser(string userId)
         {
-            var currentUserId = _authService.GetCurrentUserId();
-            bool isAdmin = _authService.IsInRole(AppRoles.Admin);
-
-            if (userId != currentUserId && !isAdmin)
-            {
-                throw new UnauthorizedException("You dont have permission to see other's tenders.");
-
-            }
+    
             return await _context.Tenders
                 .Where(t => t.CreatedByUserId == userId)
                 .OrderByDescending(t => t.CreatedAt)

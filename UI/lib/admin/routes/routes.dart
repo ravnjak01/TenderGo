@@ -83,7 +83,7 @@ class AdminRoutes {
           _ => '',
         };
 
-        return UserProfilePublicScreen(userId: userId, userService: userService);
+        return UserProfilePublicScreen(userId: userId, userService: userService,tenderService: tenderService,);
       },
       AppRoutes.rateUser: (context) {
         final args = ModalRoute.of(context)?.settings.arguments;

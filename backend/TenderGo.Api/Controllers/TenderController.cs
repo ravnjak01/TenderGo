@@ -63,9 +63,6 @@ public class TenderController
     {
         var tenders = await _tenderService.GetTendersByUser(userId);
 
-        if (tenders == null || !tenders.Any())
-            return NotFound(); 
-
         return Ok(tenders);
     }
 
