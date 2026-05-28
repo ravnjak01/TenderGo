@@ -311,4 +311,45 @@ class TenderService {
       throw Exception(e.response?.data ?? 'Error fetching actions');
     }
   }
+
+  Future<bool> toggleBookmark(int tenderId) async {
+    try {
+      final response = await _dio.post(
+        TenderApiEndpoints.toggleBookmark(tenderId),
+      );
+
+      if (response.data is Map<String, dynamic>) {
+        return response.data['isBookmarked'] as bool? ?? false;
+      }
+      return false;
+    } on DioException catch (e) {
+      throw Exception(e.response?.data ?? 'Error toggling bookmark');
+    }
+  }
+
+  // ===== GET BOOKMARKED =====
+  Future<List<TenderDto>> getBookmarked() async {
+    try {
+      final response = await _dio.get(
+        TenderApiEndpoints.getBookmarks,
+      );
+
+      final payload = response.data;
+      List<dynamic> rawList = [];
+
+      if (payload is List) {
+        rawList = payload;
+      } else if (payload is Map<String, dynamic>) {
+        rawList = payload['result'] ?? payload['data'] ?? payload['items'] ?? [];
+      }
+
+      return rawList
+          .whereType<Map<String, dynamic>>()
+          .map((x) => TenderDto.fromJson(x))
+          .toList();
+    } on DioException catch (e) {
+      throw Exception(e.response?.data ?? 'Error fetching bookmarked tenders');
+    }
+  }
+  
 }

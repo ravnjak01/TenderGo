@@ -45,6 +45,29 @@ class MobileTenderCardWidget extends StatelessWidget {
                   theme: themeForCategory(tender.category),
                   height: 130,
                 ),
+                
+                // ===== SJAJNO BOOKMARK (SRCE) DUGME =====
+                if (onSave != null)
+                  Positioned(
+                    top: 8,
+                    left: 8, // Postavljeno skroz lijevo na slici
+                    child: Material(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      shape: const CircleBorder(),
+                      clipBehavior: Clip.antiAlias,
+                      child: IconButton(
+                        constraints: const BoxConstraints(),
+                        padding: const EdgeInsets.all(6),
+                        icon: Icon(
+                          isSaved ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                          size: 20,
+                          color: isSaved ? Colors.red : const Color(0xFF5F5E5A),
+                        ),
+                        onPressed: onSave,
+                      ),
+                    ),
+                  ),
+
                 if (onCancelTender != null)
                   Positioned(
                     top: 8,

@@ -17,12 +17,15 @@ public class TenderController
 {
 
     private readonly ITenderService _tenderService;
+    private readonly IAuthService _authService;
+
 
 
     public TenderController(ITenderService tenderService, ILogger<TenderController> logger,IAuthService authservice)
         : base(tenderService, tenderService,logger)
     {
         _tenderService = tenderService;
+        _authService=authservice;
     }
 
     protected override string InsertSuccessMessage => "Tender posted successfully.";
@@ -38,7 +41,27 @@ public class TenderController
     }
 
    
+[HttpPost("toggle/{tenderId}")]
+    public async Task<IActionResult> ToggleBookmark(int tenderId)
+    {
+        string userId = _authService.GetCurrentUserId(); 
+        
+        bool isBookmarked = await _tenderService.ToggleBookmarkAsync(userId, tenderId);
+        
+        return Ok(new { 
+            isBookmarked, 
+            message = isBookmarked ? "Tender saved." : "Tender removed from saved." 
+        });
+    }
 
+    [HttpGet("bookmarked")]
+    public async Task<IActionResult> GetMyBookmarkedTenders()
+    {
+        string userId = _authService.GetCurrentUserId();
+        
+        var tenders = await _tenderService.GetBookmarkedTendersAsync(userId);
+        return Ok(tenders);
+    }
     [HttpGet("active")]
     public async Task<ActionResult<List<TenderDTO>>> GetActive()
      => Ok(await _tenderService.GetActiveTenders());

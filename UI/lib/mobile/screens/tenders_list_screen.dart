@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:tendergo/admin/app.dart';
 import 'package:tendergo/mobile/widgets/tender_widget.dart';
 import 'package:tendergo/shared/controllers/tender_list_controller.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
 import 'package:tendergo/shared/models/enums/tenderstatus.dart';
 import 'package:tendergo/shared/providers/auth_provider.dart';
 import 'package:tendergo/shared/providers/tender_provider.dart';
+import 'package:tendergo/shared/routes/nav_observer.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
 import 'package:tendergo/shared/widgets/common/app_dialogs.dart';
 import 'package:tendergo/shared/widgets/feedback/screen_state_widget.dart';
@@ -29,31 +31,70 @@ class MobileTenderListScreen extends StatefulWidget {
   State<MobileTenderListScreen> createState() => _MobileTenderListScreenState();
 }
 
-class _MobileTenderListScreenState extends State<MobileTenderListScreen> {
-  final Set<int> _savedIds = <int>{};
+class _MobileTenderListScreenState extends State<MobileTenderListScreen>   with RouteAware {
   final TenderListController _controller = TenderListController();
   bool _initialLoadDone = false;
 
+
+  @override
+ void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context)!);
+  }
+
+
+//zadnje dodao dispose i didpopnext i route observer u app.dart
+//ne ažurira bookmark znak kad uklonim bookmark u mobile_bookmarked ekranu
+  @override
+  void dispose() {
+    routeObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  @override
+  void didPopNext() {
+    debugPrint("--- DID POP NEXT FIRED SUCCESSFULLY ---");
+    _refreshBookmarks();
+  }
+
+
+Future<void> _refreshBookmarks() async {
+  if (!mounted) return;
+  await context.read<TenderProvider>().loadBookmarks(widget.tenderService);
+  if(mounted)
+  {
+    setState(() {
+      
+    });
+  }
+}
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => _initialLoad());
   }
 
-  Future<void> _initialLoad() async {
-    if (!mounted) return;
-    context.read<AuthProvider>().loadUser();
-    final p = Provider.of<TenderProvider>(context, listen: false);
-    await p.fetchActiveTenders();
-    await p.fetchCategories();
-    if (mounted) {
-      setState(() => _initialLoadDone = true);
-    }
-  }
+Future<void> _initialLoad() async {
+  if (!mounted) return;
+  context.read<AuthProvider>().loadUser();
+  final p = Provider.of<TenderProvider>(context, listen: false);
+  
+  await Future.wait([
+    p.fetchActiveTenders(),
+    p.fetchCategories(),
+    p.loadBookmarks(widget.tenderService), // <-- Poziv providera
+  ]);
 
-  Future<void> _loadTenders() {
-    return context.read<TenderProvider>().fetchActiveTenders();
+  if (mounted) {
+    setState(() => _initialLoadDone = true);
   }
+}
+
+
+ Future<void> _loadTenders() async {
+  await context.read<TenderProvider>().fetchActiveTenders();
+  
+}
 
   void _onSearchChanged(String query) {
     final provider = context.read<TenderProvider>();
@@ -68,11 +109,6 @@ class _MobileTenderListScreenState extends State<MobileTenderListScreen> {
     }
   }
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
 
   void _openTender(TenderDto tender) {
     if (widget.onTenderSelected != null) {
@@ -105,6 +141,38 @@ class _MobileTenderListScreenState extends State<MobileTenderListScreen> {
       );
     }
   }
+
+ Future<void> _toggleSave(TenderDto dto) async {
+    try {
+      // Iskoristi widget.tenderService da pristupiš servisu iz gornje klase
+      final isBookmarked = await widget.tenderService.toggleBookmark(dto.id);
+
+     setState(() {
+      if (isBookmarked) {
+        context.read<TenderProvider>().updateBookmarkLocal(dto.id, true);
+      } else {
+        context.read<TenderProvider>().updateBookmarkLocal(dto.id, false);
+      }
+    });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(isBookmarked ? 'Tender sačuvan!' : 'Tender uklonjen iz sačuvanih.'),
+            duration: const Duration(seconds: 1),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Greška prilikom spašavanja: $e')),
+        );
+      }
+    }
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -192,8 +260,9 @@ class _MobileTenderListScreenState extends State<MobileTenderListScreen> {
 
                         return MobileTenderCardWidget(
                           tender: model,
-                          isSaved: _savedIds.contains(dto.id),
+                          isSaved: provider.savedIds.contains(dto.id),
                           onTap: () => _openTender(dto),
+                          onSave: () => _toggleSave(dto),
                           onCancelTender: isAdmin &&
                                   dto.status == TenderStatus.open
                               ? () => _cancelTender(dto)

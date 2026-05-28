@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:tendergo/mobile/screens/mobile_bookmarked_screen.dart';
 import 'package:tendergo/mobile/screens/tender_post_screen.dart';
 import 'package:tendergo/mobile/screens/tender_details_screen.dart';
 import 'package:tendergo/shared/screens/user_profile_screen.dart';
@@ -83,6 +84,14 @@ class _MobileTenderShellScreenState extends State<MobileTenderShellScreen> {
     Navigator.of(context).pushNamed(AppRoutes.recommendations);
   }
 
+ void _openBookmarkedTenders() {
+  Navigator.of(context).pushNamed(AppRoutes.bookmarkedTenders).then((_) {
+    if (mounted) {
+      context.read<TenderProvider>().fetchActiveTenders(silent: true);
+    }
+  });
+}
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -98,6 +107,13 @@ class _MobileTenderShellScreenState extends State<MobileTenderShellScreen> {
           ),
         ),
         actions: [
+          IconButton(
+            onPressed: _openBookmarkedTenders,
+            icon: const Icon(Icons.favorite_outline_rounded),
+            color: AppColors.textPrimary,
+            tooltip: 'Sačuvani tenderi',
+          ),
+
           IconButton(
             onPressed: _openRecommendations,
             icon: const Icon(Icons.recommend_outlined),

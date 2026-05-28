@@ -34,6 +34,29 @@ class TenderProvider extends BaseProvider {
 
   TenderService get tenderService => _service;
 
+  Set<int> _savedIds = {};
+Set<int> get savedIds => _savedIds;
+
+Future<void> loadBookmarks(TenderService service) async {
+  try {
+    final bookmarkedTenders = await service.getBookmarked();
+    _savedIds = bookmarkedTenders.map((t) => t.id).toSet();
+    notifyListeners(); // Ovo javlja svim ekranima da osvježe UI
+  } catch (e) {
+    debugPrint('Greška pri učitavanju bookmarka u provideru: $e');
+  }
+}
+
+// Možeš prebaciti i toggleBookmark u provider da sve bude na jednom mjestu
+void updateBookmarkLocal(int id, bool isBookmarked) {
+  if (isBookmarked) {
+    _savedIds.add(id);
+  } else {
+    _savedIds.remove(id);
+  }
+  notifyListeners();
+}
+
   List<TenderDto> get filteredTenders {
     var list = List<TenderDto>.from(_searchResults ?? _tenders);
 

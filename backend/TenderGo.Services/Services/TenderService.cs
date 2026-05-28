@@ -59,6 +59,57 @@ namespace TenderGo.Services.Services
                 .Include(t=>t.Location);
         }
 
+        public async Task<bool> ToggleBookmarkAsync(string userId, int tenderId)
+{
+    // 1. Provjeri da li tender uopšte postoji u bazi podataka
+    var tenderExists = await _context.Tenders.AnyAsync(t => t.Id == tenderId);
+    if (!tenderExists)
+    {
+        throw new NotFoundException("Tender not found", new { TenderId = tenderId });
+    }
+
+    // 2. Potraži da li bookmark već postoji za ovu kombinaciju korisnika i tendera
+    var existingBookmark = await _context.TenderBookmarks
+        .FirstOrDefaultAsync(tb => tb.UserId == userId && tb.TenderId == tenderId);
+
+    if (existingBookmark != null)
+    {
+        // Ako postoji, brišemo ga (Ukloni iz sačuvanih)
+        _context.TenderBookmarks.Remove(existingBookmark);
+        await _context.SaveChangesAsync();
+        _logger.LogInformation("User {UserId} removed tender {TenderId} from bookmarks.", userId, tenderId);
+        return false;
+    }
+    else
+    {
+        // Ako ne postoji, kreiramo novi zapis (Sačuvaj tender)
+        var newBookmark = new TenderBookmark
+        {
+            UserId = userId,
+            TenderId = tenderId,
+            BookmarkedAt = DateTime.UtcNow
+        };
+
+        _context.TenderBookmarks.Add(newBookmark);
+        await _context.SaveChangesAsync();
+        _logger.LogInformation("User {UserId} bookmarked tender {TenderId}.", userId, tenderId);
+        return true;
+    }
+}
+
+public async Task<IEnumerable<TenderDTO>> GetBookmarkedTendersAsync(string userId)
+{
+    _logger.LogInformation("Fetching bookmarked tenders for user {UserId}", userId);
+
+    // Izvlačimo sve tendere koji su povezani kroz tabelu TenderBookmarks za datog korisnika
+    return await _context.TenderBookmarks
+        .Where(tb => tb.UserId == userId)
+        .OrderByDescending(tb => tb.BookmarkedAt) // Prvo prikazujemo najnovije sačuvane
+        .Select(tb => tb.Tender)                 // Prebacujemo fokus na sam objekat Tendera
+        .ProjectTo<TenderDTO>(_mapper.ConfigurationProvider) // Automatski mapira i radi sve Includes iz AddIncludes
+        .ToListAsync();
+}
+
         public async Task<IEnumerable<TenderDTO>> GetActiveTenders()
         {
            return await _context.Tenders

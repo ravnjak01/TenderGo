@@ -23,6 +23,10 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
     public DbSet<Notification> Notifications { get; set; }
     public DbSet<Location> Locations { get; set; }
     public DbSet<PasswordResetCode>PasswordResetCodes {get;set;}
+    public DbSet<TenderBookmark>TenderBookmarks {get;set;}
+
+
+
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -187,6 +191,8 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
             entity.Property(l => l.Region)
                 .HasMaxLength(100);
         });
+
+        modelBuilder.Entity<TenderBookmark>().HasKey(tb => new { tb.UserId, tb.TenderId });
 
     }
 

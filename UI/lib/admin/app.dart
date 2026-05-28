@@ -5,6 +5,7 @@ import 'package:tendergo/shared/core/theme/app_theme.dart';
 import 'package:tendergo/shared/providers/auth_provider.dart';
 import 'package:tendergo/shared/providers/notification_provider.dart';
 import 'package:tendergo/shared/providers/tender_provider.dart';
+import 'package:tendergo/shared/routes/nav_observer.dart';
 import 'package:tendergo/shared/routes/routes.dart';
 import 'package:tendergo/shared/services/bid_service.dart';
 import 'package:tendergo/shared/services/category_service.dart';
@@ -16,6 +17,9 @@ import 'package:tendergo/shared/services/admin_service.dart';
 import 'package:tendergo/shared/services/dio_client.dart';
 import 'package:tendergo/shared/services/notification_service.dart';
 import 'package:tendergo/shared/services/user_service.dart';
+
+
+
 class AdminApp extends StatelessWidget {
   final AuthService authService;
   final AdminService adminService;
@@ -56,6 +60,7 @@ class AdminApp extends StatelessWidget {
       child: MaterialApp(
         initialRoute: AppRoutes.splash,
         navigatorKey: AppRoutes.navigatorKey,
+            navigatorObservers: [routeObserver],
         routes: AdminRoutes.getRoutes(
           authService: authService,
           adminService: adminService,

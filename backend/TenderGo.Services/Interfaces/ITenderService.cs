@@ -27,6 +27,8 @@ namespace TenderGo.Services.Interfaces
         BaseState CreateState(TenderStatus status);
         Task<PagedResult<TenderDTO>>SearchAsync(TenderSearchRequest request);
 
+        Task<bool> ToggleBookmarkAsync(string userId, int tenderId);
+        Task<IEnumerable<TenderDTO>> GetBookmarkedTendersAsync(string userId);
 
     }
 }

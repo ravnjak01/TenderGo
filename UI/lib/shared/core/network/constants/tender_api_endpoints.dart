@@ -51,4 +51,8 @@ class TenderApiEndpoints {
   /// GET /api/tender/{id}/allowedActions
   static String allowedActions(int id) =>
       '$_tenderBase/$id/allowedActions';
+
+      static String toggleBookmark(int tenderId) => '$_tenderBase/toggle/$tenderId';
+
+      static const String getBookmarks = '$_tenderBase/bookmarked';
 }

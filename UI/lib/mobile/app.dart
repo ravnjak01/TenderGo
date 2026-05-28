@@ -6,6 +6,7 @@ import 'package:tendergo/shared/core/theme/app_theme.dart';
 import 'package:tendergo/shared/providers/auth_provider.dart';
 import 'package:tendergo/shared/providers/notification_provider.dart';
 import 'package:tendergo/shared/providers/tender_provider.dart';
+import 'package:tendergo/shared/routes/nav_observer.dart';
 import 'package:tendergo/shared/routes/routes.dart';
 import 'package:tendergo/shared/services/auth_service.dart';
 import 'package:tendergo/shared/services/bid_service.dart';
@@ -14,6 +15,8 @@ import 'package:tendergo/shared/services/dio_client.dart';
 import 'package:tendergo/shared/services/notification_service.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
 import 'package:tendergo/shared/services/user_service.dart';
+
+
 
 class MobileApp extends StatelessWidget {
   final AuthService authService;
@@ -51,6 +54,8 @@ class MobileApp extends StatelessWidget {
         title: 'TenderGo',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
+            navigatorObservers: [routeObserver],
+
         // Device Preview hooks
         useInheritedMediaQuery: true,
         locale: DevicePreview.locale(context),

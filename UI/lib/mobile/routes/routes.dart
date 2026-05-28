@@ -4,6 +4,7 @@ import 'package:tendergo/admin/screens/mytenders_screen.dart';
 import 'package:tendergo/admin/screens/splash_screen.dart';
 import 'package:tendergo/mobile/screens/forgot_password_screen.dart';
 import 'package:tendergo/mobile/screens/login_screen.dart';
+import 'package:tendergo/mobile/screens/mobile_bookmarked_screen.dart';
 import 'package:tendergo/mobile/screens/registration_screen.dart';
 import 'package:tendergo/mobile/screens/reset_password_screen.dart';
 import 'package:tendergo/mobile/screens/tender_details_screen.dart';
@@ -58,7 +59,7 @@ class MobileRoutes {
           _ => '',
         };
 
-        return UserProfilePublicScreen(userId: userId, userService: userService);
+        return UserProfilePublicScreen(userId: userId, userService: userService,tenderService: tenderService,);
       },
       AppRoutes.rateUser: (context) {
         final args = ModalRoute.of(context)?.settings.arguments;
@@ -89,6 +90,19 @@ class MobileRoutes {
         return RecommendedForYouScreen(onTenderTapped: onTap);
       },
       AppRoutes.notifications: (context) => const NotificationScreen(),
+      AppRoutes.bookmarkedTenders: (context) {
+  return MobileBookmarkedTendersScreen(
+    tenderService: tenderService,
+    onTenderSelected: (tenderId) {
+      // Otvaranje detalja tendera kada se klikne unutar sačuvanih
+      Navigator.of(context).pushNamed(
+        AppRoutes.tenderDetails,
+        arguments: tenderId, // Ako tvoj detalji screen prima argumente ovako
+      );
+    },
+  );
+},
+
     };
   }
 }

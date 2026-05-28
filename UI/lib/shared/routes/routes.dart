@@ -22,4 +22,5 @@
     static const String recommendations = '/recommendations';
     static const String notifications = '/notifications';
     static const String pdfViewer = '/pdf-viewer';
+    static const String bookmarkedTenders = '/bookmarked-tenders';
   }

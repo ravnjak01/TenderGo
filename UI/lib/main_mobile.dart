@@ -19,7 +19,6 @@ void main() async {
   final tenderService = TenderService(dio, imageService);
   final userService = UserService(dio);
   final categoryService = CategoryService(dio);
-
   runApp(
     DevicePreview(
       enabled: true,
