@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:tendergo/admin/screens/tender_bids_screen.dart'; // Retained for Admin Desktop panel
+import 'package:tendergo/admin/screens/tender_bids_screen.dart';
+// CHANGE THIS: Point to your mobile version of the bids screen
 import 'package:tendergo/shared/controllers/my_tenders_controller.dart';
 import 'package:tendergo/shared/core/actions/back_button.dart';
 import 'package:tendergo/shared/core/utils/extensions/string_extensions.dart';
@@ -15,16 +16,16 @@ import 'package:tendergo/shared/widgets/feedback/screen_state_widget.dart';
 import 'package:tendergo/shared/widgets/feedback/snackbar_helper.dart';
 import 'package:tendergo/shared/widgets/tender/tender_meta_item.dart';
 
-class MyTendersScreen extends StatefulWidget {
+class MobileMyTendersScreen extends StatefulWidget {
   final TenderService tenderService;
 
-  const MyTendersScreen({super.key, required this.tenderService});
+  const MobileMyTendersScreen({super.key, required this.tenderService});
 
   @override
-  State<MyTendersScreen> createState() => _MyTendersScreenState();
+  State<MobileMyTendersScreen> createState() => _MobileMyTendersScreenState();
 }
 
-class _MyTendersScreenState extends State<MyTendersScreen> {
+class _MobileMyTendersScreenState extends State<MobileMyTendersScreen> {
   late final MyTendersController _controller;
 
   @override
@@ -137,7 +138,7 @@ class _MyTendersScreenState extends State<MyTendersScreen> {
           }
 
           final tender = _controller.items[index];
-          return _AdminTenderCard(
+          return _MobileTenderCard(
             tender: tender,
             tenderService: widget.tenderService,
             onCancel: () => _cancelTender(tender),
@@ -148,8 +149,8 @@ class _MyTendersScreenState extends State<MyTendersScreen> {
   }
 }
 
-class _AdminTenderCard extends StatelessWidget {
-  const _AdminTenderCard({
+class _MobileTenderCard extends StatelessWidget {
+  const _MobileTenderCard({
     required this.tender,
     required this.tenderService,
     required this.onCancel,
@@ -226,39 +227,44 @@ class _AdminTenderCard extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  Wrap(
-                    alignment: WrapAlignment.spaceBetween,
-                    runSpacing: 8,
-                    spacing: 16,
-                    crossAxisAlignment: WrapCrossAlignment.end,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'Max Budget',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                          Text(
-                            '${model.valueKM.toStringAsFixed(0)} KM',
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: colorScheme.onSurface,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Text(
-                        'Posted ${model.postedAt.toTimeAgo()}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
+                  Row(
+  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  crossAxisAlignment: CrossAxisAlignment.end,
+  children: [
+    Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Max Budget',
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          Text(
+            '${model.valueKM.toStringAsFixed(0)} KM',
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: colorScheme.onSurface,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis, // Safe fallback for massive numbers
+          ),
+        ],
+      ),
+    ),
+    const SizedBox(width: 8), // Small safety gap
+    Text(
+      'Posted ${model.postedAt.toTimeAgo()}',
+      style: theme.textTheme.bodySmall?.copyWith(
+        color: colorScheme.onSurfaceVariant,
+      ),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    ),
+  ],
+),
                   const SizedBox(height: 8),
                   Wrap(
                     alignment: WrapAlignment.end,
@@ -271,7 +277,7 @@ class _AdminTenderCard extends StatelessWidget {
                           icon: Icons.cancel_outlined,
                           isPrimary: false,
                           isDestructive: true,
-                          width: 100,
+                          width: 115,
                           showLabel: true,
                           onTap: onCancel,
                         ),
@@ -279,7 +285,7 @@ class _AdminTenderCard extends StatelessWidget {
                         label: 'See bids',
                         icon: Icons.gavel_rounded,
                         isPrimary: true,
-                        width: 100,
+                        width: 115,
                         showLabel: true,
                         onTap: () {
                           Navigator.of(context).push(

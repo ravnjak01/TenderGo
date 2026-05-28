@@ -5,6 +5,7 @@ import 'package:tendergo/admin/screens/splash_screen.dart';
 import 'package:tendergo/mobile/screens/forgot_password_screen.dart';
 import 'package:tendergo/mobile/screens/login_screen.dart';
 import 'package:tendergo/mobile/screens/mobile_bookmarked_screen.dart';
+import 'package:tendergo/mobile/screens/my_tenders_screen.dart';
 import 'package:tendergo/mobile/screens/registration_screen.dart';
 import 'package:tendergo/mobile/screens/reset_password_screen.dart';
 import 'package:tendergo/mobile/screens/tender_details_screen.dart';
@@ -46,7 +47,7 @@ class MobileRoutes {
       AppRoutes.userProfile: (context) =>
           UserProfileScreen(authService: authService),
       AppRoutes.myTenders: (context) =>
-          MyTendersScreen(tenderService: tenderService),
+          MobileMyTendersScreen(tenderService: tenderService),
       AppRoutes.myBids: (context) => MyBidsScreen(
         bidService: bidService,
       ),

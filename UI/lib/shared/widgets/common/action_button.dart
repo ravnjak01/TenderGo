@@ -49,20 +49,24 @@ class ActionButton extends StatelessWidget {
           ),
           alignment: Alignment.center,
           child: Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (icon != null) ...[
-                Icon(icon, size: 15, color: foreground),
-                if (showLabel) const SizedBox(width: 6),
-              ],
-              if (showLabel)
-                Text(
-                  label,
-                  style: TextStyle(fontSize: 12, color: foreground),
-                ),
-            ],
-          ),
+  mainAxisSize: MainAxisSize.min,
+  mainAxisAlignment: MainAxisAlignment.center,
+  children: [
+    if (icon != null) ...[
+      Icon(icon, size: 12, color: foreground),
+      if (showLabel) const SizedBox(width: 3),
+    ],
+    if (showLabel)
+      Flexible( 
+        child: Text(
+          label,
+          style: TextStyle(fontSize: 12, color: foreground),
+          maxLines: 1, // Prevent it from expanding vertically
+          overflow: TextOverflow.ellipsis, // Safely drops into '...' if room runs out
+        ),
+      ),
+  ],
+),
         ),
       );
   }
