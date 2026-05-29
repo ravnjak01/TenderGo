@@ -33,8 +33,6 @@ public class Tender : BaseEntity
     public virtual Category Category { get; set; } = null!;
     public int? WinningBidId { get; set; }
     public virtual Bid? WinningBid { get; set; }
-    [Required]
-    public bool IsEdited { get; set; } = false;
 
     [Required]
     public int LocationId { get; set; }

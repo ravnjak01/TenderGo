@@ -97,7 +97,6 @@ namespace TenderGo.Services.Services
             }
 
             var user = await _context.Users
-                      .Include(u => u.Address) 
                       .FirstOrDefaultAsync(u => u.Id == userId)
                   ?? throw new NotFoundException("User not found", new { User = "User", Id = userId });
 

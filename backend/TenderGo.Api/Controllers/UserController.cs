@@ -14,10 +14,12 @@
         public class UserController : ControllerBase
         {
             private readonly IUserService _userService;
+        private readonly IAuthService _authService;
 
-            public UserController(IUserService userService)
+        public UserController(IUserService userService,IAuthService authService)
             {
                 _userService = userService;
+                _authService = authService;
             }
             [HttpGet("{id}")]
             public async Task<ActionResult<UserPublicDTO>> GetUserPublic(string id)
@@ -42,13 +44,7 @@
             [HttpPut("profile")]
             public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request)
             {
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-                if (string.IsNullOrEmpty(userId))
-                {
-                    return Unauthorized("User ID not found in token.");
-                }
-
+                var userId = _authService.GetCurrentUserId();
                 await _userService.UpdateProfileAsync(userId, request);
 
                 return Ok(new { message = "Profile updated successfully." });

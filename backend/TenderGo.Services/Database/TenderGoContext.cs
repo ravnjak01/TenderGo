@@ -30,6 +30,7 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
 
 
 
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         if (!optionsBuilder.IsConfigured)
@@ -93,9 +94,18 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
         .OnDelete(DeleteBehavior.Restrict);
 
 
-//zadnje dodao ovo za adresu
-        modelBuilder.Entity<ApplicationUser>()
-         .OwnsOne(u => u.Address);
+modelBuilder.Entity<ApplicationUser>(entity =>
+    {
+        entity.OwnsOne(u => u.Address, a =>
+        {
+            a.Property(p => p.Country).HasMaxLength(100).IsRequired(false);
+            a.Property(p => p.City).HasMaxLength(100).IsRequired(false);
+            a.Property(p => p.Street).HasMaxLength(200).IsRequired(false);
+            a.Property(p => p.PostalCode).HasMaxLength(20).IsRequired(false);
+            
+ 
+        });
+    });
 
         //rating
         modelBuilder.Entity<Rating>(entity =>
