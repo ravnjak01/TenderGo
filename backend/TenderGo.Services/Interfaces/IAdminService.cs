@@ -13,8 +13,6 @@ namespace TenderGo.Services.Interfaces
         Task<bool> BanUserAsync(string userId, BanRequest reason);
         Task<bool> UnbanUserAsync(string userId);
         Task<IEnumerable<UserDTO>> GetAllUsersAsync();
-        Task PurgeCancelledTenders();
-
         Task AdminResetPasswordAsync(string userId, string newPassword);
     }
 }

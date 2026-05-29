@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using TenderGo.Models.Entities;
+using TenderGo.Models.ENUMs;
 
 namespace TenderGo.Api.Database;
 
@@ -54,7 +55,6 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
             entity.Property(e => e.Title).HasMaxLength(200);
             entity.Property(e => e.Status).HasConversion<string>();
 
-            entity.Property(e=>e.Status).HasConversion<string>();
 
             entity.HasOne(t=>t.WinningBid)
                 .WithMany()
@@ -74,18 +74,8 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
                   .OnDelete(DeleteBehavior.Restrict);
 
         });
-        modelBuilder.Entity<Tender>().HasQueryFilter(t => !t.IsDeleted);
 
         modelBuilder.Entity<Tender>().Navigation(b => b.CreatedByUser).AutoInclude();//da se uvijek ucitava korisnik koji je kreirao tender
-
-        // Sakrij ponude čiji je tender obrisan
-        modelBuilder.Entity<Bid>().HasQueryFilter(b => !b.Tender.IsDeleted);
-
-        // Sakrij ocjene čiji je tender obrisan
-        modelBuilder.Entity<Rating>().HasQueryFilter(r => !r.Tender.IsDeleted);
-
-        // Sakrij slike čiji je tender obrisan
-        modelBuilder.Entity<TenderImage>().HasQueryFilter(ti => !ti.Tender.IsDeleted);
 
         modelBuilder.Entity<Tender>()
         .HasOne(t => t.Location)

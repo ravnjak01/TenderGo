@@ -170,20 +170,6 @@ class BidService {
 }
 
 
-	// ===== DELETE =====
-	Future<bool> delete(int id) async {
-		try {
-			final response = await _dio.delete(
-				BidApiEndpoints.delete(id),
-				options: await _options(),
-			);
-
-			return response.statusCode! >= 200 && response.statusCode! < 300;
-		} on  DioException  {
-			return false;
-		}
-	}
-
 	// ===== WITHDRAW =====
 	Future<BidDto> withdraw(int id) async {
 		try {

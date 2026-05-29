@@ -27,8 +27,6 @@ namespace TenderGo.Models.Entities
 
         [Required]
 
-        public bool IsDeleted { get; set; }=false;
-
         public virtual ICollection<Tender> CreatedTenders { get; set; } = new List<Tender>();
 
 

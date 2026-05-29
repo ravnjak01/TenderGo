@@ -106,7 +106,7 @@ public async Task<IActionResult> GetForCurrentUser([FromQuery] int topN = 10)
     var biddedTenders = await _db.Tenders
         .Include(t => t.Category)
         .Include(t => t.Bids)
-        .Where(t => t.Bids.Any(b => b.SubmittedByUserId == userId) && !t.IsDeleted)
+        .Where(t => t.Bids.Any(b => b.SubmittedByUserId == userId) && t.Status==TenderStatus.Open)
         .ToListAsync();
 
     var userActivities = await _db.UserActivities
@@ -128,7 +128,7 @@ public async Task<IActionResult> GetForCurrentUser([FromQuery] int topN = 10)
         .Include(t => t.Category)
         .Include(t => t.Location)
         .Include(t => t.Images)
-        .Where(t => !t.IsDeleted && t.Status == TenderStatus.Open)
+        .Where(t => t.Status == TenderStatus.Open)
         .ToListAsync();
 
     var allVectors = allTenders.Select(t => _builder.Build(t)).ToList();

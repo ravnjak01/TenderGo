@@ -90,35 +90,7 @@ public async Task<IEnumerable<UserDTO>> GetAllUsersAsync()
             return result.Succeeded;
         }
 
-        public async Task PurgeCancelledTenders()
-        {
-            var tendersToPurge = await _context.Tenders
-                .IgnoreQueryFilters()
-                .Where(t => t.Status == TenderStatus.Cancelled && t.IsDeleted)
-                .Include(t => t.Bids)
-                .Include(t => t.Images)
-                .ToListAsync();
-
-            foreach (var tender in tendersToPurge)
-            {
-                if (tender.WinningBidId != null)
-                {
-                    tender.WinningBidId = null;
-                    _context.Entry(tender).Property(x => x.WinningBidId).IsModified = true;
-                }
-
-                var ratings = await _context.Ratings.Where(r => r.TenderId == tender.Id).ToListAsync();
-                _context.Ratings.RemoveRange(ratings);
-
-                _context.Bids.RemoveRange(tender.Bids);
-                _context.TenderImages.RemoveRange(tender.Images);
-
-                _context.Tenders.Remove(tender);
-            }
-
-            await _context.SaveChangesAsync();
-        }
-
+      
         public async Task AdminResetPasswordAsync(string userId, string newPassword)
         {
             if (!_authService.IsInRole(AppRoles.Admin))
