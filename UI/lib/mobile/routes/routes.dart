@@ -13,7 +13,7 @@ import 'package:tendergo/mobile/screens/tender_shell_screen.dart';
 import 'package:tendergo/shared/screens/user_profile_screen.dart';
 import 'package:tendergo/shared/routes/routes.dart';
 import 'package:tendergo/shared/screens/notification_screen.dart';
-import 'package:tendergo/shared/screens/recommendation_screen.dart';
+import 'package:tendergo/mobile/screens/recommendation_screen.dart';
 import 'package:tendergo/shared/screens/rate_user_screen.dart';
 import 'package:tendergo/shared/screens/user_profile_public_screen.dart';
 import 'package:tendergo/shared/services/auth_service.dart';
@@ -87,7 +87,7 @@ class MobileRoutes {
         final onTap = args is Map
             ? args['onTenderTapped'] as void Function(int)?
             : null;
-        return RecommendedForYouScreen(onTenderTapped: onTap);
+        return RecommendedForYouMobileScreen(onTenderTapped: onTap);
       },
       AppRoutes.notifications: (context) => const NotificationScreen(),
       AppRoutes.bookmarkedTenders: (context) {

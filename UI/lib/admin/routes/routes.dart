@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:tendergo/admin/screens/admin_report_preview_screen.dart';
 import 'package:tendergo/admin/screens/admin_screen.dart';
+import 'package:tendergo/admin/screens/recommend_screen.dart';
 import 'package:tendergo/shared/providers/admin_provider.dart';
 import 'package:tendergo/admin/screens/forgot_password_screen.dart';
 import 'package:tendergo/admin/screens/home_screen.dart';
@@ -18,7 +19,7 @@ import 'package:tendergo/admin/screens/tender_shell_screen.dart';
 import 'package:tendergo/shared/routes/routes.dart';
 import 'package:tendergo/shared/screens/rate_user_screen.dart';
 import 'package:tendergo/shared/screens/notification_screen.dart';
-import 'package:tendergo/shared/screens/recommendation_screen.dart';
+import 'package:tendergo/mobile/screens/recommendation_screen.dart';
 import 'package:tendergo/shared/screens/user_profile_public_screen.dart';
 import 'package:tendergo/shared/screens/user_profile_screen.dart';
 import 'package:tendergo/shared/services/admin_service.dart';
@@ -112,7 +113,7 @@ class AdminRoutes {
         final onTap = args is Map
             ? args['onTenderTapped'] as void Function(int)?
             : null;
-        return RecommendedForYouScreen(onTenderTapped: onTap);
+        return RecommendedForYouDesktopScreen(onTenderTapped: onTap);
       },
      AppRoutes.notifications: (context) => const NotificationScreen(),
 

@@ -4,25 +4,22 @@ import 'package:provider/provider.dart';
 import 'package:tendergo/shared/core/actions/back_button.dart';
 import 'package:tendergo/shared/routes/routes.dart';
 import 'package:tendergo/shared/widgets/tender/tender_recommendation_card_widget.dart';
-import '../providers/recommendation_provider.dart';
+import '../../shared/providers/recommendation_provider.dart';
 
-// Breakpoint above which a two-column grid and constrained max-width are used.
-const double _kDesktopBreakpoint = 720;
-const double _kMaxContentWidth = 1100;
-class RecommendedForYouScreen extends StatefulWidget {
+class RecommendedForYouMobileScreen extends StatefulWidget {
   final void Function(int tenderId)? onTenderTapped;
 
-  const RecommendedForYouScreen({
+  const RecommendedForYouMobileScreen({
     super.key,
     this.onTenderTapped,
   });
 
   @override
-  State<RecommendedForYouScreen> createState() =>
-      _RecommendedForYouScreenState();
+  State<RecommendedForYouMobileScreen> createState() =>
+      _RecommendedForYouMobileScreenState();
 }
 
-class _RecommendedForYouScreenState extends State<RecommendedForYouScreen> {
+class _RecommendedForYouMobileScreenState extends State<RecommendedForYouMobileScreen> {
   static const _storage = FlutterSecureStorage();
   late final RecommendationProvider _provider;
 
@@ -56,7 +53,16 @@ class _RecommendedForYouScreenState extends State<RecommendedForYouScreen> {
       child: Scaffold(
         appBar: AppBar(
           leading: const CustomBackButton(),
-          title: const Text('Recommended For You'),
+        title: Flexible(
+  child: Text(
+    'Recommended For You',
+    maxLines: 1,
+    overflow: TextOverflow.ellipsis,
+    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+          fontWeight: FontWeight.bold,
+        ),
+  ),
+),
           actions: [
             Consumer<RecommendationProvider>(
               builder: (_, provider, _) => IconButton(
@@ -121,78 +127,28 @@ class _RecommendedForYouScreenState extends State<RecommendedForYouScreen> {
               );
             }
 
-            return LayoutBuilder(
-              builder: (context, constraints) {
-                final isDesktop = constraints.maxWidth >= _kDesktopBreakpoint;
-
-                Widget content;
-                if (isDesktop) {
-                  // Two-column grid for desktop / wide screens
-                  content = GridView.builder(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      mainAxisExtent: 390,
-                    ),
-                    itemCount: provider.recommendations.length,
-                    itemBuilder: (context, index) {
-                      final rec = provider.recommendations[index];
-                      return TenderRecommendationCard(
-                        tender: rec,
-                        onTap: () {
-                          widget.onTenderTapped?.call(rec.tenderId);
-                          if (widget.onTenderTapped == null) {
-                            Navigator.of(context).pushNamed(
-                              AppRoutes.tenderDetails,
-                              arguments: rec.tenderId,
-                            );
-                          }
-                        },
-                      );
+            // Čisti mobilni prikaz sa Pull-to-Refresh i listom
+            return RefreshIndicator(
+              onRefresh: _refresh,
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                itemCount: provider.recommendations.length,
+                itemBuilder: (context, index) {
+                  final rec = provider.recommendations[index];
+                  return TenderRecommendationCard(
+                    tender: rec,
+                    onTap: () {
+                      widget.onTenderTapped?.call(rec.tenderId);
+                      if (widget.onTenderTapped == null) {
+                        Navigator.of(context).pushNamed(
+                          AppRoutes.tenderDetails,
+                          arguments: rec.tenderId,
+                        );
+                      }
                     },
                   );
-                } else {
-                  // Single-column list for mobile
-                  content = ListView.builder(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    itemCount: provider.recommendations.length,
-                    itemBuilder: (context, index) {
-                      final rec = provider.recommendations[index];
-                      return TenderRecommendationCard(
-                        tender: rec,
-                        onTap: () {
-                          widget.onTenderTapped?.call(rec.tenderId);
-                          if (widget.onTenderTapped == null) {
-                            Navigator.of(context).pushNamed(
-                              AppRoutes.tenderDetails,
-                              arguments: rec.tenderId,
-                            );
-                          }
-                        },
-                      );
-                    },
-                  );
-                }
-
-                // On desktop, constrain and center the content
-                return RefreshIndicator(
-                  onRefresh: _refresh,
-                  child: isDesktop
-                      ? Align(
-                          alignment: Alignment.topCenter,
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(
-                                maxWidth: _kMaxContentWidth),
-                            child: content,
-                          ),
-                        )
-                      : content,
-                );
-              },
+                },
+              ),
             );
           },
         ),

@@ -21,7 +21,8 @@ class TenderRecommendationCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Card(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        // Smanjen horizontalni margin na mobilnim uređajima da dobijemo više prostora sa strana
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         elevation: 2,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         child: Column(
@@ -41,26 +42,27 @@ class TenderRecommendationCard extends StatelessWidget {
               ),
 
             Padding(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(12), // Blago smanjen padding za više prostora
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-
                   // --- Match score badge + Category ---
-                  Row(
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       _MatchBadge(score: tender.similarityScore),
-                      const SizedBox(width: 8),
                       if (tender.category != null)
-                        Flexible(
-                          child: Chip(
-                            label: Text(tender.category!,
-                                style: const TextStyle(fontSize: 11)),
-                            padding: EdgeInsets.zero,
-                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            backgroundColor:
-                                theme.colorScheme.secondaryContainer,
+                        Chip(
+                          label: Text(
+                            tender.category!,
+                            style: const TextStyle(fontSize: 11),
+                            overflow: TextOverflow.ellipsis,
                           ),
+                          padding: EdgeInsets.zero,
+                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          backgroundColor: theme.colorScheme.secondaryContainer,
                         ),
                     ],
                   ),
@@ -87,10 +89,15 @@ class TenderRecommendationCard extends StatelessWidget {
                     ),
                   const SizedBox(height: 10),
                   _RecommendationExplanation(tender: tender),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
 
-                  // --- Footer: budget | location | deadline ---
-                  Row(
+                  // --- POPRAVLJEN FOOTER: Koristi Wrap umjesto Row ---
+                  // Wrap automatski prebacuje element u novi red ako nema mjesta na telefonu
+                  Wrap(
+                    spacing: 12,    // Razmak između elemenata horizontalno
+                    runSpacing: 6,   // Razmak ako se prebaci u novi red
+                    alignment: WrapAlignment.start,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       // Budget
                       _InfoChip(
@@ -98,19 +105,13 @@ class TenderRecommendationCard extends StatelessWidget {
                         label: tender.budgetFormatted,
                         color: Colors.green,
                       ),
-                      const SizedBox(width: 8),
-
                       // Location
                       if (tender.locationName != null)
-                        Flexible(
-                          child: _InfoChip(
-                            icon: Icons.location_on_outlined,
-                            label: tender.locationName!,
-                            color: Colors.blue,
-                          ),
+                        _InfoChip(
+                          icon: Icons.location_on_outlined,
+                          label: tender.locationName!,
+                          color: Colors.blue,
                         ),
-                      const Spacer(),
-
                       // Deadline
                       _InfoChip(
                         icon: Icons.timer_outlined,
@@ -181,22 +182,45 @@ class _RecommendationExplanation extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 5),
+          
+          // Glavni tekst objašnjenja - maknut maxLines da se tekst na mobitelu 
+          // cjelovito prikaže i prebaci u nove redove umjesto da se odsječe
           Text(
             tender.explanationText,
             style: theme.textTheme.bodySmall,
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
           ),
+          
           if (signals.isNotEmpty) ...[
-            const SizedBox(height: 7),
-            Wrap(
-              spacing: 6,
-              runSpacing: 5,
-              children: signals
-                  .map(
-                    (signal) => _SignalChip(label: signal),
-                  )
-                  .toList(),
+            const SizedBox(height: 8),
+            
+            // Dinamički prikaz balončića ovisno o širini ekrana
+            LayoutBuilder(
+              builder: (context, constraints) {
+                // Ako je širina manja od npr. 340px (tipično unutar mobilne kartice),
+                // slažemo balončiće vertikalno kako bi tekst stao u potpunosti
+                final isMobileLayout = constraints.maxWidth < 340;
+
+                if (isMobileLayout) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: signals.map((signal) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 5),
+                        child: _SignalChip(label: signal, isMobile: true),
+                      );
+                    }).toList(),
+                  );
+                }
+
+                // Ako ima dovoljno mjesta (Desktop grid), ostaje horizontalni Wrap
+                return Wrap(
+                  spacing: 6,
+                  runSpacing: 5,
+                  children: signals
+                      .map((signal) => _SignalChip(label: signal, isMobile: false))
+                      .toList(),
+                );
+              },
             ),
           ],
         ],
@@ -207,34 +231,40 @@ class _RecommendationExplanation extends StatelessWidget {
 
 class _SignalChip extends StatelessWidget {
   final String label;
+  final bool isMobile;
 
-  const _SignalChip({required this.label});
+  const _SignalChip({
+    required this.label,
+    required this.isMobile,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return Container(
-      constraints: const BoxConstraints(maxWidth: 220),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      // Ako je na mobitelu, balončić zauzima punu širinu i dopušta tekstu da ode u novi red
+      width: isMobile ? double.infinity : null,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: theme.colorScheme.primaryContainer.withOpacity(0.72),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12), // Malo blaži radijus za višelinijski tekst
       ),
       child: Text(
         label,
         style: theme.textTheme.labelSmall?.copyWith(
           color: theme.colorScheme.onPrimaryContainer,
           fontWeight: FontWeight.w600,
+          height: 1.2, // Bolji prored za tekst koji se prelomi
         ),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
+        // Na mobitelu gasimo maxLines i elipsu da se vidi CIJELI tekst (npr. "Similar to locations you viewed...")
+        maxLines: isMobile ? null : 1,
+        overflow: isMobile ? TextOverflow.visible : TextOverflow.ellipsis,
       ),
     );
   }
 }
 
-/// Green badge showing the match percentage
 class _MatchBadge extends StatelessWidget {
   final double score;
 
@@ -267,7 +297,6 @@ class _MatchBadge extends StatelessWidget {
   }
 }
 
-/// Small icon + label row
 class _InfoChip extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -281,14 +310,25 @@ class _InfoChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Dodan Flexible i TextOverflow kako bi unutar Wrap-a dugačka lokacija (npr. "Banja Luka") 
+    // elegantno dobila tri tačke ako je ekran kritično uzak
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(icon, size: 13, color: color),
         const SizedBox(width: 3),
-        Text(label,
+        Flexible(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
-                fontSize: 11, color: color, fontWeight: FontWeight.w600)),
+              fontSize: 11, 
+              color: color, 
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
       ],
     );
   }

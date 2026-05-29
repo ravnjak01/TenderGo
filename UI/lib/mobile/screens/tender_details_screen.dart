@@ -244,9 +244,7 @@ class _MobileTenderDetailsScreenState extends State<MobileTenderDetailsScreen> {
             onBidSuccess: () =>
                 setState(() => _tenderFuture = _loadTender(tender.id)),
           ),
-          const SizedBox(height: 24),
-          SimilarTendersSection(tenderId: tender.id),
-          const SizedBox(height: 24),
+          
         ],
       ),
     );
