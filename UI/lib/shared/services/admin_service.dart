@@ -87,19 +87,7 @@ class AdminService {
     }
   }
 
-  Future<ApiResponse<void>> deleteTender(int tenderId) async {
-    try {
-      await _dio.delete(
-        AdminEndpoints.deleteTender(tenderId),
-        options: await _options(),
-      );
 
-      // KORISTIMO NOVI KONSTRUKTOR ZA USPJEH:
-      return ApiResponse.success(null, message: 'Tender deleted successfully.');
-    } on DioException catch (e) {
-      return ApiHelper.handleDioError(e);
-    }
-  }
 
   Future<Options> _options() async {
     final token = await _storage.read(key: 'jwt_token');

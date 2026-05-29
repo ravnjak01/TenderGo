@@ -40,7 +40,6 @@ namespace TenderGo.Services.Services
 public async Task<IEnumerable<UserDTO>> GetAllUsersAsync()
 {
     var finalQuery = from user in _context.Users
-                     where !user.IsDeleted
                      select new UserDTO
                      {
                          Id = user.Id,
@@ -63,7 +62,7 @@ public async Task<IEnumerable<UserDTO>> GetAllUsersAsync()
         public async Task<bool> BanUserAsync(string userId, BanRequest reason)
         {
             var user = await _userManager.FindByIdAsync(userId);
-            if (user == null || user.IsDeleted == true) return false;
+            if (user == null ) return false;
 
             user.IsBanned = true;
             user.BanReason = reason.Reason;
@@ -79,7 +78,7 @@ public async Task<IEnumerable<UserDTO>> GetAllUsersAsync()
         public async Task<bool> UnbanUserAsync(string userId)
         {
             var user = await _userManager.FindByIdAsync(userId);
-            if (user == null || user.IsDeleted == true) return false;
+            if (user == null) return false;
 
             user.IsBanned = false;
             user.BanReason = null;
@@ -89,21 +88,6 @@ public async Task<IEnumerable<UserDTO>> GetAllUsersAsync()
 
             var result = await _userManager.UpdateAsync(user);
             return result.Succeeded;
-        }
-
-        public async Task<bool> DeleteTenderAsync(int tenderId)
-        {
-            var tender = await _context.Tenders.FindAsync(tenderId);
-
-            if (tender == null || tender.IsDeleted)
-                return false;
-
-            tender.IsDeleted = true;
-            tender.Status = TenderStatus.Cancelled;
-
-            await _context.SaveChangesAsync();
-
-            return true;
         }
 
         public async Task PurgeCancelledTenders()

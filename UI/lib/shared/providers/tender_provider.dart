@@ -190,13 +190,6 @@ void updateBookmarkLocal(int id, bool isBookmarked) {
     });
   }
 
-  Future<bool> deleteTender(int id) async {
-    final result = await handleAsync(() async {
-      await _service.delete(id);
-      _tenders.removeWhere((t) => t.id == id);
-    });
-    return result != null; 
-  }
 
   Future<bool> cancelTender(int id) async {
     final result = await handleAsync(() async {

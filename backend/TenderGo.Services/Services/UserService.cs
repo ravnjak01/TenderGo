@@ -64,7 +64,7 @@ namespace TenderGo.Services.Services
         public async Task<UserPublicDTO> GetPublicByIdAsync(string id)
         {
             var response = await _context.Users
-                .Where(u => u.Id == id && !u.IsDeleted)
+                .Where(u => u.Id == id)
                 .Select(u => new UserPublicDTO
                 {
                     Id = u.Id,
@@ -138,6 +138,8 @@ namespace TenderGo.Services.Services
                 _mapper.Map(request.Address, user.Address);
             }
 
+            user.UpdatedAt = DateTime.UtcNow;
+            user.UpdatedBy = currentUserId;
             var result=await _userManager.UpdateAsync(user);
 
             if(!result.Succeeded)
@@ -214,7 +216,7 @@ namespace TenderGo.Services.Services
         public async Task<List<ReviewDTO>> GetReviewsByUserIdAsync(string userId)
 {
     // Provjera da li korisnik uopšte postoji
-    var userExists = await _context.Users.AnyAsync(u => u.Id == userId && !u.IsDeleted);
+    var userExists = await _context.Users.AnyAsync(u => u.Id == userId);
     if (!userExists)
     {
         throw new NotFoundException("User not found", new { User = "User", Id = userId });

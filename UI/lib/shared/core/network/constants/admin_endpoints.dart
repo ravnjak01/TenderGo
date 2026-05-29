@@ -5,5 +5,4 @@ class AdminEndpoints {
 
   static String unbanUser(String userId) => '/admin/users/$userId/unban';
 
-  static String deleteTender(int tenderId) => '/admin/tender/$tenderId';
 }

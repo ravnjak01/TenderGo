@@ -38,9 +38,11 @@ class AdminProvider {
 
   Future<List<TenderDto>> getClosedTenders() => tenderService.getClosed();
 
+  Future<List<TenderDto>> getCancelledTenders() => tenderService.getCancelled();
+
   Future<List<CategoryDto>> getCategories() => categoryService.getAll();
 
-  Future<ApiResponse> deleteTender(int id) => adminService.deleteTender(id);
+  Future<TenderDto> cancelTender(int id) => tenderService.cancel(id);
 
   Future<ApiResponse> banUser(String id, BanRequest request) =>
       adminService.banUser(id, request);
@@ -59,12 +61,9 @@ class AdminProvider {
       locationService.getLocations(const LocationFilterRequest());
 
   Future<LocationDto> insertLocation(LocationInsertRequest request) =>
-      locationService.insertLocation(
-        request,
-      );
+      locationService.insertLocation(request);
 
-  Future<bool> updateLocation(
-    int id, LocationUpdateRequest request) =>
+  Future<bool> updateLocation(int id, LocationUpdateRequest request) =>
       locationService.updateLocation(id, request);
 
   Future<bool> deleteLocation(int id) => locationService.deleteLocation(id);

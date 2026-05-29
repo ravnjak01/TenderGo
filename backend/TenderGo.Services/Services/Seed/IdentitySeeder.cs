@@ -2,7 +2,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using TenderGo.Models.Entities;
 
-public class IdentitySeeder
+namespace TenderGo.Services.Seed;
+public static class IdentitySeeder
 {
     public static async Task SeedRolesAndAdminAsync(IServiceProvider serviceProvider)
     {

@@ -35,7 +35,7 @@ public class RecommendController : ControllerBase
         var allTenders = await _db.Tenders
             .Include(t => t.Category)
             .Include(t => t.Location)
-            .Where(t => !t.IsDeleted)                   
+            .Where(t => t.Id!=tenderId && t.Status==TenderStatus.Open)                   
             .ToListAsync();
 
         var target = allTenders.FirstOrDefault(t => t.Id == tenderId);

@@ -178,34 +178,6 @@ class TenderService {
   }
  
 
-  // ===== UPDATE =====
-  Future<bool> update(int id, Map<String, dynamic> data) async {
-    try {
-      final response = await _dio.patch(
-        TenderApiEndpoints.update(id),
-        data: data,
-      );
-
-      return response.statusCode! >= 200 && response.statusCode! < 300;
-    } on DioException  {
-      return false;
-    }
-  }
-
-  // ===== DELETE =====
-  Future<bool> delete(int id) async {
-    try {
-      final response = await _dio.delete(
-        TenderApiEndpoints.delete(id),
-      );
-
-      return response.statusCode! >= 200 && response.statusCode! < 300;
-    } on DioException  {
-      return false;
-    }
-  }
-
- 
 
   // ===== AWARD =====
   Future<TenderDto> award(TenderDto tender, int bidId) async {

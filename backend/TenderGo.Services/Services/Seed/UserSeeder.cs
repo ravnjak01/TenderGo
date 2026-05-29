@@ -1,0 +1,88 @@
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.DependencyInjection;
+using TenderGo.Models.Entities;
+
+namespace TenderGo.Data.Seeders
+{
+    public static class UserSeeder
+    {
+        public static async Task SeedUsersAsync(IServiceProvider serviceProvider)
+        {
+            var userManager = serviceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+            // Lista testnih korisnika koje želimo dodati
+            var testUsers = new List<ApplicationUser>
+            {
+                new ApplicationUser
+                {
+                    UserName = "mujo@tendergo.com",
+                    Email = "mujo@tendergo.com",
+                    EmailConfirmed = true,
+                    FirstName = "Mujo",
+                    LastName = "Mujačić",
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = "System",
+                    IsBanned = false,
+                    AverageRating = 4.5,
+                    RatingCount = 12,
+                    Address = new Address
+                    {
+                        Country = "Bosna i Hercegovina",
+                        City = "Sarajevo",
+                        Street = "Ferhadija 15",
+                        PostalCode = "71000"
+                    }
+                },
+                new ApplicationUser
+                {
+                    UserName = "suljo@tendergo.com",
+                    Email = "suljo@tendergo.com",
+                    EmailConfirmed = true,
+                    FirstName = "Suljo",
+                    LastName = "Suljić",
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = "System",
+                    IsBanned = false,
+                    AverageRating = 4.9,
+                    RatingCount = 25,
+                    Address = new Address
+                    {
+                        Country = "Bosna i Hercegovina",
+                        City = "Mostar",
+                        Street = "Braće Fejića 44",
+                        PostalCode = "88000"
+                    }
+                }
+            };
+
+            // Prolazimo kroz svakog korisnika sa liste i provjeravamo postoji li već
+            foreach (var user in testUsers)
+            {
+                var existingUser = await userManager.FindByEmailAsync(user.Email!);
+
+                if (existingUser == null)
+                {
+                    // Kreiramo korisnika sa sigurnom testnom lozinkom
+                    var result = await userManager.CreateAsync(user, "User123!");
+
+                    if (result.Succeeded)
+                    {
+                        // Dodjeljujemo mu ulogu običnog korisnika (AppRoles.User)
+                        var roleResult = await userManager.AddToRoleAsync(user, AppRoles.User);
+                        
+                        if (!roleResult.Succeeded)
+                        {
+                            var roleErrors = string.Join(", ", roleResult.Errors.Select(e => e.Description));
+                            throw new Exception($"Failed to assign User role to {user.Email}: {roleErrors}");
+                        }
+                    }
+                    else
+                    {
+                        var userErrors = string.Join(", ", result.Errors.Select(e => e.Description));
+                        throw new Exception($"Failed to seed user {user.Email}: {userErrors}");
+                    }
+                }
+            }
+        }
+    }
+}

@@ -30,7 +30,7 @@ namespace TenderGo.Data
                     FirstName = "Sistem",
                     LastName = "Administrator",
                     CreatedAt = DateTime.UtcNow, 
-
+                    CreatedBy = "System",
                     
                     Address = new Address
                     {

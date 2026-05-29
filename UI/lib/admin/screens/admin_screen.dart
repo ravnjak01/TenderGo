@@ -26,10 +26,7 @@ import 'package:tendergo/shared/widgets/tender/tender_meta_item.dart';
 class AdminScreen extends StatefulWidget {
   final AdminProvider provider;
 
-  const AdminScreen({
-    super.key,
-    required this.provider,
-  });
+  const AdminScreen({super.key, required this.provider});
 
   @override
   State<AdminScreen> createState() => _AdminScreenState();
@@ -82,12 +79,13 @@ class _AdminScreenState extends State<AdminScreen> {
     _loadAdminData();
   }
 
-  Future<void> _handleDeleteTender(TenderDto tender) async {
+  Future<void> _handleCancelTender(TenderDto tender) async {
     final confirmed = await AppDialogs.showConfirm(
       context: context,
-      title: 'Delete tender',
-      content: 'Are you sure you want to delete "${tender.title}"?',
-      confirmLabel: 'Delete',
+      title: 'Cancel tender',
+      content: 'Are you sure you want to cancel this tender?',
+      cancelLabel: 'No',
+      confirmLabel: 'Yes, Cancel',
       isDestructive: true,
     );
 
@@ -95,19 +93,37 @@ class _AdminScreenState extends State<AdminScreen> {
 
     setState(() => _isSubmitting = true);
 
-    final result = await widget.provider.deleteTender(tender.id);
+    try {
+      final cancelledTender = await widget.provider.cancelTender(tender.id);
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    setState(() => _isSubmitting = false);
-
-    SnackbarHelper.show(context, result.message, isError: !result.success);
-
-    if (result.success) {
       setState(() {
-        _allTenders.removeWhere((t) => t.id == tender.id);
-        _activeTenders.removeWhere((t) => t.id == tender.id);
+        _allTenders = _allTenders
+            .map((t) => t.id == tender.id ? cancelledTender : t)
+            .toList();
+        _activeTenders = _activeTenders
+            .where((t) => t.id != tender.id)
+            .toList();
+        _closedTenders = _closedTenders
+            .where((t) => t.id != tender.id)
+            .toList();
+        _cancelledTenders = [
+          cancelledTender,
+          ..._cancelledTenders.where((t) => t.id != tender.id),
+        ];
+        _isSubmitting = false;
       });
+
+      SnackbarHelper.show(context, 'Tender canceled successfully.');
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      SnackbarHelper.show(
+        context,
+        error.toString().replaceFirst('Exception: ', ''),
+        isError: true,
+      );
     }
   }
 
@@ -181,34 +197,41 @@ class _AdminScreenState extends State<AdminScreen> {
   }
 
   // 🌟 Dodaj u _AdminScreenState klasu
-Future<void> _handleDownloadUserReport(UserDto user) async {
-  setState(() => _isSubmitting = true);
+  Future<void> _handleDownloadUserReport(UserDto user) async {
+    setState(() => _isSubmitting = true);
 
-  try {
-    // 1. Pozivamo tvoj PdfService koji smo kreirali u prethodnom koraku
-    final pdfBytes = await PdfService().fetchUserTendersReport(user.id.toString());
+    try {
+      // 1. Pozivamo tvoj PdfService koji smo kreirali u prethodnom koraku
+      final pdfBytes = await PdfService().fetchUserTendersReport(
+        user.id.toString(),
+      );
 
-    if (!mounted) return;
-    setState(() => _isSubmitting = false);
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
 
-    if (pdfBytes != null) {
-      // 2. Ako su bajtovi uspješno stigli, navigiramo na ekran za prikaz PDF-a
-      Navigator.of(context).pushNamed(
-      AppRoutes.pdfViewer, // 🌟 Popravljeno: koristi se klasa AppRoutes direktno
-      arguments: {
-        'pdfBytes': pdfBytes,
-        'title': 'Izvještaj: ${_userDisplayName(user)}',
-      },
-    );
-    } else {
-      SnackbarHelper.show(context, 'Greška pri generisanju PDF-a.', isError: true);
+      if (pdfBytes != null) {
+        // 2. Ako su bajtovi uspješno stigli, navigiramo na ekran za prikaz PDF-a
+        Navigator.of(context).pushNamed(
+          AppRoutes
+              .pdfViewer, // 🌟 Popravljeno: koristi se klasa AppRoutes direktno
+          arguments: {
+            'pdfBytes': pdfBytes,
+            'title': 'Izvještaj: ${_userDisplayName(user)}',
+          },
+        );
+      } else {
+        SnackbarHelper.show(
+          context,
+          'Greška pri generisanju PDF-a.',
+          isError: true,
+        );
+      }
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      SnackbarHelper.show(context, 'Došlo je do greške: $error', isError: true);
     }
-  } catch (error) {
-    if (!mounted) return;
-    setState(() => _isSubmitting = false);
-    SnackbarHelper.show(context, 'Došlo je do greške: $error', isError: true);
   }
-}
 
   Future<void> _handleDeleteCategory(CategoryDto category) async {
     final confirmed = await AppDialogs.showConfirm(
@@ -288,9 +311,7 @@ Future<void> _handleDownloadUserReport(UserDto user) async {
 
   Future<void> _handleAddLocation() async {
     final values = await _showLocationDialog();
-    if (values == null ||
-        values.name.isEmpty ||
-        values.country.isEmpty) {
+    if (values == null || values.name.isEmpty || values.country.isEmpty) {
       return;
     }
 
@@ -302,10 +323,8 @@ Future<void> _handleDownloadUserReport(UserDto user) async {
         country: values.country,
         region: values.region,
       );
-      
-      final created = await widget.provider.insertLocation(
-       request,
-      );
+
+      final created = await widget.provider.insertLocation(request);
 
       if (!mounted) return;
       setState(() {
@@ -330,9 +349,7 @@ Future<void> _handleDownloadUserReport(UserDto user) async {
       initialCountry: location.country,
       initialRegion: location.region,
     );
-    if (values == null ||
-        values.name.isEmpty ||
-        values.country.isEmpty) {
+    if (values == null || values.name.isEmpty || values.country.isEmpty) {
       return;
     }
 
@@ -345,32 +362,30 @@ Future<void> _handleDownloadUserReport(UserDto user) async {
     setState(() => _isSubmitting = true);
 
     try {
-       final request = LocationUpdateRequest(
+      final request = LocationUpdateRequest(
         name: values.name,
         country: values.country,
         region: values.region,
       );
 
-      await widget.provider.updateLocation(
-        location.id,
-       request,
-      );
+      await widget.provider.updateLocation(location.id, request);
 
       if (!mounted) return;
       setState(() {
-        _locations = _locations
-            .map(
-              (l) => l.id == location.id
-                  ? LocationDto(
-                      id: l.id,
-                      name: values.name,
-                      country: values.country,
-                      region: values.region,
-                    )
-                  : l,
-            )
-            .toList()
-          ..sort(_compareLocations);
+        _locations =
+            _locations
+                .map(
+                  (l) => l.id == location.id
+                      ? LocationDto(
+                          id: l.id,
+                          name: values.name,
+                          country: values.country,
+                          region: values.region,
+                        )
+                      : l,
+                )
+                .toList()
+              ..sort(_compareLocations);
         _isSubmitting = false;
       });
       SnackbarHelper.show(context, 'Location updated successfully.');
@@ -441,9 +456,7 @@ Future<void> _handleDownloadUserReport(UserDto user) async {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: Text(
-            initialName == null ? 'Add location' : 'Edit location',
-          ),
+          title: Text(initialName == null ? 'Add location' : 'Edit location'),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -549,6 +562,7 @@ Future<void> _handleDownloadUserReport(UserDto user) async {
         widget.provider.getAllTenders(),
         widget.provider.getActiveTenders(),
         widget.provider.getClosedTenders(),
+        widget.provider.getCancelledTenders(),
         widget.provider.getCategories(),
         widget.provider.getLocations(),
       ]);
@@ -567,12 +581,12 @@ Future<void> _handleDownloadUserReport(UserDto user) async {
         _allTenders = results[1] as List<TenderDto>;
         _activeTenders = results[2] as List<TenderDto>;
         _closedTenders = results[3] as List<TenderDto>;
-        _categories = (results[4] as List<CategoryDto>)
+        _cancelledTenders = results[4] as List<TenderDto>;
+        _categories = (results[5] as List<CategoryDto>)
           ..sort(
             (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
           );
-        _locations = (results[5] as List<LocationDto>)..sort(_compareLocations);
-        // _cancelledTenders = results[4] as List<TenderDto>;
+        _locations = (results[6] as List<LocationDto>)..sort(_compareLocations);
         _isLoading = false;
         _errorMessage = null;
       });
@@ -877,9 +891,7 @@ Future<void> _handleDownloadUserReport(UserDto user) async {
               label: 'Edit',
               icon: Icons.edit_outlined,
               isPrimary: true,
-              onTap: _isSubmitting
-                  ? null
-                  : () => _handleEditLocation(location),
+              onTap: _isSubmitting ? null : () => _handleEditLocation(location),
             ),
             const SizedBox(width: 6),
             ActionButton(
@@ -924,9 +936,7 @@ Future<void> _handleDownloadUserReport(UserDto user) async {
               label: 'Edit',
               icon: Icons.edit_outlined,
               isPrimary: true,
-              onTap: _isSubmitting
-                  ? null
-                  : () => _handleEditCategory(category),
+              onTap: _isSubmitting ? null : () => _handleEditCategory(category),
             ),
             const SizedBox(width: 6),
             ActionButton(
@@ -1095,13 +1105,17 @@ Future<void> _handleDownloadUserReport(UserDto user) async {
                   ),
                 ],
               ),
-            ),IconButton(
-            icon: const Icon(Icons.picture_as_pdf_rounded, color: Colors.blueAccent),
-            tooltip: 'Generiši izvještaj',
-            onPressed: _isSubmitting 
-                ? null 
-                : () => _handleDownloadUserReport(user),
-          ),
+            ),
+            IconButton(
+              icon: const Icon(
+                Icons.picture_as_pdf_rounded,
+                color: Colors.blueAccent,
+              ),
+              tooltip: 'Generiši izvještaj',
+              onPressed: _isSubmitting
+                  ? null
+                  : () => _handleDownloadUserReport(user),
+            ),
             const SizedBox(width: 12),
             user.isBanned
                 ? FilledButton.tonalIcon(
@@ -1224,19 +1238,20 @@ Future<void> _handleDownloadUserReport(UserDto user) async {
                       ),
                       const SizedBox(height: 12),
 
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton.icon(
-                          onPressed: _isSubmitting
-                              ? null
-                              : () => _handleDeleteTender(tender),
-                          icon: const Icon(Icons.delete_outline_rounded),
-                          label: const Text('Delete'),
-                          style: TextButton.styleFrom(
-                            foregroundColor: AppColors.error,
+                      if (tender.status == TenderStatus.open)
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton.icon(
+                            onPressed: _isSubmitting
+                                ? null
+                                : () => _handleCancelTender(tender),
+                            icon: const Icon(Icons.cancel_outlined),
+                            label: const Text('Cancel'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: AppColors.error,
+                            ),
                           ),
                         ),
-                      ),
                     ],
                   ),
                 ),
@@ -1347,4 +1362,3 @@ class _StatCard extends StatelessWidget {
     );
   }
 }
-

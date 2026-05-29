@@ -12,10 +12,12 @@ using QuestPDF.Infrastructure;
 using TenderGo.Api.Database;
 using TenderGo.Api.Filters;
 using TenderGo.Data;
+using TenderGo.Data.Seeders;
 using TenderGo.Models.Entities;
 using TenderGo.Recommender;
 using TenderGo.Services.Interfaces;
 using TenderGo.Services.Mapping;
+using TenderGo.Services.Seed;
 using TenderGo.Services.Services;
 using TenderGo.Services.StateMachines.BidStates;
 using TenderGo.Services.StateMachines.TenderStates;
@@ -188,7 +190,8 @@ using (var scope = app.Services.CreateScope())
             context.Database.Migrate();
 
             await IdentitySeeder.SeedRolesAndAdminAsync(services);
-
+            await UserSeeder.SeedUsersAsync(services);
+            await TenderSeeder.SeedTendersAsync(services);
             logger.LogInformation("Database migrated and seeded successfully.");
             break;
         }
