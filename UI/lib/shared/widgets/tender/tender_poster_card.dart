@@ -96,13 +96,10 @@ class _TenderPosterCardState extends State<TenderPosterCard> {
                         if (snapshot.hasData && snapshot.data != null) {
                           final publicUser = snapshot.data!;
                           
-                          // PRILAGOĐAVANJE ZA AVATAR WIDGET:
-                          // Ako tvoj UserAvatarWidget prima isključivo stari 'UserDto', 
-                          // prepakuj javne podatke u njega ovako:
                           final userForAvatar = UserDto(
                             id: userId,
-                            firstName: publicUser.firstName ?? firstName,
-                            lastName: publicUser.lastName ?? lastName,
+                            firstName: publicUser.firstName ,
+                            lastName: publicUser.lastName ,
                             email: '',
                             username: '',
                             profileImageUrl: publicUser.profileImageUrl, // Ovdje je tvoja slika sa backenda!

@@ -280,7 +280,7 @@ class _TenderLocationSectionState extends State<TenderLocationSection> {
           _buildLabel('Country *'),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
-            value: _selectedCountry,
+            initialValue: _selectedCountry,
             isExpanded: true,
             menuMaxHeight: 280,
             decoration: _dropdownDecoration(hintText: 'Select country'),
@@ -317,7 +317,7 @@ class _TenderLocationSectionState extends State<TenderLocationSection> {
               _buildLabel('Region (optional)'),
               const SizedBox(height: 8),
               DropdownButtonFormField<String?>(
-                value: _selectedRegion,
+                initialValue: _selectedRegion,
                 isExpanded: true,
                 menuMaxHeight: 280,
                 decoration: _dropdownDecoration(hintText: 'Any region'),
@@ -338,15 +338,13 @@ class _TenderLocationSectionState extends State<TenderLocationSection> {
             ],
           ],
 
-          // 3. ANIMIRANI DIO ZA GRAD
-          // Prikazuje se isključivo kada su podaci o gradovima učitani sa API-ja
+      
           if (countrySelected && !_isLoadingCountry) ...[
             const SizedBox(height: 16),
             _buildLabel('City *'),
             const SizedBox(height: 8),
             DropdownButtonFormField<int>(
-              // Osiguravamo da se ID grada resetuje na null ako je grad izbrisan
-              value: cities.any((c) => c.id == widget.selectedLocationId) 
+              initialValue: cities.any((c) => c.id == widget.selectedLocationId) 
                   ? widget.selectedLocationId 
                   : null,
               isExpanded: true,
@@ -356,7 +354,7 @@ class _TenderLocationSectionState extends State<TenderLocationSection> {
                   .map(
                     (location) => DropdownMenuItem<int>(
                       value: location.id,
-                      child: Text(location.name), // Preporuka: samo location.name unutar liste radi preglednosti
+                      child: Text(location.name), 
                     ),
                   )
                   .toList(),

@@ -6,12 +6,14 @@ class TenderSearchBar extends StatelessWidget {
     required this.controller,
     required this.onChanged,
     required this.onClear,
+    this.onSubmitted,
     this.isLoading = false,
   });
 
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
   final VoidCallback onClear;
+  final ValueChanged<String>? onSubmitted;
   final bool isLoading;
 
   @override
@@ -21,6 +23,7 @@ class TenderSearchBar extends StatelessWidget {
     return TextField(
       controller: controller,
       onChanged: onChanged,
+      onSubmitted: onSubmitted,
       textInputAction: TextInputAction.search,
       decoration: InputDecoration(
         hintText: 'Search tenders…',
@@ -39,7 +42,7 @@ class TenderSearchBar extends StatelessWidget {
             : const Icon(Icons.search_rounded),
         suffixIcon: ValueListenableBuilder<TextEditingValue>(
           valueListenable: controller,
-          builder: (_, value, __) => value.text.isNotEmpty
+          builder: (_, value, _) => value.text.isNotEmpty
               ? IconButton(
                   icon: const Icon(Icons.close_rounded),
                   onPressed: onClear,

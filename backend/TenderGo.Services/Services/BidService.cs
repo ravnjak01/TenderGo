@@ -51,45 +51,72 @@ namespace TenderGo.Services.Services
             .ToListAsync();
         }
 
-        public override async Task<BidDTO> Insert(BidInsertRequest request)
+     public override async Task<BidDTO> Insert(BidInsertRequest request)
+{
+    try
+    {
+        var currentUserId = _authService.GetCurrentUserId();
+        var tender = await _context.Tenders.FindAsync(request.TenderId)
+              ?? throw new UserException("Tender not found");
+
+        if (currentUserId == tender.CreatedByUserId)
         {
-
-            try
-            {
-
-            var currentUserId = _authService.GetCurrentUserId();
-            var tender = await _context.Tenders.FindAsync(request.TenderId)
-                  ?? throw new UserException("Tender not found");
-
-            if(currentUserId == tender.CreatedByUserId)
-            {
-                throw new UserException("OWNER_CANNOT_BID");
-            }
-
-            _logger.LogInformation("Attempting to create a new bid for tender {TenderId} by user {UserId}", request.TenderId, _authService.GetCurrentUserId());
-
-            if(request.DeliveryDays <= 0)
-            {
-                throw new UserException("Delivery days must be greater than 0");
-            }
-
-            var state = CreateState(ApplicationStatus.Pending, tender.Status);
-
-            return await state.Insert(request);
-            }
-            catch (UserException ex)
-            {
-                _logger.LogWarning(ex, "User error while creating bid for tender {TenderId}: {Message}", request.TenderId, ex.Message);
-                throw;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error while creating bid for tender {TenderId}", request.TenderId);
-              
-                throw new UserException("An unexpected error occurred while creating the bid.");
-            }
+            throw new UserException("OWNER_CANNOT_BID");
         }
 
+        _logger.LogInformation("Attempting to create a new bid for tender {TenderId} by user {UserId}", request.TenderId, currentUserId);
+
+        if (request.DeliveryDays <= 0)
+        {
+            throw new UserException("Delivery days must be greater than 0");
+        }
+
+        // 1. Fetch the existing pending bid instead of just doing an AnyAsync check
+        var existingPendingBid = await _context.Bids
+            .FirstOrDefaultAsync(b => b.TenderId == request.TenderId 
+                                   && b.SubmittedByUserId == currentUserId 
+                                   && b.Status == ApplicationStatus.Pending);
+
+        // 2. Total attempts check remains the same (keeps track of absolute history)
+        var totalAttempts = await _context.Bids
+            .CountAsync(b => b.TenderId == request.TenderId 
+                          && b.SubmittedByUserId == currentUserId);
+
+        if (totalAttempts >= 3)
+        {
+            throw new UserException("MAX_BID_ATTEMPTS_EXCEEDED");
+        }
+
+        // 3. If an active pending bid is found, update its status to Cancelled
+        if (existingPendingBid != null)
+        {
+            existingPendingBid.Status = ApplicationStatus.Cancelled;
+            
+            // We can optionally explicitly tell EF to track it as modified, though change tracking handles it.
+            _context.Bids.Update(existingPendingBid);
+            
+            _logger.LogInformation("Cancelling previous pending bid {BidId} for tender {TenderId} by user {UserId}", existingPendingBid.Id, request.TenderId, currentUserId);
+        }
+
+        // 4. Initialize the state machine 
+        var state = CreateState(ApplicationStatus.Pending, tender.Status);
+
+        // 5. Execute the insert. 
+        // When state.Insert(request) calls _context.SaveChangesAsync() internally, 
+        // it will push both the UPDATE statement for the cancelled bid and the INSERT statement for the new bid in one transaction.
+        return await state.Insert(request);
+    }
+    catch (UserException ex)
+    {
+        _logger.LogWarning(ex, "User error while creating bid for tender {TenderId}: {Message}", request.TenderId, ex.Message);
+        throw;
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Unexpected error while creating bid for tender {TenderId}", request.TenderId);
+        throw new UserException("An unexpected error occurred while creating the bid.");
+    }
+}
    
         public async Task<BidDTO> Withdraw(int id)
         {
@@ -157,7 +184,7 @@ namespace TenderGo.Services.Services
 
         public BaseBidState CreateState(ApplicationStatus bidStatus, TenderStatus tenderStatus)
         {
-            if (tenderStatus != TenderStatus.Open)
+            if (tenderStatus == TenderStatus.Cancelled)
             {
                 return _serviceProvider.GetRequiredService<FinalBidState>();
             }
@@ -168,6 +195,8 @@ namespace TenderGo.Services.Services
                 ApplicationStatus.Withdrawn => _serviceProvider.GetRequiredService<FinalBidState>(),
                 ApplicationStatus.Accepted => _serviceProvider.GetRequiredService<FinalBidState>(),
                 ApplicationStatus.Rejected => _serviceProvider.GetRequiredService<FinalBidState>(),
+                ApplicationStatus.Cancelled => _serviceProvider.GetRequiredService<FinalBidState>(),
+
                 _ => _serviceProvider.GetRequiredService<PendingBidState>()
             };
         }

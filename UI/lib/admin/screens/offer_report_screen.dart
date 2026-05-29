@@ -6,7 +6,7 @@ import '../../shared/services/pdf_service.dart'; // Uvezi tvoj servis
 class OfferReportScreen extends StatefulWidget {
   final int offerId;
 
-  const OfferReportScreen({Key? key, required this.offerId}) : super(key: key);
+  const OfferReportScreen({super.key, required this.offerId});
 
   @override
   State<OfferReportScreen> createState() => _OfferReportScreenState();
@@ -25,9 +25,7 @@ class _OfferReportScreenState extends State<OfferReportScreen> {
 
   void _loadPdf() async {
   try {
-    print("Započeto preuzimanje PDF-a za ID: ${widget.offerId}");
     
-    // Pozivamo servis koji MORA da okinuti endpoint offers/$id/download-pdf
     final bytes = await _pdfService.fetchOfferPdf(widget.offerId);
     
     setState(() {
@@ -35,7 +33,6 @@ class _OfferReportScreenState extends State<OfferReportScreen> {
       _isLoading = false;
     });
   } catch (e) {
-    print("Greška unutar ekrana pri učitavanju PDF-a: $e");
     setState(() {
       _isLoading = false; // Zaustavi krug ako pukne
     });

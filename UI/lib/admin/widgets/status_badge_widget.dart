@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:tendergo/shared/models/enums/tenderstatus.dart';
 
 class StatusBadge extends StatelessWidget {
-  const StatusBadge({required this.status});
+  const StatusBadge({super.key, required this.status});
   final TenderStatus status;
 
   @override

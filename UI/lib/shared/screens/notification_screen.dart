@@ -52,7 +52,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         ),
         actions: [
           Consumer<NotificationProvider>(
-            builder: (_, provider, __) => TextButton(
+            builder: (_, provider, _) => TextButton(
               onPressed: provider.unreadCount == 0
                   ? null
                   : () => provider.markAllAsRead(),
@@ -123,7 +123,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                 child: ListView.separated(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   itemCount: provider.notifications.length,
-                  separatorBuilder: (_, __) =>
+                  separatorBuilder: (_, _) =>
                       const Divider(height: 1, color: AppColors.outline),
                   itemBuilder: (context, index) {
                     final notification = provider.notifications[index];
@@ -193,7 +193,7 @@ class _NotificationTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tile = ListTile(
-      tileColor: notification.isRead ? null : AppColors.primary.withOpacity(0.05),
+      tileColor: notification.isRead ? null : AppColors.primary.withValues(alpha: 0.05),
       leading: _NotificationIcon(type: notification.type, isRead: notification.isRead),
       title: Text(
         notification.title,
@@ -273,7 +273,7 @@ class _NotificationIcon extends StatelessWidget {
     final (icon, color) = _resolve(type);
     return CircleAvatar(
       radius: 20,
-      backgroundColor: color.withOpacity(isRead ? 0.1 : 0.18),
+      backgroundColor: color.withValues(alpha: isRead ? 0.1 : 0.18),
       child: Icon(icon, size: 18, color: color),
     );
   }

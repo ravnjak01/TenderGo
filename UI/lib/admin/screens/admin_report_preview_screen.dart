@@ -21,35 +21,17 @@ class AdminReportPreviewScreen extends StatefulWidget {
 }
 
 class _AdminReportPreviewScreenState extends State<AdminReportPreviewScreen> {
-  String? _localFilePath;
   bool _isSaving = false;
   int _totalPages = 0;
   int _currentPage = 0;
-  bool _isPdfReady = false;
   final PdfViewerController _pdfViewerController = PdfViewerController();
+
   @override
   void initState() {
     super.initState();
-    _preparePdfFile();
+    // 🌟 Sklonjen _preparePdfFile() jer SfPdfViewer već čita iz memorije!
   }
 
-  // flutter_pdfview zahtijeva privremeni fajl na disku da bi ga učitao na nekim platformama
-  Future<void> _preparePdfFile() async {
-    try {
-      final tempDir = await getTemporaryDirectory();
-      // 🌟 Riješena greška 1: DateTime.now promijenjeno u DateTime.now()
-      final tempFile = File('${tempDir.path}/temp_report_${DateTime.now().millisecondsSinceEpoch}.pdf');
-      await tempFile.writeAsBytes(widget.pdfBytes);
-      
-      setState(() {
-        _localFilePath = tempFile.path;
-      });
-    } catch (e) {
-      SnackbarHelper.show(context, 'Greška prilikom pripreme PDF-a: $e', isError: true);
-    }
-  }
-
-  // Funkcija za trajno čuvanje dokumenta u Downloads/Documents folderu
   Future<void> _savePdfToDevice() async {
     setState(() => _isSaving = true);
     try {
@@ -80,6 +62,7 @@ class _AdminReportPreviewScreenState extends State<AdminReportPreviewScreen> {
       if (!mounted) return;
       SnackbarHelper.show(context, 'Neuspješno čuvanje fajla: $e', isError: true);
     } finally {
+      if (!mounted) return; 
       setState(() => _isSaving = false);
     }
   }
@@ -111,11 +94,10 @@ class _AdminReportPreviewScreenState extends State<AdminReportPreviewScreen> {
           const SizedBox(width: 8),
         ],
       ),
-    body: widget.pdfBytes.isEmpty
+      body: widget.pdfBytes.isEmpty
           ? const Center(child: Text('Nema podataka za prikaz izvještaja.'))
           : Stack(
               children: [
-                // 🌟 ZAMIJENI STARI PDFView SA OVIM:
                 SfPdfViewer.memory(
                   widget.pdfBytes,
                   controller: _pdfViewerController,
@@ -130,8 +112,6 @@ class _AdminReportPreviewScreenState extends State<AdminReportPreviewScreen> {
                     });
                   },
                 ),
-                
-                // Indikator stranica u donjem desnom uglu
                 if (_totalPages > 0)
                   Positioned(
                     bottom: 20,
@@ -139,11 +119,11 @@ class _AdminReportPreviewScreenState extends State<AdminReportPreviewScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                       decoration: BoxDecoration(
-                        color: AppColors.primaryDark.withOpacity(0.9),
+                        color: AppColors.primaryDark.withValues(alpha: 0.9),
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
+                            color: Colors.black.withValues(alpha: 0.2),
                             blurRadius: 6,
                             offset: const Offset(0, 3),
                           )

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:tendergo/mobile/screens/mobile_bookmarked_screen.dart';
 import 'package:tendergo/mobile/screens/tender_post_screen.dart';
 import 'package:tendergo/mobile/screens/tender_details_screen.dart';
 import 'package:tendergo/shared/screens/user_profile_screen.dart';

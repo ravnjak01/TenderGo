@@ -40,6 +40,13 @@ public class TenderController
         return Ok(result);
     }
 
+    [HttpGet("{id:int}")]
+    public override async Task<ActionResult<TenderDTO>> GetById(int id)
+    {
+        var result = await _tenderService.GetById(id);
+        return Ok(result);
+    }
+
    
 [HttpPost("toggle/{tenderId}")]
     public async Task<IActionResult> ToggleBookmark(int tenderId)

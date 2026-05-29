@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:tendergo/admin/screens/offer_report_screen.dart';
 import 'package:tendergo/shared/controllers/bids_list_controller.dart';
 import 'package:tendergo/shared/core/actions/back_button.dart';
 import 'package:tendergo/shared/core/utils/extensions/string_extensions.dart';
@@ -17,10 +16,8 @@ import 'package:tendergo/shared/widgets/tender/tender_meta_item.dart';
 
 class MyBidsScreen extends StatefulWidget {
   final BidService _bidService;
-  const MyBidsScreen({
-    super.key,
-    required BidService bidService,
-  }) : _bidService = bidService;
+  const MyBidsScreen({super.key, required BidService bidService})
+    : _bidService = bidService;
 
   @override
   State<MyBidsScreen> createState() => _MyBidsScreenState();
@@ -30,7 +27,6 @@ class _MyBidsScreenState extends State<MyBidsScreen> {
   // ── state ──────────────────────────────────────────────────────────────────
   late BidsListController _controller;
 
-  
   // ── lifecycle ──────────────────────────────────────────────────────────────
   @override
   void initState() {
@@ -53,29 +49,24 @@ class _MyBidsScreenState extends State<MyBidsScreen> {
     });
   }
 
-  Future<void> _cancelBid(BidDto bid) async {
+  Future<void> _withdrawBid(BidDto bid) async {
     final confirmed = await AppDialogs.showConfirm(
       context: context,
-      title: 'Cancel Bid',
-      content: 'Are you sure you want to cancel this bid?',
+      title: 'Withdraw Bid',
+      content: 'Are you sure you want to withdraw this bid?',
       cancelLabel: 'No',
-      confirmLabel: 'Yes, Cancel',
+      confirmLabel: 'Yes, Withdraw',
       isDestructive: true,
     );
     if (!confirmed || !mounted) return;
 
     try {
-      final updated = await widget._bidService.cancel(bid.id);
+      final BidDto updated = await widget._bidService.withdraw(bid.id);
       if (!mounted) return;
 
-      setState(() {
-        final index = _controller.items.indexWhere((b) => b.id == bid.id);
-        if (index != -1) {
-          _controller.items[index] = updated;
-        }
-      });
+      _controller.updateBidInList(updated);
 
-      SnackbarHelper.show(context, 'Bid canceled successfully.');
+      SnackbarHelper.show(context, 'Bid withdrawn successfully.');
     } catch (e) {
       if (!mounted) return;
       SnackbarHelper.show(
@@ -87,23 +78,24 @@ class _MyBidsScreenState extends State<MyBidsScreen> {
   }
 
   Future<void> _openRateUser(BidDto bid) async {
-  final tenderProvider = context.read<TenderProvider>();
-  
-  final args = await tenderProvider.prepareRatingArguments(bid);
+    final tenderProvider = context.read<TenderProvider>();
 
-  if (!mounted) return;
+    final args = await tenderProvider.prepareRatingArguments(bid);
 
-  if (args == null) {
-    SnackbarHelper.show(
-      context,
-      'Unable to resolve tender owner for rating.',
-      isError: true,
-    );
-    return;
+    if (!mounted) return;
+
+    if (args == null) {
+      SnackbarHelper.show(
+        context,
+        'Unable to resolve tender owner for rating.',
+        isError: true,
+      );
+      return;
+    }
+
+    Navigator.of(context).pushNamed(AppRoutes.rateUser, arguments: args);
   }
 
-  Navigator.of(context).pushNamed(AppRoutes.rateUser, arguments: args);
-}
   // ── build ──────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
@@ -125,10 +117,7 @@ class _MyBidsScreenState extends State<MyBidsScreen> {
           ),
         ),
         actions: [
-          AppIconButton(
-            icon: Icons.refresh_rounded,
-            onTap: _refresh,
-          ),
+          AppIconButton(icon: Icons.refresh_rounded, onTap: _refresh),
           const SizedBox(width: 8),
         ],
       ),
@@ -177,7 +166,7 @@ class _MyBidsScreenState extends State<MyBidsScreen> {
           return _BidCard(
             bid: _controller.items[index],
             onRateUser: () => _openRateUser(_controller.items[index]),
-            onCancel: () => _cancelBid(_controller.items[index]),
+            onCancel: () => _withdrawBid(_controller.items[index]),
           );
         },
       ),
@@ -250,7 +239,7 @@ class _BidCard extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              bid.tenderTitle ?? 'Unknown tender',
+                              bid.tenderTitle,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: theme.textTheme.titleMedium?.copyWith(
@@ -310,11 +299,10 @@ class _BidCard extends StatelessWidget {
                         icon: Icons.schedule_rounded,
                         label: bid.submittedAt.toTimeAgo(),
                       ),
-                      if (bid.deliveryDays != null)
-                        TenderMetaItem(
-                          icon: Icons.local_shipping_rounded,
-                          label: '${bid.deliveryDays} days delivery',
-                        ),
+                      TenderMetaItem(
+                        icon: Icons.local_shipping_rounded,
+                        label: '${bid.deliveryDays} days delivery',
+                      ),
                     ],
                   ),
 
@@ -341,19 +329,21 @@ class _BidCard extends StatelessWidget {
                   ),
 
                   if (_isAwardedStatus(bid.status.name)) ...[
-  const SizedBox(height: 12),
-  Align(
-    alignment: Alignment.centerRight,
-    child: Row(
-      mainAxisSize: MainAxisSize.min, // Skuplja Row samo oko dugmadi
-      children: [
-        // 🌟 NOVO: Dugme za izvještaj
-        FilledButton.icon(
-          style: FilledButton.styleFrom(
-            backgroundColor: Colors.green[700], // Zelena boja za izvještaje/print
-          ),
-          onPressed: ()async {
-            /*
+                    const SizedBox(height: 12),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Row(
+                        mainAxisSize:
+                            MainAxisSize.min, // Skuplja Row samo oko dugmadi
+                        children: [
+                          // 🌟 NOVO: Dugme za izvještaj
+                          FilledButton.icon(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: Colors
+                                  .green[700], // Zelena boja za izvještaje/print
+                            ),
+                            onPressed: () async {
+                              /*
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -362,67 +352,72 @@ class _BidCard extends StatelessWidget {
               ),
             );
             */
-           final pdfService = PdfService();
-        final bytes = await pdfService.fetchOfferPdf(bid.id);
-        
-        if (bytes != null) {
-          print("🎉 USPJEH! Dobijeni bajtovi iz baze, veličina: ${bytes.length} bajta.");
-          
-          // Tek kada smo sigurni da imamo bajtove, idemo na ekran
-          if (context.mounted) {
-            Navigator.of(context).pushNamed(
-        AppRoutes.pdfViewer,
-        arguments: {
-          'pdfBytes': bytes, // Tvoja varijabla koja drži bajtove PDF-a (provjeri kako se tačno zove u tvom kodu)
-          'title': 'Izvještaj o ponudi', 
-        },
-      );
-          }
-        } else {
-          print("❌ Servis je vratio NULL. Provjeri API endpoint i .NET backend!");
-        }
-          },
-          icon: const Icon(Icons.picture_as_pdf_rounded),
-          label: const Text('Izvještaj'),
-        ),
-        
-        const SizedBox(width: 8), // Razmak između dva dugmeta
-        
-        // Postojeće dugme za ocjenjivanje
-        FilledButton.tonalIcon(
-          onPressed: onRateUser,
-          icon: const Icon(Icons.star_rate_rounded),
-          label: const Text('Rate User'),
-        ),
-      ],
-    ),
-  ),
-],
+                              final pdfService = PdfService();
+                              final bytes = await pdfService.fetchOfferPdf(
+                                bid.id,
+                              );
+
+                              if (bytes != null) {
+                                if (context.mounted) {
+                                  Navigator.of(context).pushNamed(
+                                    AppRoutes.pdfViewer,
+                                    arguments: {
+                                      'pdfBytes': bytes,
+                                      'title': 'Izvještaj o ponudi',
+                                    },
+                                  );
+                                }
+                              } else {}
+                            },
+                            icon: const Icon(Icons.picture_as_pdf_rounded),
+                            label: const Text('Izvještaj'),
+                          ),
+
+                          const SizedBox(width: 8), // Razmak između dva dugmeta
+                          // Postojeće dugme za ocjenjivanje
+                          FilledButton.tonalIcon(
+                            onPressed: onRateUser,
+                            icon: const Icon(Icons.star_rate_rounded),
+                            label: const Text('Rate User'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
 
                   if (_isCancelableStatus(bid.status.name)) ...[
-  const SizedBox(height: 8), // Smanjio sam malo i razmak iznad
-  Align(
-    alignment: Alignment.centerRight,
-    child: SizedBox(
-      height: 32, // Fiksna visina dugmeta (standardna je oko 40-48)
-      // width: 100, // Možeš dodati i fiksnu širinu ako želiš
-      child: OutlinedButton.icon(
-        onPressed: onCancel,
-        style: OutlinedButton.styleFrom(
-          // Moramo ukloniti defaultni padding da bi tekst stao u 32px visine
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          side: const BorderSide(color: Colors.red), // Opcionalno: crvena ivica
-          foregroundColor: Colors.red, // Tekst i ikona postaju crveni
-        ),
-        icon: const Icon(Icons.cancel_outlined, size: 16), // Smanjena ikona
-        label: const Text(
-          'Cancel',
-          style: TextStyle(fontSize: 12), // Smanjen font
-        ),
-      ),
-    ),
-  ),
-],
+                    const SizedBox(
+                      height: 8,
+                    ), // Smanjio sam malo i razmak iznad
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: SizedBox(
+                        height:
+                            32, // Fiksna visina dugmeta (standardna je oko 40-48)
+                        // width: 100, // Možeš dodati i fiksnu širinu ako želiš
+                        child: OutlinedButton.icon(
+                          onPressed: onCancel,
+                          style: OutlinedButton.styleFrom(
+                            // Moramo ukloniti defaultni padding da bi tekst stao u 32px visine
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            side: const BorderSide(
+                              color: Colors.red,
+                            ), // Opcionalno: crvena ivica
+                            foregroundColor:
+                                Colors.red, // Tekst i ikona postaju crveni
+                          ),
+                          icon: const Icon(
+                            Icons.cancel_outlined,
+                            size: 16,
+                          ), // Smanjena ikona
+                          label: const Text(
+                            'Cancel',
+                            style: TextStyle(fontSize: 12), // Smanjen font
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -431,8 +426,6 @@ class _BidCard extends StatelessWidget {
       },
     );
   }
-
-
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -489,6 +482,9 @@ class _StatusChip extends StatelessWidget {
     } else if (lower == 'withdrawn') {
       bg = colorScheme.surfaceContainerHigh;
       fg = colorScheme.onSurfaceVariant;
+    } else if (lower == 'cancelled' || lower == 'canceled') {
+      bg = Colors.grey.shade200;
+      fg = Colors.grey.shade700;
     } else {
       // pending or unknown
       bg = Colors.amber.shade100;
@@ -513,4 +509,3 @@ class _StatusChip extends StatelessWidget {
     );
   }
 }
-

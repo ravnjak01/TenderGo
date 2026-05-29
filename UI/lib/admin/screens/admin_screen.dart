@@ -11,11 +11,8 @@ import 'package:tendergo/shared/models/dto/user_dto.dart';
 import 'package:tendergo/shared/models/requests/location_insert_request.dart';
 import 'package:tendergo/shared/models/requests/location_update_request.dart';
 import 'package:tendergo/shared/models/ui/api_response.dart';
-import 'package:tendergo/shared/models/ui/auth_result.dart';
 import 'package:tendergo/shared/providers/admin_provider.dart';
 import 'package:tendergo/shared/routes/routes.dart';
-import 'package:tendergo/admin/routes/routes.dart';
-
 import 'package:tendergo/shared/services/pdf_service.dart';
 import 'package:tendergo/shared/widgets/common/action_button.dart';
 import 'package:tendergo/shared/widgets/common/app_badge.dart';

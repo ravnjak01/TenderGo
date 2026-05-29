@@ -16,21 +16,10 @@ namespace TenderGo.Api.Controllers
         private readonly IBidService _bidService;
 
         public BidController(IBidService bidService, ILogger<BidController> logger)
-      // : base(bidService, bidService, logger)
         {
             _bidService = bidService;
         }
 
-
-
-
-
-        //[HttpPatch("{id}")]
-        //public override async Task<IActionResult> Update(int id, [FromBody] BidUpdateRequest request)
-        //{
-        //    var result = await _bidService.Update(id, request);
-        //    return Ok(result);
-        //}
         [HttpGet("{id}")]
         public async Task<ActionResult<BidDTO>> GetById(int id)
         {
@@ -62,7 +51,6 @@ namespace TenderGo.Api.Controllers
         }
 
         [HttpGet("my-bids")]
-        [Authorize]
         public async Task<ActionResult<List<BidDTO>>> GetMyBids()
         {
             var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
@@ -78,9 +66,6 @@ namespace TenderGo.Api.Controllers
         public async Task<ActionResult<List<BidDTO>>> GetBidsForTender(int tenderId)
         {
             var bids = await _bidService.GetBidsForTender(tenderId);
-
-            if (bids == null || !bids.Any())
-                return NotFound(); 
 
             return Ok(bids);
         }

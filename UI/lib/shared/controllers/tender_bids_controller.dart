@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tendergo/shared/models/dto/bid_dto.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
-import 'package:tendergo/shared/models/enums/application_status.dart';
 import 'package:tendergo/shared/services/bid_service.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
 
@@ -32,11 +31,6 @@ class TenderBidsController with ChangeNotifier {
 
   Future<void> award(BidDto bid) async {
     await _tenderService.award(_tender, bid.id);
-
-    final rejectFutures = bids
-        .where((item) => item.id != bid.id && item.status == ApplicationStatus.pending)
-        .map((item) => _bidService.update(item.id, {'status': 'rejected'}));
-    await Future.wait(rejectFutures);
     await refresh();
   }
 

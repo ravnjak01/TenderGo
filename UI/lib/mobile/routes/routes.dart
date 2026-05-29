@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:tendergo/admin/screens/mybids_screen.dart';
-import 'package:tendergo/admin/screens/mytenders_screen.dart';
 import 'package:tendergo/admin/screens/splash_screen.dart';
 import 'package:tendergo/mobile/screens/forgot_password_screen.dart';
 import 'package:tendergo/mobile/screens/login_screen.dart';

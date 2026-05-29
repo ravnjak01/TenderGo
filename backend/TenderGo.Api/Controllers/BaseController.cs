@@ -30,7 +30,7 @@ public abstract class BaseController<T,TDb, TInsert, TUpdate>
         => Ok(await _readService.Get( pagedResult));
 
     [HttpGet("{id:int}")]
-    public async Task<ActionResult<T>> GetById(int id)
+    public virtual async Task<ActionResult<T>> GetById(int id)
         => Ok(await _readService.GetById(id));
 
     [HttpPost]

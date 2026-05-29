@@ -24,7 +24,7 @@ class AppBadge extends StatelessWidget {
     final fg = foregroundColor ??
         (isAdmin ? AppColors.primary : AppColors.textSecondary);
     final border = borderColor ??
-        (isAdmin ? AppColors.primary.withOpacity(0.4) : AppColors.outline);
+        (isAdmin ? AppColors.primary.withValues(alpha: 0.4) : AppColors.outline);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),

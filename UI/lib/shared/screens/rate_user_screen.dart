@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tendergo/shared/core/actions/back_button.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
-import 'package:tendergo/shared/models/dto/user_dto.dart';
 import 'package:tendergo/shared/models/requests/rate_user_request.dart';
 import 'package:tendergo/shared/services/auth_service.dart';
 import 'package:tendergo/shared/services/user_service.dart';
@@ -48,7 +47,7 @@ class _RateUserScreenState extends State<RateUserScreen> {
     final tenderId = widget.tenderId;
     final ratedUserId = widget.ratedUserId.trim();
 
-    if (tenderId == null || ratedUserId.isEmpty) {
+    if (ratedUserId.isEmpty) {
       SnackbarHelper.show(
         context,
         'Missing tender or user information for rating.',
@@ -69,7 +68,7 @@ class _RateUserScreenState extends State<RateUserScreen> {
     if (!(_formKey.currentState?.validate() ?? true)) return;
 
     final currentUser = await widget.authService.getCurrentUser();
-    var ratedByUserId = currentUser.data?.id?.trim() ?? '';
+    var ratedByUserId = currentUser.data?.id.trim() ?? '';
     if (ratedByUserId.isEmpty) {
       ratedByUserId = (await AuthService.getCurrentUserId())?.trim() ?? '';
     }

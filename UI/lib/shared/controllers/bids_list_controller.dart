@@ -11,4 +11,12 @@ class BidsListController extends BasePaginatedListController<BidDto> {
   @override
   Future<List<BidDto>> fetchPageData(int page, {int pageSize = 10}) =>
       bidService.getMyBids(page: page, pageSize: pageSize);
+
+      void updateBidInList(BidDto updatedBid) {
+  final index = items.indexWhere((b) => b.id == updatedBid.id);
+  if (index != -1) {
+    items[index] = updatedBid;
+    notifyListeners(); 
+  }
+      }
 }

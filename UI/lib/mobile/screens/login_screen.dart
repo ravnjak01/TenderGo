@@ -21,7 +21,6 @@ class _MobileLoginScreenState extends State<MobileLoginScreen> {
   final _passwordController = TextEditingController();
 
   bool _isLoading = false;
-  bool _hidePassword = true;
   String? _errorMessage;
 
   @override

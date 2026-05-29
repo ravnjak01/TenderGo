@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TenderGo.Api.Database;
 
@@ -11,9 +12,11 @@ using TenderGo.Api.Database;
 namespace TenderGo.Services.Migrations
 {
     [DbContext(typeof(TenderGoContext))]
-    partial class TenderGoContextModelSnapshot : ModelSnapshot
+    [Migration("20260528151015_AddUserActivityTable")]
+    partial class AddUserActivityTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -379,8 +382,7 @@ namespace TenderGo.Services.Migrations
                     b.HasIndex("SubmittedByUserId");
 
                     b.HasIndex("TenderId", "SubmittedByUserId")
-                        .IsUnique()
-                        .HasFilter("[Status] IN ('Pending', 'Accepted')");
+                        .IsUnique();
 
                     b.ToTable("Bids");
                 });
@@ -697,7 +699,7 @@ namespace TenderGo.Services.Migrations
 
                     b.HasIndex("TenderId");
 
-                    b.ToTable("UserActivites", (string)null);
+                    b.ToTable("UserActivites");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>

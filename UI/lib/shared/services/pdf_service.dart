@@ -1,6 +1,5 @@
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
-import 'package:http/http.dart' as http;
 import 'package:tendergo/shared/core/network/constants/api_endpoints.dart';
 import 'package:tendergo/shared/services/dio_client.dart';
 
@@ -9,8 +8,6 @@ class PdfService {
 
   Future<Uint8List?> fetchOfferPdf(int offerId) async {
     try {
-      print("!!! PDF SERVICE JE POKRENUT ZA ID: $offerId !!!");
-      // 1. Dobijamo potpuno konfigurisan Dio instancu (sa tvojim presretačima i baznim URL-om)
       final dio = DioClient.getDio();
       
       // 2. Pozivamo endpoint
@@ -30,20 +27,16 @@ class PdfService {
       return null;
     } on DioException catch (e) {
       // Dio ima odličan error handling
-      print("Dio greška pri preuzimanju PDF-a: ${e.message}");
       if (e.response != null) {
-        print("Status kod: ${e.response?.statusCode}");
       }
       return null;
     } catch (e) {
-      print("Neočekivana greška: $e");
       return null;
     }
   }
 
   Future<Uint8List?> fetchUserTendersReport(String userId) async {
     try {
-      print("!!! PDF SERVICE POKRENUT ZA USER IZVJEŠTAJ (ID: $userId) !!!");
       final dio = DioClient.getDio();
       
       // Pozivamo novi endpoint na backendu: api/Pdf/user/{userId}/tenders
@@ -62,15 +55,11 @@ class PdfService {
       
       return null;
     } on DioException catch (e) {
-      print("Dio greška pri preuzimanju izvještaja korisnika: ${e.message}");
       if (e.response != null) {
-        print("Status kod: ${e.response?.statusCode}");
         // 💡 Ako ti backend baci 403 Forbidden (jer korisnik nije Admin), ovdje će se ispisati
-        print("Poruka sa servera: ${e.response?.data}"); 
       }
       return null;
     } catch (e) {
-      print("Neočekivana greška kod korisničkog izvještaja: $e");
       return null;
     }
   }

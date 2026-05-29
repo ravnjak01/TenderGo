@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:tendergo/shared/core/error/bid_error_handler.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
-import 'package:tendergo/shared/models/dto/bid_dto.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
 import 'package:tendergo/shared/models/requests/bid_insert_request.dart';
 import 'package:tendergo/shared/providers/auth_provider.dart';
@@ -69,30 +68,44 @@ class _TenderBidFormState extends State<TenderBidForm> {
 
     var submitted = false;
 
-    try {
-      await widget.bidService.create(
-        BidInsertRequest(
-          tenderId: widget.tender.id,
-          price: offeredPrice,
-          note: proposalText.isEmpty ? null : proposalText,
-          userId: userId,
-          deliveryDays: deliveryDays,
-        ),
-      );
-      submitted = true;
-    } on BidAlreadyExistsException catch (e) {
-      if (!mounted) return;
-      setState(() => _error = e.message);
-    } on BidServiceException catch (e) {
-      if (!mounted) return;
-      setState(() => _error = e.message);
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _error = 'Could not submit bid. Please try again.');
-    } finally {
-      if (!mounted) return;
-      setState(() => _isSubmitting = false);
-    }
+   try {
+    await widget.bidService.create(
+      BidInsertRequest(
+        tenderId: widget.tender.id,
+        price: offeredPrice,
+        note: proposalText.isEmpty ? null : proposalText,
+        userId: userId,
+        deliveryDays: deliveryDays,
+      ),
+    );
+    
+    submitted = true;
+
+    // 🌟 Ako je sve prošlo uspješno i widget je još tu, gasi loading
+    if (!mounted) return;
+    setState(() {
+      _isSubmitting = false;
+    });
+
+  } on BidAlreadyExistsException catch (e) {
+    if (!mounted) return;
+    setState(() {
+      _error = e.message;
+      _isSubmitting = false; // 🌟 Ugasi loading ovdje
+    });
+  } on BidServiceException catch (e) {
+    if (!mounted) return;
+    setState(() {
+      _error = e.message;
+      _isSubmitting = false; // 🌟 Ugasi loading ovdje
+    });
+  } catch (_) {
+    if (!mounted) return;
+    setState(() {
+      _error = 'Could not submit bid. Please try again.';
+      _isSubmitting = false; // 🌟 Ugasi loading ovdje
+    });
+  }
 
     if (!submitted || !mounted) return;
 

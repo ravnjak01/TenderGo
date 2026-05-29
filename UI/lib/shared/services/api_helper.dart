@@ -1,7 +1,6 @@
 // shared/utils/api_helper.dart
 import 'package:dio/dio.dart';
 import 'package:tendergo/shared/models/ui/api_response.dart';
-import 'package:tendergo/shared/models/ui/auth_result.dart';
 
 class ApiHelper {
  static ApiResponse<T> handleDioError<T>(DioException e) {

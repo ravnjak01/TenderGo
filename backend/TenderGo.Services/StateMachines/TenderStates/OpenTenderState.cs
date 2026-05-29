@@ -23,25 +23,7 @@ namespace TenderGo.Services.StateMachines.TenderStates
             : base(serviceProvider, context, mapper, logger)
         { }
 
-        public override async Task<TenderDTO> Update(int id, TenderUpdateRequest request)
-        {
-            var entity = await _context.Tenders.FindAsync(id)
-                            ?? throw new NotFoundException("Tender not found", new { Entity = "Tender", Id = id });
-
-            var authService = _serviceProvider.GetRequiredService<IAuthService>();
-
-            if (entity.CreatedByUserId != authService.GetCurrentUserId())
-                throw new UserException("You can only edit your own tenders");
-
-            _mapper.Map(request, entity);
-
-            entity.IsEdited = true;
-
-            await _context.SaveChangesAsync();
-
-            _logger.LogInformation("Tender {Id} was edited while in Open state.", id);
-            return _mapper.Map<TenderDTO>(entity);
-        }
+ 
 
         public override async Task<TenderDTO> Cancel(int id)
         {
@@ -96,12 +78,9 @@ namespace TenderGo.Services.StateMachines.TenderStates
             bool isAdmin = authService.IsInRole(AppRoles.Admin);
             if (entity.Deadline > DateTime.UtcNow)
             {
-                if (isOwner)
+                if (!isOwner)
                 {
-                    list.Add("Edit");
-                }
-                else
-                {
+               
                     list.Add("SubmitBid");
                 }
             }
@@ -112,7 +91,7 @@ namespace TenderGo.Services.StateMachines.TenderStates
                     list.Add("Close");
                 }
             }
-            if (isAdmin)
+            if (isOwner || isAdmin)
             {
                 list.Add("Cancel");
             }

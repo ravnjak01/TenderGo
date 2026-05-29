@@ -142,7 +142,7 @@ class _TenderBidsScreenState extends State<TenderBidsScreen> {
             child: ListView.separated(
               padding: const EdgeInsets.all(16),
               itemCount: _controller.bids.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              separatorBuilder: (_, _) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
                 final bid = _controller.bids[index];
                 return _BidCard(
@@ -238,11 +238,10 @@ class _BidCard extends StatelessWidget {
                     icon: Icons.payments_outlined,
                     label: priceFormatted,
                   ),
-                  if (bid.deliveryDays != null)
                     TenderMetaItem(
                       icon: Icons.schedule_rounded,
                       label:
-                          '${bid.deliveryDays} day${bid.deliveryDays! > 1 ? 's' : ''}',
+                          '${bid.deliveryDays} day${bid.deliveryDays > 1 ? 's' : ''}',
                     ),
                   TenderMetaItem(
                     icon: Icons.calendar_today_outlined,
@@ -340,7 +339,7 @@ class _BidStatusBadge extends StatelessWidget {
     switch (status) {
       case ApplicationStatus.accepted:
         return _BadgeColors(
-          background: Colors.green.withOpacity(0.12),
+          background: Colors.green.withValues(alpha: 0.12),
           foreground: Colors.green.shade700,
         );
       case ApplicationStatus.rejected:
@@ -353,9 +352,15 @@ class _BidStatusBadge extends StatelessWidget {
           background: colorScheme.surfaceContainerHighest,
           foreground: colorScheme.onSurfaceVariant,
         );
+        case ApplicationStatus.cancelled: 
+        return _BadgeColors(
+          background: Colors.grey.withValues(alpha: 0.15), 
+          foreground: Colors.grey.shade700,               
+        );
+
       case ApplicationStatus.pending:
         return _BadgeColors(
-          background: Colors.orange.withOpacity(0.12),
+          background: Colors.orange.withValues(alpha: 0.12),
           foreground: Colors.orange.shade800,
         );
     }

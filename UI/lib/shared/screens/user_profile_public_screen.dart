@@ -4,7 +4,6 @@ import 'package:tendergo/admin/screens/user_tenders.dart';
 import 'package:tendergo/shared/core/actions/back_button.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
 import 'package:tendergo/shared/core/utils/extensions/user_initials_extension.dart';
-import 'package:tendergo/shared/models/dto/user_dto.dart';
 import 'package:tendergo/shared/models/dto/user_public_dto.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
 import 'package:tendergo/shared/services/user_service.dart';
@@ -43,7 +42,7 @@ class UserProfilePublicScreen extends StatelessWidget {
           child: Image.network(
             imageUrl,
             fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => _buildInitialsCircle(context, user),
+            errorBuilder: (_, _, _) => _buildInitialsCircle(context, user),
           ),
         ),
       );
@@ -166,9 +165,9 @@ class UserProfilePublicScreen extends StatelessWidget {
                     const SizedBox(width: 6),
                     Flexible(
                       child: Text(
-                        (user.location ?? '').trim().isEmpty
+                        (user.location).trim().isEmpty
                             ? 'Location not specified'
-                            : user.location!.trim(),
+                            : user.location.trim(),
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: AppColors.textSecondary,

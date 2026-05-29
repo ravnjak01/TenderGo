@@ -3,9 +3,7 @@ import 'package:tendergo/shared/models/requests/register_request.dart';
 import 'package:tendergo/shared/models/requests/reset_password_request.dart';
 import 'package:tendergo/shared/models/ui/api_response.dart';
 import 'package:tendergo/shared/providers/base_provider.dart';
-import 'package:tendergo/shared/models/dto/address_dto.dart';
 import 'package:tendergo/shared/models/dto/user_dto.dart';
-import 'package:tendergo/shared/models/ui/auth_result.dart';
 import 'package:tendergo/shared/services/auth_service.dart';
 
 class AuthProvider extends BaseProvider {

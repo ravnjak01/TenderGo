@@ -97,6 +97,9 @@ class _TenderPostScreenState extends State<TenderPostScreen>
         withData: true,
       );
 
+      // 🌟 Rješenje 1: Provjera odmah nakon završetka asinhronog FilePicker-a
+      if (!mounted) return;
+
       if (picked == null || picked.files.isEmpty) return;
 
       final newFiles = <PlatformFile>[];
@@ -121,6 +124,9 @@ class _TenderPostScreenState extends State<TenderPostScreen>
 
       setState(() => _imageFiles.addAll(newFiles));
     } catch (e) {
+      // 🌟 Rješenje 2: Provjera unutar catch bloka u slučaju greške
+      if (!mounted) return;
+
       SnackbarHelper.show(
         context,
         e.toString().replaceFirst('Exception: ', ''),
@@ -341,7 +347,7 @@ class _TenderPostScreenState extends State<TenderPostScreen>
         Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
+            color: AppColors.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(7),
           ),
           child: const Icon(

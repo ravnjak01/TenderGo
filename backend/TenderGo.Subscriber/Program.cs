@@ -43,12 +43,8 @@ var host = hostBuilder
        var connectionString = context.Configuration.GetConnectionString("DefaultConnection") 
                        ?? Environment.GetEnvironmentVariable("DB_CONNECTION");
 
-        // .NET automatski mapira ConnectionStrings__RabbitMQ iz .env-a ovdje
         var rabbitConnectionString = context.Configuration.GetConnectionString("RabbitMQ")
                                      ?? "host=localhost;username=guest;password=guest;timeout=30";
-
-        Console.WriteLine($"[Subscriber] Učitani RabbitMQ Connection String: {rabbitConnectionString}");
-        Console.WriteLine($"[Subscriber] Učitana Baza Podataka: {connectionString}");
 
         if (string.IsNullOrEmpty(connectionString))
             throw new Exception("DefaultConnection is missing from configuration!");

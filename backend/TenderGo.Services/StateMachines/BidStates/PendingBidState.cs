@@ -4,13 +4,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic; 
+using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using System.Text;
 using System.Threading.Tasks;
 using TenderGo.Api.Database;
 using TenderGo.Contracts;
+using TenderGo.Models.DTOs;
 using TenderGo.Models.Entities;
 using TenderGo.Models.ENUMs;
 using TenderGo.Models.Requests;
@@ -36,7 +35,6 @@ namespace TenderGo.Services.StateMachines.BidStates
             _logger = logger;
         }
 
-
         public override async Task<BidDTO> Insert(BidInsertRequest request)
         {
             var authService = _serviceProvider.GetRequiredService<IAuthService>();
@@ -47,13 +45,13 @@ namespace TenderGo.Services.StateMachines.BidStates
 
             if (alreadyResponded)
             {
-                throw new UserException("You already sent a bid.You can edit existing one or withdraw and create new one");
+                throw new UserException("You have already submitted a bid for this tender. Withdraw it first if you wish to submit a new one.");
             }
 
             var tender = await _context.Tenders.FindAsync(request.TenderId);
-            if (tender.Status != TenderStatus.Open)
+            if (tender == null || tender.Status != TenderStatus.Open)
             {
-                throw new UserException("Tender isnt open to any more requests");
+                throw new UserException("Tender is not open for new bids.");
             }
 
             var entity = _mapper.Map<Bid>(request);
@@ -64,59 +62,38 @@ namespace TenderGo.Services.StateMachines.BidStates
             _context.Bids.Add(entity);
             await _context.SaveChangesAsync();
 
-            //try
-            //{
-            //    await _pubSub.PublishAsync(
-            //        new BidCreatedEvent
-            //        {
-            //            TenderId = entity.TenderId,
-            //            OwnerUserId = tender.CreatedByUserId,
-            //            OfferedPrice = entity.OfferedPrice,
-            //            TenderTitle = tender.Title
-            //        },
-            //        cfg => cfg.WithTopic("bid_created"));
-            //}
-            //catch (Exception ex)
-            //{
-            //    _logger.LogWarning(
-            //        ex,
-            //        "Bid saved but BidCreatedEvent was not published for tender {TenderId}",
-            //        entity.TenderId);
-          //  }
 
+/*
+            try
+            {
+                await _pubSub.PublishAsync(
+                    new BidCreatedEvent
+                    {
+                        TenderId = entity.TenderId,
+                        OwnerUserId = tender.CreatedByUserId,
+                        OfferedPrice = entity.OfferedPrice,
+                        TenderTitle = tender.Title
+                    },
+                    cfg => cfg.WithTopic("bid_created"));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Bid saved but BidCreatedEvent was not published for tender {TenderId}",
+                    entity.TenderId);
+
+            }
+*/
             return _mapper.Map<BidDTO>(entity);
         }
 
-        //public override async Task<BidDTO> Update(int id, BidUpdateRequest request)
-        //{
-        //    var bid = await _context.Bids.Include(b => b.Tender).FirstOrDefaultAsync(x => x.Id == id)
-        //        ?? throw new NotFoundException("Bid not found",new { Bid="Bid",Id=id});
-
-        //    var authService = _serviceProvider.GetRequiredService<IAuthService>();
-        //    if (bid.SubmittedByUserId != authService.GetCurrentUserId())
-        //    {
-        //        throw new UserException("You can only modify your own bids.");
-        //    }
-
-
-
-        //    if (bid.Tender.Status != TenderStatus.Open)
-        //        throw new UserException("Tender is no longer open for changes.");
-
-        //    _mapper.Map(request, bid);
-        //    await _context.SaveChangesAsync();
-          
-
-        //    return _mapper.Map<BidDTO>(bid);
-        //}
-
-        public override async Task<BidDTO> Cancel(int id)
+        public override async Task<BidDTO> Withdraw(int id)
         {
             var bid = await _context.Bids
                 .Include(b => b.Tender)
-                .FirstOrDefaultAsync(b=>b.Id==id)
+                .FirstOrDefaultAsync(b => b.Id == id)
                  ?? throw new NotFoundException("Bid not found", new { Bid = "Bid", Id = id });
-
 
             var authService = _serviceProvider.GetRequiredService<IAuthService>();
             if (bid.SubmittedByUserId != authService.GetCurrentUserId())
@@ -127,29 +104,39 @@ namespace TenderGo.Services.StateMachines.BidStates
             if (bid.Tender.Status != TenderStatus.Open)
                 throw new UserException("Tender is no longer open for changes.");
 
-
             bid.Status = ApplicationStatus.Withdrawn;
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Bid {BidId} has been withdrawn by user.", id);
             return _mapper.Map<BidDTO>(bid);
         }
 
-
-        public override async Task<List<string>>AllowedActions(Bid entity)
+        public override async Task<BidDTO> Cancel(int id)
         {
+            var bid = await _context.Bids
+                .FirstOrDefaultAsync(b => b.Id == id)
+                 ?? throw new NotFoundException("Bid not found", new { Bid = "Bid", Id = id });
 
-            var list =await base.AllowedActions(entity);
+            bid.Status = ApplicationStatus.Cancelled;
+
+            return _mapper.Map<BidDTO>(bid);
+        }
+
+        public override async Task<List<string>> AllowedActions(Bid entity)
+        {
+            var list = await base.AllowedActions(entity);
             var authService = _serviceProvider.GetRequiredService<IAuthService>();
             var currentUserId = authService.GetCurrentUserId();
 
             bool isBidOwner = entity.SubmittedByUserId == currentUserId;
 
-            if (isBidOwner) {
-
+            if (isBidOwner)
+            {
                 list.Add("Withdraw");
-                list.Add("Update");
             }
-            return list;
 
-         
+            return list;
         }
     }
 }

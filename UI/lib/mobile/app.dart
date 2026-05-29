@@ -45,10 +45,10 @@ class MobileApp extends StatelessWidget {
             categoryService,
           ),
         ),
-        //ChangeNotifierProvider(
-          //create: (_) =>
-           //   NotificationProvider(NotificationService(DioClient.getDio())),
-       // ),
+        ChangeNotifierProvider(
+          create: (_) =>
+              NotificationProvider(NotificationService(DioClient.getDio())),
+        ),
       ],
       child: MaterialApp(
         title: 'TenderGo',
@@ -56,8 +56,6 @@ class MobileApp extends StatelessWidget {
         theme: AppTheme.lightTheme,
             navigatorObservers: [routeObserver],
 
-        // Device Preview hooks
-        useInheritedMediaQuery: true,
         locale: DevicePreview.locale(context),
         builder: DevicePreview.appBuilder,
         initialRoute: AppRoutes.login,

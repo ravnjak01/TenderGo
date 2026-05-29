@@ -52,7 +52,7 @@ class TenderCardImage extends StatelessWidget {
     return Container(
       color: theme.bg,
       alignment: Alignment.center,
-      child: Icon(theme.icon, size: 48, color: theme.bg.withOpacity(1).withAlpha(80)),
+      child: Icon(theme.icon, size: 48, color: theme.bg.withValues(alpha: 1).withValues(alpha: 80)),
     );
   }
 }

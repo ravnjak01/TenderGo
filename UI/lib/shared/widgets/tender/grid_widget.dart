@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:tendergo/admin/screens/tender_details_screen.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
 import 'package:tendergo/shared/models/enums/tenderstatus.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
 import 'package:tendergo/shared/widgets/tender/admin_tender_card_widget.dart';
-import 'package:tendergo/admin/screens/tender_details_screen.dart';
 
 class TenderGrid extends StatelessWidget {
   final List<TenderDto> tenders;
@@ -42,7 +42,7 @@ class TenderGrid extends StatelessWidget {
         final spacing = 14.0;
         final cardWidth =
             (constraints.maxWidth - spacing * (crossAxisCount - 1)) /
-            crossAxisCount;
+                crossAxisCount;
 
         return Wrap(
           spacing: spacing,
@@ -58,6 +58,7 @@ class TenderGrid extends StatelessWidget {
                     onTenderSelected!(dto.id);
                     return;
                   }
+
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (_) => AdminTenderDetailsScreen(

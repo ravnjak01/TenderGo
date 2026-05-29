@@ -3,7 +3,8 @@ enum ApplicationStatus {
   pending(1),
   accepted(2),
   rejected(3),
-  withdrawn(4);
+  withdrawn(4),
+  cancelled(5);
 
   final int value;
   const ApplicationStatus(this.value);

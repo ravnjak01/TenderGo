@@ -24,6 +24,8 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
     public DbSet<Location> Locations { get; set; }
     public DbSet<PasswordResetCode>PasswordResetCodes {get;set;}
     public DbSet<TenderBookmark>TenderBookmarks {get;set;}
+    public DbSet<UserActivity>UserActivities {get;set;}
+
 
 
 
@@ -126,7 +128,7 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
             entity.HasKey(e => e.Id);
 
             // Konfiguracija veze 1:N (Jedan Tender -> Više Bids)
-            entity.HasOne(b => b.Tender)           // Bid ima jedan Tender
+            entity.HasOne(b => b.Tender)       
                   .WithMany(t => t.Bids)           // Tender ima mnogo Bids
                   .HasForeignKey(b => b.TenderId)  // Strani ključ je TenderId
                   .OnDelete(DeleteBehavior.Cascade); 
@@ -135,6 +137,7 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
 
             // 1 korisnik može poslati samo jedan bid po tenderu
             entity.HasIndex(b => new { b.TenderId, b.SubmittedByUserId })
+            .HasFilter("[Status] IN ('Pending', 'Accepted')")
                  .IsUnique();
 
             entity.HasOne(b => b.SubmittedByUser)
@@ -193,6 +196,17 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
         });
 
         modelBuilder.Entity<TenderBookmark>().HasKey(tb => new { tb.UserId, tb.TenderId });
+
+        modelBuilder.Entity<UserActivity>(entity =>
+        {
+            entity.ToTable("UserActivites");
+
+            entity.HasKey(ua => ua.Id);
+
+            entity.HasOne(ua => ua.Tender)
+                .WithMany()
+                .HasForeignKey(ua => ua.TenderId);
+        });
 
     }
 

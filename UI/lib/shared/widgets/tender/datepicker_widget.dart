@@ -53,7 +53,7 @@ class DatepickerWidget extends StatelessWidget {
           border: Border.all(
             color: deadline != null
                 ? AppColors.primary
-                : AppColors.textSecondary.withOpacity(0.2),
+                : AppColors.textSecondary.withValues(alpha: 0.2),
             width: deadline != null ? 1.5 : 1,
           ),
         ),

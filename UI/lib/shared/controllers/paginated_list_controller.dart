@@ -132,9 +132,12 @@ abstract class BasePaginatedListController<T>  with ChangeNotifier {
     errorMessage = '';
   }
 
-  /// Dispose resources
+
+  @override
   void dispose() {
     scrollController.removeListener(_onScroll);
     scrollController.dispose();
+
+    super.dispose();
   }
 }

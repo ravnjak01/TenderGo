@@ -23,20 +23,20 @@ class TenderRecommendationCard extends StatelessWidget {
       child: Card(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // --- Thumbnail (if available) ---
             if (tender.thumbnailUrl != null)
               ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
                 child: Image.network(
                   tender.thumbnailUrl!,
                   height: 140,
                   width: double.infinity,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                  errorBuilder: (_, _, _) => const SizedBox.shrink(),
                 ),
               ),
 
@@ -86,6 +86,8 @@ class TenderRecommendationCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   const SizedBox(height: 10),
+                  _RecommendationExplanation(tender: tender),
+                  const SizedBox(height: 10),
 
                   // --- Footer: budget | location | deadline ---
                   Row(
@@ -132,6 +134,105 @@ class TenderRecommendationCard extends StatelessWidget {
 // ----------------------------------------------------------------
 // Sub-widgets
 // ----------------------------------------------------------------
+
+class _RecommendationExplanation extends StatelessWidget {
+  final TenderRecommendation tender;
+
+  const _RecommendationExplanation({required this.tender});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final signals = tender.recommendationSignals
+        .map((signal) => signal.trim())
+        .where((signal) => signal.isNotEmpty)
+        .toSet()
+        .take(4)
+        .toList();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.55),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withOpacity(0.7),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.psychology_alt_outlined,
+                size: 15,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(width: 5),
+              Text(
+                'Why recommended',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 5),
+          Text(
+            tender.explanationText,
+            style: theme.textTheme.bodySmall,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+          ),
+          if (signals.isNotEmpty) ...[
+            const SizedBox(height: 7),
+            Wrap(
+              spacing: 6,
+              runSpacing: 5,
+              children: signals
+                  .map(
+                    (signal) => _SignalChip(label: signal),
+                  )
+                  .toList(),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _SignalChip extends StatelessWidget {
+  final String label;
+
+  const _SignalChip({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 220),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primaryContainer.withOpacity(0.72),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Text(
+        label,
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: theme.colorScheme.onPrimaryContainer,
+          fontWeight: FontWeight.w600,
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+}
 
 /// Green badge showing the match percentage
 class _MatchBadge extends StatelessWidget {

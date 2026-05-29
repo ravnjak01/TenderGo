@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
-import 'package:tendergo/shared/models/dto/user_dto.dart';
 import 'package:tendergo/shared/providers/auth_provider.dart';
 import 'package:tendergo/shared/providers/tender_provider.dart';
 import 'package:tendergo/admin/screens/tender_details_screen.dart';
@@ -33,7 +32,6 @@ class TenderShellScreen extends StatefulWidget {
 
 class _TenderShellScreenState extends State<TenderShellScreen> {
   int? _selectedTenderId;
-  UserDto? _currentUser;
 
   
 

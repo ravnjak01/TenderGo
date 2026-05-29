@@ -1,23 +1,30 @@
-// lib/providers/tender_provider.dart  (refactored)
-
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:tendergo/shared/models/dto/bid_dto.dart';
 import 'package:tendergo/shared/models/dto/category_dto.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
 import 'package:tendergo/shared/models/requests/tender_insert_request.dart';
 import 'package:tendergo/shared/models/requests/tender_search_request.dart';
 import 'package:tendergo/shared/models/ui/location_filter_selection.dart';
-import 'package:tendergo/shared/models/enums/tenderstatus.dart';
 import 'package:tendergo/shared/providers/base_provider.dart';
 import 'package:tendergo/shared/services/category_service.dart';
+import 'package:tendergo/shared/services/dio_client.dart';
+import 'package:tendergo/shared/services/recommendation_service.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
 
 class TenderProvider extends BaseProvider {
   final TenderService _service;
   final CategoryService _categoryService;
+  final RecommendationService _recommendationService;
+  static const _storage = FlutterSecureStorage();
 
-  TenderProvider(this._service, this._categoryService);
+  TenderProvider(
+    this._service,
+    this._categoryService, {
+    RecommendationService? recommendationService,
+  }) : _recommendationService =
+            recommendationService ?? RecommendationService(DioClient.getDio());
 
   List<TenderDto> _tenders = [];
   List<CategoryDto> _categories = [];
@@ -25,6 +32,7 @@ class TenderProvider extends BaseProvider {
   List<TenderDto>? _searchResults;
   String _searchQuery = '';
   LocationFilterSelection? _locationFilter;
+  String? _lastLoggedSearchQuery;
 
   List<TenderDto> get tenders => _tenders;
   List<CategoryDto> get categories => _categories;
@@ -41,13 +49,12 @@ Future<void> loadBookmarks(TenderService service) async {
   try {
     final bookmarkedTenders = await service.getBookmarked();
     _savedIds = bookmarkedTenders.map((t) => t.id).toSet();
-    notifyListeners(); // Ovo javlja svim ekranima da osvježe UI
+    notifyListeners(); 
   } catch (e) {
     debugPrint('Greška pri učitavanju bookmarka u provideru: $e');
   }
 }
 
-// Možeš prebaciti i toggleBookmark u provider da sve bude na jednom mjestu
 void updateBookmarkLocal(int id, bool isBookmarked) {
   if (isBookmarked) {
     _savedIds.add(id);
@@ -146,9 +153,8 @@ void updateBookmarkLocal(int id, bool isBookmarked) {
     _searchQuery = query.trim();
     if (_searchQuery.isEmpty) {
       _searchResults = null;
-      // Defer the notify to avoid calling during build
       WidgetsBinding.instance.addPostFrameCallback((_) {
-       // if (!_disposed) safeNotify();
+        if (!isDisposed) safeNotify();
       });
       return;
     }
@@ -159,11 +165,26 @@ void updateBookmarkLocal(int id, bool isBookmarked) {
     });
   }
 
+  Future<void> logSearchActivity(String query) async {
+    final normalized = query.trim();
+    if (normalized.isEmpty || normalized == _lastLoggedSearchQuery) return;
+
+    _lastLoggedSearchQuery = normalized;
+    try {
+      final token = await _storage.read(key: 'jwt_token') ?? '';
+      await _recommendationService.logSearchActivity(
+        query: normalized,
+        authToken: token,
+      );
+    } catch (e) {
+      debugPrint('Failed to log search activity: $e');
+    }
+  }
+
   void clearSearch() {
     _searchQuery = '';
     _searchResults = null;
     notifyListeners();
-    // Defer the notify to avoid calling during build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       safeNotify();
     });
@@ -174,7 +195,7 @@ void updateBookmarkLocal(int id, bool isBookmarked) {
       await _service.delete(id);
       _tenders.removeWhere((t) => t.id == id);
     });
-    return result != null; // null means an error was caught
+    return result != null; 
   }
 
   Future<bool> cancelTender(int id) async {
@@ -196,9 +217,8 @@ void updateBookmarkLocal(int id, bool isBookmarked) {
   Future<void> fetchCategories() async {
     _isCategoryLoading = true;
     _categoryLoadError = null;
-    // Defer the notify to avoid calling during build
     WidgetsBinding.instance.addPostFrameCallback((_) {
-     // if (!_disposed) safeNotify();
+     if (!isDisposed) safeNotify();
     });
     try {
       _categories = await _categoryService.getAll();
@@ -211,18 +231,15 @@ void updateBookmarkLocal(int id, bool isBookmarked) {
     }
   }
 
-// Unutar TenderProvider-a
 Future<Map<String, dynamic>?> prepareRatingArguments(BidDto bid) async {
   final bidderId = bid.submittedByUserId.trim();
 
  try {
-    // Pošto BidDto nema informacije o kreatoru tendera, povlačimo ih direktno iz izvornog tendera
     final tender = await _service.getById(bid.tenderId);
     
     final ratedUserId = tender.createdByUserId.trim();
     final ratedUserName = tender.createdByFullname.trim();
 
-    // Validacija: Ne možeš ocijeniti sam sebe (kreator tendera ne ocjenjuje sebe)
     if (ratedUserId.isEmpty || ratedUserId == bidderId) {
       return null; 
     }
@@ -234,7 +251,7 @@ Future<Map<String, dynamic>?> prepareRatingArguments(BidDto bid) async {
     };
     
   } catch (_) {
-    return null; // Bezbjedan povratak ako mrežni poziv padne
+    return null; 
   }
 }
 

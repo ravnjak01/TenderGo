@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:tendergo/shared/models/dto/address_dto.dart';
 import 'package:tendergo/shared/models/requests/register_request.dart';
 import 'package:tendergo/shared/providers/auth_provider.dart';
 import 'package:tendergo/shared/widgets/feedback/snackbar_helper.dart';
@@ -182,11 +181,15 @@ class _AdminRegistrationScreenState extends State<AdminRegistrationScreen> {
                                 keyboardType: TextInputType.emailAddress,
                                 validator: (v) {
                                   if (v == null || v.isEmpty)
+                                  {
                                     return 'Email is required';
+                                  }
                                   if (!RegExp(
                                          r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+")
                                       .hasMatch(v))
+                                      {
                                     return 'Please enter a valid email address';
+                                      }
                                   return null;
                                 },
                               ),
@@ -198,10 +201,13 @@ class _AdminRegistrationScreenState extends State<AdminRegistrationScreen> {
                                 controller: _passwordController,
                                 isPasswordField: true,
                                 validator: (v) {
-                                  if (v == null || v.isEmpty)
+                                  if (v == null || v.isEmpty){
                                     return 'Password is required';
+                                  }
                                   if (v.length < 8)
+                                  {
                                     return 'Min 8 characters';
+                                  }
                                   return null;
                                 },
                               ),

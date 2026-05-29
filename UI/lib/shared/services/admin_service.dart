@@ -5,7 +5,6 @@ import 'package:tendergo/shared/core/network/constants/admin_endpoints.dart';
 import 'package:tendergo/shared/models/dto/admin_dto.dart';
 import 'package:tendergo/shared/models/dto/user_dto.dart';
 import 'package:tendergo/shared/models/ui/api_response.dart';
-import 'package:tendergo/shared/models/ui/auth_result.dart';
 import 'package:tendergo/shared/services/api_helper.dart';
 
 class AdminService {

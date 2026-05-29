@@ -50,7 +50,7 @@ class _TenderDetailsScreenState extends State<TenderDetailsScreen> {
               // TOP BAR
               SliverAppBar(
                 pinned: true,
-                backgroundColor: const Color(0xFF0D0F14).withOpacity(0.88),
+                backgroundColor: const Color(0xFF0D0F14).withValues(alpha: 0.88),
                 elevation: 0,
                 leading: _buildHeaderIcon(Icons.chevron_left),
                 title: Text(
@@ -80,7 +80,7 @@ class _TenderDetailsScreenState extends State<TenderDetailsScreen> {
                       ),
                       Positioned(
                         top: 14, left: 14,
-                        child: _buildBadge("● Open", _green.withOpacity(0.15), _green),
+                        child: _buildBadge("● Open", _green.withValues(alpha: 0.15), _green),
                       ),
                       Positioned(
                         top: 14, right: 14,
@@ -241,7 +241,7 @@ class _TenderDetailsScreenState extends State<TenderDetailsScreen> {
         ),
         child: Column(
           children: [
-            Container(height: 2, color: col.withOpacity(0.5)),
+            Container(height: 2, color: col.withValues(alpha: 0.5)),
             const SizedBox(height: 8),
             Text(val, style: GoogleFonts.syne(color: col, fontWeight: FontWeight.w800, fontSize: 17)),
             Text(lbl, style: GoogleFonts.syne(color: _muted, fontSize: 10)),
@@ -352,7 +352,7 @@ class _TenderDetailsScreenState extends State<TenderDetailsScreen> {
             colors: _isSubmitted ? [_green, const Color(0xFF2BAE75)] : [_accent, const Color(0xFF7C5BFF)],
           ),
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(color: (_isSubmitted ? _green : _accent).withOpacity(0.3), blurRadius: 20, offset: const Offset(0, 8))],
+          boxShadow: [BoxShadow(color: (_isSubmitted ? _green : _accent).withValues(alpha: 0.3), blurRadius: 20, offset: const Offset(0, 8))],
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,

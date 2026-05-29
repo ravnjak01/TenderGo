@@ -35,7 +35,7 @@ class _TenderImageGalleryState extends State<TenderImageGallery> {
               itemBuilder: (context, index) => Image.network(
                 widget.imageUrls[index],
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
+                errorBuilder: (_, _, _) => Container(
                   color: AppColors.surfaceVariant,
                   child: const Icon(Icons.broken_image, color: AppColors.textDisabled),
                 ),

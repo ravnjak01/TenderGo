@@ -27,7 +27,7 @@ class ActionTile extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         splashColor:
-            (destructive ? AppColors.error : AppColors.primary).withOpacity(0.08),
+            (destructive ? AppColors.error : AppColors.primary).withValues(alpha: 0.08),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
           decoration: BoxDecoration(

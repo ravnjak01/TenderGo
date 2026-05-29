@@ -10,8 +10,11 @@ class UserDto implements HasInitials {
   final AddressDto? address; 
   final List<String> roles;
   final bool isBanned;
+  @override
   final String username;
+  @override
   final String firstName;
+  @override
   final String lastName;
 
   const UserDto({

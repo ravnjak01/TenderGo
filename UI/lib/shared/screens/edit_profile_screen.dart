@@ -1,13 +1,13 @@
 import 'dart:typed_data';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:tendergo/shared/core/actions/back_button.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
+import 'package:tendergo/shared/models/dto/user_dto.dart';
 import 'package:tendergo/shared/models/requests/update_address_request.dart';
 import 'package:tendergo/shared/models/requests/update_profile_request.dart';
-import 'package:tendergo/shared/models/dto/user_dto.dart';
 import 'package:tendergo/shared/services/user_service.dart';
-import 'package:tendergo/shared/widgets/common/app_dialogs.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final UserDto user;
@@ -146,30 +146,34 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         imageBytes: _selectedImageBytes,
       );
 
-      await widget.userService.updateProfile(request);
+await widget.userService.updateProfile(request);
 
-      if (!mounted) return;
+    if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile updated successfully.')),
-      );
+    // 1. Prvo ugasi loading jer je operacija gotova
+    setState(() {
+      _isSubmitting = false;
+    });
 
-      widget.onSave();
-      Navigator.of(context).pop();
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = e.toString().replaceFirst('Exception: ', '');
-      });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: $_error')));
-    } finally {
-      if (!mounted) return;
-      setState(() {
-        _isSubmitting = false;
-      });
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Profile updated successfully.')),
+    );
+    widget.onSave();
+
+    Navigator.of(context).pop();
+
+  } catch (e) {
+    if (!mounted) return;
+    
+    setState(() {
+      _error = e.toString().replaceFirst('Exception: ', '');
+      _isSubmitting = false; // 🌟 Ugasi loading ovdje
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error: $_error')),
+    );
+  }
   }
 
   @override
@@ -220,7 +224,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                 child: Image.network(
                                   _existingImageUrl!,
                                   fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) => Icon(
+                                  errorBuilder: (_, _, _) => Icon(
                                     Icons.person_rounded,
                                     size: 60,
                                     color: AppColors.textSecondary,
@@ -288,15 +292,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _phoneNumberController,
-                  keyboardType: TextInputType.phone,
-                  decoration: const InputDecoration(
-                    labelText: 'Phone Number',
-                    hintText: 'Enter your phone number (optional)',
-                  ),
-                ),
+             
                 const SizedBox(height: 24),
                 // Address Section
                 Text(
@@ -343,10 +339,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppColors.error.withOpacity(0.1),
+                      color: AppColors.error.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: AppColors.error.withOpacity(0.3),
+                        color: AppColors.error.withValues(alpha: 0.3),
                       ),
                     ),
                     child: Text(

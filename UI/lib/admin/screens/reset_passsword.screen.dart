@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tendergo/shared/core/actions/back_button.dart';
-import 'package:tendergo/shared/core/theme/app_theme.dart';
 import 'package:tendergo/shared/models/requests/reset_password_request.dart';
 import 'package:tendergo/shared/providers/auth_provider.dart';
-import 'package:tendergo/shared/routes/routes.dart';
 import 'package:tendergo/shared/widgets/feedback/snackbar_helper.dart';
 import 'package:tendergo/shared/widgets/inputs/custom_auth_field.dart';
 import 'package:tendergo/shared/widgets/common/auth_scaffold.dart';

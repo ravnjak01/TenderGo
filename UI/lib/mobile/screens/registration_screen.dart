@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tendergo/shared/core/utils/validators/validators.dart';
-import 'package:tendergo/shared/models/dto/address_dto.dart';
 import 'package:tendergo/shared/models/requests/register_request.dart';
 import 'package:tendergo/shared/providers/auth_provider.dart';
 import 'package:tendergo/shared/routes/routes.dart';
 import 'package:tendergo/shared/widgets/feedback/snackbar_helper.dart';
-import 'package:tendergo/shared/widgets/inputs/auth_widget.dart';
 import 'package:tendergo/shared/widgets/common/auth_scaffold.dart';
 import 'package:tendergo/shared/widgets/inputs/custom_auth_field.dart';
 
@@ -25,8 +23,6 @@ class _MobileRegistrationScreenState extends State<MobileRegistrationScreen> {
   final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();
 
-  bool _obscurePassword = true;
-  bool _obscureConfirm = true;
 
   @override
   void dispose() {

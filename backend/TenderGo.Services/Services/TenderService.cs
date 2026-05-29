@@ -61,20 +61,17 @@ namespace TenderGo.Services.Services
 
         public async Task<bool> ToggleBookmarkAsync(string userId, int tenderId)
 {
-    // 1. Provjeri da li tender uopšte postoji u bazi podataka
     var tenderExists = await _context.Tenders.AnyAsync(t => t.Id == tenderId);
     if (!tenderExists)
     {
         throw new NotFoundException("Tender not found", new { TenderId = tenderId });
     }
 
-    // 2. Potraži da li bookmark već postoji za ovu kombinaciju korisnika i tendera
     var existingBookmark = await _context.TenderBookmarks
         .FirstOrDefaultAsync(tb => tb.UserId == userId && tb.TenderId == tenderId);
 
     if (existingBookmark != null)
     {
-        // Ako postoji, brišemo ga (Ukloni iz sačuvanih)
         _context.TenderBookmarks.Remove(existingBookmark);
         await _context.SaveChangesAsync();
         _logger.LogInformation("User {UserId} removed tender {TenderId} from bookmarks.", userId, tenderId);
@@ -82,7 +79,6 @@ namespace TenderGo.Services.Services
     }
     else
     {
-        // Ako ne postoji, kreiramo novi zapis (Sačuvaj tender)
         var newBookmark = new TenderBookmark
         {
             UserId = userId,
@@ -101,12 +97,11 @@ public async Task<IEnumerable<TenderDTO>> GetBookmarkedTendersAsync(string userI
 {
     _logger.LogInformation("Fetching bookmarked tenders for user {UserId}", userId);
 
-    // Izvlačimo sve tendere koji su povezani kroz tabelu TenderBookmarks za datog korisnika
     return await _context.TenderBookmarks
         .Where(tb => tb.UserId == userId)
-        .OrderByDescending(tb => tb.BookmarkedAt) // Prvo prikazujemo najnovije sačuvane
-        .Select(tb => tb.Tender)                 // Prebacujemo fokus na sam objekat Tendera
-        .ProjectTo<TenderDTO>(_mapper.ConfigurationProvider) // Automatski mapira i radi sve Includes iz AddIncludes
+        .OrderByDescending(tb => tb.BookmarkedAt) 
+        .Select(tb => tb.Tender)                 
+        .ProjectTo<TenderDTO>(_mapper.ConfigurationProvider) 
         .ToListAsync();
 }
 
@@ -238,31 +233,6 @@ public async Task<IEnumerable<TenderDTO>> GetBookmarkedTendersAsync(string userI
             }
         }
 
-
-
-
-        public override async Task<TenderDTO> Update(int id, TenderUpdateRequest request)
-        {
-            _logger.LogInformation("Attempting to update tender with ID {TenderId}", id);
-
-            var tender = await AddIncludes(_context.Tenders)
-            .FirstOrDefaultAsync(t=>t.Id==id)
-                ?? throw new NotFoundException("Tender not found", new { Entity = "Tender", Id = id });
-
-            var currentUserId = _authService.GetCurrentUserId();
-            bool isAdmin = _authService.IsInRole(AppRoles.Admin);
-
-            if (tender.CreatedByUserId != currentUserId && !isAdmin)
-            {
-                throw new ForbiddenException(); 
-            }
-
-            var state = CreateState(tender.Status);
-             return await state.Update(id, request);
-        }
-
-
-
         public async Task<TenderDTO> Cancel(int id)
         {
             var entity = await AddIncludes(_context.Tenders)
@@ -362,6 +332,76 @@ public async Task<IEnumerable<TenderDTO>> GetBookmarkedTendersAsync(string userI
                 Result = results,
                 TotalCount = totalCount 
             };
+        }
+
+        public async Task<bool> LogUserActivityAsync(string activityType, int? tenderId, string? searchQuery, int? durationSeconds = null)
+        {
+            var normalizedType = activityType?.Trim();
+
+            return normalizedType switch
+            {
+                "Search" => await LogSearchAsync(searchQuery),
+                "View" => await LogTenderViewAsync(tenderId, durationSeconds),
+                _ => throw new UserException("Invalid activity type")
+            };
+        }
+
+        private async Task<bool> LogTenderViewAsync(int? tenderId, int? durationSeconds)
+        {
+            if (tenderId == null || durationSeconds == null || durationSeconds < 5)
+            {
+                return false;
+            }
+
+            var tenderExists = await _context.Tenders.AnyAsync(t => t.Id == tenderId.Value);
+            if (!tenderExists)
+            {
+                return false;
+            }
+
+            var userId = _authService.GetCurrentUserId();
+            var cutoff = DateTime.UtcNow.AddMinutes(-10);
+            var alreadyLogged = await _context.UserActivities.AnyAsync(a =>
+                a.UserId == userId &&
+                a.ActivityType == "View" &&
+                a.TenderId == tenderId.Value &&
+                a.Timestamp >= cutoff);
+
+            if (alreadyLogged)
+            {
+                return false;
+            }
+
+            await AddUserActivityAsync("View", tenderId.Value, null);
+            return true;
+        }
+
+        private async Task<bool> LogSearchAsync(string? searchTerm)
+        {
+            var normalizedSearchTerm = searchTerm?.Trim();
+            if (string.IsNullOrWhiteSpace(normalizedSearchTerm))
+            {
+                return false;
+            }
+
+            await AddUserActivityAsync("Search", null, normalizedSearchTerm);
+            return true;
+        }
+
+        private async Task AddUserActivityAsync(string activityType, int? tenderId, string? searchQuery)
+        {
+            var userId = _authService.GetCurrentUserId();
+
+            _context.UserActivities.Add(new UserActivity
+            {
+                UserId = userId,
+                ActivityType = activityType,
+                TenderId = tenderId,
+                SearchQuery = searchQuery,
+                Timestamp = DateTime.UtcNow
+            });
+
+            await _context.SaveChangesAsync();
         }
 
        

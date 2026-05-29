@@ -1,11 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:tendergo/shared/core/actions/back_button.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
 import 'package:tendergo/shared/services/bid_service.dart';
 import 'package:tendergo/shared/services/dio_client.dart';
+import 'package:tendergo/shared/services/recommendation_service.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
 import 'package:tendergo/shared/widgets/feedback/screen_state_widget.dart';
+import 'package:tendergo/shared/widgets/tender/similar_tenders_section.dart';
 import 'package:tendergo/shared/widgets/tender/tender_bid_form.dart';
 import 'package:tendergo/shared/widgets/tender/tender_description_card.dart';
 import 'package:tendergo/shared/widgets/tender/tender_details_meta_card.dart';
@@ -30,15 +35,20 @@ class MobileTenderDetailsScreen extends StatefulWidget {
 }
 
 class _MobileTenderDetailsScreenState extends State<MobileTenderDetailsScreen> {
+  static const _storage = FlutterSecureStorage();
   Future<TenderDto>? _tenderFuture;
   bool _initialized = false;
   int? _resolvedTenderId;
+  int? _loggedViewTenderId;
+  Timer? _viewLogTimer;
   late final BidService _bidService;
+  late final RecommendationService _recommendationService;
 
   @override
   void initState() {
     super.initState();
     _bidService = BidService(DioClient.getDio());
+    _recommendationService = RecommendationService(DioClient.getDio());
   }
 
   @override
@@ -64,11 +74,46 @@ class _MobileTenderDetailsScreenState extends State<MobileTenderDetailsScreen> {
     }
   }
 
+  void _scheduleViewActivity(int tenderId) {
+    if (_loggedViewTenderId == tenderId) return;
+    _loggedViewTenderId = tenderId;
+    _viewLogTimer?.cancel();
+    _viewLogTimer = Timer(
+      const Duration(seconds: 5),
+      () => unawaited(_logViewActivityAsync(tenderId)),
+    );
+  }
+
+  Future<void> _logViewActivityAsync(int tenderId) async {
+    try {
+      final token = await _storage.read(key: 'jwt_token') ?? '';
+      await _recommendationService.logViewActivity(
+        tenderId: tenderId,
+        authToken: token,
+        durationSeconds: 5,
+      );
+    } catch (e) {
+      debugPrint('Failed to log tender view activity: $e');
+    }
+  }
+
   Future<TenderDto> _loadTender(int id) async {
     final dynamic data = await widget.tenderService.getById(id);
-    if (data is TenderDto) return data;
-    if (data is Map<String, dynamic>) return TenderDto.fromJson(data);
+    if (data is TenderDto) {
+      if (mounted) _scheduleViewActivity(id);
+      return data;
+    }
+    if (data is Map<String, dynamic>) {
+      if (mounted) _scheduleViewActivity(id);
+      return TenderDto.fromJson(data);
+    }
     throw Exception('Unexpected tender payload from backend.');
+  }
+
+  @override
+  void dispose() {
+    _viewLogTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -96,7 +141,8 @@ class _MobileTenderDetailsScreenState extends State<MobileTenderDetailsScreen> {
         }
         if (snapshot.hasError || !snapshot.hasData) {
           return ScreenErrorState(
-            message: snapshot.error?.toString() ?? 'Could not load tender details.',
+            message:
+                snapshot.error?.toString() ?? 'Could not load tender details.',
             onRetry: () {
               final id = _resolvedTenderId;
               if (id == null) return;
@@ -120,7 +166,9 @@ class _MobileTenderDetailsScreenState extends State<MobileTenderDetailsScreen> {
           }
           if (snapshot.hasError || !snapshot.hasData) {
             return ScreenErrorState(
-              message: snapshot.error?.toString() ?? 'Could not load tender details.',
+              message:
+                  snapshot.error?.toString() ??
+                  'Could not load tender details.',
               onRetry: () {
                 final id = _resolvedTenderId;
                 if (id == null) return;
@@ -135,7 +183,7 @@ class _MobileTenderDetailsScreenState extends State<MobileTenderDetailsScreen> {
               SliverAppBar(
                 pinned: true,
                 elevation: 0,
-                backgroundColor: AppColors.background.withOpacity(0.88),
+                backgroundColor: AppColors.background.withValues(alpha: 0.88),
                 leading: const CustomBackButton(),
                 title: const Text('Tender Details'),
               ),
@@ -197,26 +245,9 @@ class _MobileTenderDetailsScreenState extends State<MobileTenderDetailsScreen> {
                 setState(() => _tenderFuture = _loadTender(tender.id)),
           ),
           const SizedBox(height: 24),
+          SimilarTendersSection(tenderId: tender.id),
+          const SizedBox(height: 24),
         ],
-      ),
-    );
-  }
-
-  Widget _buildHeaderIcon(IconData icon, VoidCallback onTap) {
-    return Container(
-      margin: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.outline),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(8),
-          child: Icon(icon, size: 18),
-        ),
       ),
     );
   }

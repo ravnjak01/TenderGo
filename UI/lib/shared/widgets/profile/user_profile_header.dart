@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
 import 'package:tendergo/shared/core/utils/extensions/user_initials_extension.dart';
 import 'package:tendergo/shared/models/dto/user_dto.dart';
-import 'package:tendergo/shared/widgets/common/app_icon.dart';
 
 class UserProfileHeader extends StatelessWidget {
   final UserDto user;
@@ -23,7 +22,7 @@ class UserProfileHeader extends StatelessWidget {
           width: 88,
           height: 88,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _buildInitialsFallback(),
+          errorBuilder: (_, _, _) => _buildInitialsFallback(),
         ),
       );
     }
@@ -78,7 +77,7 @@ class UserProfileHeader extends StatelessWidget {
                   shape: BoxShape.circle,
                   color: AppColors.infoSurface,
                   border: Border.all(
-                    color: AppColors.primary.withOpacity(0.2),
+                    color: AppColors.primary.withValues(alpha: 0.2),
                     width: 1.5,
                   ),
                 ),

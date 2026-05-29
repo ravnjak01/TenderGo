@@ -1,16 +1,13 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:tendergo/shared/core/error/error_handler.dart';
 import 'package:tendergo/shared/core/network/constants/api_endpoints.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
-import 'package:tendergo/shared/models/dto/address_dto.dart';
 import 'package:tendergo/shared/models/dto/user_dto.dart';
 import 'package:tendergo/shared/models/requests/login_request.dart';
 import 'package:tendergo/shared/models/requests/register_request.dart';
 import 'package:tendergo/shared/models/requests/reset_password_request.dart';
 import 'package:tendergo/shared/models/ui/api_response.dart';
-import 'package:tendergo/shared/models/ui/auth_result.dart';
 import 'package:tendergo/shared/services/api_helper.dart';
 
 class AuthService {

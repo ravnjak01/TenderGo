@@ -3,8 +3,13 @@ import 'package:tendergo/shared/services/dio_client.dart';
 
 class UserPublicDto implements HasInitials{
   final String id;
+  @override
   final String username;
+  @override
+
   final String firstName;
+  @override
+
   final String lastName;
   final String location;
   final String? profileImageUrl;

@@ -59,7 +59,7 @@ class _RecommendedForYouScreenState extends State<RecommendedForYouScreen> {
           title: const Text('Recommended For You'),
           actions: [
             Consumer<RecommendationProvider>(
-              builder: (_, provider, __) => IconButton(
+              builder: (_, provider, _) => IconButton(
                 icon: const Icon(Icons.refresh),
                 onPressed: provider.isLoading ? null : _refresh,
               ),
@@ -136,7 +136,7 @@ class _RecommendedForYouScreenState extends State<RecommendedForYouScreen> {
                       crossAxisCount: 2,
                       crossAxisSpacing: 12,
                       mainAxisSpacing: 12,
-                      childAspectRatio: 2.6,
+                      mainAxisExtent: 390,
                     ),
                     itemCount: provider.recommendations.length,
                     itemBuilder: (context, index) {

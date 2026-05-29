@@ -10,6 +10,8 @@ class TenderRecommendation {
   final String? locationName;
   final String? thumbnailUrl;
   final double similarityScore;
+  final String? recommendationReason;
+  final List<String> recommendationSignals;
 
   const TenderRecommendation({
     required this.tenderId,
@@ -23,21 +25,41 @@ class TenderRecommendation {
     this.locationName,
     this.thumbnailUrl,
     required this.similarityScore,
+    this.recommendationReason,
+    this.recommendationSignals = const [],
   });
 
   factory TenderRecommendation.fromJson(Map<String, dynamic> json) {
+    final rawSignals = json['recommendationSignals'] ??
+        json['RecommendationSignals'] ??
+        json['recommendation_signals'];
+
     return TenderRecommendation(
-      tenderId:        json['tenderId'] as int,
-      title:           json['title'] as String,
-      description:     json['description'] as String?,
-      maxBudget:       (json['maxBudget'] as num).toDouble(),
-      deadline:        DateTime.parse(json['deadline'] as String),
-      status:          json['status'] as String,
-      category:        json['category'] as String?,
-      country:         json['country'] as String?,
-      locationName:    json['locationName'] as String?,
-      thumbnailUrl:    json['thumbnailUrl'] as String?,
-      similarityScore: (json['similarityScore'] as num).toDouble(),
+      tenderId: _number(json, 'tenderId', 'TenderId').toInt(),
+      title: (json['title'] ?? json['Title']) as String,
+      description: (json['description'] ?? json['Description']) as String?,
+      maxBudget: _number(json, 'maxBudget', 'MaxBudget').toDouble(),
+      deadline:
+          DateTime.parse((json['deadline'] ?? json['Deadline']) as String),
+      status: (json['status'] ?? json['Status']) as String,
+      category: (json['category'] ?? json['Category']) as String?,
+      country: (json['country'] ?? json['Country']) as String?,
+      locationName: (json['locationName'] ??
+          json['LocationName'] ??
+          json['city'] ??
+          json['City']) as String?,
+      thumbnailUrl: (json['thumbnailUrl'] ?? json['ThumbnailUrl']) as String?,
+      similarityScore:
+          _number(json, 'similarityScore', 'SimilarityScore').toDouble(),
+      recommendationReason: (json['recommendationReason'] ??
+          json['RecommendationReason'] ??
+          json['recommendation_reason']) as String?,
+      recommendationSignals: rawSignals is List
+          ? rawSignals
+              .whereType<String>()
+              .where((signal) => signal.trim().isNotEmpty)
+              .toList()
+          : const [],
     );
   }
 
@@ -53,4 +75,27 @@ class TenderRecommendation {
 
   /// Similarity as a percentage string
   String get matchPercent => '${(similarityScore * 100).toStringAsFixed(0)}%';
+
+  bool get hasExplanation =>
+      (recommendationReason?.trim().isNotEmpty ?? false) ||
+      recommendationSignals.isNotEmpty;
+
+  String get explanationText {
+    final reason = recommendationReason?.trim();
+    if (reason != null && reason.isNotEmpty) return reason;
+
+    if (category != null && category!.trim().isNotEmpty) {
+      return 'Recommended because it matches your recent activity in ${category!.trim()}.';
+    }
+
+    return 'Recommended because it has a $matchPercent match with your tender activity.';
+  }
+
+  static num _number(
+    Map<String, dynamic> json,
+    String camelCaseKey,
+    String pascalCaseKey,
+  ) {
+    return (json[camelCaseKey] ?? json[pascalCaseKey]) as num;
+  }
 }

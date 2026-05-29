@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:tendergo/shared/core/theme/app_theme.dart';
 
 class CustomBackButton extends StatelessWidget {
   final VoidCallback? onPressed;
@@ -32,7 +31,7 @@ class CustomBackButton extends StatelessWidget {
     width: buttonSize,
     height: buttonSize,
     child: Material(
-      color: backgroundColor ?? theme.colorScheme.surface.withOpacity(isDesktop ? 0.8 : 0.6),
+      color: backgroundColor ?? theme.colorScheme.surface.withValues(alpha: isDesktop ? 0.8 : 0.6),
       shape: const CircleBorder(), // Ovo ga čini krugom
       clipBehavior: Clip.antiAlias, // Sprečava da splash "pobjegne" van kruga
       child: InkWell(

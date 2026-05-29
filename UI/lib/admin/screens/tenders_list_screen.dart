@@ -63,6 +63,18 @@ void initState() {
     );
   }
 
+  void _onSearchSubmitted(String query) {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) {
+      _tenderProvider?.clearSearch();
+      _tenderProvider?.fetchActiveTenders();
+      return;
+    }
+
+    _tenderProvider?.searchTenders(trimmed);
+    _tenderProvider?.logSearchActivity(trimmed);
+  }
+
   @override
   void dispose() {
     _controller.dispose();
@@ -125,6 +137,7 @@ void initState() {
               TenderSearchBar(
                 controller: _controller.searchController,
                 onChanged: _onSearchChanged,
+                onSubmitted: _onSearchSubmitted,
                 onClear: () => _controller.clearSearch(() {
                   if (!mounted) return;
                   _tenderProvider?.clearSearch();

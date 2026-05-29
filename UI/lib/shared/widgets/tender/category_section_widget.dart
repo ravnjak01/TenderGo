@@ -51,7 +51,7 @@ class TenderCategorySection extends StatelessWidget {
           _buildErrorState()
         else
           DropdownButtonFormField<int>(
-            value: selectedCategoryId,
+            initialValue: selectedCategoryId,
             isExpanded: true,
             menuMaxHeight: 280,
             decoration: InputDecoration(

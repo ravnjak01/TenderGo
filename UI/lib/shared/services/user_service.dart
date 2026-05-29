@@ -5,7 +5,6 @@ import 'package:tendergo/shared/models/dto/review_dto.dart';
 import 'package:tendergo/shared/models/dto/user_public_dto.dart';
 import 'package:tendergo/shared/models/requests/rate_user_request.dart';
 import 'package:tendergo/shared/models/requests/update_profile_request.dart';
-import 'package:tendergo/shared/models/dto/user_dto.dart';
 
 class UserService {
 	final Dio _dio;

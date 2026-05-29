@@ -78,7 +78,7 @@ class UserTendersScreen extends StatelessWidget {
           return ListView.separated(
             padding: const EdgeInsets.all(20),
             itemCount: tenders.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 14),
+            separatorBuilder: (_, _) => const SizedBox(height: 14),
             itemBuilder: (context, index) {
               final tender = tenders[index];
               return _buildTenderItem(context, tender);
@@ -125,7 +125,7 @@ class UserTendersScreen extends StatelessWidget {
                         child: Image.network(
                           cardModel.imageUrl!,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => _buildPlaceholderImage(),
+                          errorBuilder: (_, _, _) => _buildPlaceholderImage(),
                         ),
                       ),
                     )

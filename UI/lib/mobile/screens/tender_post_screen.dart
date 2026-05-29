@@ -59,29 +59,33 @@ class _MobileTenderPostScreenState extends State<MobileTenderPostScreen> {
       _categoryLoadError = null;
     });
 
-    try {
-      await context.read<TenderProvider>().fetchCategories();
-      if (!mounted) return;
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _categoryLoadError = e.toString().replaceFirst('Exception: ', '');
-      });
-    } finally {
-      if (!mounted) return;
-      setState(() {
-        _isCategoryLoading = false;
-      });
-    }
+ try {
+  await context.read<TenderProvider>().fetchCategories();
+  
+  if (!mounted) return;
+  setState(() {
+    _isCategoryLoading = false;
+  });
+
+} catch (e) {
+  if (!mounted) return;
+  setState(() {
+    _categoryLoadError = e.toString().replaceFirst('Exception: ', '');
+    _isCategoryLoading = false;
+  });
+}
   }
 
-  Future<void> _pickImagesFromDisk() async {
+ Future<void> _pickImagesFromDisk() async {
     try {
       final picked = await FilePicker.pickFiles(
         type: FileType.image,
         allowMultiple: true,
         withData: true,
       );
+
+      // 🌟 Rješenje 1: Ako je korisnik napustio ekran dok je birao slike, prekini izvršavanje
+      if (!mounted) return;
 
       if (picked == null || picked.files.isEmpty) return;
 
@@ -97,6 +101,7 @@ class _MobileTenderPostScreenState extends State<MobileTenderPostScreen> {
       }
 
       if (newFiles.isEmpty) {
+        // Ovdje je context sada siguran jer smo iznad stavili 'if (!mounted) return;'
         SnackbarHelper.show(
           context,
           'Selected files are already added.',
@@ -107,6 +112,9 @@ class _MobileTenderPostScreenState extends State<MobileTenderPostScreen> {
 
       setState(() => _imageFiles.addAll(newFiles));
     } catch (e) {
+      // 🌟 Rješenje 2: Osiguraj se i unutar catch bloka prije prikazivanja snackbar-a
+      if (!mounted) return;
+      
       SnackbarHelper.show(
         context,
         e.toString().replaceFirst('Exception: ', ''),
@@ -174,18 +182,18 @@ class _MobileTenderPostScreenState extends State<MobileTenderPostScreen> {
       }
       Navigator.of(context).pop(true);
     } catch (e) {
-      if (!mounted) return;
-      SnackbarHelper.show(
-        context,
-        e.toString().replaceFirst('Exception: ', ''),
-        isError: true,
-      );
-    } finally {
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-      });
-    }
+    if (!mounted) return;
+    
+    setState(() {
+      _isLoading = false; 
+    });
+
+    SnackbarHelper.show(
+      context,
+      e.toString().replaceFirst('Exception: ', ''),
+      isError: true,
+    );
+  }
   }
 
   @override

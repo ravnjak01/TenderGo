@@ -15,7 +15,7 @@ class ApiEndpoints {
   static String deleteImage='Images';
 
   // --- RECOMMENDATIONS ---
-  static const String recommendSimilar = '/recommend/similar';
+  static String recommendSimilar(int tenderId) => '/recommend/similar/$tenderId';
   static const String recommendForUser = '/recommend/for-user';
 
 
@@ -25,4 +25,7 @@ class ApiEndpoints {
 
   static  String downloadPdf(int id)=>'/pdf/$id/download';
   static String adminReport(String id)=>'pdf/user/$id/tenders';
+
+  // USER ACTIVITY
+  static const String userActivity='/user-activities/log';
 }

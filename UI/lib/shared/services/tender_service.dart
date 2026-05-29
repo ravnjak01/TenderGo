@@ -1,12 +1,8 @@
 import 'dart:io';
-import 'dart:typed_data';
-
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:tendergo/shared/core/network/constants/tender_api_endpoints.dart';
-import 'package:tendergo/shared/models/dto/location_dto.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
 import 'package:tendergo/shared/models/requests/tender_insert_request.dart';
 import 'package:tendergo/shared/models/requests/tender_search_request.dart';
@@ -15,16 +11,12 @@ import 'package:tendergo/shared/services/image_service.dart';
 class TenderService {
   final Dio _dio;
   final ImageService _imageService;
-  static const _storage = FlutterSecureStorage();
 
   TenderService(this._dio, this._imageService);
 
   ImageService get imageService => _imageService;
 
-  Future<String?> _getToken() async {
-    return await _storage.read(key: 'jwt_token');
-  }
-
+ 
   Future<TenderInsertRequest> _withImageBytes(
     TenderInsertRequest data,
     List<PlatformFile>? imageFiles,
@@ -195,7 +187,7 @@ class TenderService {
       );
 
       return response.statusCode! >= 200 && response.statusCode! < 300;
-    } on DioException catch (e) {
+    } on DioException  {
       return false;
     }
   }
@@ -208,7 +200,7 @@ class TenderService {
       );
 
       return response.statusCode! >= 200 && response.statusCode! < 300;
-    } on DioException catch (e) {
+    } on DioException  {
       return false;
     }
   }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:tendergo/admin/app.dart';
 import 'package:tendergo/mobile/widgets/tender_widget.dart';
 import 'package:tendergo/shared/controllers/tender_list_controller.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
@@ -109,6 +108,18 @@ Future<void> _initialLoad() async {
     }
   }
 
+  void _onSearchSubmitted(String query) {
+    final trimmed = query.trim();
+    final provider = context.read<TenderProvider>();
+    if (trimmed.isEmpty) {
+      provider.clearSearch();
+      return;
+    }
+
+    provider.searchTenders(trimmed);
+    provider.logSearchActivity(trimmed);
+  }
+
 
   void _openTender(TenderDto tender) {
     if (widget.onTenderSelected != null) {
@@ -210,6 +221,7 @@ Future<void> _initialLoad() async {
                         TenderSearchBar(
                           controller: _controller.searchController,
                           onChanged: _onSearchChanged,
+                          onSubmitted: _onSearchSubmitted,
                           onClear: () => _controller.clearSearch(
                             () => provider.clearSearch(),
                           ),
@@ -269,7 +281,7 @@ Future<void> _initialLoad() async {
                               : null,
                         );
                       },
-                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      separatorBuilder: (_, _) => const SizedBox(height: 12),
                       itemCount: filtered.length,
                     ),
                   ),

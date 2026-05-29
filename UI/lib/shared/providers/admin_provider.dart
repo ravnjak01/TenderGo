@@ -6,7 +6,6 @@ import 'package:tendergo/shared/models/dto/tender_dto.dart';
 import 'package:tendergo/shared/models/requests/location_insert_request.dart';
 import 'package:tendergo/shared/models/requests/location_update_request.dart';
 import 'package:tendergo/shared/models/ui/api_response.dart';
-import 'package:tendergo/shared/models/ui/auth_result.dart';
 import 'package:tendergo/shared/services/admin_service.dart';
 import 'package:tendergo/shared/services/auth_service.dart';
 import 'package:tendergo/shared/services/category_service.dart';

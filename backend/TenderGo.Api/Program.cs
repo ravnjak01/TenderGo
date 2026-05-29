@@ -21,7 +21,6 @@ using TenderGo.Services.StateMachines.BidStates;
 using TenderGo.Services.StateMachines.TenderStates;
 
 var builder = WebApplication.CreateBuilder(args);
-// 🌟 DODAJ OVU LINIJU U Program.cs:
 QuestPDF.Settings.License = LicenseType.Community;
 
 // Učitavanje .env datoteke za Docker okruženje

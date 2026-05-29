@@ -3,6 +3,7 @@ import 'package:tendergo/shared/widgets/common/action_button.dart';
 
 class CardActions extends StatelessWidget {
   const CardActions({
+    super.key,
     this.onView,
     required this.isClosed,
     this.onCancelTender,
