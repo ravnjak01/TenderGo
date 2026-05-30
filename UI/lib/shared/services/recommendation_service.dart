@@ -14,12 +14,22 @@ class RecommendationService {
     required String authToken,
     int topN = 10,
   }) async {
-    final response = await _dio.get(
-      ApiEndpoints.recommendSimilar(tenderId),
-      queryParameters: {'topN': topN},
-      options: Options(headers: {'Authorization': 'Bearer $authToken'}),
-    );
-    return _parseList(response.data);
+    try {
+      final response = await _dio.get(
+        ApiEndpoints.recommendSimilar(tenderId),
+        queryParameters: {'topN': topN},
+        options: Options(headers: {'Authorization': 'Bearer $authToken'}),
+      );
+      
+      return _parseList(response.data);
+    } on DioException catch (e) {
+      print('Dio error response body: ${e.response?.data}');
+      // RETHROW šalje grešku tvom Provideru da bi on mogao aktivirati "error" stanje na UI
+      rethrow; 
+    } catch (e) {
+      print('General error in service: $e');
+      rethrow;
+    }
   }
 
   /// Returns personalized recommendations for the logged-in user

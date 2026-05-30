@@ -83,13 +83,16 @@ Future<List<T>> getAll({int page = 1, int pageSize = 100, Map<String, dynamic>? 
   }
 
   // DELETE
-  Future<bool> delete(int id) async {
+  Future<String> delete(int id) async {
     try {
       final response = await _dio.delete('$_endpointPath/$id');
 
-      return response.statusCode != null &&
-          response.statusCode! >= 200 &&
-          response.statusCode! < 300;
+      final data = response.data;
+      if (data is Map<String, dynamic>) {
+        return data['message']?.toString() ?? 'Delete successful.';
+      }
+
+      return 'Delete successful.';
     } on DioException catch (e) {
       throw Exception(e.response?.data?['message'] ?? 'Error deleting entity');
     }

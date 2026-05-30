@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:tendergo/shared/core/actions/back_button.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
 import 'package:tendergo/shared/core/utils/extensions/user_initials_extension.dart';
@@ -12,6 +13,7 @@ import 'package:tendergo/shared/models/requests/location_insert_request.dart';
 import 'package:tendergo/shared/models/requests/location_update_request.dart';
 import 'package:tendergo/shared/models/ui/api_response.dart';
 import 'package:tendergo/shared/providers/admin_provider.dart';
+import 'package:tendergo/shared/providers/tender_provider.dart';
 import 'package:tendergo/shared/routes/routes.dart';
 import 'package:tendergo/shared/services/pdf_service.dart';
 import 'package:tendergo/shared/widgets/common/action_button.dart';
@@ -77,6 +79,24 @@ class _AdminScreenState extends State<AdminScreen> {
   void initState() {
     super.initState();
     _loadAdminData();
+  }
+
+  Future<void> _refreshTenderListCategories() async {
+    final tenderProvider = context.read<TenderProvider>();
+    await Future.wait([
+      tenderProvider.fetchCategories(),
+      tenderProvider.fetchActiveTenders(silent: true),
+    ]);
+  }
+
+  Future<void> _refreshTenderListLocations({
+    bool clearLocationFilter = false,
+  }) async {
+    final tenderProvider = context.read<TenderProvider>();
+    if (clearLocationFilter) {
+      tenderProvider.clearLocationFilter();
+    }
+    await tenderProvider.fetchActiveTenders(silent: true);
   }
 
   Future<void> _handleCancelTender(TenderDto tender) async {
@@ -146,6 +166,8 @@ class _AdminScreenState extends State<AdminScreen> {
         ]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
         _isSubmitting = false;
       });
+      await _refreshTenderListCategories();
+      if (!mounted) return;
       SnackbarHelper.show(context, 'Category created successfully.');
     } catch (error) {
       if (!mounted) return;
@@ -175,7 +197,7 @@ class _AdminScreenState extends State<AdminScreen> {
             _categories
                 .map(
                   (c) => c.id == category.id
-                      ? CategoryDto(id: c.id, name: name)
+                      ? CategoryDto(id: c.id, name: name, isActive: c.isActive)
                       : c,
                 )
                 .toList()
@@ -184,6 +206,8 @@ class _AdminScreenState extends State<AdminScreen> {
               );
         _isSubmitting = false;
       });
+      await _refreshTenderListCategories();
+      if (!mounted) return;
       SnackbarHelper.show(context, 'Category updated successfully.');
     } catch (error) {
       if (!mounted) return;
@@ -247,23 +271,60 @@ class _AdminScreenState extends State<AdminScreen> {
     setState(() => _isSubmitting = true);
 
     try {
-      final success = await widget.provider.deleteCategory(category.id);
+      final message = await widget.provider.deleteCategory(category.id);
+      final wasDeactivated = message.toLowerCase().contains('deactivated');
 
       if (!mounted) return;
       setState(() {
-        if (success) {
+        if (wasDeactivated) {
+          _categories = _categories
+              .map(
+                (c) => c.id == category.id
+                    ? CategoryDto(id: c.id, name: c.name, isActive: false)
+                    : c,
+              )
+              .toList();
+        } else {
           _categories = _categories.where((c) => c.id != category.id).toList();
         }
         _isSubmitting = false;
       });
+      await _refreshTenderListCategories();
+      if (!mounted) return;
 
+      SnackbarHelper.show(context, message);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
       SnackbarHelper.show(
         context,
-        success
-            ? 'Category deleted successfully.'
-            : 'Failed to delete category.',
-        isError: !success,
+        error.toString().replaceFirst('Exception: ', ''),
+        isError: true,
       );
+    }
+  }
+
+  Future<void> _handleActivateCategory(CategoryDto category) async {
+    setState(() => _isSubmitting = true);
+
+    try {
+      final activated = await widget.provider.activateCategory(category.id);
+
+      if (!mounted) return;
+      setState(() {
+        _categories =
+            _categories
+                .map((c) => c.id == activated.id ? activated : c)
+                .toList()
+              ..sort(
+                (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+              );
+        _isSubmitting = false;
+      });
+      await _refreshTenderListCategories();
+      if (!mounted) return;
+
+      SnackbarHelper.show(context, 'Category activated successfully.');
     } catch (error) {
       if (!mounted) return;
       setState(() => _isSubmitting = false);
@@ -331,6 +392,8 @@ class _AdminScreenState extends State<AdminScreen> {
         _locations = [..._locations, created]..sort(_compareLocations);
         _isSubmitting = false;
       });
+      await _refreshTenderListLocations();
+      if (!mounted) return;
       SnackbarHelper.show(context, 'Location created successfully.');
     } catch (error) {
       if (!mounted) return;
@@ -381,6 +444,7 @@ class _AdminScreenState extends State<AdminScreen> {
                           name: values.name,
                           country: values.country,
                           region: values.region,
+                          isActive: l.isActive,
                         )
                       : l,
                 )
@@ -388,6 +452,8 @@ class _AdminScreenState extends State<AdminScreen> {
               ..sort(_compareLocations);
         _isSubmitting = false;
       });
+      await _refreshTenderListLocations(clearLocationFilter: true);
+      if (!mounted) return;
       SnackbarHelper.show(context, 'Location updated successfully.');
     } catch (error) {
       if (!mounted) return;
@@ -415,23 +481,62 @@ class _AdminScreenState extends State<AdminScreen> {
     setState(() => _isSubmitting = true);
 
     try {
-      final success = await widget.provider.deleteLocation(location.id);
+      final message = await widget.provider.deleteLocation(location.id);
+      final wasDeactivated = message.toLowerCase().contains('deactivated');
 
       if (!mounted) return;
       setState(() {
-        if (success) {
+        if (wasDeactivated) {
+          _locations = _locations
+              .map(
+                (l) => l.id == location.id
+                    ? LocationDto(
+                        id: l.id,
+                        name: l.name,
+                        country: l.country,
+                        region: l.region,
+                        isActive: false,
+                      )
+                    : l,
+              )
+              .toList();
+        } else {
           _locations = _locations.where((l) => l.id != location.id).toList();
         }
         _isSubmitting = false;
       });
+      await _refreshTenderListLocations(clearLocationFilter: true);
+      if (!mounted) return;
 
+      SnackbarHelper.show(context, message);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
       SnackbarHelper.show(
         context,
-        success
-            ? 'Location deleted successfully.'
-            : 'Failed to delete location.',
-        isError: !success,
+        error.toString().replaceFirst('Exception: ', ''),
+        isError: true,
       );
+    }
+  }
+
+  Future<void> _handleActivateLocation(LocationDto location) async {
+    setState(() => _isSubmitting = true);
+
+    try {
+      final activated = await widget.provider.activateLocation(location.id);
+
+      if (!mounted) return;
+      setState(() {
+        _locations =
+            _locations.map((l) => l.id == activated.id ? activated : l).toList()
+              ..sort(_compareLocations);
+        _isSubmitting = false;
+      });
+      await _refreshTenderListLocations();
+      if (!mounted) return;
+
+      SnackbarHelper.show(context, 'Location activated successfully.');
     } catch (error) {
       if (!mounted) return;
       setState(() => _isSubmitting = false);
@@ -877,6 +982,10 @@ class _AdminScreenState extends State<AdminScreen> {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
+                  if (!location.isActive) ...[
+                    const SizedBox(height: 6),
+                    const _InactiveBadge(),
+                  ],
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
@@ -894,15 +1003,25 @@ class _AdminScreenState extends State<AdminScreen> {
               onTap: _isSubmitting ? null : () => _handleEditLocation(location),
             ),
             const SizedBox(width: 6),
-            ActionButton(
-              label: 'Delete',
-              icon: Icons.delete_outline_rounded,
-              isPrimary: false,
-              isDestructive: true,
-              onTap: _isSubmitting
-                  ? null
-                  : () => _handleDeleteLocation(location),
-            ),
+            if (location.isActive)
+              ActionButton(
+                label: 'Delete',
+                icon: Icons.delete_outline_rounded,
+                isPrimary: false,
+                isDestructive: true,
+                onTap: _isSubmitting
+                    ? null
+                    : () => _handleDeleteLocation(location),
+              )
+            else
+              ActionButton(
+                label: 'Activate',
+                icon: Icons.check_circle_outline_rounded,
+                isPrimary: true,
+                onTap: _isSubmitting
+                    ? null
+                    : () => _handleActivateLocation(location),
+              ),
           ],
         ),
       ),
@@ -925,11 +1044,20 @@ class _AdminScreenState extends State<AdminScreen> {
         child: Row(
           children: [
             Expanded(
-              child: Text(
-                category.name,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    category.name,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  if (!category.isActive) ...[
+                    const SizedBox(height: 6),
+                    const _InactiveBadge(),
+                  ],
+                ],
               ),
             ),
             ActionButton(
@@ -939,15 +1067,25 @@ class _AdminScreenState extends State<AdminScreen> {
               onTap: _isSubmitting ? null : () => _handleEditCategory(category),
             ),
             const SizedBox(width: 6),
-            ActionButton(
-              label: 'Delete',
-              icon: Icons.delete_outline_rounded,
-              isPrimary: false,
-              isDestructive: true,
-              onTap: _isSubmitting
-                  ? null
-                  : () => _handleDeleteCategory(category),
-            ),
+            if (category.isActive)
+              ActionButton(
+                label: 'Delete',
+                icon: Icons.delete_outline_rounded,
+                isPrimary: false,
+                isDestructive: true,
+                onTap: _isSubmitting
+                    ? null
+                    : () => _handleDeleteCategory(category),
+              )
+            else
+              ActionButton(
+                label: 'Activate',
+                icon: Icons.check_circle_outline_rounded,
+                isPrimary: true,
+                onTap: _isSubmitting
+                    ? null
+                    : () => _handleActivateCategory(category),
+              ),
           ],
         ),
       ),
@@ -1309,6 +1447,30 @@ class _LocationFormValues {
     required this.country,
     this.region,
   });
+}
+
+class _InactiveBadge extends StatelessWidget {
+  const _InactiveBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: colorScheme.errorContainer,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        'Inactive',
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: colorScheme.onErrorContainer,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
 }
 
 enum _TenderBucket { all, active, closed, cancelled }

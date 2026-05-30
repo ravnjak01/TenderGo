@@ -168,7 +168,15 @@ public async Task<IEnumerable<TenderDTO>> GetBookmarkedTendersAsync(string userI
                     throw new UserException("Location is required.");
                 }
 
-                var location = await _context.Locations.FindAsync(request.LocationId);
+                var category = await _context.Categories
+                    .FirstOrDefaultAsync(c => c.Id == request.CategoryId && c.IsActive);
+                if (category == null)
+                {
+                    throw new UserException("The selected category does not exist in our database.");
+                }
+
+                var location = await _context.Locations
+                    .FirstOrDefaultAsync(l => l.Id == request.LocationId && l.IsActive);
                 if (location == null)
                 {
                     throw new UserException("The selected location does not exist in our database.");

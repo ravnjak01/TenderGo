@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
@@ -17,7 +19,8 @@ class AdminReportPreviewScreen extends StatefulWidget {
   });
 
   @override
-  State<AdminReportPreviewScreen> createState() => _AdminReportPreviewScreenState();
+  State<AdminReportPreviewScreen> createState() =>
+      _AdminReportPreviewScreenState();
 }
 
 class _AdminReportPreviewScreenState extends State<AdminReportPreviewScreen> {
@@ -26,44 +29,76 @@ class _AdminReportPreviewScreenState extends State<AdminReportPreviewScreen> {
   int _currentPage = 0;
   final PdfViewerController _pdfViewerController = PdfViewerController();
 
-  @override
-  void initState() {
-    super.initState();
-    // 🌟 Sklonjen _preparePdfFile() jer SfPdfViewer već čita iz memorije!
-  }
-
   Future<void> _savePdfToDevice() async {
     setState(() => _isSaving = true);
+
     try {
-      Directory? targetDir;
-      
-      if (Platform.isAndroid) {
-        targetDir = Directory('/storage/emulated/0/Download');
-        if (!await targetDir.exists()) {
-          targetDir = await getExternalStorageDirectory();
-        }
-      } else if (Platform.isIOS) {
-        targetDir = await getApplicationDocumentsDirectory();
+      if (widget.pdfBytes.isEmpty) {
+        throw Exception('Nema podataka za spremanje.');
       }
 
-      final cleanTitle = widget.title.replaceAll(RegExp(r'[^\w\s\-]'), '').replaceAll(' ', '_');
-      final finalFile = File('${targetDir!.path}/$cleanTitle.pdf');
-      await finalFile.writeAsBytes(widget.pdfBytes);
+      final cleanTitle = widget.title
+          .replaceAll(RegExp(r'[^\w\s\-]'), '')
+          .replaceAll(' ', '_');
+      final fileName = cleanTitle.isEmpty ? 'izvjestaj.pdf' : '$cleanTitle.pdf';
+      String? savedPath;
+
+      if (Platform.isAndroid || Platform.isIOS) {
+        Directory? targetDir;
+
+        if (Platform.isAndroid) {
+          targetDir = Directory('/storage/emulated/0/Download');
+          if (!await targetDir.exists()) {
+            targetDir = await getExternalStorageDirectory();
+          }
+        } else {
+          targetDir = await getApplicationDocumentsDirectory();
+        }
+
+        if (targetDir == null) {
+          throw Exception('Nije moguce pronaci folder za spremanje.');
+        }
+
+        final finalFile = File('${targetDir.path}/$fileName');
+        await finalFile.writeAsBytes(widget.pdfBytes);
+        savedPath = finalFile.path;
+      } else {
+        savedPath = await FilePicker.saveFile(
+          dialogTitle: 'Spremi izvjestaj',
+          fileName: fileName,
+          type: FileType.custom,
+          allowedExtensions: const ['pdf'],
+          bytes: widget.pdfBytes,
+        );
+
+        if (savedPath == null) {
+          if (!mounted) return;
+          SnackbarHelper.show(context, 'Spremanje fajla je otkazano.');
+          return;
+        }
+
+        await File(savedPath).writeAsBytes(widget.pdfBytes);
+      }
 
       if (!mounted) return;
       SnackbarHelper.show(
-        context, 
-        Platform.isAndroid 
-            ? 'Izvještaj uspješno sačuvan u Downloads!' 
-            : 'Izvještaj sačuvan u Documents!',
-        isError: false
+        context,
+        Platform.isAndroid
+            ? 'Izvjestaj uspjesno sacuvan u Downloads!'
+            : 'Izvjestaj uspjesno sacuvan: $savedPath',
+        isError: false,
       );
     } catch (e) {
       if (!mounted) return;
-      SnackbarHelper.show(context, 'Neuspješno čuvanje fajla: $e', isError: true);
+      SnackbarHelper.show(
+        context,
+        'Neuspjesno cuvanje fajla: $e',
+        isError: true,
+      );
     } finally {
-      if (!mounted) return; 
-      setState(() => _isSaving = false);
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
     }
   }
 
@@ -83,19 +118,22 @@ class _AdminReportPreviewScreenState extends State<AdminReportPreviewScreen> {
                   child: SizedBox(
                     width: 20,
                     height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
                   ),
                 )
               : IconButton(
                   icon: const Icon(Icons.save_alt_rounded),
-                  tooltip: 'Preuzmi na uređaj',
+                  tooltip: 'Preuzmi na uredaj',
                   onPressed: _savePdfToDevice,
                 ),
           const SizedBox(width: 8),
         ],
       ),
       body: widget.pdfBytes.isEmpty
-          ? const Center(child: Text('Nema podataka za prikaz izvještaja.'))
+          ? const Center(child: Text('Nema podataka za prikaz izvjestaja.'))
           : Stack(
               children: [
                 SfPdfViewer.memory(
@@ -117,7 +155,10 @@ class _AdminReportPreviewScreenState extends State<AdminReportPreviewScreen> {
                     bottom: 20,
                     right: 20,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.primaryDark.withValues(alpha: 0.9),
                         borderRadius: BorderRadius.circular(20),
@@ -126,7 +167,7 @@ class _AdminReportPreviewScreenState extends State<AdminReportPreviewScreen> {
                             color: Colors.black.withValues(alpha: 0.2),
                             blurRadius: 6,
                             offset: const Offset(0, 3),
-                          )
+                          ),
                         ],
                       ),
                       child: Text(

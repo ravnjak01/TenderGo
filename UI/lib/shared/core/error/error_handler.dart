@@ -59,7 +59,7 @@ class ErrorHandler {
   }
 
   static String accountBannedMessage() =>
-      'Your account has been banned. Please contact an administrator.';
+      'Your account has been banned.';
 
   static void showApiError(BuildContext context, ApiResponse api) {
     final msg = switch (api.statusCode) {

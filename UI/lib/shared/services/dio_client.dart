@@ -16,7 +16,7 @@ class DioClient {
 
 //kasnije vratiti na 5180 ,kao i u launchSettings.json:
 static const String _baseUrl = String.fromEnvironment(
-    'BASE_URL', defaultValue: 'http://localhost:8080/api/'
+    'BASE_URL', defaultValue: 'http://172.22.96.1/api/'
   );
 
   /// Server origin without the /api/ suffix, e.g. "http://localhost:5180".

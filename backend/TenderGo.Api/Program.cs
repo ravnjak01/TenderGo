@@ -119,8 +119,9 @@ builder.Services.AddScoped<EmailService>();
 builder.Services.AddHostedService<TenderExpiryJob>();
 
 // Recommender i Pametni moduli
-builder.Services.AddSingleton<RecommenderService>();
-builder.Services.AddSingleton<TenderVectorBuilder>();
+builder.Services.AddTransient<RecommenderService>();
+builder.Services.AddTransient<TenderVectorBuilder>();
+builder.Services.AddScoped<IRecommendationService, RecommendationService>();
 
 // State Machine registracije
 builder.Services.AddTransient<BaseState>();

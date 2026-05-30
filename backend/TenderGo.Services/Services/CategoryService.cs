@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using System;
@@ -12,6 +13,7 @@ using TenderGo.Models.DTOs;
 using TenderGo.Models.Entities;
 using TenderGo.Models.Requests;
 using TenderGo.Services.Interfaces;
+using TenderGo.Services.Services.Exceptions;
 
 namespace TenderGo.Services.Services
 {
@@ -29,7 +31,53 @@ namespace TenderGo.Services.Services
             _serviceProvider = serviceProvider;
             
         }
-       
+
+      protected override IQueryable<Category> ApplyFilter(IQueryable<Category> query)
+{
+    if (!_authService.IsInRole(AppRoles.Admin))
+        return query.Where(c => c.IsActive);
+
+    var includeInactiveQuery =
+        _httpContextAccessor.HttpContext?.Request.Query["includeInactive"];
+
+    var includeInactive =
+        bool.TryParse(includeInactiveQuery, out var parsed)
+        && parsed;
+
+    if (includeInactive)
+        return query;
+
+    return query.Where(c => c.IsActive);
+}
+
+        public override async Task<string> Delete(int id)
+        {
+            var category = await _context.Categories.FindAsync(id)
+                ?? throw new UserException("Category not found");
+
+            var isUsedByTender = await _context.Tenders.AnyAsync(t => t.CategoryId == id);
+            if (!isUsedByTender)
+            {
+                _context.Categories.Remove(category);
+                await _context.SaveChangesAsync();
+                return "Category deleted successfully.";
+            }
+
+            category.IsActive = false;
+            await _context.SaveChangesAsync();
+            return "Category is used by existing tenders and has been deactivated.";
+        }
+
+        public async Task<CategoryDTO> Activate(int id)
+        {
+            var category = await _context.Categories.FindAsync(id)
+                ?? throw new UserException("Category not found");
+
+            category.IsActive = true;
+            await _context.SaveChangesAsync();
+
+            return _mapper.Map<CategoryDTO>(category);
+        }
 
     }
 }

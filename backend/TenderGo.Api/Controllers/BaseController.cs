@@ -50,7 +50,7 @@ public abstract class BaseController<T,TDb, TInsert, TUpdate>
     [HttpDelete("{id}")]
     public virtual async Task<IActionResult> Delete(int id)
     {
-        await _writeService.Delete(id);
-        return NoContent();
+        var message = await _writeService.Delete(id);
+        return Ok(new { message });
     }
 }

@@ -7,6 +7,8 @@ class CategoryApiEndpoints {
 
   static String update(int id) => '$baseUrl/$id';
 
+  static String activate(int id) => '$baseUrl/$id/activate';
+
     static const String insert = baseUrl;
 
 

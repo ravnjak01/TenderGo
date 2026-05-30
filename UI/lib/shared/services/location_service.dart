@@ -8,20 +8,25 @@ import 'package:tendergo/shared/services/base_service.dart';
 
 class LocationService extends BaseService<LocationDto> {
   LocationService(Dio dio)
-      : super(dio, LocationEndpoints.baseUrl, LocationDto.fromJson);
+    : super(dio, LocationEndpoints.baseUrl, LocationDto.fromJson);
 
-  Future<List<LocationDto>> getLocations(LocationFilterRequest filter) async {
+  Future<List<LocationDto>> getLocations(
+    LocationFilterRequest filter, {
+    bool includeInactive = false,
+  }) async {
     try {
-   
+      final queryParameters = filter.toQueryParams();
+      if (includeInactive) {
+        queryParameters['includeInactive'] = true;
+      }
+
       final response = await dio.get(
         LocationEndpoints.getAll,
-        queryParameters:filter.toQueryParams() ,
+        queryParameters: queryParameters,
       );
 
       final List<dynamic> data = response.data;
-      return data
-          .map((x) => parseJson(x as Map<String, dynamic>))
-          .toList();
+      return data.map((x) => parseJson(x as Map<String, dynamic>)).toList();
     } on DioException catch (e) {
       throw Exception(e.response?.data ?? 'Error fetching locations');
     }
@@ -45,22 +50,45 @@ class LocationService extends BaseService<LocationDto> {
   }
 
   Future<LocationDto> insertLocation(LocationInsertRequest request) {
-    return insert(LocationDto(
-      id: 0,
-      name: request.name,
-      country: request.country,
-      region: request.region,
-    ));
+    return insert(
+      LocationDto(
+        id: 0,
+        name: request.name,
+        country: request.country,
+        region: request.region,
+      ),
+    );
   }
 
-  Future<bool> updateLocation(int id,LocationUpdateRequest request) {
-    return update(id, LocationDto(
-      id: id,
-      name: request.name ?? '', 
-      country: request.country ?? '' ,
-      region: request.region,
-    ));
+  Future<bool> updateLocation(int id, LocationUpdateRequest request) {
+    return update(
+      id,
+      LocationDto(
+        id: id,
+        name: request.name ?? '',
+        country: request.country ?? '',
+        region: request.region,
+      ),
+    );
   }
 
-  Future<bool> deleteLocation(int id) => delete(id);
+  Future<String> deleteLocation(int id) => delete(id);
+
+  Future<LocationDto> activateLocation(int id) async {
+    try {
+      final response = await dio.patch(LocationEndpoints.activate(id));
+      final raw = response.data;
+      final payload = raw is Map<String, dynamic>
+          ? (raw['data'] is Map<String, dynamic>
+                ? raw['data'] as Map<String, dynamic>
+                : raw)
+          : const <String, dynamic>{};
+
+      return parseJson(payload);
+    } on DioException catch (e) {
+      throw Exception(
+        e.response?.data?['message'] ?? 'Error activating location',
+      );
+    }
+  }
 }

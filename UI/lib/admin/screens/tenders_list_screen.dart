@@ -4,6 +4,7 @@ import 'package:tendergo/shared/controllers/tender_list_controller.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
 import 'package:tendergo/shared/providers/auth_provider.dart';
 import 'package:tendergo/shared/providers/tender_provider.dart';
+import 'package:tendergo/shared/routes/nav_observer.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
 import 'package:tendergo/shared/widgets/common/app_dialogs.dart';
 import 'package:tendergo/shared/widgets/feedback/screen_state_widget.dart';
@@ -28,7 +29,8 @@ class AdminTenderListScreen extends StatefulWidget {
   State<AdminTenderListScreen> createState() => _AdminTenderListScreenState();
 }
 
-class _AdminTenderListScreenState extends State<AdminTenderListScreen> {
+class _AdminTenderListScreenState extends State<AdminTenderListScreen>
+    with RouteAware {
   final TenderListController _controller = TenderListController();
 
   TenderProvider? _tenderProvider;
@@ -47,6 +49,21 @@ void initState() {
     //context.read<NotificationProvider>().startPolling();
   });
 }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route is PageRoute) {
+      routeObserver.subscribe(this, route);
+    }
+  }
+
+  @override
+  void didPopNext() {
+    _tenderProvider?.fetchCategories();
+    _tenderProvider?.fetchActiveTenders(silent: true);
+  }
 
   void _onSearchChanged(String query) {
     _controller.onSearchChanged(
@@ -77,6 +94,7 @@ void initState() {
 
   @override
   void dispose() {
+    routeObserver.unsubscribe(this);
     _controller.dispose();
     super.dispose();
   }

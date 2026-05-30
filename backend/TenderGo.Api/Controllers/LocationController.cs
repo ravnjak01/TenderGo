@@ -29,8 +29,20 @@ namespace TenderGo.Api.Controllers
         [HttpGet("all")]
         public async Task<ActionResult<List<LocationDTO>>> GetAll([FromQuery] LocationFilterRequest request)
         {
-            var locations = await _locationService.GetFilteredLocationsAsync(request.Country, request.Region);
+            var includeInactive = User.IsInRole(AppRoles.Admin)
+                && Request.Query.TryGetValue("includeInactive", out var value)
+                && bool.TryParse(value, out var parsed)
+                && parsed;
+
+            var locations = await _locationService.GetFilteredLocationsAsync(request.Country, request.Region, includeInactive);
             return Ok(locations);
+        }
+
+        [HttpPatch("{id}/activate")]
+        public async Task<ActionResult<LocationDTO>> Activate(int id)
+        {
+            var location = await _locationService.Activate(id);
+            return Ok(new { message = "Location activated successfully.", data = location });
         }
     }
 }

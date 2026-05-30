@@ -40,7 +40,8 @@ class AdminProvider {
 
   Future<List<TenderDto>> getCancelledTenders() => tenderService.getCancelled();
 
-  Future<List<CategoryDto>> getCategories() => categoryService.getAll();
+  Future<List<CategoryDto>> getCategories() =>
+      categoryService.getAll(queryParameters: {'includeInactive': true});
 
   Future<TenderDto> cancelTender(int id) => tenderService.cancel(id);
 
@@ -55,10 +56,15 @@ class AdminProvider {
   Future<void> updateCategory(int id, String name) =>
       categoryService.update(id, CategoryDto(id: id, name: name));
 
-  Future<bool> deleteCategory(int id) => categoryService.delete(id);
+  Future<String> deleteCategory(int id) => categoryService.delete(id);
 
-  Future<List<LocationDto>> getLocations() =>
-      locationService.getLocations(const LocationFilterRequest());
+  Future<CategoryDto> activateCategory(int id) =>
+      categoryService.activateCategory(id);
+
+  Future<List<LocationDto>> getLocations() => locationService.getLocations(
+    const LocationFilterRequest(),
+    includeInactive: true,
+  );
 
   Future<LocationDto> insertLocation(LocationInsertRequest request) =>
       locationService.insertLocation(request);
@@ -66,5 +72,8 @@ class AdminProvider {
   Future<bool> updateLocation(int id, LocationUpdateRequest request) =>
       locationService.updateLocation(id, request);
 
-  Future<bool> deleteLocation(int id) => locationService.deleteLocation(id);
+  Future<String> deleteLocation(int id) => locationService.deleteLocation(id);
+
+  Future<LocationDto> activateLocation(int id) =>
+      locationService.activateLocation(id);
 }

@@ -32,31 +32,28 @@ namespace TenderGo.Data.Seeders
                 throw new Exception("Seeding tenders failed: No users found in the database.");
             }
 
-            // 2. KORAK: Povuci sve lokacije i sve kategorije (očekujemo 6 kategorija)
+            // 2. KORAK: Povuci sve lokacije i sve kategorije
             var categories = await context.Categories.ToListAsync();
-            var location = await context.Locations.ToListAsync();
+            var locations = await context.Locations.ToListAsync();
 
-           
-            // Osiguravamo da imamo tačno 6 kategorija (makar generisali privremene ako tabela zakaže)
+            // Provjera za lokacije (pošto ih više ne kreiramo ovdje)
+            if (!locations.Any())
+            {
+                throw new Exception("Seeding tenders failed: No locations found in the database. Please seed locations first.");
+            }
+
+            // Osiguravamo da imamo tačno 6 kategorija (zadržano prema originalnoj logici)
             while (categories.Count < 6)
             {
                 int nextIndex = categories.Count + 1;
                 var fallbackCategory = new Category { Name = $"Testna Kategorija {nextIndex}" };
                 context.Categories.Add(fallbackCategory);
                 await context.SaveChangesAsync();
-                categories.Add(fallbackCategory); // Dodaj u lokalnu listu
+                categories.Add(fallbackCategory);
             }
 
-            while (location.Count < 6)
-            {
-                int nextIndex = location.Count + 1;
-                var fallbackLocation = new Location { Name = $"Testna Lokacija {nextIndex}" };
-                context.Locations.Add(fallbackLocation);
-                await context.SaveChangesAsync();
-                location.Add(fallbackLocation); // Dodaj u lokalnu listu
-            }
-
-            // 3. KORAK: Kreiranje 6 tendera, svaki sa različitom kategorijom
+            // 3. KORAK: Kreiranje 6 tendera
+            // Pomoću '% locations.Count' sigurni smo da nećemo izaći van opsega liste lokacija, bez obzira koliko ih ima u bazi
             var testTenders = new List<Tender>
             {
                 new Tender
@@ -68,8 +65,8 @@ namespace TenderGo.Data.Seeders
                     Status = TenderStatus.Open,
                     PostedAt = DateTime.UtcNow,
                     CreatedByUserId = mujo?.Id ?? defaultUser.Id,
-                    CategoryId = categories[0].Id, // 1. Kategorija (npr. Građevinarstvo)
-                    LocationId = location[0].Id
+                    CategoryId = categories[0].Id,
+                    LocationId = locations[0 % locations.Count].Id
                 },
                 new Tender
                 {
@@ -80,8 +77,8 @@ namespace TenderGo.Data.Seeders
                     Status = TenderStatus.Open,
                     PostedAt = DateTime.UtcNow,
                     CreatedByUserId = mujo?.Id ?? defaultUser.Id,
-                    CategoryId = categories[1].Id, // 2. Kategorija (npr. Dizajn / IT)
-                    LocationId = location[1].Id
+                    CategoryId = categories[1].Id,
+                    LocationId = locations[1 % locations.Count].Id
                 },
                 new Tender
                 {
@@ -92,8 +89,8 @@ namespace TenderGo.Data.Seeders
                     Status = TenderStatus.Open,
                     PostedAt = DateTime.UtcNow,
                     CreatedByUserId = suljo?.Id ?? defaultUser.Id,
-                    CategoryId = categories[2].Id, // 3. Kategorija (npr. Softver / Programiranje)
-                    LocationId = location[2].Id
+                    CategoryId = categories[2].Id,
+                    LocationId = locations[2 % locations.Count].Id
                 },
                 new Tender
                 {
@@ -104,8 +101,8 @@ namespace TenderGo.Data.Seeders
                     Status = TenderStatus.Open,
                     PostedAt = DateTime.UtcNow,
                     CreatedByUserId = suljo?.Id ?? defaultUser.Id,
-                    CategoryId = categories[3].Id, // 4. Kategorija (npr. Finansije / Konsalting)
-                    LocationId = location[3].Id
+                    CategoryId = categories[3].Id,
+                    LocationId = locations[3 % locations.Count].Id
                 },
                 new Tender
                 {
@@ -116,8 +113,8 @@ namespace TenderGo.Data.Seeders
                     Status = TenderStatus.Open,
                     PostedAt = DateTime.UtcNow,
                     CreatedByUserId = mujo?.Id ?? defaultUser.Id,
-                    CategoryId = categories[4].Id, // 5. Kategorija (npr. Održavanje / Zanatstvo)
-                    LocationId = location[4].Id
+                    CategoryId = categories[4].Id,
+                    LocationId = locations[4 % locations.Count].Id
                 },
                 new Tender
                 {
@@ -128,8 +125,8 @@ namespace TenderGo.Data.Seeders
                     Status = TenderStatus.Open,
                     PostedAt = DateTime.UtcNow,
                     CreatedByUserId = suljo?.Id ?? defaultUser.Id,
-                    CategoryId = categories[5].Id, // 6. Kategorija (npr. Kancelarijski materijal / Namještaj)
-                    LocationId = location[5].Id
+                    CategoryId = categories[5].Id,
+                    LocationId = locations[5 % locations.Count].Id
                 }
             };
 

@@ -5,12 +5,14 @@ class LocationDto {
   final String name;
   final String country;
   final String? region;
+  final bool isActive;
 
   LocationDto({
     required this.id,
     required this.name,
     required this.country,
     this.region,
+    this.isActive = true,
   });
 
   String get displayLabel {
@@ -26,6 +28,7 @@ class LocationDto {
       name: JsonParser.readString(json['name'], fallback: 'Unknown'),
       country: JsonParser.readString(json['country'], fallback: 'Unknown'),
       region: json['region'] as String?,
+      isActive: json['isActive'] as bool? ?? true,
     );
   }
 
@@ -35,6 +38,7 @@ class LocationDto {
       'name': name,
       'country': country,
       if (region != null) 'region': region,
+      'isActive': isActive,
     };
   }
 }

@@ -75,6 +75,12 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
 
         });
 
+        modelBuilder.Entity<Category>(entity =>
+        {
+            entity.Property(c => c.IsActive)
+                .HasDefaultValue(true);
+        });
+
         modelBuilder.Entity<Tender>().Navigation(b => b.CreatedByUser).AutoInclude();//da se uvijek ucitava korisnik koji je kreirao tender
 
         modelBuilder.Entity<Tender>()
@@ -193,6 +199,9 @@ modelBuilder.Entity<ApplicationUser>(entity =>
 
             entity.Property(l => l.Region)
                 .HasMaxLength(100);
+
+            entity.Property(l => l.IsActive)
+                .HasDefaultValue(true);
         });
 
         modelBuilder.Entity<TenderBookmark>().HasKey(tb => new { tb.UserId, tb.TenderId });

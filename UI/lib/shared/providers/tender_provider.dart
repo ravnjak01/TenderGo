@@ -215,6 +215,15 @@ void updateBookmarkLocal(int id, bool isBookmarked) {
     });
     try {
       _categories = await _categoryService.getAll();
+      final activeCategoryNames = _categories.map((c) => c.name).toSet();
+      if (!_selectedCategories.contains('All')) {
+        _selectedCategories.removeWhere(
+          (category) => !activeCategoryNames.contains(category),
+        );
+        if (_selectedCategories.isEmpty) {
+          _selectedCategories.add('All');
+        }
+      }
     } catch (e) {
       _categoryLoadError = e.toString().replaceFirst('Exception: ', '').trim();
     } finally {
