@@ -19,21 +19,20 @@ class NotificationService {
     );
   }
 
-  /// Returns all notifications for the logged-in user.
   Future<List<NotificationDto>> getMyNotifications() async {
     final response = await _dio.get(
       NotificationApiEndpoints.getMy,
       options: await _options(),
     );
     final body = response.data;
-    final List<dynamic> list =
-        body is List ? body : (body['notifications'] ?? body['data'] ?? []);
+    final List<dynamic> list = body is List
+        ? body
+        : (body['notifications'] ?? body['data'] ?? []);
     return list
         .map((e) => NotificationDto.fromJson(e as Map<String, dynamic>))
         .toList();
   }
 
-  /// Marks a single notification as read. Returns updated dto on 200.
   Future<void> markAsRead(int id) async {
     await _dio.patch(
       NotificationApiEndpoints.markAsRead(id),
@@ -41,7 +40,6 @@ class NotificationService {
     );
   }
 
-  /// Marks all notifications as read.
   Future<void> markAllAsRead() async {
     await _dio.patch(
       NotificationApiEndpoints.markAllAsRead,
@@ -49,7 +47,6 @@ class NotificationService {
     );
   }
 
-  /// Deletes a notification.
   Future<void> delete(int id) async {
     await _dio.delete(
       NotificationApiEndpoints.delete(id),

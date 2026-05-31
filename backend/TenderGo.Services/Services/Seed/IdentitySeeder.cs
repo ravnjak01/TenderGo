@@ -10,7 +10,6 @@ public static class IdentitySeeder
         var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
         var userManager = serviceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
-        // 1. Seed Rola
         if (!await roleManager.RoleExistsAsync(AppRoles.Admin))
         {
             await roleManager.CreateAsync(new IdentityRole(AppRoles.Admin));
@@ -20,7 +19,6 @@ public static class IdentitySeeder
             await roleManager.CreateAsync(new IdentityRole(AppRoles.User));
         }
 
-        // 2. Seed Admin Korisnika
         var adminEmail = "admin@tendergo.com";
         var adminUser = await userManager.FindByEmailAsync(adminEmail);
 
@@ -51,7 +49,6 @@ public static class IdentitySeeder
             }
             else
             {
-                // Ako ne uspije, ispiši greške u konzolu/logger radi lakšeg debugiranja
                 var errors = string.Join(", ", result.Errors.Select(e => e.Description));
                 throw new Exception($"Seed Admin failed: {errors}");
             }

@@ -27,8 +27,6 @@ namespace TenderGo.Api.Controllers
         }
 
 
-        //PROVJERITI DA LI OVAJ KONTROLER TREBA DA NASLJEDJUJE BAZNI I STA VRACAJU SVI KONTROLERI DA LI NEKI GLOBALNI OMOTAC ILI DIREKTNI REZULTAT TIPA
-        //return Ok(result);
         [HttpPost]
         public async Task<ActionResult<BidDTO>> Insert([FromBody] BidInsertRequest request)
         {

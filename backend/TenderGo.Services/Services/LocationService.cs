@@ -57,13 +57,11 @@ namespace TenderGo.Services.Services
         query = query.Where(l => l.IsActive);
     }
 
-    // 1. Ako je izabrana samo država, vrati sve regije i gradove za nju
     if (!string.IsNullOrEmpty(country))
     {
         query = query.Where(l => l.Country == country);
     }
 
-    // 2. Ako je izabrana i specifična regija, dodatno suzi pretragu na gradove u toj regiji
     if (!string.IsNullOrEmpty(region))
     {
         query = query.Where(l => l.Region == region);

@@ -42,7 +42,6 @@ namespace TenderGo.Services.Services
                 }
                 catch (OperationCanceledException)
                 {
-                    // Normalno gašenje hosta — nije greška
                     break;
                 }
                 catch (Exception ex)

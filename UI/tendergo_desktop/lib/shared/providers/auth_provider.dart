@@ -14,32 +14,26 @@ class AuthProvider extends BaseProvider {
   UserDto? _currentUser;
   UserDto? get currentUser => _currentUser;
 
-
   String? get errorMessage => error;
 
   bool get isAdmin {
-      final roles = _currentUser?.roles ?? const <String>[];
-      return roles.any((role) => role.toLowerCase() == 'admin');
-    }
-
+    final roles = _currentUser?.roles ?? const <String>[];
+    return roles.any((role) => role.toLowerCase() == 'admin');
+  }
 
   Future<ApiResponse> loadUser() async {
     final result = await handleAsync(() => _authService.getCurrentUser());
     if (result != null && result.success) {
-    _currentUser = result.data;
-    notifyListeners();
-  } else {
-    // Ako loadUser ne uspije (npr. backend vrati ACCOUNT_BANNED)
-    // Obavezno čistimo lokalno stanje i token da aplikacija ne upadne u beskonačnu petlju
-    await _authService.logout();
-    _currentUser = null;
-    notifyListeners();
-  }
-  
- return result ?? ApiResponse.failure(
-    error ?? 'Failed to load user', 
-    statusCode: 400, 
-  );
+      _currentUser = result.data;
+      notifyListeners();
+    } else {
+      await _authService.logout();
+      _currentUser = null;
+      notifyListeners();
+    }
+
+    return result ??
+        ApiResponse.failure(error ?? 'Failed to load user', statusCode: 400);
   }
 
   Future<ApiResponse> login(String email, String password) async {
@@ -48,8 +42,8 @@ class AuthProvider extends BaseProvider {
     );
     if (!result.success) {
       await _authService.logout();
-      _currentUser = null;         
-    notifyListeners();
+      _currentUser = null;
+      notifyListeners();
       return result;
     }
     return loadUser();
@@ -62,12 +56,14 @@ class AuthProvider extends BaseProvider {
 
   Future<ApiResponse> resetPassword(ResetPasswordRequest request) async {
     final result = await handleAsync(() => _authService.resetPassword(request));
-    return result ?? ApiResponse.failure(error ?? 'Something went wrong', statusCode: 400);
+    return result ??
+        ApiResponse.failure(error ?? 'Something went wrong', statusCode: 400);
   }
 
   Future<ApiResponse> sendForgotPasswordEmail(String email) async {
     final result = await handleAsync(() => _authService.forgotPassword(email));
-    return result ?? ApiResponse.failure(error ?? 'Something went wrong', statusCode: 400);
+    return result ??
+        ApiResponse.failure(error ?? 'Something went wrong', statusCode: 400);
   }
 
   void logout() {

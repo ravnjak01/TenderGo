@@ -175,8 +175,7 @@ public class RecommendationService : IRecommendationService
         }
 
 
-        //zadnje popravio - dodao threshold i poruku ako nema preporuka koje zadovoljavaju threshold
-        //uklonio kompletno recommendationprovider
+
         var topIds = scoredDict
             .Where(kv => kv.Value.Average() >= MinSimilarityThreshold)
             .OrderByDescending(kv => kv.Value.Average())

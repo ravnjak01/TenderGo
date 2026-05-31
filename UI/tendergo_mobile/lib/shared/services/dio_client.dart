@@ -6,39 +6,17 @@ import 'package:flutter/foundation.dart';
 import 'package:tendergo/shared/core/network/interceptors/auth_interceptor.dart';
 
 class DioClient {
-
-
-/*
   static const String _baseUrl = String.fromEnvironment(
-    'BASE_URL',defaultValue: 'http://localhost:8080/api/'
+    'BASE_URL',
+    defaultValue: 'http://192.168.100.9:8080/api/',
   );
 
-*/
-//kasnije vratiti na 5180 ,kao i u launchSettings.json:
-
-/*
-static const String _baseUrl = String.fromEnvironment(
-    'BASE_URL', defaultValue: 'http://192.168.100.9/api/'
-  );
-*/
-
-//za doker i telefon ovo dole
-
-static const String _baseUrl = String.fromEnvironment(
-  'BASE_URL',
-  defaultValue: 'http://192.168.100.9:8080/api/',
-);
-
-  /// Server origin without the /api/ suffix, e.g. "http://localhost:5180".
-  /// Used to resolve relative image paths returned by the backend.
   static String get baseOrigin {
     final uri = Uri.tryParse(_baseUrl);
     if (uri == null) return '';
     return '${uri.scheme}://${uri.host}:${uri.port}';
   }
 
-  /// Resolves a raw image path/URL from the backend into a full URL.
-  /// Returns null when [raw] is null or empty.
   static String? resolveImageUrl(String? raw) {
     if (raw == null || raw.trim().isEmpty) return null;
     final trimmed = raw.trim();
@@ -47,9 +25,7 @@ static const String _baseUrl = String.fromEnvironment(
     }
     final origin = baseOrigin;
     if (origin.isEmpty) return trimmed;
-    return trimmed.startsWith('/')
-        ? '$origin$trimmed'
-        : '$origin/$trimmed';
+    return trimmed.startsWith('/') ? '$origin$trimmed' : '$origin/$trimmed';
   }
 
   static Dio getDio() {
@@ -57,40 +33,43 @@ static const String _baseUrl = String.fromEnvironment(
     if (!finalUrl.endsWith('/')) {
       finalUrl = '$finalUrl/';
     }
-  
+
     final dio = Dio(
       BaseOptions(
         baseUrl: finalUrl,
         connectTimeout: const Duration(seconds: 10),
         receiveTimeout: const Duration(seconds: 10),
-          responseType: ResponseType.json,
+        responseType: ResponseType.json,
         contentType: 'application/json',
       ),
     );
 
-   if (dio.httpClientAdapter is dio_io.IOHttpClientAdapter) {
-      (dio.httpClientAdapter as dio_io.IOHttpClientAdapter).createHttpClient = () {
-        final client = HttpClient();
-        client.badCertificateCallback = (X509Certificate cert, String host, int port) {
-          return host == '10.0.2.2' || host == 'localhost';
-        };
-        return client;
-      };
+    if (dio.httpClientAdapter is dio_io.IOHttpClientAdapter) {
+      (dio.httpClientAdapter as dio_io.IOHttpClientAdapter).createHttpClient =
+          () {
+            final client = HttpClient();
+            client.badCertificateCallback =
+                (X509Certificate cert, String host, int port) {
+                  return host == '10.0.2.2' || host == 'localhost';
+                };
+            return client;
+          };
     }
 
-  
     dio.interceptors.add(AuthInterceptor(dio));
 
     if (kDebugMode) {
-      dio.interceptors.add(LogInterceptor(
-        request: true,
-        requestHeader: true,
-        requestBody: false,
-        responseHeader: true,
-        responseBody: false,
-        error: true,
-        logPrint: (obj) => debugPrint(obj.toString()),
-      ));
+      dio.interceptors.add(
+        LogInterceptor(
+          request: true,
+          requestHeader: true,
+          requestBody: false,
+          responseHeader: true,
+          responseBody: false,
+          error: true,
+          logPrint: (obj) => debugPrint(obj.toString()),
+        ),
+      );
     }
 
     return dio;

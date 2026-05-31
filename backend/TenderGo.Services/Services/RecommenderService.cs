@@ -2,17 +2,9 @@
 
 namespace TenderGo.Recommender;
 
-/// <summary>
-/// Core content-based recommender engine.
-/// Computes weighted cosine similarity between TenderFeatureVectors
-/// and returns the top-N most similar tenders.
-/// </summary>
+
 public class RecommenderService
 {
-    // ---------------------------------------------------------------
-    // Feature weights — must sum to 1.0
-    // Tweak these based on what your users care about most.
-    // ---------------------------------------------------------------
     private const double WeightCategory = 0.40;
     private const double WeightCountry = 0.20;
     private const double WeightBudget = 0.15;
@@ -21,14 +13,6 @@ public class RecommenderService
 
     private readonly TenderVectorBuilder _builder = new();
 
-    // ---------------------------------------------------------------
-    // Public API
-    // ---------------------------------------------------------------
-
-    /// <summary>
-    /// Given a target tender ID and all available tenders,
-    /// returns the top-N most similar OPEN tenders.
-    /// </summary>
     public List<ScoredTender> GetSimilar(
         TenderFeatureVector target,
         IEnumerable<TenderFeatureVector> candidates,
@@ -36,22 +20,20 @@ public class RecommenderService
     {
         return candidates
             .Where(c => c.TenderId != target.TenderId)
-            .Where(c => c.Status == TenderStatus.Open)   // only recommend open tenders
+            .Where(c => c.Status == TenderStatus.Open)   
             .Select(c => new ScoredTender
             {
                 TenderId = c.TenderId,
                 Title = c.Title,
                 Score = ComputeWeightedSimilarity(target, c)
             })
-            .Where(s => s.Score > 0)                     // skip completely unrelated
+            .Where(s => s.Score > 0)                     
             .OrderByDescending(s => s.Score)
             .Take(topN)
             .ToList();
     }
 
-    // ---------------------------------------------------------------
-    // Weighted similarity — combines all feature scores
-    // ---------------------------------------------------------------
+ 
 
     private double ComputeWeightedSimilarity(TenderFeatureVector a, TenderFeatureVector b)
     {
@@ -66,62 +48,40 @@ public class RecommenderService
         return Math.Round(score, 4);
     }
 
-    // ---------------------------------------------------------------
-    // Individual feature scorers
-    // ---------------------------------------------------------------
 
-    /// <summary>
-    /// Returns 1.0 if both strings match exactly, 0.0 otherwise.
-    /// Used for categorical features like Category, Country, BudgetBucket.
-    /// </summary>
     private static double ExactMatchScore(string a, string b)
         => string.Equals(a, b, StringComparison.OrdinalIgnoreCase) ? 1.0 : 0.0;
 
-    /// <summary>
-    /// Cosine similarity over keyword sets.
-    /// Treats each unique keyword as a dimension; value = occurrence count.
-    /// </summary>
+
     private static double KeywordSimilarity(List<string> aKeywords, List<string> bKeywords)
     {
         if (aKeywords.Count == 0 || bKeywords.Count == 0) return 0;
 
-        // Build frequency vectors
         var vecA = BuildFrequencyVector(aKeywords);
         var vecB = BuildFrequencyVector(bKeywords);
 
-        // Dot product of shared dimensions
         var sharedKeys = vecA.Keys.Intersect(vecB.Keys);
         double dotProduct = sharedKeys.Sum(k => vecA[k] * vecB[k]);
 
-        // Magnitudes
         double magA = Math.Sqrt(vecA.Values.Sum(v => v * v));
         double magB = Math.Sqrt(vecB.Values.Sum(v => v * v));
 
         return (magA == 0 || magB == 0) ? 0 : dotProduct / (magA * magB);
     }
 
-    /// <summary>
-    /// Gives full score if same city, partial score if same country only.
-    /// </summary>
     private static double LocationSimilarity(
         string cityA, string cityB, string regionA, string regionB, string countryA, string countryB
         )
     {
         if (countryA != countryB) return 0.0;
 
-        // 2. Ako su u istoj državi i u istom su gradu -> Savršeno poklapanje (100%)
         if (cityA == cityB && !string.IsNullOrEmpty(cityA)) return 1.0;
 
-        // 3. Ako nisu u istom gradu, ali jesu u istoj regiji/kantonu -> Geografski blizu (60%)
         if (regionA == regionB && !string.IsNullOrEmpty(regionA)) return 0.6;
 
-        // 4. Ako su samo u istoj državi, ali različite regije i gradovi -> Daleko, ali ista zemlja (20%)
         return 0.2;
     }
 
-    // ---------------------------------------------------------------
-    // Helpers
-    // ---------------------------------------------------------------
 
     private static Dictionary<string, double> BuildFrequencyVector(List<string> tokens)
     {
@@ -132,9 +92,7 @@ public class RecommenderService
     }
 }
 
-/// <summary>
-/// A tender with its computed similarity score.
-/// </summary>
+
 public class ScoredTender
 {
     public int TenderId { get; set; }

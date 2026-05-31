@@ -7,7 +7,6 @@ import 'package:tendergo/admin/screens/admin_report_preview_screen.dart';
 import 'package:tendergo/admin/screens/admin_screen.dart';
 import 'package:tendergo/admin/screens/recommend_screen.dart';
 import 'package:tendergo/admin/screens/forgot_password_screen.dart';
-import 'package:tendergo/admin/screens/home_screen.dart';
 import 'package:tendergo/admin/screens/login_screen.dart';
 import 'package:tendergo/admin/screens/mybids_screen.dart';
 import 'package:tendergo/admin/screens/mytenders_screen.dart';
@@ -144,8 +143,6 @@ class AppRoutes {
           ratedUserName: ratedUserName,
         );
       },
-
-      AppRoutes.home: (context) => const HomeScreen(),
 
       AppRoutes.recommendations: (context) {
         final args = ModalRoute.of(context)?.settings.arguments;

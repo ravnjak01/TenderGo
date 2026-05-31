@@ -215,17 +215,15 @@ namespace TenderGo.Services.Services
 
         public async Task<List<ReviewDTO>> GetReviewsByUserIdAsync(string userId)
 {
-    // Provjera da li korisnik uopšte postoji
     var userExists = await _context.Users.AnyAsync(u => u.Id == userId);
     if (!userExists)
     {
         throw new NotFoundException("User not found", new { User = "User", Id = userId });
     }
 
-    // Izvlačimo sve recenzije za tog korisnika
     var reviews = await _context.Ratings
         .Where(r => r.RatedUserId == userId)
-        .OrderByDescending(r => r.CreatedAt) // Najnovije recenzije na vrh
+        .OrderByDescending(r => r.CreatedAt) 
         .Select(r => new ReviewDTO
         {
             Rating = r.Score,
@@ -233,13 +231,11 @@ namespace TenderGo.Services.Services
             CreatedAt = r.CreatedAt,
             TenderId = r.TenderId,
             
-            // Izvlačimo ime i prezime osobe koja je ocijenila
             ReviewerName = _context.Users
                 .Where(u => u.Id == r.RatedByUserId)
                 .Select(u => u.FirstName + " " + u.LastName)
                 .FirstOrDefault() ?? "Anonimni korisnik",
 
-            // Izvlačimo naslov tendera
             TenderTitle = _context.Tenders
                 .Where(t => t.Id == r.TenderId)
                 .Select(t => t.Title)

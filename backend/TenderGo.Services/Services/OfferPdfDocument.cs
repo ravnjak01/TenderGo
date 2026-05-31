@@ -32,7 +32,6 @@ public class OfferPdfDocument : IDocument
         });
     }
 
-    // 🔹 HEADER
     void ComposeHeader(IContainer container)
     {
         container.Row(row =>
@@ -61,7 +60,6 @@ public class OfferPdfDocument : IDocument
         });
     }
 
-    // 🔹 CONTENT
     void ComposeContent(IContainer container)
     {
         container.PaddingTop(20).Column(col =>
@@ -71,7 +69,6 @@ public class OfferPdfDocument : IDocument
             col.Item().Element(ComposeDetails);
             col.Item().Element(ComposeTable);
             
-            // Umjesto bedža, na dnu dodajemo službenu potvrdu o prihvaćanju
             col.Item().PaddingTop(10).AlignRight().Text("Status: ACCEPTED")
                 .FontSize(12)
                 .Bold()
@@ -79,7 +76,6 @@ public class OfferPdfDocument : IDocument
         });
     }
 
-    // 🔹 DETAILS SECTION
     void ComposeDetails(IContainer container)
     {
         container.Background(Colors.Grey.Lighten4).Padding(12).Column(col =>
@@ -106,7 +102,6 @@ public class OfferPdfDocument : IDocument
         });
     }
 
-    // 🔹 TABLE
     void ComposeTable(IContainer container)
     {
         container.Table(table =>
@@ -117,34 +112,27 @@ public class OfferPdfDocument : IDocument
                 columns.RelativeColumn(2);
             });
 
-            // HEADER
             table.Header(header =>
             {
                 header.Cell().Background(Colors.Blue.Darken3).Padding(6).Text("Specification Field").Bold().FontColor(Colors.White);
                 header.Cell().Background(Colors.Blue.Darken3).Padding(6).Text("Details / Value").Bold().FontColor(Colors.White);
             });
 
-            // Red 1: Reference Number
             table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten3).Padding(6).Text("Reference Number").Bold();
             table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten3).Padding(6).Text(_model.ReferenceNumber);
 
-            // Red 2: Tender
             table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten3).Padding(6).Text("Tender").Bold();
             table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten3).Padding(6).Text(_model.TenderName);
 
-            // Red 3: Client
             table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten3).Padding(6).Text("Client").Bold();
             table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten3).Padding(6).Text(_model.ClientName);
 
-            // Red 4: Contractor / User
             table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten3).Padding(6).Text("Contractor").Bold();
             table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten3).Padding(6).Text($"{_model.FirstName} {_model.LastName}");
 
-            // Red 5: Date
             table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten3).Padding(6).Text("Acceptance Date").Bold();
             table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten3).Padding(6).Text(_model.Date.ToString("dd.MM.yyyy HH:mm"));
 
-            // Red 6: Amount
             table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten3).Padding(6).Text("Total Contract Amount").Bold();
             table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten3).Padding(6).Text($"{_model.Amount:N2} KM").Bold().FontColor(Colors.Green.Darken2);
         });

@@ -24,7 +24,7 @@ class TenderProvider extends BaseProvider {
     this._categoryService, {
     RecommendationService? recommendationService,
   }) : _recommendationService =
-            recommendationService ?? RecommendationService(DioClient.getDio());
+           recommendationService ?? RecommendationService(DioClient.getDio());
 
   List<TenderDto> _tenders = [];
   List<CategoryDto> _categories = [];
@@ -43,31 +43,32 @@ class TenderProvider extends BaseProvider {
   TenderService get tenderService => _service;
 
   Set<int> _savedIds = {};
-Set<int> get savedIds => _savedIds;
+  Set<int> get savedIds => _savedIds;
 
-Future<void> loadBookmarks(TenderService service) async {
-  try {
-    final bookmarkedTenders = await service.getBookmarked();
-    _savedIds = bookmarkedTenders.map((t) => t.id).toSet();
-    notifyListeners(); 
-  } catch (e) {
-    debugPrint('Greška pri učitavanju bookmarka u provideru: $e');
+  Future<void> loadBookmarks(TenderService service) async {
+    try {
+      final bookmarkedTenders = await service.getBookmarked();
+      _savedIds = bookmarkedTenders.map((t) => t.id).toSet();
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Greška pri učitavanju bookmarka u provideru: $e');
+    }
   }
-}
 
-void updateBookmarkLocal(int id, bool isBookmarked) {
-  if (isBookmarked) {
-    _savedIds.add(id);
-  } else {
-    _savedIds.remove(id);
+  void updateBookmarkLocal(int id, bool isBookmarked) {
+    if (isBookmarked) {
+      _savedIds.add(id);
+    } else {
+      _savedIds.remove(id);
+    }
+    notifyListeners();
   }
-  notifyListeners();
-}
 
   List<TenderDto> get filteredTenders {
     var list = List<TenderDto>.from(_searchResults ?? _tenders);
 
-    if (!_selectedCategories.contains('All') && _selectedCategories.isNotEmpty) {
+    if (!_selectedCategories.contains('All') &&
+        _selectedCategories.isNotEmpty) {
       list = list
           .where((t) => _selectedCategories.contains(t.categoryName))
           .toList();
@@ -81,7 +82,8 @@ void updateBookmarkLocal(int id, bool isBookmarked) {
         list = list
             .where(
               (t) =>
-                  t.location.country.toLowerCase() == filter.country.toLowerCase() &&
+                  t.location.country.toLowerCase() ==
+                      filter.country.toLowerCase() &&
                   (t.location.region ?? '').toLowerCase() ==
                       filter.region!.toLowerCase(),
             )
@@ -89,7 +91,9 @@ void updateBookmarkLocal(int id, bool isBookmarked) {
       } else {
         list = list
             .where(
-              (t) => t.location.country.toLowerCase() == filter.country.toLowerCase(),
+              (t) =>
+                  t.location.country.toLowerCase() ==
+                  filter.country.toLowerCase(),
             )
             .toList();
       }
@@ -108,8 +112,6 @@ void updateBookmarkLocal(int id, bool isBookmarked) {
     _locationFilter = null;
     safeNotify();
   }
-
- 
 
   void toggleCategory(String category) {
     if (category == 'All') {
@@ -133,21 +135,19 @@ void updateBookmarkLocal(int id, bool isBookmarked) {
         _tenders = await _service.getActive();
       }, silent: silent);
 
-  Future<void> fetchAllTenders() =>
-      handleAsync(() async {
-        _tenders = await _service.getAll();
-      });
+  Future<void> fetchAllTenders() => handleAsync(() async {
+    _tenders = await _service.getAll();
+  });
 
   Future<TenderDto?> createTender(
     TenderInsertRequest request, {
     List<PlatformFile>? imageFiles,
-  }) =>
-      handleAsync(() async {
-        final created = await _service.create(request, imageFiles: imageFiles);
-        _tenders.removeWhere((t) => t.id == created.id);
-        _tenders.insert(0, created);
-        return created;
-      }, silent: true);
+  }) => handleAsync(() async {
+    final created = await _service.create(request, imageFiles: imageFiles);
+    _tenders.removeWhere((t) => t.id == created.id);
+    _tenders.insert(0, created);
+    return created;
+  }, silent: true);
 
   Future<void> searchTenders(String query) async {
     _searchQuery = query.trim();
@@ -190,7 +190,6 @@ void updateBookmarkLocal(int id, bool isBookmarked) {
     });
   }
 
-
   Future<bool> cancelTender(int id) async {
     final result = await handleAsync(() async {
       await _service.cancel(id);
@@ -211,7 +210,7 @@ void updateBookmarkLocal(int id, bool isBookmarked) {
     _isCategoryLoading = true;
     _categoryLoadError = null;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-     if (!isDisposed) safeNotify();
+      if (!isDisposed) safeNotify();
     });
     try {
       _categories = await _categoryService.getAll();
@@ -228,39 +227,38 @@ void updateBookmarkLocal(int id, bool isBookmarked) {
       _categoryLoadError = e.toString().replaceFirst('Exception: ', '').trim();
     } finally {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-      safeNotify();
-    });
+        safeNotify();
+      });
     }
   }
 
-Future<Map<String, dynamic>?> prepareRatingArguments(BidDto bid) async {
-  final bidderId = bid.submittedByUserId.trim();
+  Future<Map<String, dynamic>?> prepareRatingArguments(BidDto bid) async {
+    final bidderId = bid.submittedByUserId.trim();
 
- try {
-    final tender = await _service.getById(bid.tenderId);
-    
-    final ratedUserId = tender.createdByUserId.trim();
-    final ratedUserName = tender.createdByFullname.trim();
+    try {
+      final tender = await _service.getById(bid.tenderId);
 
-    if (ratedUserId.isEmpty || ratedUserId == bidderId) {
-      return null; 
+      final ratedUserId = tender.createdByUserId.trim();
+      final ratedUserName = tender.createdByFullname.trim();
+
+      if (ratedUserId.isEmpty || ratedUserId == bidderId) {
+        return null;
+      }
+
+      return {
+        'tenderId': bid.tenderId.toString(),
+        'ratedUserId': ratedUserId,
+        'ratedUserName': ratedUserName.isEmpty ? null : ratedUserName,
+      };
+    } catch (_) {
+      return null;
     }
-
-    return {
-      'tenderId': bid.tenderId.toString(),
-      'ratedUserId': ratedUserId,
-      'ratedUserName': ratedUserName.isEmpty ? null : ratedUserName,
-    };
-    
-  } catch (_) {
-    return null; 
   }
-}
 
-void setSelectedCategories(Set<String> categories) {
-  _selectedCategories
-    ..clear()
-    ..addAll(categories);
-  safeNotify();
-}
+  void setSelectedCategories(Set<String> categories) {
+    _selectedCategories
+      ..clear()
+      ..addAll(categories);
+    safeNotify();
+  }
 }

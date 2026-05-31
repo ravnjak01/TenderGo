@@ -14,7 +14,6 @@ namespace TenderGo.Services.Services
     {
         private readonly IWebHostEnvironment _environment;
 
-        // Allowed MIME types
         private static readonly HashSet<string> AllowedMimeTypes = new(StringComparer.OrdinalIgnoreCase)
         {
             "image/jpeg",
@@ -24,7 +23,6 @@ namespace TenderGo.Services.Services
             "image/bmp"
         };
 
-        // Magic byte signatures: (offset, bytes, label)
         private static readonly List<(int Offset, byte[] Signature, string Format)> MagicSignatures = new()
         {
             (0, new byte[] { 0xFF, 0xD8, 0xFF },             "JPEG"),
@@ -40,7 +38,6 @@ namespace TenderGo.Services.Services
             _environment = environment;
         }
 
-        // ─── Upload (bytes) ───────────────────────────────────────────────────────
         public async Task<TenderImageDTO> UploadImageAsync(
             byte[] imageBytes, string subFolder, bool isPrimary = false)
         {
@@ -72,11 +69,9 @@ namespace TenderGo.Services.Services
             };
         }
 
-        // ─── Upload (IFormFile) ───────────────────────────────────────────────────
         public async Task<TenderImageDTO> UploadImageAsync(
             IFormFile file, string subFolder, bool isPrimary = false)
         {
-            // Validate MIME type declared by the client first (fast check)
             if (!AllowedMimeTypes.Contains(file.ContentType))
                 throw new ArgumentException(
                     $"Nedozvoljeni tip fajla: {file.ContentType}. " +
@@ -86,12 +81,10 @@ namespace TenderGo.Services.Services
             await file.CopyToAsync(ms);
             byte[] bytes = ms.ToArray();
 
-            // Deep validation: magic bytes must also match
             if (!IsValidImage(bytes))
                 throw new ArgumentException(
                     "Sadržaj fajla ne odgovara deklarisanom tipu (magic bytes provjera nije prošla).");
 
-            // Cross-check: declared MIME must agree with detected format
             string detectedMime = DetectMimeType(bytes);
             if (!string.IsNullOrEmpty(detectedMime) &&
                 !detectedMime.Equals(file.ContentType, StringComparison.OrdinalIgnoreCase))
@@ -101,7 +94,6 @@ namespace TenderGo.Services.Services
             return await UploadImageAsync(bytes, subFolder, isPrimary);
         }
 
-        // ─── Hash ─────────────────────────────────────────────────────────────────
         public async Task<string> CalculateHash(byte[] data)
         {
             return await Task.Run(() =>
@@ -112,7 +104,6 @@ namespace TenderGo.Services.Services
             });
         }
 
-        // ─── Delete ───────────────────────────────────────────────────────────────
         public void DeleteImage(string relativePath)
         {
             if (string.IsNullOrEmpty(relativePath)) return;
@@ -122,12 +113,7 @@ namespace TenderGo.Services.Services
                 File.Delete(fullPath);
         }
 
-        // ─── IsValidImage ─────────────────────────────────────────────────────────
-        /// <summary>
-        /// Validates image bytes against known magic byte signatures.
-        /// Checks both the magic bytes AND (for WebP) the RIFF/WEBP marker.
-        /// Does NOT rely on file extension or client-declared MIME type.
-        /// </summary>
+      
         public bool IsValidImage(byte[] fileBytes)
         {
             if (fileBytes == null || fileBytes.Length < 12) return false;
@@ -143,7 +129,6 @@ namespace TenderGo.Services.Services
 
                 if (!matches) continue;
 
-                // Extra check for WebP: RIFF????WEBP
                 if (format == "WEBP")
                 {
                     // bytes 8-11 must be W E B P
@@ -159,9 +144,6 @@ namespace TenderGo.Services.Services
             return false;
         }
 
-        // ─── Helpers ──────────────────────────────────────────────────────────────
-
-        /// <summary>Returns the detected MIME type from magic bytes, or empty string.</summary>
         private static string DetectMimeType(byte[] bytes)
         {
             if (bytes.Length >= 3 &&
@@ -192,7 +174,6 @@ namespace TenderGo.Services.Services
             return string.Empty;
         }
 
-        /// <summary>Returns the file extension detected from magic bytes.</summary>
         private static string DetectExtension(byte[] bytes)
         {
             return DetectMimeType(bytes) switch
