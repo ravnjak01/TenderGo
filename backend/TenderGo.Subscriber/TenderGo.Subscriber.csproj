@@ -24,10 +24,10 @@
   </ItemGroup>
   
   <ItemGroup>
-  <Content Include="appsettings.Development.json">
-    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-  </Content>
-</ItemGroup>
+    <None Update="appsettings.Development.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\TenderGo.Contracts\TenderGo.Contracts.csproj" />

@@ -32,14 +32,6 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
 
 
 
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        if (!optionsBuilder.IsConfigured)
-        {
-            optionsBuilder.UseSqlServer(@"Server=(localdb)\MSSQLLocalDB;Database=TenderGo;Trusted_Connection=True;TrustServerCertificate=True;");
-        }
-    }
-
     protected override void OnModelCreating(ModelBuilder modelBuilder)
 
     {
