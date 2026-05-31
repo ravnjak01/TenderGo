@@ -6,15 +6,28 @@ import 'package:flutter/foundation.dart';
 import 'package:tendergo/shared/core/network/interceptors/auth_interceptor.dart';
 
 class DioClient {
-  static const String _baseUrl = String.fromEnvironment(
-    'BASE_URL',
-    defaultValue: 'http://192.168.100.9:8080/api/',
+  static const String _apiBaseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'http://10.0.2.2:5000',
   );
 
   static String get baseOrigin {
-    final uri = Uri.tryParse(_baseUrl);
-    if (uri == null) return '';
-    return '${uri.scheme}://${uri.host}:${uri.port}';
+    final uri = Uri.tryParse(_apiBaseUrl);
+    if (uri == null || !uri.hasScheme || uri.host.isEmpty) return '';
+    return uri.hasPort
+        ? '${uri.scheme}://${uri.host}:${uri.port}'
+        : '${uri.scheme}://${uri.host}';
+  }
+
+  static String get _baseUrl {
+    final trimmed = _apiBaseUrl.trim();
+    final withoutTrailingSlash = trimmed.replaceAll(RegExp(r'/+$'), '');
+
+    if (withoutTrailingSlash.endsWith('/api')) {
+      return '$withoutTrailingSlash/';
+    }
+
+    return '$withoutTrailingSlash/api/';
   }
 
   static String? resolveImageUrl(String? raw) {

@@ -261,7 +261,7 @@ namespace TenderGo.Data.Seeders
                 new BidSeed("Razvoj E-Commerce web portala", "marko@tendergo.com", 7300.00m, 35, ApplicationStatus.Rejected, "Kompletan frontend, backend i deployment na cloud okruzenje."),
                 new BidSeed("Izrada logotipa i brending za mobilnu aplikaciju", "marko@tendergo.com", 750.00m, 7, ApplicationStatus.Pending, "Tri pravca dizajna, knjiga standarda i eksport za mobilne storeove."),
                 new BidSeed("Knjigovodstvene usluge za d.o.o.", "amina@tendergo.com", 2200.00m, 365, ApplicationStatus.Pending, "Mjesecni paket sa PDV prijavama, platama i savjetovanjem."),
-                new BidSeed("DEV Expired closed tender", "suljo@tendergo.com", 1300.00m, 5, ApplicationStatus.Rejected, "Expired closed tender sample bid."),
+                new BidSeed("DEV Expired closed tender", "suljo@tendergo.com", 1300.00m, 5, ApplicationStatus.Pending, "Expired closed tender sample bid ready for award flow testing."),
                 new BidSeed("DEV Expired awarded tender", "amina@tendergo.com", 4200.00m, 21, ApplicationStatus.Accepted, "Development seed winning bid for notification flow testing."),
                 new BidSeed("DEV Expired awarded tender", "marko@tendergo.com", 4550.00m, 18, ApplicationStatus.Rejected, "Alternative rejected bid for awarded tender.")
             };
@@ -271,12 +271,11 @@ namespace TenderGo.Data.Seeders
                 var tender = tenders[seed.TenderTitle];
                 var user = users[seed.UserEmail];
 
-                var exists = await context.Bids.AnyAsync(b =>
+                var existingBid = await context.Bids.FirstOrDefaultAsync(b =>
                     b.TenderId == tender.Id &&
-                    b.SubmittedByUserId == user.Id &&
-                    b.Status == seed.Status);
+                    b.SubmittedByUserId == user.Id);
 
-                if (!exists)
+                if (existingBid == null)
                 {
                     context.Bids.Add(new Bid
                     {
@@ -290,6 +289,15 @@ namespace TenderGo.Data.Seeders
                         CreatedAt = now.AddDays(-2),
                         CreatedByUserId = user.Id
                     });
+                }
+                else
+                {
+                    existingBid.OfferedPrice = seed.OfferedPrice;
+                    existingBid.DeliveryDays = seed.DeliveryDays;
+                    existingBid.Status = seed.Status;
+                    existingBid.Proposal = seed.Proposal;
+                    existingBid.UpdatedAt = now;
+                    existingBid.UpdatedByUserId = "SYSTEM";
                 }
             }
 
@@ -316,10 +324,17 @@ namespace TenderGo.Data.Seeders
             var ratingSeeds = new[]
             {
                 new RatingSeed("DEV Expired awarded tender", "suljo@tendergo.com", "amina@tendergo.com", 5, "Odlicna komunikacija i isporuka prije roka."),
-                new RatingSeed("DEV Expired awarded tender", "amina@tendergo.com", "suljo@tendergo.com", 5, "Jasni zahtjevi i brza potvrda dogovora."),
-                new RatingSeed("DEV Expired closed tender", "mujo@tendergo.com", "suljo@tendergo.com", 4, "Korektna ponuda i profesionalan pristup."),
-                new RatingSeed("DEV Expired closed tender", "suljo@tendergo.com", "mujo@tendergo.com", 4, "Dobar narucilac, sve informacije su bile dostupne.")
+                new RatingSeed("DEV Expired awarded tender", "amina@tendergo.com", "suljo@tendergo.com", 5, "Jasni zahtjevi i brza potvrda dogovora.")
             };
+
+            if (tenders.TryGetValue("DEV Expired closed tender", out var closedTender))
+            {
+                var invalidClosedTenderRatings = await context.Ratings
+                    .Where(r => r.TenderId == closedTender.Id)
+                    .ToListAsync();
+
+                context.Ratings.RemoveRange(invalidClosedTenderRatings);
+            }
 
             foreach (var seed in ratingSeeds)
             {
