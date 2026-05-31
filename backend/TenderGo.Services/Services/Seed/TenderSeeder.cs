@@ -228,23 +228,43 @@ namespace TenderGo.Data.Seeders
                 }
             };
 
+            var titles = seedTenders.Select(t => t.Title).ToArray();
+
+            var tenders = await context.Tenders
+                .IgnoreAutoIncludes()
+                .Where(t => titles.Contains(t.Title))
+                .OrderBy(t => t.Id)
+                .ToListAsync();
+
+            var tendersByTitle = tenders
+                .GroupBy(t => t.Title)
+                .ToDictionary(g => g.Key, g => g.First());
+
             foreach (var seedTender in seedTenders)
             {
-                var exists = await context.Tenders.AnyAsync(t => t.Title == seedTender.Title);
-                if (!exists)
+                if (tendersByTitle.TryGetValue(seedTender.Title, out var existingTender))
+                {
+                    existingTender.Description = seedTender.Description;
+                    existingTender.MaxBudget = seedTender.MaxBudget;
+                    existingTender.Deadline = seedTender.Deadline;
+                    existingTender.Status = seedTender.Status;
+                    existingTender.PostedAt = seedTender.PostedAt;
+                    existingTender.CreatedByUserId = seedTender.CreatedByUserId;
+                    existingTender.CategoryId = seedTender.CategoryId;
+                    existingTender.LocationId = seedTender.LocationId;
+                    existingTender.UpdatedAt = seedTender.UpdatedAt;
+                    existingTender.UpdatedByUserId = seedTender.UpdatedByUserId;
+                }
+                else
                 {
                     context.Tenders.Add(seedTender);
+                    tendersByTitle[seedTender.Title] = seedTender;
                 }
             }
 
             await context.SaveChangesAsync();
 
-            var titles = seedTenders.Select(t => t.Title).ToArray();
-
-            return await context.Tenders
-                .Where(t => titles.Contains(t.Title))
-                .GroupBy(t => t.Title)
-                .ToDictionaryAsync(g => g.Key, g => g.First());
+            return tendersByTitle;
         }
 
         private static async Task EnsureBidsAsync(
