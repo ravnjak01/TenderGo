@@ -5,3 +5,7 @@
 **/.vscode/
 **/.env
 **/NuGet.Config
+publish/
+*.log
+*.zip
+*.user

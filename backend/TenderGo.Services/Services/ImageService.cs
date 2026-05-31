@@ -50,7 +50,13 @@ namespace TenderGo.Services.Services
             var hash = await CalculateHash(imageBytes);
             var extension = DetectExtension(imageBytes);
             string fileName = $"{hash}{extension}";
-            string folderPath = Path.Combine(_environment.WebRootPath, "uploads", subFolder);
+            var webRoot = _environment.WebRootPath;
+            if (string.IsNullOrWhiteSpace(webRoot))
+            {
+                webRoot = Path.Combine(_environment.ContentRootPath, "wwwroot");
+            }
+
+            string folderPath = Path.Combine(webRoot, "uploads", subFolder);
 
             if (!Directory.Exists(folderPath))
                 Directory.CreateDirectory(folderPath);

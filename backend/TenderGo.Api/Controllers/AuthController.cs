@@ -87,9 +87,9 @@ namespace TenderGo.Api.Controllers
 
         [HttpPost("refresh-token")]
         [AllowAnonymous]
-        public async Task<IActionResult> RefreshToken()
+        public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest? request)
         {
-            var result = await _authService.RefreshTokenAsync();
+            var result = await _authService.RefreshTokenAsync(request?.RefreshToken);
             return Ok(result);
         }
 

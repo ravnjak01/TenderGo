@@ -37,6 +37,11 @@ namespace TenderGo.Api.Controllers
                 .Where(o => o.Id == id && (int)o.Status == 2)
                 .FirstOrDefaultAsync();
 
+            if (bid == null)
+            {
+                throw new NotFoundException("Accepted offer not found", new { OfferId = id });
+            }
+
             var currentUser=_authService.GetCurrentUserId();
 
             bool isOwner=bid.Tender.CreatedByUserId==currentUser;

@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   tendergo-sql:
-    image: mcr.microsoft.com/mssql/server:2022-latest
+    image: mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04
     user: root
     restart: unless-stopped
     env_file:

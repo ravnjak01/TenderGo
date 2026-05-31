@@ -14,256 +14,419 @@ namespace TenderGo.Data.Seeders
             var context = serviceProvider.GetRequiredService<TenderGoContext>();
             var userManager = serviceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
-            var mujo = await userManager.FindByEmailAsync("mujo@tendergo.com");
-            var suljo = await userManager.FindByEmailAsync("suljo@tendergo.com");
-            
-            var defaultUser = mujo ?? suljo ?? await context.Users.FirstOrDefaultAsync();
+            var users = await EnsureRequiredUsersAsync(context, userManager);
+            var categories = await EnsureCategoriesAsync(context);
+            var locations = await EnsureLocationsAsync(context);
 
-            if (defaultUser == null)
+            var tenders = await EnsureTendersAsync(context, users, categories, locations);
+            await EnsureBidsAsync(context, users, tenders);
+            await EnsureRatingsAsync(context, users, tenders);
+            await EnsureNotificationsAsync(context, users);
+            await UpdateUserRatingSummariesAsync(context);
+        }
+
+        private static async Task<Dictionary<string, ApplicationUser>> EnsureRequiredUsersAsync(
+            TenderGoContext context,
+            UserManager<ApplicationUser> userManager)
+        {
+            var emails = new[]
             {
-                throw new Exception("Seeding tenders failed: No users found in the database.");
+                "admin@tendergo.com",
+                "mujo@tendergo.com",
+                "suljo@tendergo.com",
+                "amina@tendergo.com",
+                "marko@tendergo.com"
+            };
+
+            var users = new Dictionary<string, ApplicationUser>();
+
+            foreach (var email in emails)
+            {
+                var user = await userManager.FindByEmailAsync(email);
+                if (user != null)
+                {
+                    users[email] = user;
+                }
             }
 
-            var categories = await context.Categories.ToListAsync();
-            var locations = await context.Locations.ToListAsync();
-
-            if (!locations.Any())
+            if (users.Count == 0)
             {
-                throw new Exception("Seeding tenders failed: No locations found in the database. Please seed locations first.");
+                var fallback = await context.Users.FirstOrDefaultAsync();
+                if (fallback == null)
+                {
+                    throw new Exception("Seeding failed: no users found. Run UserSeeder before TenderSeeder.");
+                }
+
+                users["mujo@tendergo.com"] = fallback;
+                users["suljo@tendergo.com"] = fallback;
+                users["amina@tendergo.com"] = fallback;
+                users["marko@tendergo.com"] = fallback;
             }
 
-            while (categories.Count < 6)
+            foreach (var email in emails)
             {
-                int nextIndex = categories.Count + 1;
-                var fallbackCategory = new Category { Name = $"Testna Kategorija {nextIndex}" };
-                context.Categories.Add(fallbackCategory);
-                await context.SaveChangesAsync();
-                categories.Add(fallbackCategory);
+                if (!users.ContainsKey(email))
+                {
+                    users[email] = users.Values.First();
+                }
             }
 
-            if (await context.Tenders.AnyAsync())
+            return users;
+        }
+
+        private static async Task<Dictionary<string, Category>> EnsureCategoriesAsync(TenderGoContext context)
+        {
+            var categoryNames = new[]
             {
-                await EnsureExpiredTestTendersAsync(context, mujo ?? defaultUser, suljo ?? defaultUser, categories, locations);
-                return;
+                "Gradjevinski radovi",
+                "IT i razvoj softvera",
+                "Dizajn i marketing",
+                "Knjigovodstvo i finansije",
+                "Servis i odrzavanje",
+                "Namjestaj i oprema",
+                "Transport i logistika",
+                "Edukacija i konsultacije"
+            };
+
+            foreach (var name in categoryNames)
+            {
+                var exists = await context.Categories.AnyAsync(c => c.Name == name);
+                if (!exists)
+                {
+                    context.Categories.Add(new Category { Name = name, IsActive = true });
+                }
             }
 
-       
-            var testTenders = new List<Tender>
+            await context.SaveChangesAsync();
+
+            return await context.Categories
+                .Where(c => categoryNames.Contains(c.Name))
+                .GroupBy(c => c.Name)
+                .ToDictionaryAsync(g => g.Key, g => g.First());
+        }
+
+        private static async Task<Dictionary<string, Location>> EnsureLocationsAsync(TenderGoContext context)
+        {
+            var seedLocations = new[]
+            {
+                new Location { Country = "BiH", Name = "Sarajevo", Region = "Federacija BiH" },
+                new Location { Country = "BiH", Name = "Mostar", Region = "Federacija BiH" },
+                new Location { Country = "BiH", Name = "Banja Luka", Region = "Republika Srpska" },
+                new Location { Country = "BiH", Name = "Tuzla", Region = "Federacija BiH" },
+                new Location { Country = "BiH", Name = "Zenica", Region = "Federacija BiH" },
+                new Location { Country = "BiH", Name = "Brcko", Region = "Brcko Distrikt" }
+            };
+
+            foreach (var location in seedLocations)
+            {
+                var exists = await context.Locations.AnyAsync(l =>
+                    l.Country == location.Country &&
+                    l.Name == location.Name &&
+                    l.Region == location.Region);
+
+                if (!exists)
+                {
+                    context.Locations.Add(location);
+                }
+            }
+
+            await context.SaveChangesAsync();
+
+            var names = seedLocations.Select(l => l.Name).ToArray();
+
+            return await context.Locations
+                .Where(l => names.Contains(l.Name))
+                .GroupBy(l => l.Name)
+                .ToDictionaryAsync(g => g.Key, g => g.First());
+        }
+
+        private static async Task<Dictionary<string, Tender>> EnsureTendersAsync(
+            TenderGoContext context,
+            Dictionary<string, ApplicationUser> users,
+            Dictionary<string, Category> categories,
+            Dictionary<string, Location> locations)
+        {
+            var now = DateTime.UtcNow;
+
+            var seedTenders = new[]
             {
                 new Tender
                 {
                     Title = "Nabavka i ugradnja PVC stolarije",
                     Description = "Potrebna zamjena 5 prozora i dvoja balkonska vrata na stambenom objektu.",
                     MaxBudget = 3500.00m,
-                    Deadline = DateTime.UtcNow.AddDays(1),
+                    Deadline = now.AddDays(7),
                     Status = TenderStatus.Open,
-                    PostedAt = DateTime.UtcNow,
-                    CreatedByUserId = mujo?.Id ?? defaultUser.Id,
-                    CategoryId = categories[0].Id,
-                    LocationId = locations[0 % locations.Count].Id
+                    PostedAt = now.AddDays(-1),
+                    CreatedByUserId = users["mujo@tendergo.com"].Id,
+                    CategoryId = categories["Gradjevinski radovi"].Id,
+                    LocationId = locations["Sarajevo"].Id
+                },
+                new Tender
+                {
+                    Title = "Razvoj E-Commerce web portala",
+                    Description = "Potrebna izrada web prodavnice u .NET i React tehnologijama sa integracijom placanja.",
+                    MaxBudget = 7500.00m,
+                    Deadline = now.AddDays(12),
+                    Status = TenderStatus.Open,
+                    PostedAt = now.AddDays(-2),
+                    CreatedByUserId = users["suljo@tendergo.com"].Id,
+                    CategoryId = categories["IT i razvoj softvera"].Id,
+                    LocationId = locations["Mostar"].Id
                 },
                 new Tender
                 {
                     Title = "Izrada logotipa i brending za mobilnu aplikaciju",
-                    Description = "Traži se grafički dizajner za kreiranje vizuelnog identiteta aplikacije TenderGo.",
+                    Description = "Trazi se graficki dizajner za kreiranje vizuelnog identiteta aplikacije TenderGo.",
                     MaxBudget = 800.00m,
-                    Deadline = DateTime.UtcNow.AddDays(2),
+                    Deadline = now.AddDays(4),
                     Status = TenderStatus.Open,
-                    PostedAt = DateTime.UtcNow,
-                    CreatedByUserId = mujo?.Id ?? defaultUser.Id,
-                    CategoryId = categories[1].Id,
-                    LocationId = locations[1 % locations.Count].Id
+                    PostedAt = now.AddDays(-3),
+                    CreatedByUserId = users["amina@tendergo.com"].Id,
+                    CategoryId = categories["Dizajn i marketing"].Id,
+                    LocationId = locations["Tuzla"].Id
                 },
                 new Tender
                 {
-                    Title = "Razvoj E-Commerce Web Portala",
-                    Description = "Potrebna izrada web prodavnice u .NET Core i React tehnologijama sa integracijom plaćanja.",
-                    MaxBudget = 7500.00m,
-                    Deadline = DateTime.UtcNow.AddDays(3),
-                    Status = TenderStatus.Open,
-                    PostedAt = DateTime.UtcNow,
-                    CreatedByUserId = suljo?.Id ?? defaultUser.Id,
-                    CategoryId = categories[2].Id,
-                    LocationId = locations[2 % locations.Count].Id
-                },
-                new Tender
-                {
-                    Title = "Knjigovodstvene usluge za d.o.o. (Godišnji ugovor)",
-                    Description = "Traži se agencija za vođenje poslovnih knjiga, obračun plata i pripremu završnih računa.",
+                    Title = "Knjigovodstvene usluge za d.o.o.",
+                    Description = "Trazi se agencija za vodjenje poslovnih knjiga, obracun plata i zavrsne racune.",
                     MaxBudget = 2400.00m,
-                    Deadline = DateTime.UtcNow.AddDays(4),
+                    Deadline = now.AddDays(20),
                     Status = TenderStatus.Open,
-                    PostedAt = DateTime.UtcNow,
-                    CreatedByUserId = suljo?.Id ?? defaultUser.Id,
-                    CategoryId = categories[3].Id,
-                    LocationId = locations[3 % locations.Count].Id
+                    PostedAt = now.AddDays(-5),
+                    CreatedByUserId = users["marko@tendergo.com"].Id,
+                    CategoryId = categories["Knjigovodstvo i finansije"].Id,
+                    LocationId = locations["Banja Luka"].Id
                 },
                 new Tender
                 {
-                    Title = "Servisiranje i održavanje klima uređaja u poslovnom objektu",
-                    Description = "Godišnji servis 12 inverter klima uređaja u kancelarijama kompanije.",
-                    MaxBudget = 600.00m,
-                    Deadline = DateTime.UtcNow.AddDays(5),
-                    Status = TenderStatus.Open,
-                    PostedAt = DateTime.UtcNow,
-                    CreatedByUserId = mujo?.Id ?? defaultUser.Id,
-                    CategoryId = categories[4].Id,
-                    LocationId = locations[4 % locations.Count].Id
-                },
-                new Tender
-                {
-                    Title = "Nabavka kancelarijskog namještaja",
-                    Description = "Potrebno opremanje konferencijske sale: 1 veliki stol i 10 ergonomskih stolica.",
-                    MaxBudget = 4200.00m,
-                    Deadline = DateTime.UtcNow.AddDays(6),
-                    Status = TenderStatus.Open,
-                    PostedAt = DateTime.UtcNow,
-                    CreatedByUserId = suljo?.Id ?? defaultUser.Id,
-                    CategoryId = categories[5].Id,
-                    LocationId = locations[5 % locations.Count].Id
-                }
-            };
-
-            context.Tenders.AddRange(testTenders);
-            await context.SaveChangesAsync();
-
-            await EnsureExpiredTestTendersAsync(context, mujo ?? defaultUser, suljo ?? defaultUser, categories, locations);
-        }
-
-        private static async Task EnsureExpiredTestTendersAsync(
-            TenderGoContext context,
-            ApplicationUser owner,
-            ApplicationUser bidder,
-            List<Category> categories,
-            List<Location> locations)
-        {
-            const string closedTenderTitle = "DEV Expired closed tender";
-            const string awardedTenderTitle = "DEV Expired awarded tender";
-
-            var existingTitles = await context.Tenders
-                .Where(t => t.Title == closedTenderTitle || t.Title == awardedTenderTitle)
-                .Select(t => t.Title)
-                .ToListAsync();
-
-            var now = DateTime.UtcNow;
-
-            if (!existingTitles.Contains(closedTenderTitle))
-            {
-                context.Tenders.Add(new Tender
-                {
-                    Title = closedTenderTitle,
+                    Title = "DEV Expired closed tender",
                     Description = "Development seed tender with an expired deadline and Closed status.",
                     MaxBudget = 1500.00m,
                     Deadline = now.AddDays(-3),
                     Status = TenderStatus.Closed,
                     PostedAt = now.AddDays(-10),
-                    CreatedByUserId = owner.Id,
-                    CategoryId = categories[0].Id,
-                    LocationId = locations[0 % locations.Count].Id,
+                    CreatedByUserId = users["mujo@tendergo.com"].Id,
+                    CategoryId = categories["Servis i odrzavanje"].Id,
+                    LocationId = locations["Zenica"].Id,
                     UpdatedAt = now,
                     UpdatedByUserId = "SYSTEM"
-                });
-            }
-
-            if (!existingTitles.Contains(awardedTenderTitle))
-            {
-                var awardedTender = new Tender
+                },
+                new Tender
                 {
-                    Title = awardedTenderTitle,
+                    Title = "DEV Expired awarded tender",
                     Description = "Development seed tender with an expired deadline, Awarded status, and a winning bid.",
                     MaxBudget = 5000.00m,
                     Deadline = now.AddDays(-7),
                     Status = TenderStatus.Awarded,
                     PostedAt = now.AddDays(-14),
-                    CreatedByUserId = owner.Id,
-                    CategoryId = categories[1 % categories.Count].Id,
-                    LocationId = locations[1 % locations.Count].Id,
+                    CreatedByUserId = users["suljo@tendergo.com"].Id,
+                    CategoryId = categories["Namjestaj i oprema"].Id,
+                    LocationId = locations["Brcko"].Id,
                     UpdatedAt = now,
                     UpdatedByUserId = "SYSTEM"
-                };
+                }
+            };
 
-                context.Tenders.Add(awardedTender);
-                await context.SaveChangesAsync();
-
-                var winningBid = new Bid
+            foreach (var seedTender in seedTenders)
+            {
+                var exists = await context.Tenders.AnyAsync(t => t.Title == seedTender.Title);
+                if (!exists)
                 {
-                    TenderId = awardedTender.Id,
-                    SubmittedByUserId = bidder.Id,
-                    OfferedPrice = 4200.00m,
-                    SubmittedAt = now.AddDays(-8),
-                    Status = ApplicationStatus.Accepted,
-                    Proposal = "Development seed winning bid for notification flow testing.",
-                    DeliveryDays = 21,
-                    CreatedAt = now.AddDays(-8),
-                    CreatedByUserId = bidder.Id
-                };
-
-                context.Bids.Add(winningBid);
-                await context.SaveChangesAsync();
-
-                awardedTender.WinningBidId = winningBid.Id;
+                    context.Tenders.Add(seedTender);
+                }
             }
 
             await context.SaveChangesAsync();
 
-            await EnsureTestTenderNotificationsAsync(context, closedTenderTitle, awardedTenderTitle);
+            var titles = seedTenders.Select(t => t.Title).ToArray();
+
+            return await context.Tenders
+                .Where(t => titles.Contains(t.Title))
+                .GroupBy(t => t.Title)
+                .ToDictionaryAsync(g => g.Key, g => g.First());
         }
 
-        private static async Task EnsureTestTenderNotificationsAsync(
+        private static async Task EnsureBidsAsync(
             TenderGoContext context,
-            string closedTenderTitle,
-            string awardedTenderTitle)
+            Dictionary<string, ApplicationUser> users,
+            Dictionary<string, Tender> tenders)
         {
             var now = DateTime.UtcNow;
-
-            var closedTender = await context.Tenders
-                .FirstOrDefaultAsync(t => t.Title == closedTenderTitle);
-
-            if (closedTender != null)
+            var bidSeeds = new[]
             {
-                var closedNotificationTitle = $"Obavijest o  status tendera '{closedTender.Title}'";
-                var closedNotificationExists = await context.Notifications.AnyAsync(n =>
-                    n.UserId == closedTender.CreatedByUserId &&
-                    n.Title == closedNotificationTitle);
+                new BidSeed("Nabavka i ugradnja PVC stolarije", "suljo@tendergo.com", 3200.00m, 14, ApplicationStatus.Pending, "Mogu zavrsiti ugradnju u dvije faze sa garancijom od 24 mjeseca."),
+                new BidSeed("Nabavka i ugradnja PVC stolarije", "amina@tendergo.com", 3450.00m, 10, ApplicationStatus.Pending, "U ponudu je ukljucen izlazak na teren, demontaza i odvoz stare stolarije."),
+                new BidSeed("Razvoj E-Commerce web portala", "mujo@tendergo.com", 6900.00m, 45, ApplicationStatus.Pending, "Predlazem MVP u prvoj fazi, zatim integracije placanja i dostave."),
+                new BidSeed("Razvoj E-Commerce web portala", "marko@tendergo.com", 7300.00m, 35, ApplicationStatus.Rejected, "Kompletan frontend, backend i deployment na cloud okruzenje."),
+                new BidSeed("Izrada logotipa i brending za mobilnu aplikaciju", "marko@tendergo.com", 750.00m, 7, ApplicationStatus.Pending, "Tri pravca dizajna, knjiga standarda i eksport za mobilne storeove."),
+                new BidSeed("Knjigovodstvene usluge za d.o.o.", "amina@tendergo.com", 2200.00m, 365, ApplicationStatus.Pending, "Mjesecni paket sa PDV prijavama, platama i savjetovanjem."),
+                new BidSeed("DEV Expired closed tender", "suljo@tendergo.com", 1300.00m, 5, ApplicationStatus.Rejected, "Expired closed tender sample bid."),
+                new BidSeed("DEV Expired awarded tender", "amina@tendergo.com", 4200.00m, 21, ApplicationStatus.Accepted, "Development seed winning bid for notification flow testing."),
+                new BidSeed("DEV Expired awarded tender", "marko@tendergo.com", 4550.00m, 18, ApplicationStatus.Rejected, "Alternative rejected bid for awarded tender.")
+            };
 
-                if (!closedNotificationExists)
+            foreach (var seed in bidSeeds)
+            {
+                var tender = tenders[seed.TenderTitle];
+                var user = users[seed.UserEmail];
+
+                var exists = await context.Bids.AnyAsync(b =>
+                    b.TenderId == tender.Id &&
+                    b.SubmittedByUserId == user.Id &&
+                    b.Status == seed.Status);
+
+                if (!exists)
                 {
-                    context.Notifications.Add(new Notification
+                    context.Bids.Add(new Bid
                     {
-                        UserId = closedTender.CreatedByUserId,
-                        Message = $"Vaš tender '{closedTender.Title}' je upravo istekao. Sada možete odabrati pobjednika.",
-                        CreatedAt = now,
-                        IsRead = false,
-                        Title = closedNotificationTitle
+                        TenderId = tender.Id,
+                        SubmittedByUserId = user.Id,
+                        OfferedPrice = seed.OfferedPrice,
+                        DeliveryDays = seed.DeliveryDays,
+                        Status = seed.Status,
+                        Proposal = seed.Proposal,
+                        SubmittedAt = now.AddDays(-2),
+                        CreatedAt = now.AddDays(-2),
+                        CreatedByUserId = user.Id
                     });
                 }
             }
 
-            var awardedTender = await context.Tenders
-                .Include(t => t.WinningBid)
-                .FirstOrDefaultAsync(t => t.Title == awardedTenderTitle);
+            await context.SaveChangesAsync();
 
-            if (awardedTender?.WinningBid != null)
+            var awardedTender = tenders["DEV Expired awarded tender"];
+            var winningBid = await context.Bids.FirstOrDefaultAsync(b =>
+                b.TenderId == awardedTender.Id &&
+                b.SubmittedByUserId == users["amina@tendergo.com"].Id &&
+                b.Status == ApplicationStatus.Accepted);
+
+            if (winningBid != null && awardedTender.WinningBidId != winningBid.Id)
             {
-                var awardedNotificationTitle = $"Informacija o tenderu '{awardedTender.Title}'";
-                var awardedNotificationExists = await context.Notifications.AnyAsync(n =>
-                    n.UserId == awardedTender.WinningBid.SubmittedByUserId &&
-                    n.Title == awardedNotificationTitle);
+                awardedTender.WinningBidId = winningBid.Id;
+                await context.SaveChangesAsync();
+            }
+        }
 
-                if (!awardedNotificationExists)
+        private static async Task EnsureRatingsAsync(
+            TenderGoContext context,
+            Dictionary<string, ApplicationUser> users,
+            Dictionary<string, Tender> tenders)
+        {
+            var ratingSeeds = new[]
+            {
+                new RatingSeed("DEV Expired awarded tender", "suljo@tendergo.com", "amina@tendergo.com", 5, "Odlicna komunikacija i isporuka prije roka."),
+                new RatingSeed("DEV Expired awarded tender", "amina@tendergo.com", "suljo@tendergo.com", 5, "Jasni zahtjevi i brza potvrda dogovora."),
+                new RatingSeed("DEV Expired closed tender", "mujo@tendergo.com", "suljo@tendergo.com", 4, "Korektna ponuda i profesionalan pristup."),
+                new RatingSeed("DEV Expired closed tender", "suljo@tendergo.com", "mujo@tendergo.com", 4, "Dobar narucilac, sve informacije su bile dostupne.")
+            };
+
+            foreach (var seed in ratingSeeds)
+            {
+                var tender = tenders[seed.TenderTitle];
+                var ratedBy = users[seed.RatedByEmail];
+                var ratedUser = users[seed.RatedUserEmail];
+
+                var exists = await context.Ratings.AnyAsync(r =>
+                    r.TenderId == tender.Id &&
+                    r.RatedByUserId == ratedBy.Id &&
+                    r.RatedUserId == ratedUser.Id);
+
+                if (!exists)
                 {
-                    context.Notifications.Add(new Notification
+                    context.Ratings.Add(new Rating
                     {
-                        UserId = awardedTender.WinningBid.SubmittedByUserId,
-                        Message = $"Čestitamo! Pobijedili ste na tenderu: {awardedTender.Title}.",
-                        CreatedAt = now,
-                        IsRead = false,
-                        Title = awardedNotificationTitle
+                        TenderId = tender.Id,
+                        RatedByUserId = ratedBy.Id,
+                        RatedUserId = ratedUser.Id,
+                        Score = seed.Score,
+                        Comment = seed.Comment,
+                        CreatedAt = DateTime.UtcNow.AddDays(-1)
                     });
                 }
             }
 
             await context.SaveChangesAsync();
         }
+
+        private static async Task EnsureNotificationsAsync(
+            TenderGoContext context,
+            Dictionary<string, ApplicationUser> users)
+        {
+            var notificationSeeds = new[]
+            {
+                new NotificationSeed("mujo@tendergo.com", "Nova ponuda za PVC stolariju", "Suljo je poslao ponudu za tender 'Nabavka i ugradnja PVC stolarije'."),
+                new NotificationSeed("suljo@tendergo.com", "Tender je dodijeljen", "Tender 'DEV Expired awarded tender' je dodijeljen pobjedniku."),
+                new NotificationSeed("amina@tendergo.com", "Cestitamo, ponuda je prihvacena", "Vasa ponuda za 'DEV Expired awarded tender' je prihvacena."),
+                new NotificationSeed("mujo@tendergo.com", "Tender je istekao", "Tender 'DEV Expired closed tender' je istekao i spreman je za odabir pobjednika.")
+            };
+
+            foreach (var seed in notificationSeeds)
+            {
+                var user = users[seed.UserEmail];
+                var exists = await context.Notifications.AnyAsync(n =>
+                    n.UserId == user.Id &&
+                    n.Title == seed.Title);
+
+                if (!exists)
+                {
+                    context.Notifications.Add(new Notification
+                    {
+                        UserId = user.Id,
+                        Title = seed.Title,
+                        Message = seed.Message,
+                        CreatedAt = DateTime.UtcNow.AddHours(-6),
+                        IsRead = false
+                    });
+                }
+            }
+
+            await context.SaveChangesAsync();
+        }
+
+        private static async Task UpdateUserRatingSummariesAsync(TenderGoContext context)
+        {
+            var ratingGroups = await context.Ratings
+                .GroupBy(r => r.RatedUserId)
+                .Select(g => new
+                {
+                    UserId = g.Key,
+                    Average = g.Average(r => r.Score),
+                    Count = g.Count()
+                })
+                .ToListAsync();
+
+            foreach (var group in ratingGroups)
+            {
+                var user = await context.Users.FindAsync(group.UserId);
+                if (user != null)
+                {
+                    user.AverageRating = Math.Round(group.Average, 2);
+                    user.RatingCount = group.Count;
+                }
+            }
+
+            await context.SaveChangesAsync();
+        }
+
+        private sealed record BidSeed(
+            string TenderTitle,
+            string UserEmail,
+            decimal OfferedPrice,
+            int DeliveryDays,
+            ApplicationStatus Status,
+            string Proposal);
+
+        private sealed record RatingSeed(
+            string TenderTitle,
+            string RatedByEmail,
+            string RatedUserEmail,
+            int Score,
+            string Comment);
+
+        private sealed record NotificationSeed(
+            string UserEmail,
+            string Title,
+            string Message);
     }
 }

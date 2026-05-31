@@ -23,7 +23,7 @@ class ApiEndpoints {
 
   //PDF
 
-  static  String downloadPdf(int id)=>'/pdf/$id/download';
+  static String downloadPdf(int id) => 'pdf/$id/download';
 
   // USER ACTIVITY
   static const String userActivity='/user-activities/log';

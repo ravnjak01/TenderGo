@@ -6,8 +6,8 @@ import 'package:tendergo/mobile/widgets/tender/tender_image_gallery.dart';
 import 'package:tendergo/mobile/widgets/tender/tender_meta_item.dart';
 import 'package:tendergo/mobile/widgets/tender/tender_section_label.dart';
 
-/// Displays tender category, title, meta row, optional image gallery and
-/// project description.  Pass [imageHeight] to control gallery height
+/// Displays tender category, title, meta row and optional image gallery.
+/// Pass [imageHeight] to control gallery height
 /// (e.g. 320 for admin/desktop, 220 for mobile).
 class TenderInfoSection extends StatelessWidget {
   const TenderInfoSection({
@@ -86,24 +86,6 @@ class TenderInfoSection extends StatelessWidget {
           const SizedBox(height: 24),
         ],
 
-        // Description
-        const Text(
-          'Project Description',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        const SizedBox(height: 10),
-        Text(
-          (tender.description ?? 'No description provided.').trim(),
-          style: const TextStyle(
-            fontSize: 15,
-            color: AppColors.textSecondary,
-            height: 1.6,
-          ),
-        ),
       ],
     );
   }

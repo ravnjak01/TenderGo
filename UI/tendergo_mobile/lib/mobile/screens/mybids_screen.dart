@@ -367,7 +367,13 @@ class _BidCard extends StatelessWidget {
                                     },
                                   );
                                 }
-                              } else {}
+                              } else if (context.mounted) {
+                                SnackbarHelper.show(
+                                  context,
+                                  'Unable to load PDF report.',
+                                  isError: true,
+                                );
+                              }
                             },
                             icon: const Icon(Icons.picture_as_pdf_rounded),
                             label: const Text('Izvještaj'),

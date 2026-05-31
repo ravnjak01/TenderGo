@@ -217,7 +217,7 @@ using (var scope = app.Services.CreateScope())
         }
         catch (Exception ex)
         {
-            logger.LogWarning($"Try {i + 1}: SQL Server still not ready... Waiting.");
+            logger.LogWarning(ex, "Try {Attempt}: Database initialization failed. Waiting before retry.", i + 1);
             if (i == 9)
             {
                 logger.LogError(ex, "Database migration failed after 10 attempts.");

@@ -51,6 +51,46 @@ namespace TenderGo.Data.Seeders
                         Street = "Braće Fejića 44",
                         PostalCode = "88000"
                     }
+                },
+                new ApplicationUser
+                {
+                    UserName = "amina@tendergo.com",
+                    Email = "amina@tendergo.com",
+                    EmailConfirmed = true,
+                    FirstName = "Amina",
+                    LastName = "Hadziabdic",
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = "System",
+                    IsBanned = false,
+                    AverageRating = 4.7,
+                    RatingCount = 9,
+                    Address = new Address
+                    {
+                        Country = "Bosna i Hercegovina",
+                        City = "Tuzla",
+                        Street = "Korzo 7",
+                        PostalCode = "75000"
+                    }
+                },
+                new ApplicationUser
+                {
+                    UserName = "marko@tendergo.com",
+                    Email = "marko@tendergo.com",
+                    EmailConfirmed = true,
+                    FirstName = "Marko",
+                    LastName = "Maric",
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = "System",
+                    IsBanned = false,
+                    AverageRating = 4.2,
+                    RatingCount = 6,
+                    Address = new Address
+                    {
+                        Country = "Bosna i Hercegovina",
+                        City = "Banja Luka",
+                        Street = "Kralja Petra I 22",
+                        PostalCode = "78000"
+                    }
                 }
             };
 
@@ -64,18 +104,23 @@ namespace TenderGo.Data.Seeders
 
                     if (result.Succeeded)
                     {
-                        var roleResult = await userManager.AddToRoleAsync(user, AppRoles.User);
-                        
-                        if (!roleResult.Succeeded)
-                        {
-                            var roleErrors = string.Join(", ", roleResult.Errors.Select(e => e.Description));
-                            throw new Exception($"Failed to assign User role to {user.Email}: {roleErrors}");
-                        }
+                        existingUser = user;
                     }
                     else
                     {
                         var userErrors = string.Join(", ", result.Errors.Select(e => e.Description));
                         throw new Exception($"Failed to seed user {user.Email}: {userErrors}");
+                    }
+                }
+
+                if (existingUser != null && !await userManager.IsInRoleAsync(existingUser, AppRoles.User))
+                {
+                    var roleResult = await userManager.AddToRoleAsync(existingUser, AppRoles.User);
+
+                    if (!roleResult.Succeeded)
+                    {
+                        var roleErrors = string.Join(", ", roleResult.Errors.Select(e => e.Description));
+                        throw new Exception($"Failed to assign User role to {existingUser.Email}: {roleErrors}");
                     }
                 }
             }
