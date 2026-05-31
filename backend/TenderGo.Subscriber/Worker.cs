@@ -28,11 +28,10 @@ namespace TenderGo.Subscriber
             {
                 try
                 {
-                    _logger.LogInformation("Pokušavam pretplatu na RabbitMQ koristeći: {ConnString}",rabbitConnString);
 
                     await _subscriber.SubscribeAsync(subscriptionId);
                     _logger.LogInformation(
-                        "Uspješno pokrenut RabbitMQ subscriber na mreži! ID pretplate: {Id}", 
+                        "Uspješno pokrenut RabbitMQ subscriber na mreži! ID pretplate: {Id}",
                         subscriptionId);
 
                   
