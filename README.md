@@ -1,9 +1,10 @@
-Desktop/mobile:
-korisničko ime admin@tendergo.com      password:Admin123!
-        mujo@tendergo.com              password:User123!
-        suljo@tendergo.com             password:User123!
-        amina@tendergo.com             password:User123!
-        
+
+| Kontekst         | Korisničko ime        | Lozinka   |
+|------------------|-----------------------|------------|
+| Desktop/Mobile   | admin@tendergo.com   | Admin123! |
+| Desktop/Mobile   | mujo@tendergo.com    | User123!  |
+| Desktop/Mobile   | suljo@tendergo.com   | User123!  |
+| Desktop/Mobile   | amina@tendergo.com   | User123!  |
       
 
 
