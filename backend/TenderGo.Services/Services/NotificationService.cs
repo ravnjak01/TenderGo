@@ -9,7 +9,7 @@ using TenderGo.Api.Database;
 using TenderGo.Models.DTOs;
 using TenderGo.Models.Entities;
 using TenderGo.Services.Interfaces;
-using TenderGo.Services.Services.Exceptions; // Ovdje ti se nalazi UserException
+using TenderGo.Services.Services.Exceptions; 
 
 namespace TenderGo.Services.Services
 {
@@ -19,7 +19,6 @@ namespace TenderGo.Services.Services
         private readonly IMapper _mapper;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
-        // Konstruktor bez : base(...), polja se dodjeljuju direktno
         public NotificationService(TenderGoContext context, IMapper mapper, IHttpContextAccessor httpContextAccessor) 
         {
             _context = context;
@@ -27,7 +26,6 @@ namespace TenderGo.Services.Services
             _httpContextAccessor = httpContextAccessor;
         }
 
-        // 1. Dobavi sve notifikacije za ulogovanog korisnika (poredano od najnovijih)
         public async Task<List<NotificationDTO>> GetMyNotificationsAsync(string userId)
         {
             var notifications = await _context.Notifications
@@ -38,7 +36,6 @@ namespace TenderGo.Services.Services
             return _mapper.Map<List<NotificationDTO>>(notifications);
         }
 
-        // 2. Označi pojedinačnu notifikaciju kao pročitanu (uz provjeru vlasništva zbog sigurnosti)
         public async Task<NotificationDTO> MarkAsReadAsync(int id, string userId)
         {
             var notification = await _context.Notifications
@@ -51,7 +48,6 @@ namespace TenderGo.Services.Services
             return _mapper.Map<NotificationDTO>(notification);
         }
 
-        // 3. Označi sve nepročitane notifikacije korisnika kao pročitane
         public async Task MarkAllAsReadAsync(string userId)
         {
             var unreadNotifications = await _context.Notifications
@@ -68,7 +64,6 @@ namespace TenderGo.Services.Services
             await _context.SaveChangesAsync();
         }
 
-        // 4. Obriši notifikaciju (uz provjeru vlasništva)
         public async Task DeleteAsync(int id, string userId)
         {
             var notification = await _context.Notifications

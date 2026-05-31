@@ -14,12 +14,9 @@ namespace TenderGo.Data.Seeders
             var context = serviceProvider.GetRequiredService<TenderGoContext>();
             var userManager = serviceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
-            // Provjera da li u bazi već postoje tenderi
-            // 1. KORAK: Povuci testne korisnike (kreatore)
             var mujo = await userManager.FindByEmailAsync("mujo@tendergo.com");
             var suljo = await userManager.FindByEmailAsync("suljo@tendergo.com");
             
-            // Fallback ako seederi za usere nisu prošli, uzmi bilo koga
             var defaultUser = mujo ?? suljo ?? await context.Users.FirstOrDefaultAsync();
 
             if (defaultUser == null)
@@ -27,17 +24,14 @@ namespace TenderGo.Data.Seeders
                 throw new Exception("Seeding tenders failed: No users found in the database.");
             }
 
-            // 2. KORAK: Povuci sve lokacije i sve kategorije
             var categories = await context.Categories.ToListAsync();
             var locations = await context.Locations.ToListAsync();
 
-            // Provjera za lokacije (pošto ih više ne kreiramo ovdje)
             if (!locations.Any())
             {
                 throw new Exception("Seeding tenders failed: No locations found in the database. Please seed locations first.");
             }
 
-            // Osiguravamo da imamo tačno 6 kategorija (zadržano prema originalnoj logici)
             while (categories.Count < 6)
             {
                 int nextIndex = categories.Count + 1;
@@ -53,8 +47,7 @@ namespace TenderGo.Data.Seeders
                 return;
             }
 
-            // 3. KORAK: Kreiranje 6 tendera
-            // Pomoću '% locations.Count' sigurni smo da nećemo izaći van opsega liste lokacija, bez obzira koliko ih ima u bazi
+       
             var testTenders = new List<Tender>
             {
                 new Tender

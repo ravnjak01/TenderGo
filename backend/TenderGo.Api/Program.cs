@@ -25,7 +25,6 @@ using TenderGo.Services.StateMachines.TenderStates;
 var builder = WebApplication.CreateBuilder(args);
 QuestPDF.Settings.License = LicenseType.Community;
 
-// Učitavanje .env datoteke za Docker okruženje
 Env.Load();
 
 static string BuildRabbitMqConnectionString(IConfiguration config)
@@ -158,13 +157,12 @@ var rabbitConnectionString = BuildRabbitMqConnectionString(builder.Configuration
 
 builder.Services.AddEasyNetQ(rabbitConnectionString).UseSystemTextJson();
 
-// Linija ~145-147 u Program.cs
 var allowedOriginsRaw = builder.Configuration["ALLOWED_ORIGINS"]
                         ?? Environment.GetEnvironmentVariable("ALLOWED_ORIGINS");
 
 var allowedOrigins = allowedOriginsRaw?
     .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-    ?? new[] { "http://localhost:3000" }; // fallback da ne puca
+    ?? new[] { "http://localhost:3000" }; 
 
 builder.Services.AddCors(options =>
 {
@@ -174,7 +172,6 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod());
 });
 
-// --- HTTP PIPELINE SLUŽBENO POČINJE OVDJE ---
 var app = builder.Build();
 
 app.UseStaticFiles();
@@ -200,7 +197,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-// 7. Migracije i Seeding baze podataka prilikom podizanja (Retry mehanizam)
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;

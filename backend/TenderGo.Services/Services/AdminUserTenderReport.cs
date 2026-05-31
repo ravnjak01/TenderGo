@@ -36,7 +36,6 @@ public class AdminUserTenderReportDocument : IDocument
         });
     }
 
-    // 🔹 HEADER: Informacije o sistemu i korisniku za kojeg se pravi izvještaj
     void ComposeHeader(IContainer container)
     {
         container.Row(row =>
@@ -66,12 +65,11 @@ public class AdminUserTenderReportDocument : IDocument
         });
     }
 
-    // 🔹 CONTENT: Prolazak kroz listu tendera
     void ComposeContent(IContainer container)
     {
         container.PaddingTop(20).Column(col =>
         {
-            col.Spacing(25); // Razmak između različitih tendera
+            col.Spacing(25); 
 
             if (_model.Tenders == null || _model.Tenders.Count == 0)
             {
@@ -88,7 +86,6 @@ public class AdminUserTenderReportDocument : IDocument
         });
     }
 
-    // 🔹 TENDER SECTION: Pojedinačni tender sa svojim podacima i tabelom ponuda
     void ComposeTenderSection(IContainer container, TenderWithOffers tender)
     {
         container.Border(1)
@@ -96,7 +93,6 @@ public class AdminUserTenderReportDocument : IDocument
                  .Background(Colors.White)
                  .Column(col =>
         {
-            // Zaglavlje sekcije tendera (Siva traka sa detaljima tendera)
             col.Item().Background(Colors.Grey.Lighten4).Padding(10).Row(row =>
             {
                 row.RelativeItem().Column(tenderCol =>
@@ -111,7 +107,6 @@ public class AdminUserTenderReportDocument : IDocument
                         .FontColor(Colors.Grey.Darken2);
                 });
 
-                // Status tendera sa desne strane
                 var statusColor = GetTenderStatusColor(tender.Status);
                 row.ConstantItem(100).AlignRight().AlignMiddle()
                     .Text($"STATUS: {tender.Status.ToUpper()}")
@@ -120,7 +115,6 @@ public class AdminUserTenderReportDocument : IDocument
                     .FontColor(statusColor);
             });
 
-            // Sadržaj unutar sekcije (Tabela ponuda)
             col.Item().Padding(10).Column(innerCol =>
             {
                 innerCol.Spacing(8);
@@ -140,7 +134,6 @@ public class AdminUserTenderReportDocument : IDocument
         });
     }
 
-    // 🔹 OFFERS TABLE: Tabela sa ponudama za taj specifičan tender
     void ComposeOffersTable(IContainer container, List<OfferItem> offers)
     {
         container.Table(table =>
@@ -153,7 +146,6 @@ public class AdminUserTenderReportDocument : IDocument
                 columns.RelativeColumn(2); // Iznos (KM)
             });
 
-            // Tabelarno zaglavlje (Mali plavi header unutar kartice)
             table.Header(header =>
             {
                 var headerBg = Colors.Blue.Darken1;
@@ -163,7 +155,6 @@ public class AdminUserTenderReportDocument : IDocument
                 header.Cell().Background(headerBg).Padding(5).AlignRight().Text("Cijena (KM)").Bold().FontColor(Colors.White).FontSize(9);
             });
 
-            // Redovi tabele (Podaci o ponudama)
             bool alternate = false;
             foreach (var offer in offers)
             {
@@ -172,7 +163,6 @@ public class AdminUserTenderReportDocument : IDocument
                 table.Cell().Background(rowBg).BorderBottom(1).BorderColor(Colors.Grey.Lighten3).Padding(5).Text(offer.BidderName).FontSize(9);
                 table.Cell().Background(rowBg).BorderBottom(1).BorderColor(Colors.Grey.Lighten3).Padding(5).Text($"{offer.Date:dd.MM.yyyy HH:mm}").FontSize(9);
                 
-                // Status ponude (tekstualno obojen)
                 var offerStatusColor = GetOfferStatusColor(offer.Status);
                 table.Cell().Background(rowBg).BorderBottom(1).BorderColor(Colors.Grey.Lighten3).Padding(5).Text(offer.Status).FontSize(9).Bold().FontColor(offerStatusColor);
                 
@@ -183,7 +173,6 @@ public class AdminUserTenderReportDocument : IDocument
         });
     }
 
-    // 🎨 Pomoćne metode za dinamičko bojenje statusa tendera
     private string GetTenderStatusColor(string status)
     {
         return status?.ToLower() switch
@@ -195,7 +184,6 @@ public class AdminUserTenderReportDocument : IDocument
         };
     }
 
-    // 🎨 Pomoćne metode za dinamičko bojenje statusa ponuda
     private string GetOfferStatusColor(string status)
     {
         return status?.ToLower() switch

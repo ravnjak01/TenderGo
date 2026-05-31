@@ -71,13 +71,11 @@ namespace TenderGo.Services.Services
             throw new UserException("Delivery days must be greater than 0");
         }
 
-        // 1. Fetch the existing pending bid instead of just doing an AnyAsync check
         var existingPendingBid = await _context.Bids
             .FirstOrDefaultAsync(b => b.TenderId == request.TenderId 
                                    && b.SubmittedByUserId == currentUserId 
                                    && b.Status == ApplicationStatus.Pending);
 
-        // 2. Total attempts check remains the same (keeps track of absolute history)
         var totalAttempts = await _context.Bids
             .CountAsync(b => b.TenderId == request.TenderId 
                           && b.SubmittedByUserId == currentUserId);
@@ -87,23 +85,18 @@ namespace TenderGo.Services.Services
             throw new UserException("MAX_BID_ATTEMPTS_EXCEEDED");
         }
 
-        // 3. If an active pending bid is found, update its status to Cancelled
         if (existingPendingBid != null)
         {
             existingPendingBid.Status = ApplicationStatus.Cancelled;
             
-            // We can optionally explicitly tell EF to track it as modified, though change tracking handles it.
             _context.Bids.Update(existingPendingBid);
             
             _logger.LogInformation("Cancelling previous pending bid {BidId} for tender {TenderId} by user {UserId}", existingPendingBid.Id, request.TenderId, currentUserId);
         }
 
-        // 4. Initialize the state machine 
         var state = CreateState(ApplicationStatus.Pending, tender.Status);
 
-        // 5. Execute the insert. 
-        // When state.Insert(request) calls _context.SaveChangesAsync() internally, 
-        // it will push both the UPDATE statement for the cancelled bid and the INSERT statement for the new bid in one transaction.
+  
         return await state.Insert(request);
     }
     catch (UserException ex)

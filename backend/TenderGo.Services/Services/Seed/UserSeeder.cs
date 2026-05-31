@@ -10,7 +10,6 @@ namespace TenderGo.Data.Seeders
         {
             var userManager = serviceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
-            // Lista testnih korisnika koje želimo dodati
             var testUsers = new List<ApplicationUser>
             {
                 new ApplicationUser
@@ -55,19 +54,16 @@ namespace TenderGo.Data.Seeders
                 }
             };
 
-            // Prolazimo kroz svakog korisnika sa liste i provjeravamo postoji li već
             foreach (var user in testUsers)
             {
                 var existingUser = await userManager.FindByEmailAsync(user.Email!);
 
                 if (existingUser == null)
                 {
-                    // Kreiramo korisnika sa sigurnom testnom lozinkom
                     var result = await userManager.CreateAsync(user, "User123!");
 
                     if (result.Succeeded)
                     {
-                        // Dodjeljujemo mu ulogu običnog korisnika (AppRoles.User)
                         var roleResult = await userManager.AddToRoleAsync(user, AppRoles.User);
                         
                         if (!roleResult.Succeeded)
