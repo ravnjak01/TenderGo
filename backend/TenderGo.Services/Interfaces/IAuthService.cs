@@ -28,6 +28,6 @@ namespace TenderGo.Services.Interfaces
         Task<UserDTO> GetMyProfile();
         bool IsInRole(string role);
 
-        Task<LoginResponseDto> RefreshTokenAsync();
+        Task<LoginResponseDto> RefreshTokenAsync(string? refreshToken = null);
     }
 }

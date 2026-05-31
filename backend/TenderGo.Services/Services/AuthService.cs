@@ -171,6 +171,7 @@ namespace TenderGo.Services.Services
             return new LoginResponseDto
             {
                 Token = token,
+                RefreshToken = refreshToken.Token,
                 ExpiresAt = DateTime.UtcNow.AddMinutes(
                  int.Parse(_config["Jwt:ExpiresInMinutes"])
                 )
@@ -417,9 +418,11 @@ public async Task<IdentityResult> ResetPasswordAsync(ResetPasswordRequest model)
             return _httpContextAccessor.HttpContext?.User?.IsInRole(role) ?? false;
         }
 
-        public async Task<LoginResponseDto?> RefreshTokenAsync()
+        public async Task<LoginResponseDto?> RefreshTokenAsync(string? refreshToken = null)
         {
-            var refreshTokenValue = _httpContextAccessor.HttpContext?.Request.Cookies["refreshToken"];
+            var refreshTokenValue = !string.IsNullOrWhiteSpace(refreshToken)
+                ? refreshToken
+                : _httpContextAccessor.HttpContext?.Request.Cookies["refreshToken"];
             if (string.IsNullOrEmpty(refreshTokenValue))
                 throw new UserException("Refresh token not found.");
 
@@ -465,17 +468,20 @@ public async Task<IdentityResult> ResetPasswordAsync(ResetPasswordRequest model)
             await _context.RefreshTokens.AddAsync(newRefreshToken);
             await _context.SaveChangesAsync();
 
+            var isProduction = _env.IsProduction();
+
             _httpContextAccessor.HttpContext?.Response.Cookies.Append("refreshToken", newRefreshToken.Token, new CookieOptions
             {
                 HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.Strict,
+                Secure = isProduction,
+                SameSite = isProduction ? SameSiteMode.Strict : SameSiteMode.Lax,
                 Expires = newRefreshToken.Expires
             });
 
             return new LoginResponseDto
             {
                 Token = newJwtToken,
+                RefreshToken = newRefreshToken.Token,
                 ExpiresAt = DateTime.UtcNow.AddMinutes(int.Parse(_config["Jwt:ExpiresInMinutes"]))
             };
         }

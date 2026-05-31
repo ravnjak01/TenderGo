@@ -31,12 +31,16 @@ class AuthService {
         }
 
         final token = response.data['token']?.toString();
+        final refreshToken = response.data['refreshToken']?.toString();
 
         if (token == null || token.isEmpty) {
           return ApiResponse.failure('Invalid response from server.');
         }
 
         await _storage.write(key: 'jwt_token', value: token);
+        if (refreshToken != null && refreshToken.isNotEmpty) {
+          await _storage.write(key: 'refresh_token', value: refreshToken);
+        }
         return ApiResponse.success(null);
       }
       return ApiResponse.failure(
@@ -54,6 +58,7 @@ class AuthService {
 
   Future<void> logout() async {
     await _storage.delete(key: 'jwt_token');
+    await _storage.delete(key: 'refresh_token');
   }
 
   static Future<bool> isLoggedIn() async {

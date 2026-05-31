@@ -164,18 +164,29 @@ namespace TenderGo.Services.Services
             if (!state.CanRate())
                 throw new UserException("Rating not allowed in current tender state.");
 
-            if (tender.Status != TenderStatus.Awarded)
-                throw new UserException("Tender is not completed yet.");
-
             var winningBid = tender.Bids
-                .FirstOrDefault(b => b.Id == tender.WinningBidId)
+                .FirstOrDefault(b => b.Id == tender.WinningBidId) ??
+                tender.Bids.FirstOrDefault(b => b.Status == ApplicationStatus.Accepted)
                 ?? throw new UserException("Winning bid not found.");
 
-            if (winningBid.SubmittedByUserId != currentUserId)
-                throw new UserException("Only winning bidder can rate user.");
+            if (tender.Status != TenderStatus.Awarded &&
+                winningBid.Status != ApplicationStatus.Accepted)
+                throw new UserException("Tender is not completed yet.");
 
             if (dto.RatedUserId == currentUserId)
                 throw new UserException("You cannot rate yourself.");
+
+            var isTenderOwner = tender.CreatedByUserId == currentUserId;
+            var isWinningBidder = winningBid.SubmittedByUserId == currentUserId;
+
+            if (!isTenderOwner && !isWinningBidder)
+                throw new UserException("Only tender participants can rate user.");
+
+            if (isTenderOwner && dto.RatedUserId != winningBid.SubmittedByUserId)
+                throw new UserException("Tender owner can only rate the winning bidder.");
+
+            if (isWinningBidder && dto.RatedUserId != tender.CreatedByUserId)
+                throw new UserException("Winning bidder can only rate the tender owner.");
 
             var ratedUser = await _context.Users
                 .FirstOrDefaultAsync(u => u.Id == dto.RatedUserId)

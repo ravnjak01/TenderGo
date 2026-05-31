@@ -102,7 +102,12 @@ class _RateUserScreenState extends State<RateUserScreen> {
       Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
-      SnackbarHelper.show(context, 'Failed to submit rating.', isError: true);
+      final message = e.toString().replaceFirst('Exception: ', '').trim();
+      SnackbarHelper.show(
+        context,
+        message.isEmpty ? 'Failed to submit rating.' : message,
+        isError: true,
+      );
     } finally {
       if (mounted) {
         setState(() => _submitting = false);

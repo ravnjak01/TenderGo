@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:tendergo/mobile/routes/routes.dart';
 import 'package:tendergo/shared/controllers/tender_bids_controller.dart';
 import 'package:tendergo/shared/core/actions/back_button.dart';
 import 'package:tendergo/shared/models/dto/bid_dto.dart';
@@ -150,6 +151,8 @@ class _TenderBidsScreenState extends State<TenderBidsScreen> {
                   canAward: widget.tenderDto.status == TenderStatus.closed &&
                       bid.status == ApplicationStatus.pending,
                   onAward: () => _award(bid),
+                  tenderId: widget.tenderId,
+                  tenderTitle: widget.tenderTitle ?? widget.tenderDto.title,
                 );
               },
             ),
@@ -188,11 +191,15 @@ class _BidCard extends StatelessWidget {
     required this.bid,
     required this.canAward,
     required this.onAward,
+    required this.tenderId,
+    required this.tenderTitle,
   });
 
   final BidDto bid;
   final bool canAward;
   final VoidCallback onAward;
+  final int tenderId;
+  final String tenderTitle;
 
   @override
   Widget build(BuildContext context) {
@@ -282,6 +289,27 @@ class _BidCard extends StatelessWidget {
                           icon: const Icon(Icons.picture_as_pdf_rounded),
                           label: const Text('Izvještaj'),
                         ),
+                ),
+              ],
+              if (isAccepted) ...[
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: FilledButton.tonalIcon(
+                    onPressed: () {
+                      Navigator.of(context).pushNamed(
+                        AppRoutes.rateUser,
+                        arguments: {
+                          'tenderId': tenderId,
+                          'tenderTitle': tenderTitle,
+                          'ratedUserId': bid.submittedByUserId,
+                          'ratedUserName': bid.submittedByUserName,
+                        },
+                      );
+                    },
+                    icon: const Icon(Icons.star_rate_rounded),
+                    label: const Text('Rate User'),
+                  ),
                 ),
               ],
             ],
