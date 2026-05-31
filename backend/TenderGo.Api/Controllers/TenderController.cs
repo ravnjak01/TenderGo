@@ -104,6 +104,13 @@ public class TenderController
         return Ok(result);
     }
 
+    [HttpPatch("{id}/close")]
+    public async Task<ActionResult<TenderDTO>> Close(int id)
+    {
+        var result = await _tenderService.Close(id);
+        return Ok(result);
+    }
+
     [HttpPatch("{id}/award/{bidId}")]
     public async Task<ActionResult<TenderDTO>> Award(int id, int bidId)
     {

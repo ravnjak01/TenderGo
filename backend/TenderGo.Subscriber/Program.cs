@@ -6,7 +6,6 @@ using Microsoft.Extensions.Hosting;
 using DotNetEnv;
 using TenderGo.Api.Database;
 using TenderGo.Subscriber;
-using TenderGo.Subscriber.Models;
 
 static void LoadEnvFile()
 {
@@ -33,8 +32,31 @@ static void LoadEnvFile()
     }
 }
 
+static string BuildRabbitMqConnectionString(IConfiguration config)
+{
+    // Docker: environment varijable imaju prioritet
+    var host = Environment.GetEnvironmentVariable("RabbitMQ__Host")
+                   ?? config["RabbitMQ:Host"]
+                   ?? "localhost";
+    var username = Environment.GetEnvironmentVariable("RabbitMQ__Username")
+                   ?? config["RabbitMQ:Username"]
+                   ?? "guest";
+    var password = Environment.GetEnvironmentVariable("RabbitMQ__Password")
+                   ?? config["RabbitMQ:Password"]
+                   ?? "guest";
+
+    return $"host={host};username={username};password={password};timeout=30";
+
+}
+
+
 LoadEnvFile();
 
+
+if (Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") != "true")
+{
+    Environment.SetEnvironmentVariable("DOTNET_ENVIRONMENT", "Development");
+}
 var hostBuilder = Host.CreateDefaultBuilder(args);
 
 var host = hostBuilder
@@ -42,9 +64,10 @@ var host = hostBuilder
     {
        var connectionString = context.Configuration.GetConnectionString("DefaultConnection") 
                        ?? Environment.GetEnvironmentVariable("DB_CONNECTION");
+        if (string.IsNullOrEmpty(connectionString))
+            throw new Exception("DefaultConnection je prazan!");
 
-        var rabbitConnectionString = context.Configuration.GetConnectionString("RabbitMQ")
-                                     ?? "host=localhost;username=guest;password=guest;timeout=30";
+        var rabbitConnectionString = BuildRabbitMqConnectionString(context.Configuration);
 
         if (string.IsNullOrEmpty(connectionString))
             throw new Exception("DefaultConnection is missing from configuration!");
@@ -55,10 +78,7 @@ var host = hostBuilder
                 b.MigrationsAssembly("TenderGo.Services");
             }));
 
-        services.AddDbContext<TenderGoContext>(options =>
-            options.UseSqlServer(connectionString));
-
-            services.AddEasyNetQ(rabbitConnectionString);
+        services.AddEasyNetQ(rabbitConnectionString);
 
         services.AddSingleton<TenderSubscriber>();
         services.AddHostedService<Worker>();

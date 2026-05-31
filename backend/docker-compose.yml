@@ -58,8 +58,10 @@ services:
       context: .
       dockerfile: DockerfileSubscriber
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
-      - DOTNET_ENVIRONMENT=Development
+      - DOTNET_RUNNING_IN_CONTAINER=true
       - ConnectionStrings__DefaultConnection=${DB_CONNECTION}
       - ConnectionStrings__RabbitMQ=${ConnectionStrings__RabbitMQ}
       - RabbitMQ__Host=tendergo-rabbitmq
@@ -78,25 +80,23 @@ services:
     build:
       context: .
       dockerfile: DockerfileApi
+    env_file:
+      - .env
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=${DB_CONNECTION}
-      - ConnectionStrings__RabbitMQ=${ConnectionStrings__RabbitMQ}
+      - DOTNET_RUNNING_IN_CONTAINER=true
+      - ASPNETCORE_ENVIRONMENT=Production
       - RabbitMQ__Host=tendergo-rabbitmq
       - RabbitMQ__Username=${RABBITMQ_USER}
       - RabbitMQ__Password=${RABBITMQ_PASS}
-      - EmailSettings__From=${EmailSettings__From}
-      - EmailSettings__SmtpServer=${EmailSettings__SmtpServer}
-      - EmailSettings__Port=${EmailSettings__Port}
-      - EmailSettings__Username=${EmailSettings__Username}
-      - EmailSettings__Password=${EmailSettings__Password}
+      - ConnectionStrings__DefaultConnection=${DB_CONNECTION}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
     ports:
       - "8080:8080"
     depends_on:                      
       tendergo-sql:
         condition: service_healthy
       tendergo-rabbitmq:
-        condition: service_started
+        condition: service_healthy
     networks:
       - tendergo-network  
 

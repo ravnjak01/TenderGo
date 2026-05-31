@@ -15,11 +15,6 @@ namespace TenderGo.Data.Seeders
             var userManager = serviceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
             // Provjera da li u bazi već postoje tenderi
-            if (await context.Tenders.AnyAsync())
-            {
-                return; 
-            }
-
             // 1. KORAK: Povuci testne korisnike (kreatore)
             var mujo = await userManager.FindByEmailAsync("mujo@tendergo.com");
             var suljo = await userManager.FindByEmailAsync("suljo@tendergo.com");
@@ -50,6 +45,12 @@ namespace TenderGo.Data.Seeders
                 context.Categories.Add(fallbackCategory);
                 await context.SaveChangesAsync();
                 categories.Add(fallbackCategory);
+            }
+
+            if (await context.Tenders.AnyAsync())
+            {
+                await EnsureExpiredTestTendersAsync(context, mujo ?? defaultUser, suljo ?? defaultUser, categories, locations);
+                return;
             }
 
             // 3. KORAK: Kreiranje 6 tendera
@@ -131,6 +132,144 @@ namespace TenderGo.Data.Seeders
             };
 
             context.Tenders.AddRange(testTenders);
+            await context.SaveChangesAsync();
+
+            await EnsureExpiredTestTendersAsync(context, mujo ?? defaultUser, suljo ?? defaultUser, categories, locations);
+        }
+
+        private static async Task EnsureExpiredTestTendersAsync(
+            TenderGoContext context,
+            ApplicationUser owner,
+            ApplicationUser bidder,
+            List<Category> categories,
+            List<Location> locations)
+        {
+            const string closedTenderTitle = "DEV Expired closed tender";
+            const string awardedTenderTitle = "DEV Expired awarded tender";
+
+            var existingTitles = await context.Tenders
+                .Where(t => t.Title == closedTenderTitle || t.Title == awardedTenderTitle)
+                .Select(t => t.Title)
+                .ToListAsync();
+
+            var now = DateTime.UtcNow;
+
+            if (!existingTitles.Contains(closedTenderTitle))
+            {
+                context.Tenders.Add(new Tender
+                {
+                    Title = closedTenderTitle,
+                    Description = "Development seed tender with an expired deadline and Closed status.",
+                    MaxBudget = 1500.00m,
+                    Deadline = now.AddDays(-3),
+                    Status = TenderStatus.Closed,
+                    PostedAt = now.AddDays(-10),
+                    CreatedByUserId = owner.Id,
+                    CategoryId = categories[0].Id,
+                    LocationId = locations[0 % locations.Count].Id,
+                    UpdatedAt = now,
+                    UpdatedByUserId = "SYSTEM"
+                });
+            }
+
+            if (!existingTitles.Contains(awardedTenderTitle))
+            {
+                var awardedTender = new Tender
+                {
+                    Title = awardedTenderTitle,
+                    Description = "Development seed tender with an expired deadline, Awarded status, and a winning bid.",
+                    MaxBudget = 5000.00m,
+                    Deadline = now.AddDays(-7),
+                    Status = TenderStatus.Awarded,
+                    PostedAt = now.AddDays(-14),
+                    CreatedByUserId = owner.Id,
+                    CategoryId = categories[1 % categories.Count].Id,
+                    LocationId = locations[1 % locations.Count].Id,
+                    UpdatedAt = now,
+                    UpdatedByUserId = "SYSTEM"
+                };
+
+                context.Tenders.Add(awardedTender);
+                await context.SaveChangesAsync();
+
+                var winningBid = new Bid
+                {
+                    TenderId = awardedTender.Id,
+                    SubmittedByUserId = bidder.Id,
+                    OfferedPrice = 4200.00m,
+                    SubmittedAt = now.AddDays(-8),
+                    Status = ApplicationStatus.Accepted,
+                    Proposal = "Development seed winning bid for notification flow testing.",
+                    DeliveryDays = 21,
+                    CreatedAt = now.AddDays(-8),
+                    CreatedByUserId = bidder.Id
+                };
+
+                context.Bids.Add(winningBid);
+                await context.SaveChangesAsync();
+
+                awardedTender.WinningBidId = winningBid.Id;
+            }
+
+            await context.SaveChangesAsync();
+
+            await EnsureTestTenderNotificationsAsync(context, closedTenderTitle, awardedTenderTitle);
+        }
+
+        private static async Task EnsureTestTenderNotificationsAsync(
+            TenderGoContext context,
+            string closedTenderTitle,
+            string awardedTenderTitle)
+        {
+            var now = DateTime.UtcNow;
+
+            var closedTender = await context.Tenders
+                .FirstOrDefaultAsync(t => t.Title == closedTenderTitle);
+
+            if (closedTender != null)
+            {
+                var closedNotificationTitle = $"Obavijest o  status tendera '{closedTender.Title}'";
+                var closedNotificationExists = await context.Notifications.AnyAsync(n =>
+                    n.UserId == closedTender.CreatedByUserId &&
+                    n.Title == closedNotificationTitle);
+
+                if (!closedNotificationExists)
+                {
+                    context.Notifications.Add(new Notification
+                    {
+                        UserId = closedTender.CreatedByUserId,
+                        Message = $"Vaš tender '{closedTender.Title}' je upravo istekao. Sada možete odabrati pobjednika.",
+                        CreatedAt = now,
+                        IsRead = false,
+                        Title = closedNotificationTitle
+                    });
+                }
+            }
+
+            var awardedTender = await context.Tenders
+                .Include(t => t.WinningBid)
+                .FirstOrDefaultAsync(t => t.Title == awardedTenderTitle);
+
+            if (awardedTender?.WinningBid != null)
+            {
+                var awardedNotificationTitle = $"Informacija o tenderu '{awardedTender.Title}'";
+                var awardedNotificationExists = await context.Notifications.AnyAsync(n =>
+                    n.UserId == awardedTender.WinningBid.SubmittedByUserId &&
+                    n.Title == awardedNotificationTitle);
+
+                if (!awardedNotificationExists)
+                {
+                    context.Notifications.Add(new Notification
+                    {
+                        UserId = awardedTender.WinningBid.SubmittedByUserId,
+                        Message = $"Čestitamo! Pobijedili ste na tenderu: {awardedTender.Title}.",
+                        CreatedAt = now,
+                        IsRead = false,
+                        Title = awardedNotificationTitle
+                    });
+                }
+            }
+
             await context.SaveChangesAsync();
         }
     }

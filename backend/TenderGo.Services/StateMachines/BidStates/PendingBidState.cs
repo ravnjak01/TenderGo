@@ -63,7 +63,7 @@ namespace TenderGo.Services.StateMachines.BidStates
             await _context.SaveChangesAsync();
 
 
-/*
+
             try
             {
                 await _pubSub.PublishAsync(
@@ -84,7 +84,7 @@ namespace TenderGo.Services.StateMachines.BidStates
                     entity.TenderId);
 
             }
-*/
+
             return _mapper.Map<BidDTO>(entity);
         }
 
