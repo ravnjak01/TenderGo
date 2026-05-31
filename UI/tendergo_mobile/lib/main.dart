@@ -11,13 +11,10 @@ import 'package:tendergo/shared/services/tender_service.dart';
 import 'package:tendergo/shared/services/user_service.dart';
 
 void main() async {
-  // Osigurava da su svi Flutter binding-zi inicijalizovani prije asinhronih poziva
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 1. Inicijalizacija HTTP klijenta (Dio)
   final dio = DioClient.getDio();
 
-  // 2. Inicijalizacija svih potrebnih servisa
   final authService = AuthService(dio);
   final bidService = BidService(dio);
   final imageService = ImageService(dio);
@@ -27,7 +24,7 @@ void main() async {
 
   runApp(
     DevicePreview(
-      enabled: true, // Postavi na false ako ne želiš Device Preview u produkciji
+      enabled: true, 
       builder: (context) => MobileApp(
         authService: authService,
         bidService: bidService,

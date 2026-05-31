@@ -311,7 +311,6 @@ class _TenderPostScreenState extends State<TenderPostScreen>
                       _buildBanner(),
                       const SizedBox(height: 24),
 
-                      // ISPRAVLJENO: Ako je desktop, koristi dvo-kolonski raspored (Row), inače koristi klasičnu kolonu (Column)
                       if (isDesktop)
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,

@@ -16,7 +16,6 @@ class AuthService {
 
   AuthService(this._dio);
 
-  // 1. Prijava (Login)
   Future<ApiResponse<void>> login(LoginRequest request) async {
     try {
       final response = await _dio.post(
@@ -25,10 +24,11 @@ class AuthService {
       );
 
       if (response.statusCode == 200) {
-
         if (response.data == null || response.data is! Map) {
-        return ApiResponse.failure('Server returned an empty or invalid response.');
-      }
+          return ApiResponse.failure(
+            'Server returned an empty or invalid response.',
+          );
+        }
 
         final token = response.data['token']?.toString();
 
@@ -39,25 +39,23 @@ class AuthService {
         await _storage.write(key: 'jwt_token', value: token);
         return ApiResponse.success(null);
       }
-      return ApiResponse.failure('Sign in not successful. Please check your credentials.');
+      return ApiResponse.failure(
+        'Sign in not successful. Please check your credentials.',
+      );
     } on DioException catch (e) {
       final data = e.response?.data;
       if (ErrorHandler.isAccountBanned(data)) {
         return ApiResponse.failure(ErrorHandler.accountBannedMessage());
       }
       final message = ErrorHandler.extractErrorMessage(data);
-      return ApiResponse.failure(
-        message ?? 'Wrong email or password.',
-      );
+      return ApiResponse.failure(message ?? 'Wrong email or password.');
     }
   }
-  
-  // 2. Odjava (Logout)
+
   Future<void> logout() async {
     await _storage.delete(key: 'jwt_token');
   }
 
-  // 3. Provera da li je korisnik ulogovan
   static Future<bool> isLoggedIn() async {
     String? token = await _storage.read(key: 'jwt_token');
 
@@ -74,7 +72,6 @@ class AuthService {
 
     return true;
   }
-  //4. getCurrentUser
 
   static Future<String?> getCurrentUserId() async {
     final token = await _storage.read(key: 'jwt_token');
@@ -104,7 +101,6 @@ class AuthService {
     return null;
   }
 
-  //5.Registracija (Registration)
   Future<bool> register(RegisterRequest request) async {
     try {
       final response = await _dio.post(
@@ -120,75 +116,65 @@ class AuthService {
     }
   }
 
-  // 6. Forgot Password
- Future<ApiResponse<void>> forgotPassword(String email) async {
+  Future<ApiResponse<void>> forgotPassword(String email) async {
     try {
       await _dio.post(ApiEndpoints.forgotPassword, data: {'email': email});
-      
-      // Koristimo novi konstruktor za uspjeh (data je null)
-      return ApiResponse.success(
-        null, 
-      );
+
+      return ApiResponse.success(null);
     } on DioException catch (e) {
-      // Prepustamo ApiHelper-u da izvuče poruku i tačan status kod
       return ApiHelper.handleDioError<void>(e);
     }
   }
 
-  // 7. Reset Password
   Future<ApiResponse<void>> resetPassword(ResetPasswordRequest request) async {
-  try {
-    await _dio.post(ApiEndpoints.resetPassword, data: request.toJson());
-    
-    return ApiResponse.success(
-      null, 
-      message: 'Password reset successfully.',
-    );
-  } on DioException catch (e) {
-    if (e.response != null && e.response?.data != null) {
-      final data = e.response!.data;
+    try {
+      await _dio.post(ApiEndpoints.resetPassword, data: request.toJson());
 
-      if (data is Map && data['errors'] != null && (data['errors'] as List).isNotEmpty) {
-        final firstError = data['errors'][0].toString();
-        
-        return ApiResponse.failure(
-           firstError, 
-        );
+      return ApiResponse.success(null, message: 'Password reset successfully.');
+    } on DioException catch (e) {
+      if (e.response != null && e.response?.data != null) {
+        final data = e.response!.data;
+
+        if (data is Map &&
+            data['errors'] != null &&
+            (data['errors'] as List).isNotEmpty) {
+          final firstError = data['errors'][0].toString();
+
+          return ApiResponse.failure(firstError);
+        }
       }
-    }
 
-    // Ako struktura nije onakva kakvu očekujemo, pusti stari helper da odradi fallback
-    return ApiHelper.handleDioError<void>(e);
+      return ApiHelper.handleDioError<void>(e);
+    }
   }
-}
-Future<bool> refreshToken() async {
+
+  Future<bool> refreshToken() async {
     try {
       final storedRefresh = await _storage.read(key: 'refresh_token');
       if (storedRefresh == null || storedRefresh.isEmpty) return false;
- 
-      // Bypass the interceptor to avoid an infinite refresh loop.
+
       final plainDio = Dio(_dio.options);
       final response = await plainDio.post(
         ApiEndpoints.refreshToken,
         data: {'refreshToken': storedRefresh},
       );
- 
+
       if (response.statusCode == 200) {
         final newToken = response.data['token']?.toString();
         final newRefresh = response.data['refreshToken']?.toString();
- 
+
         if (newToken == null || newToken.isEmpty) {
           await logout();
           return false;
         }
- 
+
         await _storage.write(key: 'jwt_token', value: newToken);
         if (newRefresh != null && newRefresh.isNotEmpty) {
           await _storage.write(key: 'refresh_token', value: newRefresh);
         }
         return true;
       }
- 
+
       await logout();
       return false;
     } on DioException catch (_) {
@@ -197,7 +183,7 @@ Future<bool> refreshToken() async {
     }
   }
 
- Future<ApiResponse<UserDto?>> getCurrentUser() async {
+  Future<ApiResponse<UserDto?>> getCurrentUser() async {
     try {
       final response = await _dio.get(
         ApiEndpoints.me,
@@ -206,32 +192,31 @@ Future<bool> refreshToken() async {
       final data = response.data;
 
       if (data == null) {
-      return ApiResponse.failure('Empty response from server.', statusCode: 500);
-    }
+        return ApiResponse.failure(
+          'Empty response from server.',
+          statusCode: 500,
+        );
+      }
 
-    // ✅ Guard wrong type
-    if (data is! Map<String, dynamic>) {
-      return ApiResponse.failure('Unexpected response format.', statusCode: 500);
-    }
-    
+      if (data is! Map<String, dynamic>) {
+        return ApiResponse.failure(
+          'Unexpected response format.',
+          statusCode: 500,
+        );
+      }
+
       final payload = _extractUserPayload(data);
       final user = payload != null ? UserDto.fromJson(payload) : null;
 
       if (user != null) {
-        // Koristimo novi konstruktor za uspjeh (statusCode se automatski postavlja na 200)
         return ApiResponse.success(
-          user, 
+          user,
           message: 'User data retrieved successfully.',
         );
       } else {
-        // Ako je payload bio nevalidan, vraćamo failure sa status kodom 400
-        return ApiResponse.failure(
-          'Invalid user payload.', 
-          statusCode: 400,
-        );
+        return ApiResponse.failure('Invalid user payload.', statusCode: 400);
       }
     } on DioException catch (e) {
-      // Umjesto ručnog pisanja logike za grešku, iskoristi ApiHelper koji smo upravo sredili!
       return ApiHelper.handleDioError<UserDto?>(e);
     }
   }

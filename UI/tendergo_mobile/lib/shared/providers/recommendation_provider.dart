@@ -10,43 +10,40 @@ class RecommendationProvider extends BaseProvider {
   final RecommendationService _service;
 
   RecommendationProvider({RecommendationService? service, Dio? dio})
-      : _service = service ?? RecommendationService(dio ?? DioClient.getDio());
+    : _service = service ?? RecommendationService(dio ?? DioClient.getDio());
 
   RecommendationState _state = RecommendationState.idle;
   List<TenderRecommendation> _recommendations = [];
 
   RecommendationState get state => _state;
   List<TenderRecommendation> get recommendations => _recommendations;
-  String? get errorMessage => error; // alias if UI uses errorMessage
+  String? get errorMessage => error;
 
   @override
   bool get isLoading => _state == RecommendationState.loading;
 
   bool get hasData => _recommendations.isNotEmpty;
 
-  Future<void> loadSimilar({required int tenderId, required String authToken}) async {
+  Future<void> loadSimilar({
+    required int tenderId,
+    required String authToken,
+  }) async {
     _state = RecommendationState.loading;
-    await handleAsync(
-      () async {
-        _recommendations = await _service.getSimilarTenders(
-          tenderId: tenderId,
-          authToken: authToken,
-        );
-        _state = RecommendationState.loaded;
-      },
-      onError: (_) => _state = RecommendationState.error,
-    );
+    await handleAsync(() async {
+      _recommendations = await _service.getSimilarTenders(
+        tenderId: tenderId,
+        authToken: authToken,
+      );
+      _state = RecommendationState.loaded;
+    }, onError: (_) => _state = RecommendationState.error);
   }
 
   Future<void> loadForUser({required String authToken}) async {
     _state = RecommendationState.loading;
-    await handleAsync(
-      () async {
-        _recommendations = await _service.getForCurrentUser(authToken: authToken);
-        _state = RecommendationState.loaded;
-      },
-      onError: (_) => _state = RecommendationState.error,
-    );
+    await handleAsync(() async {
+      _recommendations = await _service.getForCurrentUser(authToken: authToken);
+      _state = RecommendationState.loaded;
+    }, onError: (_) => _state = RecommendationState.error);
   }
 
   void clear() {

@@ -7,8 +7,6 @@ class RecommendationService {
 
   RecommendationService(this._dio);
 
-  /// Returns tenders similar to [tenderId].
-  /// Call this on a "Tender Detail" page to show related tenders.
   Future<List<TenderRecommendation>> getSimilarTenders({
     required int tenderId,
     required String authToken,
@@ -20,21 +18,18 @@ class RecommendationService {
         queryParameters: {'topN': topN},
         options: Options(headers: {'Authorization': 'Bearer $authToken'}),
       );
-      
+
       return _parseList(response.data);
     } on DioException catch (e) {
       print('Dio error response body: ${e.response?.data}');
-      // RETHROW šalje grešku tvom Provideru da bi on mogao aktivirati "error" stanje na UI
-      rethrow; 
+
+      rethrow;
     } catch (e) {
       print('General error in service: $e');
       rethrow;
     }
   }
 
-  /// Returns personalized recommendations for the logged-in user
-  /// based on their bid history.
-  /// Call this on the Home / Dashboard screen.
   Future<List<TenderRecommendation>> getForCurrentUser({
     required String authToken,
     int topN = 10,
@@ -58,7 +53,6 @@ class RecommendationService {
     );
   }
 
-  /// Log when user views a tender
   Future<void> logViewActivity({
     required int tenderId,
     required String authToken,
@@ -75,10 +69,6 @@ class RecommendationService {
       options: Options(headers: {'Authorization': 'Bearer $authToken'}),
     );
   }
-
-  // ----------------------------------------------------------------
-  // Helpers
-  // ----------------------------------------------------------------
 
   List<TenderRecommendation> _parseList(dynamic body) {
     final List<dynamic> data = body is List

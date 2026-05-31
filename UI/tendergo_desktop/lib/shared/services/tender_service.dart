@@ -16,7 +16,6 @@ class TenderService {
 
   ImageService get imageService => _imageService;
 
- 
   Future<TenderInsertRequest> _withImageBytes(
     TenderInsertRequest data,
     List<PlatformFile>? imageFiles,
@@ -28,10 +27,9 @@ class TenderService {
     final byteImages = <Uint8List>[];
     for (final file in imageFiles) {
       if (file.bytes != null && file.bytes!.isNotEmpty) {
-      // 2. file.bytes je već Uint8List, nema potrebe za .toList()
-      byteImages.add(file.bytes!); 
-      continue;
-    }
+        byteImages.add(file.bytes!);
+        continue;
+      }
 
       if (file.path != null && file.path!.isNotEmpty) {
         final diskBytes = await File(file.path!).readAsBytes();
@@ -56,7 +54,6 @@ class TenderService {
     );
   }
 
-  // ===== GET ALL =====
   Future<List<TenderDto>> getAll({int page = 1, int pageSize = 10}) async {
     try {
       final response = await _dio.get(
@@ -74,16 +71,9 @@ class TenderService {
     }
   }
 
-// ===== GET ALL LOCATIONS =====
- 
-
-
-  // ===== GET BY ID =====
   Future<TenderDto> getById(int id) async {
     try {
-      final response = await _dio.get(
-        TenderApiEndpoints.getById(id),
-      );
+      final response = await _dio.get(TenderApiEndpoints.getById(id));
 
       return TenderDto.fromJson(response.data);
     } on DioException catch (e) {
@@ -91,12 +81,9 @@ class TenderService {
     }
   }
 
-  // ===== ACTIVE =====
   Future<List<TenderDto>> getActive() async {
     try {
-      final response = await _dio.get(
-        TenderApiEndpoints.getActive,
-      );
+      final response = await _dio.get(TenderApiEndpoints.getActive);
 
       final data = response.data;
       if (data is! List) {
@@ -118,12 +105,9 @@ class TenderService {
     }
   }
 
-  // ===== CLOSED =====
   Future<List<TenderDto>> getClosed() async {
     try {
-      final response = await _dio.get(
-        TenderApiEndpoints.getClosed,
-      );
+      final response = await _dio.get(TenderApiEndpoints.getClosed);
 
       return List<TenderDto>.from(
         response.data.map((x) => TenderDto.fromJson(x)),
@@ -133,13 +117,9 @@ class TenderService {
     }
   }
 
- 
-
-   Future<List<TenderDto>> getCancelled() async {
+  Future<List<TenderDto>> getCancelled() async {
     try {
-      final response = await _dio.get(
-        TenderApiEndpoints.getCancelled,
-      );
+      final response = await _dio.get(TenderApiEndpoints.getCancelled);
 
       return List<TenderDto>.from(
         response.data.map((x) => TenderDto.fromJson(x)),
@@ -149,7 +129,6 @@ class TenderService {
     }
   }
 
-  // ===== CREATE =====
   Future<TenderDto> create(
     TenderInsertRequest data, {
     List<PlatformFile>? imageFiles,
@@ -162,11 +141,12 @@ class TenderService {
         data: request.toJson(),
       );
 
-      //zadnje popravio payload za response data ,zasto je potrebno ovo sve ispitat
       final payload = response.data is Map<String, dynamic>
-          ? (response.data['data'] is Map<String, dynamic> 
-              ? response.data['data'] as Map<String, dynamic> 
-              : (response.data['result'] is Map<String, dynamic> ? response.data['result'] as Map<String, dynamic> : response.data))
+          ? (response.data['data'] is Map<String, dynamic>
+                ? response.data['data'] as Map<String, dynamic>
+                : (response.data['result'] is Map<String, dynamic>
+                      ? response.data['result'] as Map<String, dynamic>
+                      : response.data))
           : const <String, dynamic>{};
 
       return TenderDto.fromJson(payload);
@@ -176,10 +156,7 @@ class TenderService {
       throw Exception('An unexpected error occurred: $e');
     }
   }
- 
 
-
-  // ===== AWARD =====
   Future<TenderDto> award(TenderDto tender, int bidId) async {
     try {
       final response = await _dio.patch(
@@ -192,14 +169,9 @@ class TenderService {
     }
   }
 
-
-//ZADNJE POPRAVLJENO KOD ZA CANCEL U TENDER SERVICU I STATE MACHINE
-  // ===== CANCEL =====
   Future<TenderDto> cancel(int id) async {
     try {
-      final response = await _dio.patch(
-        TenderApiEndpoints.cancel(id),
-      );
+      final response = await _dio.patch(TenderApiEndpoints.cancel(id));
 
       return TenderDto.fromJson(response.data);
     } on DioException catch (e) {
@@ -207,12 +179,9 @@ class TenderService {
     }
   }
 
-  // ===== BY CATEGORY =====
   Future<List<dynamic>> getByCategory(int id) async {
     try {
-      final response = await _dio.get(
-        TenderApiEndpoints.getByCategory(id),
-      );
+      final response = await _dio.get(TenderApiEndpoints.getByCategory(id));
 
       return List<dynamic>.from(response.data);
     } on DioException catch (e) {
@@ -220,19 +189,17 @@ class TenderService {
     }
   }
 
-  // ===== BY USER =====
   Future<List<dynamic>> getByUser(String userId) async {
     try {
-      final response = await _dio.get(
-        TenderApiEndpoints.getByUser(userId),
-      );
+      final response = await _dio.get(TenderApiEndpoints.getByUser(userId));
 
       final payload = response.data;
       if (payload is List) {
         return List<dynamic>.from(payload);
       }
       if (payload is Map<String, dynamic>) {
-        final listLike = payload['result'] ?? payload['items'] ?? payload['data'];
+        final listLike =
+            payload['result'] ?? payload['items'] ?? payload['data'];
         if (listLike is List) {
           return List<dynamic>.from(listLike);
         }
@@ -245,7 +212,6 @@ class TenderService {
       throw Exception(e.response?.data ?? 'Error fetching user tenders');
     }
   }
-
 
   Future<List<TenderDto>> search(TenderSearchRequest request) async {
     try {
@@ -263,12 +229,9 @@ class TenderService {
     }
   }
 
-  // ===== ALLOWED ACTIONS =====
   Future<List<dynamic>> allowedActions(int id) async {
     try {
-      final response = await _dio.get(
-        TenderApiEndpoints.allowedActions(id),
-      );
+      final response = await _dio.get(TenderApiEndpoints.allowedActions(id));
 
       return List<dynamic>.from(response.data);
     } on DioException catch (e) {
@@ -291,12 +254,9 @@ class TenderService {
     }
   }
 
-  // ===== GET BOOKMARKED =====
   Future<List<TenderDto>> getBookmarked() async {
     try {
-      final response = await _dio.get(
-        TenderApiEndpoints.getBookmarks,
-      );
+      final response = await _dio.get(TenderApiEndpoints.getBookmarks);
 
       final payload = response.data;
       List<dynamic> rawList = [];
@@ -304,7 +264,8 @@ class TenderService {
       if (payload is List) {
         rawList = payload;
       } else if (payload is Map<String, dynamic>) {
-        rawList = payload['result'] ?? payload['data'] ?? payload['items'] ?? [];
+        rawList =
+            payload['result'] ?? payload['data'] ?? payload['items'] ?? [];
       }
 
       return rawList
@@ -315,5 +276,4 @@ class TenderService {
       throw Exception(e.response?.data ?? 'Error fetching bookmarked tenders');
     }
   }
-  
 }

@@ -173,7 +173,6 @@ class _AdminTenderCard extends StatelessWidget {
     final status = model.status;
     final isOpen = status == TenderStatus.open;
 
-    // ISPRAVLJENO: Uklonjen LayoutBuilder i nepotrebne mobilne isCompact provjere
     return AppCard(
       title: model.category,
       icon: Icons.assignment_outlined,

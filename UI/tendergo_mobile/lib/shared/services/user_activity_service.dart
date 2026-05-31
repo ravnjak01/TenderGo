@@ -11,10 +11,6 @@ class UserActivityService {
 
   UserActivityService(this._dio);
 
-  /// Bilježi akciju korisnika (pretragu ili pregled tendera) u bazu podataka.
-  /// 
-  /// kasnije ponovo buildati kontejenr jer je bekennd u velikoj mjeri promijenjen tj recommender
-  /// popobljsati mozda recommender da se ne sprema svaka aktivnost u bazu,npr dodati cooldown
   Future<ApiResponse<void>> logActivity(ActivityLogRequest request) async {
     try {
       final response = await _dio.post(
@@ -35,14 +31,10 @@ class UserActivityService {
         statusCode: response.statusCode ?? 500,
       );
     } on DioException catch (e) {
-      // Prepustamo ApiHelper-u da izvuče poruku i tačan status kod baš kao u kôdu iznad
       return ApiHelper.handleDioError<void>(e);
     }
   }
 
-  /// Pomoćna metoda za kreiranje zaglavlja sa JWT tokenom.
-  /// Ako tvoj Dio klijent ima presretač (Interceptor) koji sam lijepi token,
-  /// ove opcije možeš slobodno ukloniti iz poziva iznad.
   Future<Options> _options() async {
     final token = await _storage.read(key: 'jwt_token');
     return Options(

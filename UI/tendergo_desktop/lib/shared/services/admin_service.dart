@@ -36,7 +36,6 @@ class AdminService {
     }
   }
 
-  // 1. Get all users
   Future<ApiResponse<List<UserDto>>> getAllUsers() async {
     try {
       final response = await _dio.get(
@@ -47,32 +46,26 @@ class AdminService {
       final List<dynamic> data = response.data;
       final users = data.map((json) => UserDto.fromJson(json)).toList();
 
-      return ApiResponse.success(
-      users,
-        message: 'Users fetched successfully.',
-      );
+      return ApiResponse.success(users, message: 'Users fetched successfully.');
     } on DioException catch (e) {
       return ApiHelper.handleDioError<List<UserDto>>(e);
     }
   }
 
-  // 2. Ban user
- Future<ApiResponse<void>> banUser(String userId, BanRequest reason) async {
+  Future<ApiResponse<void>> banUser(String userId, BanRequest reason) async {
     try {
       await _dio.post(
         AdminEndpoints.banUser(userId),
-        data: reason.toJson(), // backend expects JSON with 'reason' field
+        data: reason.toJson(),
         options: await _options(),
       );
 
-      // KORISTIMO NOVI KONSTRUKTOR ZA USPJEH:
       return ApiResponse.success(null, message: 'User banned successfully.');
     } on DioException catch (e) {
       return ApiHelper.handleDioError(e);
     }
   }
 
-  // 3. Unban user
   Future<ApiResponse<void>> unbanUser(String userId) async {
     try {
       await _dio.post(
@@ -80,14 +73,11 @@ class AdminService {
         options: await _options(),
       );
 
-      // KORISTIMO NOVI KONSTRUKTOR ZA USPJEH:
       return ApiResponse.success(null, message: 'User unbanned successfully.');
     } on DioException catch (e) {
       return ApiHelper.handleDioError(e);
     }
   }
-
-
 
   Future<Options> _options() async {
     final token = await _storage.read(key: 'jwt_token');

@@ -11,14 +11,13 @@ class ImageService {
 
   Future<String?> _getToken() async => _storage.read(key: 'jwt_token');
 
-  /// Uploads [file] and optionally associates it with [tenderId].
-  /// Returns the stored image URL/path string from the backend.
-  /// Throws [Exception] on failure.
   Future<String> uploadFile(PlatformFile file, {int? tenderId}) async {
     final MultipartFile multipartFile;
     if (file.path != null && file.path!.isNotEmpty) {
-      multipartFile =
-          await MultipartFile.fromFile(file.path!, filename: file.name);
+      multipartFile = await MultipartFile.fromFile(
+        file.path!,
+        filename: file.name,
+      );
     } else if (file.bytes != null && file.bytes!.isNotEmpty) {
       multipartFile = MultipartFile.fromBytes(file.bytes!, filename: file.name);
     } else {
@@ -57,17 +56,16 @@ class ImageService {
       }
       throw Exception('Unexpected response from image upload.');
     } on DioException catch (e) {
-      throw Exception(e.response?.data ?? 'Error uploading image "${file.name}"');
+      throw Exception(
+        e.response?.data ?? 'Error uploading image "${file.name}"',
+      );
     }
   }
 
-  /// Backward-compatible alias for older call sites that associate upload
-  /// directly with a tender.
   Future<String> uploadForTender(int tenderId, PlatformFile file) {
     return uploadFile(file, tenderId: tenderId);
   }
 
-  /// Uploads files without tender association and returns URL/path strings.
   Future<List<String>> uploadAll(List<PlatformFile> files) async {
     final results = <String>[];
     final errors = <String>[];
@@ -88,9 +86,6 @@ class ImageService {
     return results;
   }
 
-  /// Uploads all [files] for [tenderId], returning paths for successfully
-  /// uploaded files. Errors per file are collected and rethrown as a single
-  /// exception only if every upload fails; partial success is allowed.
   Future<List<String>> uploadAllForTender(
     int tenderId,
     List<PlatformFile> files,

@@ -1,5 +1,3 @@
-// lib/shared/providers/notification_provider.dart  (refactored)
-
 import 'dart:async';
 import 'package:tendergo/shared/models/dto/notification_dto.dart';
 import 'package:tendergo/shared/providers/base_provider.dart';
@@ -22,8 +20,6 @@ class NotificationProvider extends BaseProvider {
   NotificationLoadState get state => _state;
   List<NotificationDto> get notifications => _notifications;
 
-  // isLoading and error already come from BaseProvider.
-  // Override isLoading to also check the enum state for compatibility.
   @override
   bool get isLoading => _state == NotificationLoadState.loading;
 
@@ -65,7 +61,6 @@ class NotificationProvider extends BaseProvider {
     final idx = _notifications.indexWhere((n) => n.id == id);
     if (idx == -1 || _notifications[idx].isRead) return;
 
-    // Optimistic update
     _notifications = List.of(_notifications)
       ..[idx] = _notifications[idx].copyWith(isRead: true);
     safeNotify();
@@ -73,7 +68,6 @@ class NotificationProvider extends BaseProvider {
     try {
       await _service.markAsRead(id);
     } catch (_) {
-      // Roll back
       _notifications = List.of(_notifications)
         ..[idx] = _notifications[idx].copyWith(isRead: false);
       safeNotify();
@@ -82,7 +76,9 @@ class NotificationProvider extends BaseProvider {
 
   Future<void> markAllAsRead() async {
     final previous = List<NotificationDto>.from(_notifications);
-    _notifications = _notifications.map((n) => n.copyWith(isRead: true)).toList();
+    _notifications = _notifications
+        .map((n) => n.copyWith(isRead: true))
+        .toList();
     safeNotify();
 
     try {
@@ -109,6 +105,6 @@ class NotificationProvider extends BaseProvider {
   @override
   void dispose() {
     _pollingTimer?.cancel();
-    super.dispose(); // sets _disposed = true via BaseProvider
+    super.dispose();
   }
 }

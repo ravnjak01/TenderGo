@@ -19,7 +19,6 @@ class NotificationService {
     );
   }
 
-  /// Returns all notifications for the logged-in user.
   Future<List<NotificationDto>> getMyNotifications() async {
     final response = await _dio.get(
       NotificationApiEndpoints.getMy,
@@ -34,7 +33,6 @@ class NotificationService {
         .toList();
   }
 
-  /// Marks a single notification as read. Returns updated dto on 200.
   Future<void> markAsRead(int id) async {
     await _dio.patch(
       NotificationApiEndpoints.markAsRead(id),
@@ -42,7 +40,6 @@ class NotificationService {
     );
   }
 
-  /// Marks all notifications as read.
   Future<void> markAllAsRead() async {
     await _dio.patch(
       NotificationApiEndpoints.markAllAsRead,
@@ -50,7 +47,6 @@ class NotificationService {
     );
   }
 
-  /// Deletes a notification.
   Future<void> delete(int id) async {
     await _dio.delete(
       NotificationApiEndpoints.delete(id),
@@ -58,7 +54,6 @@ class NotificationService {
     );
   }
 
-  /// Sends a test notification for an expired tender.
   Future<void> testExpiredTender(int tenderId) async {
     await _dio.post(
       NotificationApiEndpoints.testExpiredTender(tenderId),
@@ -66,7 +61,6 @@ class NotificationService {
     );
   }
 
-  /// Sends a test notification for an assigned tender/bid.
   Future<void> testAssignedTender(int bidId) async {
     await _dio.post(
       NotificationApiEndpoints.testAssignedTender(bidId),

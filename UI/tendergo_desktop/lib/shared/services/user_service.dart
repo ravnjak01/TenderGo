@@ -7,52 +7,53 @@ import 'package:tendergo/shared/models/requests/rate_user_request.dart';
 import 'package:tendergo/shared/models/requests/update_profile_request.dart';
 
 class UserService {
-	final Dio _dio;
-	static const _storage = FlutterSecureStorage();
+  final Dio _dio;
+  static const _storage = FlutterSecureStorage();
 
-	UserService(this._dio);
+  UserService(this._dio);
 
-	Future<String?> _getToken() async {
-		return await _storage.read(key: 'jwt_token');
-	}
+  Future<String?> _getToken() async {
+    return await _storage.read(key: 'jwt_token');
+  }
 
-	Future<Options> _options() async {
-		final token = await _getToken();
-		final headers = <String, String>{'Content-Type': 'application/json'};
+  Future<Options> _options() async {
+    final token = await _getToken();
+    final headers = <String, String>{'Content-Type': 'application/json'};
 
-		if (token != null && token.isNotEmpty) {
-			headers['Authorization'] = 'Bearer $token';
-		}
+    if (token != null && token.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $token';
+    }
 
-		return Options(headers: headers);
-	}
+    return Options(headers: headers);
+  }
 
-	Future<UserPublicDto> getUser(String userId) async {
-		try {
-			final response = await _dio.get(
-				UserEndpoints.getById(userId),
-				options: await _options(),
-			);
+  Future<UserPublicDto> getUser(String userId) async {
+    try {
+      final response = await _dio.get(
+        UserEndpoints.getById(userId),
+        options: await _options(),
+      );
 
-			final data = response.data;
-			final payload = data is Map<String, dynamic>
-					? (data['result'] is Map<String, dynamic>
-								? data['result'] as Map<String, dynamic>
-								: data['data'] is Map<String, dynamic>
-								? data['data'] as Map<String, dynamic>
-								: data)
-					: null;
+      final data = response.data;
+      final payload = data is Map<String, dynamic>
+          ? (data['result'] is Map<String, dynamic>
+                ? data['result'] as Map<String, dynamic>
+                : data['data'] is Map<String, dynamic>
+                ? data['data'] as Map<String, dynamic>
+                : data)
+          : null;
 
-			if (payload == null) {
-				throw Exception('Invalid user payload.');
-			}
+      if (payload == null) {
+        throw Exception('Invalid user payload.');
+      }
 
-			return UserPublicDto.fromJson(payload);
-		} on DioException catch (e) {
-			throw Exception(e.response?.data ?? 'Error fetching user');
-		}
-	}
-   Future<void> rateUser(RateUserRequest request) async {
+      return UserPublicDto.fromJson(payload);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data ?? 'Error fetching user');
+    }
+  }
+
+  Future<void> rateUser(RateUserRequest request) async {
     try {
       await _dio.post(
         UserEndpoints.rate,
@@ -65,34 +66,34 @@ class UserService {
   }
 
   Future<void> updateProfile(UpdateProfileRequest request) async {
-  try {
-    await _dio.put(
-      UserEndpoints.updateProfile,
-      data: request.toJson(),
-      options: await _options(),
-    );
-  } on DioException catch (e) {
-    throw Exception(e.response?.data ?? 'Error updating profile');
+    try {
+      await _dio.put(
+        UserEndpoints.updateProfile,
+        data: request.toJson(),
+        options: await _options(),
+      );
+    } on DioException catch (e) {
+      throw Exception(e.response?.data ?? 'Error updating profile');
+    }
   }
-}
 
+  Future<List<ReviewDto>> getUserReviews(String userId) async {
+    try {
+      final response = await _dio.get(
+        UserEndpoints.getReviews(userId),
+        options: await _options(),
+      );
 
-Future<List<ReviewDto>> getUserReviews(String userId) async {
-  try {
-    final response = await _dio.get(
-      UserEndpoints.getReviews(userId), 
-      options: await _options(),
-    );
+      final List<dynamic> data = response.data;
 
-    final List<dynamic> data = response.data;
-
-    return data
-        .map((reviewJson) => ReviewDto.fromJson(reviewJson as Map<String, dynamic>))
-        .toList();
-        
-  } on DioException catch (e) {
-    throw Exception(e.response?.data ?? 'Greška pri učitavanju recenzija');
+      return data
+          .map(
+            (reviewJson) =>
+                ReviewDto.fromJson(reviewJson as Map<String, dynamic>),
+          )
+          .toList();
+    } on DioException catch (e) {
+      throw Exception(e.response?.data ?? 'Greška pri učitavanju recenzija');
+    }
   }
-}
-
 }
