@@ -46,10 +46,13 @@ namespace TenderGo.Services.StateMachines.TenderStates
 
             tender.Status = TenderStatus.Awarded;
             tender.WinningBidId = bidId;
-
             winningBid.Status = ApplicationStatus.Accepted;
 
-            foreach (var otherBid in tender.Bids.Where(b => b.Id != bidId))
+            var otherPendingBids = tender.Bids
+            .Where(b => b.Id != bidId && b.Status == ApplicationStatus.Pending)
+            .ToList();
+
+            foreach (var otherBid in otherPendingBids)
             {
                 otherBid.Status = ApplicationStatus.Rejected;
             }
@@ -64,8 +67,7 @@ namespace TenderGo.Services.StateMachines.TenderStates
                         TenderId = tender.Id,
                         TenderTitle = tender.Title,
                         WinnerUserId = winningBid.SubmittedByUserId,
-                        OtherUserIds = tender.Bids
-                            .Where(b => b.Id != bidId)
+                        OtherUserIds = otherPendingBids
                             .Select(b => b.SubmittedByUserId)
                             .ToList()
                     },

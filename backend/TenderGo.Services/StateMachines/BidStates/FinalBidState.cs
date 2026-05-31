@@ -17,22 +17,10 @@ namespace TenderGo.Services.StateMachines.BidStates
         : base(serviceProvider, context, mapper) { }
 
 
-        //dosao kod ovog stanja,da li je uopste i potrebno ovaj state
-        public async Task<List<string>>AllowedActions(Bid entity)
+        public override async Task<List<string>> AllowedActions(Bid entity)
         {
-
+           
             var list = await base.AllowedActions(entity);
-
-            var authService = _serviceProvider.GetRequiredService<IAuthService>();
-
-            var currentUserId = authService.GetCurrentUserId();
-
-            bool isTenderOwner = entity.Tender.CreatedByUserId == currentUserId;
-
-            if (isTenderOwner)
-            {
-                list.Add("Accept");
-            }
             return list;
         }
     }

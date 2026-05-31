@@ -41,5 +41,12 @@ namespace TenderGo.Api.Controllers
         {
             return base.Delete(id);
         }
+
+        [HttpPatch("{id}/activate")]
+        public async Task<ActionResult<CategoryDTO>> Activate(int id)
+        {
+            var category = await _categoryService.Activate(id);
+            return Ok(new { message = "Category activated successfully.", data = category });
+        }
     }
 }

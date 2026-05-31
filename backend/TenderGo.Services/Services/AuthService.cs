@@ -296,32 +296,121 @@ namespace TenderGo.Services.Services
             return response;
         }
 
-        public async Task ForgotPasswordAsync(ForgotPasswordRequest model, string baseUrl,CancellationToken cancellationToken)
-        {
-            var user = await _userManager.FindByEmailAsync(model.Email);
-            if (user == null)
-            {
-                _logger.LogWarning($"Trying to reset for nonexisting email : {model.Email}");
-                return;
-            }
+ 
+public async Task ForgotPasswordAsync(ForgotPasswordRequest model, CancellationToken cancellationToken)
+{
+    var user = await _userManager.FindByEmailAsync(model.Email);
 
-            var frontendUrl = Environment.GetEnvironmentVariable("AppSettings__FrontendUrl") ?? _configuration["AppSettings:FrontendUrl"];
+    if (user == null)
+    {
+        _logger.LogWarning($"Reset attempt for non-existing email: {model.Email}");
+        return;
+    }
 
-            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-                var resetLink = $"{frontendUrl}/#/reset-password?token={Uri.EscapeDataString(token)}&email={Uri.EscapeDataString(user.Email)}";
+    var activeOldCodes = await _context.PasswordResetCodes
+        .Where(x => x.UserId == user.Id && !x.IsUsed && !x.IsInvalidated)
+        .ToListAsync(cancellationToken);
 
-           await _emailService.SendResetPasswordEmail(user.Email, resetLink, cancellationToken);
-        }
+    foreach (var oldCode in activeOldCodes)
+    {
+        oldCode.IsInvalidated = true;
+    }
 
-        public async Task<IdentityResult> ResetPasswordAsync(ResetPasswordRequest model)
-        {
-            var user = await _userManager.FindByEmailAsync(model.Email);
-            if (user == null)
-                return IdentityResult.Failed(new IdentityError { Description = "User not found." });
-            var result = await _userManager.ResetPasswordAsync(user, model.Token, model.NewPassword);
-            return result;
+    var plainCode = RandomNumberGenerator.GetInt32(100000, 999999).ToString();
 
-        }
+    var saltBytes = RandomNumberGenerator.GetBytes(16);
+
+    var hashedBytes = HashCodePbkdf2(plainCode, saltBytes);
+
+    var resetCode = new PasswordResetCode
+    {
+        UserId = user.Id,
+        Code = Convert.ToBase64String(hashedBytes), // U bazu ide heš kao Base64 string
+        Salt = Convert.ToBase64String(saltBytes),// U bazu ide hešovana verzija
+        CreatedAt = DateTime.UtcNow,
+        ExpiryTime = DateTime.UtcNow.AddMinutes(10),
+        IsUsed = false,
+        IsInvalidated = false,
+        Attempts = 0 
+    };
+
+    await _context.PasswordResetCodes.AddAsync(resetCode, cancellationToken);
+    await _context.SaveChangesAsync(cancellationToken);
+
+    var message = $"Your password reset code is: {plainCode}. It is valid for 10 minutes.";
+    await _emailService.SendResetPasswordEmail(user.Email, message, cancellationToken);
+}
+
+// Pomoćna metoda za SHA-256 hešovanje
+private byte[] HashCodePbkdf2(string input, byte[] salt)
+{
+    const int iterations = 100_000; 
+    const int hashLength = 32;      
+
+    return Rfc2898DeriveBytes.Pbkdf2(
+        input, 
+        salt, 
+        iterations, 
+        HashAlgorithmName.SHA256, 
+        hashLength
+    );
+}
+
+public async Task<IdentityResult> ResetPasswordAsync(ResetPasswordRequest model)
+{
+    var user = await _userManager.FindByEmailAsync(model.Email);
+
+    if (user == null)
+        return IdentityResult.Failed(new IdentityError { Description = "User not found." });
+
+    var resetRecord = await _context.PasswordResetCodes
+        .Where(x => x.UserId == user.Id && !x.IsUsed && !x.IsInvalidated)
+        .OrderByDescending(x => x.CreatedAt) 
+        .FirstOrDefaultAsync();
+
+    if (resetRecord == null)
+        return IdentityResult.Failed(new IdentityError { Description = "Invalid code." });
+
+    if (resetRecord.Attempts >= 3)
+    {
+        resetRecord.IsInvalidated = true; 
+        await _context.SaveChangesAsync();
+        return IdentityResult.Failed(new IdentityError { Description = "Code locked due to too many failed attempts." });
+    }
+
+    // 2. Provera roka trajanja
+    if (resetRecord.ExpiryTime < DateTime.UtcNow)
+        return IdentityResult.Failed(new IdentityError { Description = "Code expired." });
+
+    // 3. REKONSTRUKCIJA HEŠA I "isCorrect" PROVERA
+    var saltBytes = Convert.FromBase64String(resetRecord.Salt);
+    var verificationHash = HashCodePbkdf2(model.Code, saltBytes); 
+
+    var isCorrect = CryptographicOperations.FixedTimeEquals(
+        verificationHash, 
+        Convert.FromBase64String(resetRecord.Code)
+    );
+
+    if (!isCorrect)
+    {
+        resetRecord.Attempts++;
+        await _context.SaveChangesAsync();
+        return IdentityResult.Failed(new IdentityError { Description = "Invalid code." });
+    }
+
+    // 4. Ako je kod ispravan, nastavlja se tvoja standardna ASP.NET Identity logika
+    var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+    var result = await _userManager.ResetPasswordAsync(user, token, model.NewPassword);
+
+    if (result.Succeeded)
+    {
+        resetRecord.UsedAt = DateTime.UtcNow;
+        resetRecord.IsUsed = true;
+        await _context.SaveChangesAsync();
+    }
+
+    return result;
+}
 
         public bool IsInRole(string role)
         {

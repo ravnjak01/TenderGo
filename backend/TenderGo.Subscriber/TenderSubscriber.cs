@@ -151,7 +151,7 @@ using TenderGo.Models.Entities;
                         Message = $"Nova ponuda za tender {entity.TenderTitle} (iznos: {entity.OfferedPrice})",
                         CreatedAt = DateTime.UtcNow,
                         IsRead = false,
-                        Title = $"Nova ponuda za tender {entity.TenderTitle}"
+                        Title = $"Nova ponuda"
                     };
 
                     context.Notifications.Add(notification);

@@ -88,13 +88,14 @@ namespace TenderGo.Services.Services
             await _context.SaveChangesAsync();
         }
 
-        public virtual async Task Delete(int id)
+        public virtual async Task<string> Delete(int id)
         {
             var entity = await _context.Set<TDb>().FindAsync(id)
      ?? throw new UserException($"{typeof(TDb).Name} not found");
 
             _context.Set<TDb>().Remove(entity);
             await _context.SaveChangesAsync();
+            return $"{typeof(TDb).Name} deleted successfully.";
         }
 
        

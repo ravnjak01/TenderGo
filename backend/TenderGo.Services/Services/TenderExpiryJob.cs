@@ -34,10 +34,33 @@ namespace TenderGo.Services.Services
 
             while (!stoppingToken.IsCancellationRequested)
             {
-                await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
-                await ProcessExpiredTenders(stoppingToken);
-                await Task.Delay(_interval, stoppingToken);
+                try
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+                    await ProcessExpiredTenders(stoppingToken);
+                    await Task.Delay(_interval, stoppingToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    // Normalno gašenje hosta — nije greška
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Greška u TenderExpiryJob, nastavlja se za 1 minutu.");
+
+                    try
+                    {
+                        await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        break;
+                    }
+                }
             }
+
+            _logger.LogInformation("TenderExpiryJob stopped.");
         }
 
         private async Task ProcessExpiredTenders(CancellationToken ct)

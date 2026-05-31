@@ -11,7 +11,7 @@ namespace TenderGo.Services.Interfaces
     {
         Task<T> Insert(TInsert request);
         Task Update(int id, TUpdate request);
-        Task Delete(int id);
+        Task<string> Delete(int id);
     }
 
 }

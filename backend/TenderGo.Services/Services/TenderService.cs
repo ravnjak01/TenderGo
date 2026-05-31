@@ -59,6 +59,52 @@ namespace TenderGo.Services.Services
                 .Include(t=>t.Location);
         }
 
+        public async Task<bool> ToggleBookmarkAsync(string userId, int tenderId)
+{
+    var tenderExists = await _context.Tenders.AnyAsync(t => t.Id == tenderId);
+    if (!tenderExists)
+    {
+        throw new NotFoundException("Tender not found", new { TenderId = tenderId });
+    }
+
+    var existingBookmark = await _context.TenderBookmarks
+        .FirstOrDefaultAsync(tb => tb.UserId == userId && tb.TenderId == tenderId);
+
+    if (existingBookmark != null)
+    {
+        _context.TenderBookmarks.Remove(existingBookmark);
+        await _context.SaveChangesAsync();
+        _logger.LogInformation("User {UserId} removed tender {TenderId} from bookmarks.", userId, tenderId);
+        return false;
+    }
+    else
+    {
+        var newBookmark = new TenderBookmark
+        {
+            UserId = userId,
+            TenderId = tenderId,
+            BookmarkedAt = DateTime.UtcNow
+        };
+
+        _context.TenderBookmarks.Add(newBookmark);
+        await _context.SaveChangesAsync();
+        _logger.LogInformation("User {UserId} bookmarked tender {TenderId}.", userId, tenderId);
+        return true;
+    }
+}
+
+public async Task<IEnumerable<TenderDTO>> GetBookmarkedTendersAsync(string userId)
+{
+    _logger.LogInformation("Fetching bookmarked tenders for user {UserId}", userId);
+
+    return await _context.TenderBookmarks
+        .Where(tb => tb.UserId == userId)
+        .OrderByDescending(tb => tb.BookmarkedAt) 
+        .Select(tb => tb.Tender)                 
+        .ProjectTo<TenderDTO>(_mapper.ConfigurationProvider) 
+        .ToListAsync();
+}
+
         public async Task<IEnumerable<TenderDTO>> GetActiveTenders()
         {
            return await _context.Tenders
@@ -97,14 +143,7 @@ namespace TenderGo.Services.Services
 
         public async Task<List<TenderDTO>> GetTendersByUser(string userId)
         {
-            var currentUserId = _authService.GetCurrentUserId();
-            bool isAdmin = _authService.IsInRole(AppRoles.Admin);
-
-            if (userId != currentUserId && !isAdmin)
-            {
-                throw new UnauthorizedException("You dont have permission to see other's tenders.");
-
-            }
+    
             return await _context.Tenders
                 .Where(t => t.CreatedByUserId == userId)
                 .OrderByDescending(t => t.CreatedAt)
@@ -129,7 +168,15 @@ namespace TenderGo.Services.Services
                     throw new UserException("Location is required.");
                 }
 
-                var location = await _context.Locations.FindAsync(request.LocationId);
+                var category = await _context.Categories
+                    .FirstOrDefaultAsync(c => c.Id == request.CategoryId && c.IsActive);
+                if (category == null)
+                {
+                    throw new UserException("The selected category does not exist in our database.");
+                }
+
+                var location = await _context.Locations
+                    .FirstOrDefaultAsync(l => l.Id == request.LocationId && l.IsActive);
                 if (location == null)
                 {
                     throw new UserException("The selected location does not exist in our database.");
@@ -194,31 +241,6 @@ namespace TenderGo.Services.Services
             }
         }
 
-
-
-
-        public override async Task<TenderDTO> Update(int id, TenderUpdateRequest request)
-        {
-            _logger.LogInformation("Attempting to update tender with ID {TenderId}", id);
-
-            var tender = await AddIncludes(_context.Tenders)
-            .FirstOrDefaultAsync(t=>t.Id==id)
-                ?? throw new NotFoundException("Tender not found", new { Entity = "Tender", Id = id });
-
-            var currentUserId = _authService.GetCurrentUserId();
-            bool isAdmin = _authService.IsInRole(AppRoles.Admin);
-
-            if (tender.CreatedByUserId != currentUserId && !isAdmin)
-            {
-                throw new ForbiddenException(); 
-            }
-
-            var state = CreateState(tender.Status);
-             return await state.Update(id, request);
-        }
-
-
-
         public async Task<TenderDTO> Cancel(int id)
         {
             var entity = await AddIncludes(_context.Tenders)
@@ -250,6 +272,22 @@ namespace TenderGo.Services.Services
             await _context.SaveChangesAsync();
 
             return result;
+        }
+
+        public async Task<TenderDTO> Close(int id)
+        {
+            var entity = await AddIncludes(_context.Tenders)
+                .FirstOrDefaultAsync(t => t.Id == id)
+                ?? throw new NotFoundException("Tender not found", new { Entity = "Tender", Id = id });
+
+            var currentUserId = _authService.GetCurrentUserId();
+            if (entity.CreatedByUserId != currentUserId)
+            {
+                throw new ForbiddenException();
+            }
+
+            var state = CreateState(entity.Status);
+            return await state.Close(id);
         }
 
 
@@ -318,6 +356,76 @@ namespace TenderGo.Services.Services
                 Result = results,
                 TotalCount = totalCount 
             };
+        }
+
+        public async Task<bool> LogUserActivityAsync(string activityType, int? tenderId, string? searchQuery, int? durationSeconds = null)
+        {
+            var normalizedType = activityType?.Trim();
+
+            return normalizedType switch
+            {
+                "Search" => await LogSearchAsync(searchQuery),
+                "View" => await LogTenderViewAsync(tenderId, durationSeconds),
+                _ => throw new UserException("Invalid activity type")
+            };
+        }
+
+        private async Task<bool> LogTenderViewAsync(int? tenderId, int? durationSeconds)
+        {
+            if (tenderId == null || durationSeconds == null || durationSeconds < 5)
+            {
+                return false;
+            }
+
+            var tenderExists = await _context.Tenders.AnyAsync(t => t.Id == tenderId.Value);
+            if (!tenderExists)
+            {
+                return false;
+            }
+
+            var userId = _authService.GetCurrentUserId();
+            var cutoff = DateTime.UtcNow.AddMinutes(-10);
+            var alreadyLogged = await _context.UserActivities.AnyAsync(a =>
+                a.UserId == userId &&
+                a.ActivityType == "View" &&
+                a.TenderId == tenderId.Value &&
+                a.Timestamp >= cutoff);
+
+            if (alreadyLogged)
+            {
+                return false;
+            }
+
+            await AddUserActivityAsync("View", tenderId.Value, null);
+            return true;
+        }
+
+        private async Task<bool> LogSearchAsync(string? searchTerm)
+        {
+            var normalizedSearchTerm = searchTerm?.Trim();
+            if (string.IsNullOrWhiteSpace(normalizedSearchTerm))
+            {
+                return false;
+            }
+
+            await AddUserActivityAsync("Search", null, normalizedSearchTerm);
+            return true;
+        }
+
+        private async Task AddUserActivityAsync(string activityType, int? tenderId, string? searchQuery)
+        {
+            var userId = _authService.GetCurrentUserId();
+
+            _context.UserActivities.Add(new UserActivity
+            {
+                UserId = userId,
+                ActivityType = activityType,
+                TenderId = tenderId,
+                SearchQuery = searchQuery,
+                Timestamp = DateTime.UtcNow
+            });
+
+            await _context.SaveChangesAsync();
         }
 
        

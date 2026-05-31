@@ -17,18 +17,15 @@ namespace TenderGo.Models.Entities
 
         public string? ProfileImageUrl { get; set; }
 
-        [Required]
-        public Address Address { get; set; } 
+        public Address? Address { get; set; } 
         [Required]
         public DateTime CreatedAt { get; set; }
         public string? CreatedBy { get; set; }
 
         public DateTime? UpdatedAt { get; set; }
-        public DateTime? UpdatedBy { get; set; }
+        public string? UpdatedBy { get; set; }
 
         [Required]
-
-        public bool IsDeleted { get; set; }=false;
 
         public virtual ICollection<Tender> CreatedTenders { get; set; } = new List<Tender>();
 

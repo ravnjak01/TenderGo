@@ -15,7 +15,7 @@ namespace TenderGo.Services.Interfaces
             Task UpdateProfileAsync(string userId, UpdateProfileRequest dto);
         Task<bool> RateUserAsync(string ratedByUserId, RateUserRequest dto);
         Task<UserPublicDTO> GetPublicByIdAsync(string id);
-    
+        Task<List<ReviewDTO>> GetReviewsByUserIdAsync(string userId);
 
 
     }

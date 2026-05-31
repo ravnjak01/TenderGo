@@ -38,7 +38,6 @@ namespace TenderGo.Services.Services
         }
 
 
-        //dodati kontroler za promjenu passworda 
         public async Task<bool> ChangePasswordAsync(ChangePasswordRequest dto)
         {
 
@@ -65,7 +64,7 @@ namespace TenderGo.Services.Services
         public async Task<UserPublicDTO> GetPublicByIdAsync(string id)
         {
             var response = await _context.Users
-                .Where(u => u.Id == id && !u.IsDeleted)
+                .Where(u => u.Id == id)
                 .Select(u => new UserPublicDTO
                 {
                     Id = u.Id,
@@ -98,7 +97,6 @@ namespace TenderGo.Services.Services
             }
 
             var user = await _context.Users
-                      .Include(u => u.Address) 
                       .FirstOrDefaultAsync(u => u.Id == userId)
                   ?? throw new NotFoundException("User not found", new { User = "User", Id = userId });
 
@@ -140,6 +138,8 @@ namespace TenderGo.Services.Services
                 _mapper.Map(request.Address, user.Address);
             }
 
+            user.UpdatedAt = DateTime.UtcNow;
+            user.UpdatedBy = currentUserId;
             var result=await _userManager.UpdateAsync(user);
 
             if(!result.Succeeded)
@@ -212,5 +212,43 @@ namespace TenderGo.Services.Services
 
             return true;
         }
+
+        public async Task<List<ReviewDTO>> GetReviewsByUserIdAsync(string userId)
+{
+    // Provjera da li korisnik uopšte postoji
+    var userExists = await _context.Users.AnyAsync(u => u.Id == userId);
+    if (!userExists)
+    {
+        throw new NotFoundException("User not found", new { User = "User", Id = userId });
+    }
+
+    // Izvlačimo sve recenzije za tog korisnika
+    var reviews = await _context.Ratings
+        .Where(r => r.RatedUserId == userId)
+        .OrderByDescending(r => r.CreatedAt) // Najnovije recenzije na vrh
+        .Select(r => new ReviewDTO
+        {
+            Rating = r.Score,
+            Comment = r.Comment,
+            CreatedAt = r.CreatedAt,
+            TenderId = r.TenderId,
+            
+            // Izvlačimo ime i prezime osobe koja je ocijenila
+            ReviewerName = _context.Users
+                .Where(u => u.Id == r.RatedByUserId)
+                .Select(u => u.FirstName + " " + u.LastName)
+                .FirstOrDefault() ?? "Anonimni korisnik",
+
+            // Izvlačimo naslov tendera
+            TenderTitle = _context.Tenders
+                .Where(t => t.Id == r.TenderId)
+                .Select(t => t.Title)
+                .FirstOrDefault() ?? "Nepoznat tender"
+        })
+        .ToListAsync();
+
+    return reviews;
+}
+
     }
 }

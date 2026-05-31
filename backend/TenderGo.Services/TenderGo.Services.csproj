@@ -28,6 +28,7 @@
 
 		<PackageReference Include="Microsoft.ML" Version="5.0.0" />
 		<PackageReference Include="Microsoft.ML.Recommender" Version="0.23.0" />
+		<PackageReference Include="QuestPDF" Version="2026.5.0" />
 
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
 	</ItemGroup>

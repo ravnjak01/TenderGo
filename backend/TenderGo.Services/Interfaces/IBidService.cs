@@ -19,7 +19,6 @@ namespace TenderGo.Services.Interfaces
         Task<List<BidDTO>> GetBidsByUser(string userId);
         Task<BidDTO> Cancel(int bidId);
         Task<BidDTO> Insert(BidInsertRequest request);
-        Task Delete(int id);
 
     }
 }

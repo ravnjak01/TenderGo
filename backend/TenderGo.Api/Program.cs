@@ -8,21 +8,46 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using QuestPDF.Infrastructure;
 using TenderGo.Api.Database;
 using TenderGo.Api.Filters;
 using TenderGo.Data;
+using TenderGo.Data.Seeders;
 using TenderGo.Models.Entities;
 using TenderGo.Recommender;
 using TenderGo.Services.Interfaces;
 using TenderGo.Services.Mapping;
+using TenderGo.Services.Seed;
 using TenderGo.Services.Services;
 using TenderGo.Services.StateMachines.BidStates;
 using TenderGo.Services.StateMachines.TenderStates;
 
 var builder = WebApplication.CreateBuilder(args);
+QuestPDF.Settings.License = LicenseType.Community;
 
 // Učitavanje .env datoteke za Docker okruženje
 Env.Load();
+
+static string BuildRabbitMqConnectionString(IConfiguration config)
+{
+    var configuredConnectionString = config.GetConnectionString("RabbitMQ");
+    if (!string.IsNullOrWhiteSpace(configuredConnectionString))
+    {
+        return configuredConnectionString;
+    }
+
+    var host = Environment.GetEnvironmentVariable("RabbitMQ__Host")
+               ?? config["RabbitMQ:Host"]
+               ?? "localhost";
+    var username = Environment.GetEnvironmentVariable("RabbitMQ__Username")
+                   ?? config["RabbitMQ:Username"]
+                   ?? "guest";
+    var password = Environment.GetEnvironmentVariable("RabbitMQ__Password")
+                   ?? config["RabbitMQ:Password"]
+                   ?? "guest";
+
+    return $"host={host};username={username};password={password};timeout=30";
+}
 
 // 1. Konfiguracija baze podataka
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -108,14 +133,16 @@ builder.Services.AddScoped<IImageService, ImageService>();
 builder.Services.AddTransient<ICategoryService, CategoryService>();
 builder.Services.AddTransient<ILocationService, LocationService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+
 // Email i Background poslovi
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddHostedService<TenderExpiryJob>();
 
 // Recommender i Pametni moduli
-builder.Services.AddSingleton<RecommenderService>();
-builder.Services.AddSingleton<TenderVectorBuilder>();
+builder.Services.AddTransient<RecommenderService>();
+builder.Services.AddTransient<TenderVectorBuilder>();
+builder.Services.AddScoped<IRecommendationService, RecommendationService>();
 
 // State Machine registracije
 builder.Services.AddTransient<BaseState>();
@@ -127,22 +154,24 @@ builder.Services.AddScoped<PendingBidState>();
 builder.Services.AddScoped<FinalBidState>();
 
 // 6. RabbitMQ i CORS konfiguracija
-// Čita "ConnectionStrings:RabbitMQ" iz appsettings/okruženja
-var rabbitConnectionString = builder.Configuration.GetConnectionString("RabbitMQ") 
-                             ?? "host=localhost;username=guest;password=guest;timeout=30";
+var rabbitConnectionString = BuildRabbitMqConnectionString(builder.Configuration);
 
 builder.Services.AddEasyNetQ(rabbitConnectionString).UseSystemTextJson();
 
-var allowedOrigins = builder.Configuration.GetSection("CorsSettings:AllowedOrigins").Get<string[]>();
+// Linija ~145-147 u Program.cs
+var allowedOriginsRaw = builder.Configuration["ALLOWED_ORIGINS"]
+                        ?? Environment.GetEnvironmentVariable("ALLOWED_ORIGINS");
+
+var allowedOrigins = allowedOriginsRaw?
+    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+    ?? new[] { "http://localhost:3000" }; // fallback da ne puca
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("TenderGoPolicy", policy =>
-    {
-        policy.WithOrigins(allowedOrigins!)
-              .AllowAnyMethod()
+        policy.WithOrigins(allowedOrigins)
               .AllowAnyHeader()
-              .AllowCredentials();
-    });
+              .AllowAnyMethod());
 });
 
 // --- HTTP PIPELINE SLUŽBENO POČINJE OVDJE ---
@@ -185,7 +214,8 @@ using (var scope = app.Services.CreateScope())
             context.Database.Migrate();
 
             await IdentitySeeder.SeedRolesAndAdminAsync(services);
-
+            await UserSeeder.SeedUsersAsync(services);
+            await TenderSeeder.SeedTendersAsync(services);
             logger.LogInformation("Database migrated and seeded successfully.");
             break;
         }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using TenderGo.Models.Entities;
+using TenderGo.Models.ENUMs;
 
 namespace TenderGo.Api.Database;
 
@@ -22,6 +23,13 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
     public virtual DbSet<RefreshToken> RefreshTokens { get; set; }
     public DbSet<Notification> Notifications { get; set; }
     public DbSet<Location> Locations { get; set; }
+    public DbSet<PasswordResetCode>PasswordResetCodes {get;set;}
+    public DbSet<TenderBookmark>TenderBookmarks {get;set;}
+    public DbSet<UserActivity>UserActivities {get;set;}
+
+
+
+
 
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -47,7 +55,6 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
             entity.Property(e => e.Title).HasMaxLength(200);
             entity.Property(e => e.Status).HasConversion<string>();
 
-            entity.Property(e=>e.Status).HasConversion<string>();
 
             entity.HasOne(t=>t.WinningBid)
                 .WithMany()
@@ -67,18 +74,14 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
                   .OnDelete(DeleteBehavior.Restrict);
 
         });
-        modelBuilder.Entity<Tender>().HasQueryFilter(t => !t.IsDeleted);
+
+        modelBuilder.Entity<Category>(entity =>
+        {
+            entity.Property(c => c.IsActive)
+                .HasDefaultValue(true);
+        });
 
         modelBuilder.Entity<Tender>().Navigation(b => b.CreatedByUser).AutoInclude();//da se uvijek ucitava korisnik koji je kreirao tender
-
-        // Sakrij ponude čiji je tender obrisan
-        modelBuilder.Entity<Bid>().HasQueryFilter(b => !b.Tender.IsDeleted);
-
-        // Sakrij ocjene čiji je tender obrisan
-        modelBuilder.Entity<Rating>().HasQueryFilter(r => !r.Tender.IsDeleted);
-
-        // Sakrij slike čiji je tender obrisan
-        modelBuilder.Entity<TenderImage>().HasQueryFilter(ti => !ti.Tender.IsDeleted);
 
         modelBuilder.Entity<Tender>()
         .HasOne(t => t.Location)
@@ -87,9 +90,18 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
         .OnDelete(DeleteBehavior.Restrict);
 
 
-//zadnje dodao ovo za adresu
-        modelBuilder.Entity<ApplicationUser>()
-         .OwnsOne(u => u.Address);
+modelBuilder.Entity<ApplicationUser>(entity =>
+    {
+        entity.OwnsOne(u => u.Address, a =>
+        {
+            a.Property(p => p.Country).HasMaxLength(100).IsRequired(false);
+            a.Property(p => p.City).HasMaxLength(100).IsRequired(false);
+            a.Property(p => p.Street).HasMaxLength(200).IsRequired(false);
+            a.Property(p => p.PostalCode).HasMaxLength(20).IsRequired(false);
+            
+ 
+        });
+    });
 
         //rating
         modelBuilder.Entity<Rating>(entity =>
@@ -122,7 +134,7 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
             entity.HasKey(e => e.Id);
 
             // Konfiguracija veze 1:N (Jedan Tender -> Više Bids)
-            entity.HasOne(b => b.Tender)           // Bid ima jedan Tender
+            entity.HasOne(b => b.Tender)       
                   .WithMany(t => t.Bids)           // Tender ima mnogo Bids
                   .HasForeignKey(b => b.TenderId)  // Strani ključ je TenderId
                   .OnDelete(DeleteBehavior.Cascade); 
@@ -131,6 +143,7 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
 
             // 1 korisnik može poslati samo jedan bid po tenderu
             entity.HasIndex(b => new { b.TenderId, b.SubmittedByUserId })
+            .HasFilter("[Status] IN ('Pending', 'Accepted')")
                  .IsUnique();
 
             entity.HasOne(b => b.SubmittedByUser)
@@ -138,6 +151,9 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
             .HasForeignKey(b => b.SubmittedByUserId)
             .OnDelete(DeleteBehavior.Restrict);
         });
+        modelBuilder.Entity<Bid>()
+        .Property(b => b.Status)
+        .HasConversion<string>();
 
 
         //tender images
@@ -183,6 +199,22 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
 
             entity.Property(l => l.Region)
                 .HasMaxLength(100);
+
+            entity.Property(l => l.IsActive)
+                .HasDefaultValue(true);
+        });
+
+        modelBuilder.Entity<TenderBookmark>().HasKey(tb => new { tb.UserId, tb.TenderId });
+
+        modelBuilder.Entity<UserActivity>(entity =>
+        {
+            entity.ToTable("UserActivites");
+
+            entity.HasKey(ua => ua.Id);
+
+            entity.HasOne(ua => ua.Tender)
+                .WithMany()
+                .HasForeignKey(ua => ua.TenderId);
         });
 
     }

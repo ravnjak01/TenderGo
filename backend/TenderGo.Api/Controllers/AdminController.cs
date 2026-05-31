@@ -34,7 +34,7 @@ namespace TenderGo.Api.Controllers
             var result = await _adminService.BanUserAsync(userId, reason);
 
             if (!result)
-                return NotFound($"User with ID '{userId}' not found or already deleted.");
+                return NotFound($"User with ID '{userId}' not found.");
 
             return Ok(new { message = $"User {userId} has been banned." });
         }
@@ -45,20 +45,9 @@ namespace TenderGo.Api.Controllers
             var result = await _adminService.UnbanUserAsync(userId);
 
             if (!result)
-                return NotFound($"User with ID '{userId}' not found or already deleted.");
+                return NotFound($"User with ID '{userId}' not found .");
 
             return Ok(new { message = $"User {userId} has been unbanned." });
-        }
-
-        [HttpDelete("tender/{id}")]
-        public async Task<IActionResult> DeleteTender(int id)
-        {
-            var success = await _adminService.DeleteTenderAsync(id);
-
-            if (!success)
-                return NotFound();
-
-            return Ok(new { message = "Tender removed successfully" });
         }
 
         [HttpPut("users/{userId}/reset-password")]

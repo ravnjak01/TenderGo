@@ -23,7 +23,6 @@ namespace TenderGo.Subscriber
             var subscriptionId = "notification-service";
             var rabbitConnString = _configuration.GetConnectionString("RabbitMQ") 
                                    ?? "host=localhost;username=guest;password=guest;timeout=30";
-            //var safeLogString = SanitizeConnectionString(rabbitConnString);
 
             while (!stoppingToken.IsCancellationRequested)
             {
