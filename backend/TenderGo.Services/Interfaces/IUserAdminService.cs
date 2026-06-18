@@ -8,11 +8,12 @@ using TenderGo.Models.Requests;
 
 namespace TenderGo.Services.Interfaces
 {
-    public interface IAdminService
+    public interface IUserAdminService
     {
         Task<bool> BanUserAsync(string userId, BanRequest reason);
         Task<bool> UnbanUserAsync(string userId);
         Task<IEnumerable<UserDTO>> GetAllUsersAsync();
+        Task<PagedResult<UserDTO>> SearchAsync(AdminUserSearchRequest request);
         Task AdminResetPasswordAsync(string userId, string newPassword);
     }
 }

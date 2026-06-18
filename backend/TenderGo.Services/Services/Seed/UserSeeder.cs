@@ -1,12 +1,15 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
+using TenderGo.Api.Database;
 using TenderGo.Models.Entities;
+using TenderGo.Services.Interfaces;
 
 namespace TenderGo.Data.Seeders
 {
-    public static class UserSeeder
+    public class UserSeeder : IDataSeeder
     {
-        public static async Task SeedUsersAsync(IServiceProvider serviceProvider)
+        public int Order => 1;
+        public async Task SeedAsync(TenderGoContext context, IServiceProvider serviceProvider)
         {
             var userManager = serviceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 

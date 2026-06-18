@@ -6,10 +6,21 @@ import 'package:flutter/foundation.dart';
 import 'package:tendergo/shared/core/network/interceptors/auth_interceptor.dart';
 
 class DioClient {
-  static const String _apiBaseUrl = String.fromEnvironment(
+  static const String _configuredApiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://10.0.2.2:5000',
   );
+
+  static String get _apiBaseUrl {
+    if (_configuredApiBaseUrl.trim().isNotEmpty) {
+      return _configuredApiBaseUrl;
+    }
+
+    if (!kIsWeb && Platform.isAndroid) {
+      return 'http://10.0.2.2:8080';
+    }
+
+    return 'http://localhost:8080';
+  }
 
   static String get baseOrigin {
     final uri = Uri.tryParse(_apiBaseUrl);

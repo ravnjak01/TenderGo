@@ -17,8 +17,8 @@ using TenderGo.Models.Entities;
 using TenderGo.Recommender;
 using TenderGo.Services.Interfaces;
 using TenderGo.Services.Mapping;
-using TenderGo.Services.Seed;
 using TenderGo.Services.Services;
+using TenderGo.Services.Services.Seed;
 using TenderGo.Services.StateMachines.BidStates;
 using TenderGo.Services.StateMachines.TenderStates;
 
@@ -125,13 +125,16 @@ builder.Services.AddAutoMapper(typeof(MappingProfile));
 builder.Services.AddScoped(typeof(IBaseService<,,,>), typeof(BaseService<,,,>));
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITenderService, TenderService>();
+builder.Services.AddScoped<ITenderAdminService, TenderAdminService>();
 builder.Services.AddScoped<IBidService, BidService>();
 builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IAdminService, AdminService>();
+builder.Services.AddScoped<IUserAdminService, UserAdminService>();
+builder.Services.AddScoped<IAdminDashboardService, AdminDashboardService>();
 builder.Services.AddScoped<IImageService, ImageService>();
 builder.Services.AddTransient<ICategoryService, CategoryService>();
 builder.Services.AddTransient<ILocationService, LocationService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+
 
 // Email i Background poslovi
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
@@ -209,9 +212,26 @@ using (var scope = app.Services.CreateScope())
             var context = services.GetRequiredService<TenderGoContext>();
             context.Database.Migrate();
 
-            await IdentitySeeder.SeedRolesAndAdminAsync(services);
-            await UserSeeder.SeedUsersAsync(services);
-            await TenderSeeder.SeedTendersAsync(services);
+            var seeders = new IDataSeeder[]
+            {
+                new IdentitySeeder(),
+                new UserSeeder(),
+                new LocationSeeder(),
+                new CategorySeeder(),
+                new TenderOpenSeeder(),
+                new TenderClosedSeeder(),
+                new TenderAwardedSeeder(),
+                new BidSeeder(),
+                new RatingsSeeder(),
+                new NotificationSeeder()
+            };
+
+            foreach (var seeder in seeders.OrderBy(s => s.Order))
+            {
+                await seeder.SeedAsync(context, services);
+            }
+
+
             logger.LogInformation("Database migrated and seeded successfully.");
             break;
         }
