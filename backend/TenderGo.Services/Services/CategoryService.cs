@@ -1,13 +1,8 @@
-﻿using AutoMapper;
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using TenderGo.Api.Database;
 using TenderGo.Models.DTOs;
 using TenderGo.Models.Entities;
@@ -17,38 +12,78 @@ using TenderGo.Services.Services.Exceptions;
 
 namespace TenderGo.Services.Services
 {
-    public class CategoryService:BaseService<CategoryDTO,Category,CategoryDTO,CategoryUpdateRequest>,ICategoryService
+    public class CategoryService : BaseService<CategoryDTO, Category, CategoryDTO, CategoryUpdateRequest>, ICategoryService
     {
-
         private readonly IAuthService _authService;
         protected readonly ILogger<CategoryService> _logger;
         protected readonly IServiceProvider _serviceProvider;
-     
+
         public CategoryService(TenderGoContext context, IMapper mapper, IHttpContextAccessor httpContextAccessor, IAuthService authService, ILogger<CategoryService> logger, IServiceProvider serviceProvider) : base(context, mapper, httpContextAccessor)
         {
             _logger = logger;
             _authService = authService;
             _serviceProvider = serviceProvider;
-            
         }
 
-      protected override IQueryable<Category> ApplyFilter(IQueryable<Category> query)
-{
-    if (!_authService.IsInRole(AppRoles.Admin))
-        return query.Where(c => c.IsActive);
+        protected override IQueryable<Category> ApplyFilter(IQueryable<Category> query)
+        {
+            if (!_authService.IsInRole(AppRoles.Admin))
+                return query.Where(c => c.IsActive);
 
-    var includeInactiveQuery =
-        _httpContextAccessor.HttpContext?.Request.Query["includeInactive"];
+            var includeInactiveQuery =
+                _httpContextAccessor.HttpContext?.Request.Query["includeInactive"];
 
-    var includeInactive =
-        bool.TryParse(includeInactiveQuery, out var parsed)
-        && parsed;
+            var includeInactive =
+                bool.TryParse(includeInactiveQuery, out var parsed)
+                && parsed;
 
-    if (includeInactive)
-        return query;
+            if (includeInactive)
+                return query;
 
-    return query.Where(c => c.IsActive);
-}
+            return query.Where(c => c.IsActive);
+        }
+
+        public async Task<PagedResult<CategoryDTO>> SearchAsync(CategorySearchRequest request)
+        {
+            var page = Math.Max(request.Page, 1);
+            var pageSize = Math.Max(request.PageSize, 1);
+            var query = _context.Categories.AsQueryable();
+
+            if (request.IsActive.HasValue)
+            {
+                query = query.Where(c => c.IsActive == request.IsActive.Value);
+            }
+            else
+            {
+                query = ApplyFilter(query);
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.SearchTerm))
+            {
+                var term = request.SearchTerm.Trim().ToLower();
+                var likeTerm = $"%{term}%";
+
+                query = query.Where(c => EF.Functions.Like(c.Name.ToLower(), likeTerm));
+            }
+
+            var totalCount = await query.CountAsync();
+
+            var results = await query
+                .OrderBy(c => c.Name)
+                .ThenBy(c => c.Id)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ProjectTo<CategoryDTO>(_mapper.ConfigurationProvider)
+                .ToListAsync();
+
+            return new PagedResult<CategoryDTO>
+            {
+                Result = results,
+                TotalCount = totalCount,
+                Page = page,
+                PageSize = pageSize
+            };
+        }
 
         public override async Task<string> Delete(int id)
         {
@@ -79,5 +114,17 @@ namespace TenderGo.Services.Services
             return _mapper.Map<CategoryDTO>(category);
         }
 
+        public async Task<List<CategoryStatsDTO>> GetCategoryStatisticsAsync()
+        {
+            return await _context.Categories
+                .Select(c => new CategoryStatsDTO
+                {
+                    CategoryId = c.Id,
+                    CategoryName = c.Name,
+                    TenderCount = _context.Tenders.Count(t => t.CategoryId == c.Id)
+                })
+                .OrderByDescending(c => c.TenderCount)
+                .ToListAsync();
+        }
     }
 }

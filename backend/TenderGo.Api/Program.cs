@@ -125,13 +125,16 @@ builder.Services.AddAutoMapper(typeof(MappingProfile));
 builder.Services.AddScoped(typeof(IBaseService<,,,>), typeof(BaseService<,,,>));
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITenderService, TenderService>();
+builder.Services.AddScoped<ITenderAdminService, TenderAdminService>();
 builder.Services.AddScoped<IBidService, BidService>();
 builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IAdminService, AdminService>();
+builder.Services.AddScoped<IUserAdminService, UserAdminService>();
+builder.Services.AddScoped<IAdminDashboardService, AdminDashboardService>();
 builder.Services.AddScoped<IImageService, ImageService>();
 builder.Services.AddTransient<ICategoryService, CategoryService>();
 builder.Services.AddTransient<ILocationService, LocationService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+
 
 // Email i Background poslovi
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));

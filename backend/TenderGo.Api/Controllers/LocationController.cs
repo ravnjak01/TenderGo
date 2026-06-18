@@ -25,6 +25,13 @@ namespace TenderGo.Api.Controllers
             _locationService = locationService;
             _logger = logger;
         }
+
+        [HttpGet("search")]
+        public async Task<ActionResult<PagedResult<LocationDTO>>> Search([FromQuery] LocationSearchRequest request)
+        {
+            var result = await _locationService.SearchAsync(request);
+            return Ok(result);
+        }
     
         [HttpGet("all")]
         public async Task<ActionResult<List<LocationDTO>>> GetAll([FromQuery] LocationFilterRequest request)

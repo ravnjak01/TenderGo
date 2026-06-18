@@ -30,6 +30,13 @@ namespace TenderGo.Api.Controllers
             return base.Insert(request);
         }
 
+        [HttpGet("search")]
+        public async Task<ActionResult<PagedResult<CategoryDTO>>> Search([FromQuery] CategorySearchRequest request)
+        {
+            var result = await _categoryService.SearchAsync(request);
+            return Ok(result);
+        }
+
         [HttpPatch("{id}")]
         public override Task<IActionResult> Update(int id, [FromBody] CategoryUpdateRequest request)
         {
@@ -47,6 +54,12 @@ namespace TenderGo.Api.Controllers
         {
             var category = await _categoryService.Activate(id);
             return Ok(new { message = "Category activated successfully.", data = category });
+        }
+
+        [HttpGet("statistics")]
+        public async Task<ActionResult<List<CategoryStatsDTO>>> GetStatistics()
+        {
+            return Ok(await _categoryService.GetCategoryStatisticsAsync());
         }
     }
 }

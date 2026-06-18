@@ -10,7 +10,9 @@ namespace TenderGo.Services.Interfaces
 {
     public interface ILocationService : IReadService<LocationDTO>, IWriteService<LocationDTO, LocationInsertRequest, LocationUpdateRequest>
     {
+        Task<PagedResult<LocationDTO>> SearchAsync(LocationSearchRequest request);
         Task<List<LocationDTO>> GetFilteredLocationsAsync(string? country, string? region, bool includeInactive = false);
         Task<LocationDTO> Activate(int id);
+        Task<List<LocationStatsDTO>> GetLocationStatisticsAsync();
     }
 }

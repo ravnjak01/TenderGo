@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TenderGo.Models.Entities;
 using TenderGo.Models.Requests;
@@ -7,31 +7,38 @@ using TenderGo.Services.Interfaces;
 namespace TenderGo.Api.Controllers
 {
     [ApiController]
-    [Route("api/admin")]
+    [Route("api/admin/users")]
     [Authorize(Roles = AppRoles.Admin)]
-    public class AdminController : ControllerBase
+    public class AdminUsersController : ControllerBase
     {
-        private readonly IAdminService _adminService;
+        private readonly IUserAdminService _adminUserService;
 
-        public AdminController(IAdminService adminService)
+        public AdminUsersController(IUserAdminService adminUserService)
         {
-            _adminService = adminService;
+            _adminUserService = adminUserService;
         }
 
-        [HttpGet("users")]
+        [HttpGet]
         public async Task<IActionResult> GetAllUsers()
         {
-            var users = await _adminService.GetAllUsersAsync();
+            var users = await _adminUserService.GetAllUsersAsync();
             return Ok(users);
         }
 
-        [HttpPost("users/{userId}/ban")]
+        [HttpGet("search")]
+        public async Task<IActionResult> SearchUsers([FromQuery] AdminUserSearchRequest request)
+        {
+            var users = await _adminUserService.SearchAsync(request);
+            return Ok(users);
+        }
+
+        [HttpPost("{userId}/ban")]
         public async Task<IActionResult> BanUser(string userId, [FromBody] BanRequest reason)
         {
             if (string.IsNullOrWhiteSpace(reason.Reason))
                 return BadRequest("Ban reason is required.");
 
-            var result = await _adminService.BanUserAsync(userId, reason);
+            var result = await _adminUserService.BanUserAsync(userId, reason);
 
             if (!result)
                 return NotFound($"User with ID '{userId}' not found.");
@@ -39,10 +46,10 @@ namespace TenderGo.Api.Controllers
             return Ok(new { message = $"User {userId} has been banned." });
         }
 
-        [HttpPost("users/{userId}/unban")]
+        [HttpPost("{userId}/unban")]
         public async Task<IActionResult> UnbanUser(string userId)
         {
-            var result = await _adminService.UnbanUserAsync(userId);
+            var result = await _adminUserService.UnbanUserAsync(userId);
 
             if (!result)
                 return NotFound($"User with ID '{userId}' not found .");
@@ -50,14 +57,14 @@ namespace TenderGo.Api.Controllers
             return Ok(new { message = $"User {userId} has been unbanned." });
         }
 
-        [HttpPut("users/{userId}/reset-password")]
+        [HttpPut("{userId}/reset-password")]
         public async Task<IActionResult> AdminResetPassword(string userId, [FromBody] AdminResetPasswordRequest request)
         {
-            await _adminService.AdminResetPasswordAsync(userId, request.NewPassword);
+            await _adminUserService.AdminResetPasswordAsync(userId, request.NewPassword);
 
             return Ok(new { Message = "User password has been successfully reset by administrator." });
         }
     }
 
-
+    //zadnje razdvoji admin kontroler,sljedece mijenjati generisanje pdf izvještaja
 }
