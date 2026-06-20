@@ -13,7 +13,7 @@ namespace TenderGo.Services.Services.Seed
 {
     public class TenderAwardedSeeder:IDataSeeder
     {
-        public int Order => 8;
+        public int Order => 7;
 
         public async Task SeedAsync(TenderGoContext context, IServiceProvider serviceProvider)
         {
@@ -87,7 +87,32 @@ namespace TenderGo.Services.Services.Seed
             }
         };
 
-            context.Tenders.AddRange(seedTenders);
+            var titles = seedTenders.Select(t => t.Title).ToArray();
+
+            var existingTenders = await context.Tenders
+                .IgnoreAutoIncludes()
+                .Where(t => titles.Contains(t.Title))
+                .ToDictionaryAsync(t => t.Title, t => t);
+
+            foreach (var seedTender in seedTenders)
+            {
+                if (existingTenders.TryGetValue(seedTender.Title, out var existingTender))
+                {
+                    existingTender.Description = seedTender.Description;
+                    existingTender.MaxBudget = seedTender.MaxBudget;
+                    existingTender.Deadline = seedTender.Deadline;
+                    existingTender.Status = seedTender.Status;
+                    existingTender.PostedAt = seedTender.PostedAt;
+                    existingTender.CreatedByUserId = seedTender.CreatedByUserId;
+                    existingTender.CategoryId = seedTender.CategoryId;
+                    existingTender.LocationId = seedTender.LocationId;
+                }
+                else
+                {
+                    context.Tenders.Add(seedTender);
+                }
+            }
+
             await context.SaveChangesAsync();
 
         }

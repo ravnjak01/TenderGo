@@ -68,12 +68,13 @@ class AdminApp extends StatelessWidget {
       ],
       child: MaterialApp(
         // Ako je korisnik već ulogovan, možeš staviti AppRoutes.tenderList umjesto splash-a po potrebi
-        initialRoute: AppRoutes.splash,
+        initialRoute: AppRoutes.loginV2,
         navigatorKey: AppRoutes.navigatorKey,
         navigatorObservers: [routeObserver],
 
         // 🌟 POPRAVLJENO: Sada pozivamo getRoutes direktno iz AppRoutes klase
         routes: AppRoutes.getRoutes(
+          
           authService: authService,
           adminService: adminService,
           categoryService: categoryService,

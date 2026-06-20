@@ -1,6 +1,7 @@
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
 using TenderGo.Api.Database;
 using TenderGo.Models.DTOs;
 using TenderGo.Models.Requests;
@@ -17,6 +18,14 @@ namespace TenderGo.Services.Services
         {
             _context = context;
             _mapper = mapper;
+        }
+
+        public async Task<List<AdminTenderDTO>> GetAllTendersAsync()
+        {
+            return await _context.Tenders
+                .OrderByDescending(t => t.CreatedAt)
+                .ProjectTo<AdminTenderDTO>(_mapper.ConfigurationProvider)
+                .ToListAsync();
         }
 
         public async Task<PagedResult<TenderDTO>> AdminSearchAsync(AdminTenderSearchRequest request)

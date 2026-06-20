@@ -3,6 +3,7 @@ import 'package:tendergo/shared/core/network/constants/location_endpoints.dart';
 import 'package:tendergo/shared/models/dto/location_dto.dart';
 import 'package:tendergo/shared/models/requests/location_filter_request.dart';
 import 'package:tendergo/shared/models/requests/location_insert_request.dart';
+import 'package:tendergo/shared/models/requests/location_search_request.dart';
 import 'package:tendergo/shared/models/requests/location_update_request.dart';
 import 'package:tendergo/shared/services/base_service.dart';
 
@@ -89,6 +90,52 @@ class LocationService extends BaseService<LocationDto> {
       throw Exception(
         e.response?.data?['message'] ?? 'Error activating location',
       );
+    }
+  }
+    Future<List<LocationDto>> search(LocationSearchRequest request) async {
+    try {
+      final response = await dio.get(
+        LocationEndpoints.search(request.searchTerm ?? '', page: request.page, pageSize: request.pageSize  ),
+      );
+
+      final List<dynamic> data = response.data is List 
+        ? response.data 
+        : (response.data['result'] ?? []);
+
+      return data
+          .map((x) => LocationDto.fromJson(x as Map<String, dynamic>))
+          .toList();
+    } on DioException catch (e) {
+      throw Exception(e.response?.data ?? 'Error searching locations');
+    }
+  }
+
+//dobijem string is not a subtype of type int in type cast a
+  Future<List<LocationStatsDto>> getLocationStatistics() async {
+    try {
+      final response = await dio.get(LocationEndpoints.locationStatistics);
+      final List<dynamic> data = response.data is List ? response.data : [];
+      return data
+          .map((x) => LocationStatsDto.fromJson(x as Map<String, dynamic>))
+          .toList();
+    } on DioException catch (e) {
+      throw Exception(e.response?.data ?? 'Error fetching location statistics');
+    }
+  }
+
+Future<LocationOverviewDto> getLocationOverview() async {
+    try {
+      final response = await dio.get(LocationEndpoints.locationOverview);
+      final raw = response.data;
+      final payload = raw is Map<String, dynamic>
+          ? (raw['data'] is Map<String, dynamic>
+                ? raw['data'] as Map<String, dynamic>
+                : raw)
+          : const <String, dynamic>{};
+
+      return LocationOverviewDto.fromJson(payload);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data ?? 'Error fetching location overview');
     }
   }
 }

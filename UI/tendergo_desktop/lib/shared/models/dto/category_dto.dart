@@ -56,3 +56,24 @@ const Map<String, CategoryTheme> categoryThemes = {
 CategoryTheme themeForCategory(String categoryName) =>
     categoryThemes[categoryName] ??
     const CategoryTheme(bg: Color(0xFFF1EFE8), icon: Icons.description_rounded);
+
+
+class CategoryStatisticsDto {
+  final int categoryId;
+  final String categoryName;
+  final int tenderCount;
+
+  CategoryStatisticsDto({
+    required this.categoryId,
+    required this.categoryName,
+    required this.tenderCount,
+  });
+
+  factory CategoryStatisticsDto.fromJson(Map<String, dynamic> json) {
+    return CategoryStatisticsDto(
+      categoryId: json['categoryId'] as int,
+      categoryName: json['categoryName'] as String,
+      tenderCount: json['tenderCount'] as int,
+    );
+  }
+}

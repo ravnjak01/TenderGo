@@ -70,9 +70,9 @@ namespace TenderGo.Services.Services
                 var likeTerm = $"%{term}%";
 
                 query = query.Where(l =>
-                    EF.Functions.Like(l.Name.ToLower(), likeTerm) ||
-                    EF.Functions.Like(l.Country.ToLower(), likeTerm) ||
-                    (l.Region != null && EF.Functions.Like(l.Region.ToLower(), likeTerm)));
+                    EF.Functions.Like(l.Name, likeTerm) ||
+                    EF.Functions.Like(l.Country, likeTerm) ||
+                    (l.Region != null && EF.Functions.Like(l.Region, likeTerm)));
             }
 
             var totalCount = await query.CountAsync();
@@ -156,10 +156,28 @@ namespace TenderGo.Services.Services
                 {
                     LocationId = c.Id,
                     LocationName = c.Name,
-                    TenderCount = _context.Tenders.Count(t => t.LocationId == c.Id)
+                    TenderCount = _context.Tenders.Count(t => t.LocationId == c.Id),
+                    IsActive = c.IsActive
                 })
                 .OrderByDescending(c => c.TenderCount)
                 .ToListAsync();
+        }
+
+        public async Task<LocationOverviewDTO> GetOverviewAsync()
+        {
+            return new LocationOverviewDTO
+            {
+                TotalLocations = await _context.Locations.CountAsync(),
+
+                ActiveLocations = await _context.Locations
+                    .CountAsync(l => l.IsActive),
+
+                InactiveLocations = await _context.Locations
+                    .CountAsync(l => !l.IsActive),
+
+                LocationsWithTenders = await _context.Locations
+                    .CountAsync(l => _context.Tenders.Any(t => t.LocationId == l.Id))
+            };
         }
     }
 }

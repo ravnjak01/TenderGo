@@ -10,6 +10,7 @@ namespace TenderGo.Services.Interfaces
 {
     public interface ITenderAdminService
     {
+        Task<List<AdminTenderDTO>> GetAllTendersAsync();
         Task<PagedResult<TenderDTO>> AdminSearchAsync(AdminTenderSearchRequest request);
     }
 }

@@ -35,28 +35,28 @@ namespace TenderGo.Services.Services
 
  }
 
-public async Task<IEnumerable<UserDTO>> GetAllUsersAsync()
-{
-    var finalQuery = from user in _context.Users
-                     select new UserDTO
-                     {
-                         Id = user.Id,
-                         Email = user.Email,
-                         Username = user.UserName, 
-                         FirstName = user.FirstName,
-                         LastName = user.LastName,
-                         Address = user.Address != null ? new AddressDTO 
-                         { 
-                         } : null,
-                         Roles = (from userRole in _context.UserRoles
-                                  join role in _context.Roles on userRole.RoleId equals role.Id
-                                  where userRole.UserId == user.Id
-                                  select role.Name).ToList(),
-                         IsBanned = user.IsBanned,
-                     };
+        public async Task<IEnumerable<UserDTO>> GetAllUsersAsync()
+        {
+            var finalQuery = from user in _context.Users
+                             select new UserDTO
+                             {
+                                 Id = user.Id,
+                                 Email = user.Email,
+                                 Username = user.UserName, 
+                                 FirstName = user.FirstName,
+                                 LastName = user.LastName,
+                                 Address = user.Address != null ? new AddressDTO 
+                                 { 
+                                 } : null,
+                                 Roles = (from userRole in _context.UserRoles
+                                          join role in _context.Roles on userRole.RoleId equals role.Id
+                                          where userRole.UserId == user.Id
+                                          select role.Name).ToList(),
+                                 IsBanned = user.IsBanned,
+                             };
 
-    return await finalQuery.ToListAsync();
-}
+            return await finalQuery.ToListAsync();
+        }
 
         public async Task<PagedResult<UserDTO>> SearchAsync(AdminUserSearchRequest request)
         {

@@ -24,5 +24,12 @@ namespace TenderGo.Api.Controllers
             var dashboard = await _adminDashboardService.GetDashboardAsync();
             return Ok(dashboard);
         }
+
+        [HttpGet("recent-activities")]
+        public async Task<ActionResult<List<ActivityDTO>>> GetRecentActivities()
+        {
+            var recentActivities = await _adminDashboardService.GetRecentActivitiesAsync();
+            return Ok(recentActivities);
+        }
     }
 }

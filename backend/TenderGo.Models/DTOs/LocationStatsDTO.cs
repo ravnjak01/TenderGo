@@ -11,5 +11,6 @@ namespace TenderGo.Models.DTOs
         public string LocationName { get; set; } = string.Empty;
         public int TenderCount { get; set; }
         public int LocationId { get; set; }
+        public bool IsActive { get; set; }
     }
 }

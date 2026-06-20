@@ -14,5 +14,6 @@ namespace TenderGo.Services.Interfaces
         Task<List<LocationDTO>> GetFilteredLocationsAsync(string? country, string? region, bool includeInactive = false);
         Task<LocationDTO> Activate(int id);
         Task<List<LocationStatsDTO>> GetLocationStatisticsAsync();
+        Task<LocationOverviewDTO> GetOverviewAsync();
     }
 }
