@@ -10,5 +10,6 @@ namespace TenderGo.Services.Interfaces
     public interface IAdminDashboardService
     {
         Task<AdminDashboardDTO> GetDashboardAsync();
+        Task<List<ActivityDTO>> GetRecentActivitiesAsync();
     }
 }

@@ -3,6 +3,7 @@ import 'package:tendergo/shared/core/network/constants/location_endpoints.dart';
 import 'package:tendergo/shared/models/dto/location_dto.dart';
 import 'package:tendergo/shared/models/requests/location_filter_request.dart';
 import 'package:tendergo/shared/models/requests/location_insert_request.dart';
+import 'package:tendergo/shared/models/requests/location_search_request.dart';
 import 'package:tendergo/shared/models/requests/location_update_request.dart';
 import 'package:tendergo/shared/services/base_service.dart';
 
@@ -91,4 +92,20 @@ class LocationService extends BaseService<LocationDto> {
       );
     }
   }
+    Future<List<LocationDto>> search(LocationSearchRequest request) async {
+    try {
+      final response = await dio.get(
+        LocationEndpoints.search(request.searchTerm ?? '', page: request.page, pageSize: request.pageSize  ),
+      );
+
+      final List<dynamic> data = response.data['result'] ?? [];
+
+      return data
+          .map((x) => LocationDto.fromJson(x as Map<String, dynamic>))
+          .toList();
+    } on DioException catch (e) {
+      throw Exception(e.response?.data ?? 'Error searching locations');
+    }
+  }
+
 }

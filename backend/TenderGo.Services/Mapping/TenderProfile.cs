@@ -27,6 +27,12 @@ namespace TenderGo.Services.Mapping
             .ForMember(dest => dest.Images, opt => opt.MapFrom(src =>
                  src.Images));
 
+            CreateMap<Tender, AdminTenderDTO>()
+                .ForMember(dest => dest.CreatedByUserFullName, opt => opt.MapFrom(src =>
+                    src.CreatedByUser != null
+                        ? $"{src.CreatedByUser.FirstName} {src.CreatedByUser.LastName}"
+                        : "Unknown author"));
+
             CreateMap<TenderInsertRequest, Tender>()
                 .ForMember(dest => dest.Images, opt => opt.Ignore());
 

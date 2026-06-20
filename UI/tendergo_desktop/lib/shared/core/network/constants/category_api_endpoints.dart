@@ -9,8 +9,13 @@ class CategoryApiEndpoints {
 
   static String activate(int id) => '$baseUrl/$id/activate';
 
+// Pazi da baseUrl završava sa /api/category ili ručno dodaj putanju
+static String search(String searchTerm, {int page = 1, int pageSize = 10}) => 
+    '$baseUrl/search?searchTerm=$searchTerm&page=$page&pageSize=$pageSize';
+
     static const String insert = baseUrl;
 
+static String categoryStatistics = '$baseUrl/statistics';
 
 
 

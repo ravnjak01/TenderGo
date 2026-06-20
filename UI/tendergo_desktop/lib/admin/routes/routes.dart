@@ -1,6 +1,9 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:tendergo/admin/admin-panel-v2/screens/admin_categories_panel.dart';
+import 'package:tendergo/admin/admin-panel-v2/screens/admin_layout.dart';
+import 'package:tendergo/admin/admin-panel-v2/screens/login_screen.dart';
 
 // Screens / Ekran uvozi
 import 'package:tendergo/admin/screens/admin_report_preview_screen.dart';
@@ -34,6 +37,8 @@ import 'package:tendergo/shared/services/image_service.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
 import 'package:tendergo/shared/services/user_service.dart';
 
+import '../admin-panel-v2/screens/admin_layout.dart';
+
 class AppRoutes {
   // Navigator Key za globalni pristup bez konteksta
   static final GlobalKey<NavigatorState> navigatorKey =
@@ -42,6 +47,7 @@ class AppRoutes {
   // Nazivi ruta (Konstante)
   static const String splash = '/splash';
   static const String login = '/login';
+  static const String loginV2 = '/login-v2';
   static const String registration = '/registration';
   static const String forgotPassword = '/forgot-password';
   static const String resetPassword = '/reset-password';
@@ -60,6 +66,13 @@ class AppRoutes {
   static const String notifications = '/notifications';
   static const String pdfViewer = '/pdf-viewer';
   static const String bookmarkedTenders = '/bookmarked-tenders';
+  static const String mainAdminLayout = '/main-admin';
+  static const String adminCategories = '/admin-categories';
+  static const String adminLocations = '/admin-locations';
+  static const String adminUsers = '/admin-users';
+  static const String adminTenders = '/admin-tenders';
+  static const String adminReports = '/admin-reports';
+  static const String adminDashboard = '/admin-dashboard';
 
   // Metoda koja generiše mapu ruta sa proslijeđenim servisima
   static Map<String, WidgetBuilder> getRoutes({
@@ -162,6 +175,11 @@ class AppRoutes {
 
         return AdminReportPreviewScreen(pdfBytes: pdfBytes, title: title);
       },
+
+      AppRoutes.loginV2: (context) => const AdminLoginScreenV2(),
+      AppRoutes.mainAdminLayout: (context) =>
+    const MainAdminLayout(),
+    AppRoutes.adminCategories: (context) =>const AdminCategoriesPanel(),
     };
   }
 }

@@ -2,7 +2,9 @@ import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:tendergo/shared/core/network/constants/api_endpoints.dart';
 import 'package:tendergo/shared/core/network/constants/admin_endpoints.dart';
+import 'package:tendergo/shared/models/dto/activity_dto.dart';
 import 'package:tendergo/shared/models/dto/admin_dto.dart';
+import 'package:tendergo/shared/models/dto/tender_dto.dart';
 import 'package:tendergo/shared/models/dto/user_dto.dart';
 import 'package:tendergo/shared/models/ui/api_response.dart';
 import 'package:tendergo/shared/services/api_helper.dart';
@@ -52,6 +54,22 @@ class AdminService {
     }
   }
 
+  Future<ApiResponse<List<TenderDto>>> getAllTenders() async {
+    try {
+      final response = await _dio.get(
+        AdminEndpoints.getAllTenders,
+        options: await _options(),
+      );
+
+      final List<dynamic> data = response.data;
+      final tenders = data.map((json) => TenderDto.fromJson(json)).toList();
+
+      return ApiResponse.success(tenders, message: 'Tenders fetched successfully.');
+    } on DioException catch (e) {
+      return ApiHelper.handleDioError<List<TenderDto>>(e);
+    }
+  }
+
   Future<ApiResponse<void>> banUser(String userId, BanRequest reason) async {
     try {
       await _dio.post(
@@ -78,6 +96,23 @@ class AdminService {
       return ApiHelper.handleDioError(e);
     }
   }
+
+Future<ApiResponse<List<ActivityDto>>> getRecentActivities() async {
+    try {
+      final response = await _dio.get(
+        AdminEndpoints.recentActivity,
+        options: await _options(),
+      );
+
+      final List<dynamic> data = response.data;
+      final activities = data.map((json) => ActivityDto.fromJson(json)).toList();
+
+      return ApiResponse.success(activities, message: 'Recent activities fetched successfully.');
+    } on DioException catch (e) {
+      return ApiHelper.handleDioError<List<ActivityDto>>(e);
+    }
+  }
+  
 
   Future<Options> _options() async {
     final token = await _storage.read(key: 'jwt_token');

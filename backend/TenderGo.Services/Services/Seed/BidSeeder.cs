@@ -12,7 +12,7 @@ namespace TenderGo.Services.Services.Seed
 {
     public class BidSeeder : IDataSeeder
     {
-        public int Order => 7;
+        public int Order => 8;
 
         public async Task SeedAsync(TenderGoContext context, IServiceProvider serviceProvider)
         {

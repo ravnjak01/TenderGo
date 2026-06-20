@@ -1,3 +1,4 @@
+import 'package:tendergo/shared/models/dto/activity_dto.dart';
 import 'package:tendergo/shared/models/dto/admin_dto.dart';
 import 'package:tendergo/shared/models/dto/category_dto.dart';
 import 'package:tendergo/shared/models/dto/location_dto.dart';
@@ -76,4 +77,8 @@ class AdminProvider {
 
   Future<LocationDto> activateLocation(int id) =>
       locationService.activateLocation(id);
+  
+  Future<ApiResponse<List<ActivityDto>>> getRecentActivities() async {
+    return adminService.getRecentActivities();
+  }
 }

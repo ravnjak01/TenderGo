@@ -8,7 +8,7 @@ namespace TenderGo.Services.Services
 {
     public class AdminDashboardService : IAdminDashboardService
     {
-        private const int RecentActivitiesCount = 10;
+        public const int RecentActivitiesCount = 10;
 
         private readonly TenderGoContext _context;
 
@@ -37,7 +37,7 @@ namespace TenderGo.Services.Services
             return dashboard;
         }
 
-        private async Task<List<ActivityDTO>> GetRecentActivitiesAsync()
+        public async Task<List<ActivityDTO>> GetRecentActivitiesAsync()
         {
             var registeredUsers = await _context.Users
                 .AsNoTracking()
