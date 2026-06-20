@@ -51,5 +51,18 @@ namespace TenderGo.Api.Controllers
             var location = await _locationService.Activate(id);
             return Ok(new { message = "Location activated successfully.", data = location });
         }
+
+        [HttpGet("statistics")]
+        public async Task<ActionResult<List<LocationStatsDTO>>> GetStatistics()
+        {
+            var statistics = await _locationService.GetLocationStatisticsAsync();
+            return Ok(statistics);
+        }
+
+        [HttpGet("overview")]
+        public async Task<ActionResult<LocationOverviewDTO>> GetOverview()
+        {
+            return Ok(await _locationService.GetOverviewAsync());
+        }
     }
 }

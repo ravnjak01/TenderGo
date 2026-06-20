@@ -23,12 +23,10 @@ class _AdminCategoriesPanelState extends State<AdminCategoriesPanel> {
   @override
   void initState() {
     super.initState();
-    // Use the shared Dio client so auth, base URL, and interceptors are applied.
     _categoryService = CategoryService(DioClient.getDio());
     _fetchCategories();
   }
 
-  //ne radi ovaj ekran kako treba, ne prikazuje podatke,
   Future<void> _fetchCategories({String searchTerm = ''}) async {
     setState(() {
       _isLoading = true;
@@ -153,11 +151,7 @@ class _AdminCategoriesPanelState extends State<AdminCategoriesPanel> {
     return '📁';
   }
 
-  // Simulacija broja potkategorija i tendera ukoliko nedostaju direktno u CategoryDto poljima
-  int _getSubcategoryCount(int index) {
-    final counts = [8, 5, 3, 4, 6];
-    return index < counts.length ? counts[index] : 2;
-  }
+
 
   int _getTenderCount(int index) {
     final counts = [18, 14, 6, 9, 4];

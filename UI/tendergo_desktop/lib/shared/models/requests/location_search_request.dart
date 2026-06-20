@@ -5,5 +5,12 @@ class LocationSearchRequest extends PagedSearchRequest {
   final bool? isActive;
   final String? country;
 
-  LocationSearchRequest({this.searchTerm, this.isActive, this.country}) : super(page: 1, pageSize: 10);
+ LocationSearchRequest({
+    this.searchTerm,
+    this.isActive,
+    this.country,
+    int page = 1,         // Dodano s defaultnom vrijednošću
+    int pageSize = 10,     // Dodano s defaultnom vrijednošću
+  }) : super(page: page, pageSize: pageSize); // Prosljeđivanje unesenih vrijednosti u super
+
 }
