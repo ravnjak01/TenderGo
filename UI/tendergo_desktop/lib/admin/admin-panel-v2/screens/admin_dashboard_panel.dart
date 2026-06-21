@@ -197,19 +197,37 @@ class _AdminDashboardPanelState extends State<AdminDashboardPanel> {
                       ),
                       const SizedBox(height: 28),
 
-                      // Grid kartica sa 4 kolone za web/desktop izgled
-                      GridView.count(
-                        crossAxisCount: 4,
-                        crossAxisSpacing: 20,
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        childAspectRatio: 2.1,
-                        children: [
-                          _statCard('UKUPNO KORISNIKA', formatCurrency.format(_usersCount), const Color(0xFF3B82F6)),
-                          _statCard('AKTIVNI TENDERI', '$_activeTendersCount', const Color(0xFF10B981)),
-                          _statCard('BROJ LOKACIJA', '$_locationsCount', const Color(0xFFF59E0B)),
-                          _statCard('NOVE KATEGORIJE', '$_categoriesCount', const Color(0xFFEF4444)),
-                        ],
+                      // Responsive stat cards layout
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final width = constraints.maxWidth;
+                          final itemWidth = width > 1200
+                              ? (width - 60) / 4
+                              : width > 900
+                                  ? (width - 40) / 3
+                                  : width > 700
+                                      ? (width - 20) / 2
+                                      : width;
+
+                          return Wrap(
+                            spacing: 20,
+                            runSpacing: 20,
+                            children: [
+                              SizedBox(
+                                  width: itemWidth,
+                                  child: _statCard('UKUPNO KORISNIKA', formatCurrency.format(_usersCount), const Color(0xFF3B82F6))),
+                              SizedBox(
+                                  width: itemWidth,
+                                  child: _statCard('AKTIVNI TENDERI', '$_activeTendersCount', const Color(0xFF10B981))),
+                              SizedBox(
+                                  width: itemWidth,
+                                  child: _statCard('BROJ LOKACIJA', '$_locationsCount', const Color(0xFFF59E0B))),
+                              SizedBox(
+                                  width: itemWidth,
+                                  child: _statCard('BROJ KATEGORIJA', '$_categoriesCount', const Color(0xFFEF4444))),
+                            ],
+                          );
+                        },
                       ),
 
                       const SizedBox(height: 36),
@@ -234,12 +252,14 @@ class _AdminDashboardPanelState extends State<AdminDashboardPanel> {
                           ],
                           border: Border.all(color: const Color(0xFFE2E8F0)),
                         ),
-                        child: DataTable(
-                          horizontalMargin: 24,
-                          headingRowHeight: 50,
-                          dataRowMaxHeight: 55,
-                          dataRowMinHeight: 45,
-                          headingRowColor: MaterialStateProperty.all(const Color(0xFFF8FAFC)),
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: DataTable(
+                            horizontalMargin: 24,
+                            headingRowHeight: 50,
+                            dataRowMaxHeight: 55,
+                            dataRowMinHeight: 45,
+                            headingRowColor: MaterialStateProperty.all(const Color(0xFFF8FAFC)),
                           columns: const [
                             DataColumn(label: Text('ID', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF64748B)))),
                             DataColumn(label: Text('Korisnik', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF64748B)))),
@@ -261,6 +281,7 @@ class _AdminDashboardPanelState extends State<AdminDashboardPanel> {
                           }),
                         ),
                       ),
+                      )
                     ],
                   ),
                 ),
