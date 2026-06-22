@@ -121,44 +121,10 @@ class _AdminDashboardPanelState extends State<AdminDashboardPanel> {
     return '#${1024 - index}';
   }
 
-  String _parseCategoryLocation(ActivityDto activity) {
-    // Na osnovu tipa akcije izdvajamo tekst za kolonu "Kategorija / Lokacija"
-    switch (activity.activityType) {
-      case ActivityType.tenderCreated:
-        return 'Izgradnja / Sarajevo';
-      case ActivityType.userRegistered:
-        return 'Korisnici';
-      case ActivityType.bidSubmitted:
-        return 'IT Usluge / Banja Luka';
-      default:
-        return 'Mostar';
-    }
-  }
+  String _parseDetails(ActivityDto activity) {
+  return activity.details ?? '-';
+}
 
-  Widget _buildStatusBadge(ActivityDto activity) {
-    // Registracija profila je "Na čekanju" (žuto), ostalo je "Aktivan" (zeleno)
-    final isPending = activity.activityType == ActivityType.userRegistered;
-    
-    final bgColor = isPending ? const Color(0xFFFEF3C7) : const Color(0xFFD1FAE5);
-    final textColor = isPending ? const Color(0xFFD97706) : const Color(0xFF059669);
-    final text = isPending ? 'Na čekanju' : 'Aktivan';
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: textColor,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -264,8 +230,8 @@ class _AdminDashboardPanelState extends State<AdminDashboardPanel> {
                             DataColumn(label: Text('ID', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF64748B)))),
                             DataColumn(label: Text('Korisnik', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF64748B)))),
                             DataColumn(label: Text('Akcija', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF64748B)))),
-                            DataColumn(label: Text('Kategorija / Lokacija', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF64748B)))),
-                            DataColumn(label: Text('Status', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF64748B)))),
+                            DataColumn(label: Text('Detalji', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF64748B)))),
+     
                           ],
                           rows: List.generate(_recentActivities.length, (index) {
                             final activity = _recentActivities[index];
@@ -274,8 +240,8 @@ class _AdminDashboardPanelState extends State<AdminDashboardPanel> {
                                 DataCell(Text(_parseId(activity, index), style: const TextStyle(color: Color(0xFF64748B)))),
                                 DataCell(Text(activity.userName, style: const TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.w500))),
                                 DataCell(Text(activity.action, style: const TextStyle(color: Color(0xFF334155)))),
-                                DataCell(Text(_parseCategoryLocation(activity), style: const TextStyle(color: Color(0xFF334155)))),
-                                DataCell(_buildStatusBadge(activity)),
+                                DataCell(Text(_parseDetails(activity), style: const TextStyle(color: Color(0xFF334155)))),
+                           
                               ],
                             );
                           }),

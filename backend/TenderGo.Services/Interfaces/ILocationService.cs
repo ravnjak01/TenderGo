@@ -13,6 +13,7 @@ namespace TenderGo.Services.Interfaces
         Task<PagedResult<LocationDTO>> SearchAsync(LocationSearchRequest request);
         Task<List<LocationDTO>> GetFilteredLocationsAsync(string? country, string? region, bool includeInactive = false);
         Task<LocationDTO> Activate(int id);
+        Task<LocationDTO> Deactivate(int id);
         Task<List<LocationStatsDTO>> GetLocationStatisticsAsync();
         Task<LocationOverviewDTO> GetOverviewAsync();
     }

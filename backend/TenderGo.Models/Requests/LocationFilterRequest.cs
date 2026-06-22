@@ -4,5 +4,7 @@ namespace TenderGo.Models.Requests
     {
         public string? Country { get; set; }
         public string? Region { get; set; }
+
+        public bool IncludeInactive { get; set; } = false;
     }
 }

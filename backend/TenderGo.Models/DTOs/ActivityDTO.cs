@@ -13,5 +13,7 @@ namespace TenderGo.Models.DTOs
         public string UserName { get; set; } = string.Empty;
         public ActivityType ActivityType { get; set; }
         public string Action { get; set; } = string.Empty;
+
+        public string? Details { get; set; }
     }
 }

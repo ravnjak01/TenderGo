@@ -220,6 +220,7 @@ using (var scope = app.Services.CreateScope())
                 new LocationSeeder(),
                 new CategorySeeder(),
                 new TenderOpenSeeder(),
+                new TenderImagesSeeder(),
                 new TenderClosedSeeder(),
                 new TenderAwardedSeeder(),
                 new BidSeeder(),
