@@ -109,6 +109,53 @@ class _AdminCategoriesPanelState extends State<AdminCategoriesPanel> {
     }
   }
 
+  Future<void> _showAddCategoryDialog() async {
+    final controller = TextEditingController();
+    final shouldSave = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Dodaj novu kategoriju'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            labelText: 'Naziv kategorije',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Otkaži'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Sačuvaj'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldSave != true) return;
+
+    final name = controller.text.trim();
+    if (name.isEmpty) return;
+
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      await _categoryService.insert(CategoryDto(id: 0, name: name));
+      await _fetchCategories(searchTerm: _searchController.text);
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
   Future<void> _deleteCategory(CategoryDto category) async {
     final confirmed = await AppDialogs.showConfirm(
       context: context,
@@ -230,9 +277,7 @@ class _AdminCategoriesPanelState extends State<AdminCategoriesPanel> {
                 ),
               ),
               ElevatedButton.icon(
-                onPressed: () {
-                  // TODO: Implementacija dodavanja nove kategorije
-                },
+                onPressed: _showAddCategoryDialog,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(
                     0xFF2563EB,

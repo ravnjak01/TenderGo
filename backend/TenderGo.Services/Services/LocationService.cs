@@ -149,6 +149,17 @@ namespace TenderGo.Services.Services
             return _mapper.Map<LocationDTO>(location);
         }
 
+        public async Task<LocationDTO> Deactivate(int id)
+        {
+            var location = await _context.Locations.FindAsync(id)
+                ?? throw new UserException("Location not found");
+
+            location.IsActive = false;
+            await _context.SaveChangesAsync();
+
+            return _mapper.Map<LocationDTO>(location);
+        }
+
         public async Task<List<LocationStatsDTO>> GetLocationStatisticsAsync()
         {
             return await _context.Locations

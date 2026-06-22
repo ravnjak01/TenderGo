@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tendergo/shared/models/dto/location_dto.dart';
+import 'package:tendergo/shared/models/requests/location_filter_request.dart';
 import 'package:tendergo/shared/models/requests/location_insert_request.dart';
 import 'package:tendergo/shared/models/requests/location_search_request.dart';
 import 'package:tendergo/shared/models/requests/location_update_request.dart';
@@ -37,40 +38,37 @@ class _AdminLocationsPanelState extends State<AdminLocationsPanel> {
     super.dispose();
   }
 
-  Future<void> _loadData({String searchTerm = ''}) async {
-  // Ako je u pitanju samo pretraga, nemoj paliti globalni loader koji skriva cijelu tabelu
-  if (searchTerm.isEmpty && _locations.isEmpty) {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-  }
+  Future<void> _loadData({String searchTerm = '', bool refreshOverview = false}) async {
+    final shouldShowLoader = refreshOverview || (searchTerm.isEmpty && _locations.isEmpty);
 
-  try {
-    // Ako se samo pretražuje, nema potrebe ponovo vući statistiku i overview
-    if (searchTerm.isNotEmpty || _locations.isNotEmpty) {
-      await _fetchLocations(searchTerm: searchTerm);
+    if (shouldShowLoader) {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+    }
+
+    try {
+      if (refreshOverview || _locations.isEmpty) {
+        await Future.wait([
+          _fetchOverview(),
+          _fetchStatistics(),
+          _fetchLocations(searchTerm: searchTerm),
+        ]);
+      } else {
+        await _fetchLocations(searchTerm: searchTerm);
+      }
+
       setState(() {
         _isLoading = false;
       });
-    } else {
-      // Ovo je inicijalno (prvo) učitavanje svega
-      await Future.wait([
-        _fetchOverview(),
-        _fetchStatistics(),
-        _fetchLocations(searchTerm: searchTerm),
-      ]);
+    } catch (e) {
       setState(() {
+        _error = e.toString();
         _isLoading = false;
       });
     }
-  } catch (e) {
-    setState(() {
-      _error = e.toString();
-      _isLoading = false;
-    });
   }
-}
 
   Future<void> _fetchOverview() async {
     _overview = await _locationService.getLocationOverview();
@@ -82,8 +80,9 @@ class _AdminLocationsPanelState extends State<AdminLocationsPanel> {
   }
 
   Future<void> _fetchLocations({String searchTerm = ''}) async {
-    _locations = await _locationService.search(
-      LocationSearchRequest(searchTerm: searchTerm, page: 1, pageSize: 10),
+    _locations = await _locationService.getLocations(
+      LocationFilterRequest(country: searchTerm),
+      includeInactive: true,
     );
   }
 
@@ -94,7 +93,7 @@ class _AdminLocationsPanelState extends State<AdminLocationsPanel> {
   bool _hasActiveTenders(LocationDto location) {
     return _activeTenderCount(location) > 0;
   }
-
+  
   Future<void> _showAddLocationDialog() async {
     final nameController = TextEditingController();
     final countryController = TextEditingController();
@@ -157,7 +156,7 @@ class _AdminLocationsPanelState extends State<AdminLocationsPanel> {
           region: region.isEmpty ? null : region,
         ),
       );
-      await _loadData(searchTerm: _searchController.text);
+      await _loadData(searchTerm: _searchController.text, refreshOverview: true);
     } catch (e) {
       setState(() {
         _error = e.toString();
@@ -229,7 +228,7 @@ class _AdminLocationsPanelState extends State<AdminLocationsPanel> {
           region: region.isEmpty ? null : region,
         ),
       );
-      await _loadData(searchTerm: _searchController.text);
+      await _loadData(searchTerm: _searchController.text, refreshOverview: true);
     } catch (e) {
       setState(() {
         _error = e.toString();
@@ -239,24 +238,42 @@ class _AdminLocationsPanelState extends State<AdminLocationsPanel> {
   }
 
   Future<void> _deleteLocation(LocationDto location) async {
+    // 1. SLUČAJ: Lokacija ima aktivne tendere -> Nudimo deaktivaciju
     if (_hasActiveTenders(location)) {
-      await AppDialogs.showConfirm(
+      final shouldDeactivate = await AppDialogs.showConfirm(
         context: context,
-        title: 'Ne može se obrisati',
-        content:
-            'Lokacija ima aktivne tendere. Umjesto brisanja možete je deaktivirati.',
-        cancelLabel: 'Zatvori',
-        confirmLabel: 'U redu',
-        isDestructive: false,
+        title: 'Lokacija ima aktivne tendere',
+        content: 'Ova lokacija se ne može obrisati jer je povezana sa aktivnim tenderima. '
+                 'Da li želite da je deaktivirate umjesto brisanja?',
+        cancelLabel: 'Otkaži',
+        confirmLabel: 'Deaktiviraj',
+        isDestructive: false, // Može biti i true/false zavisno od UI dizajna
       );
-      return;
+
+      if (!shouldDeactivate) return;
+
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+
+      try {
+        await _locationService.deactivateLocation(location.id);
+        await _loadData(searchTerm: _searchController.text, refreshOverview: true);
+      } catch (e) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
+      return; // Prekidamo izvršavanje da ne ide na standardno brisanje
     }
 
+    // 2. SLUČAJ: Lokacija nema aktivne tendere -> Standardno brisanje
     final confirmed = await AppDialogs.showConfirm(
       context: context,
       title: 'Potvrdi brisanje',
-      content:
-          'Da li ste sigurni da želite obrisati lokaciju "${location.displayLabel}"?',
+      content: 'Da li ste sigurni da želite obrisati lokaciju "${location.displayLabel}"?',
       cancelLabel: 'Otkaži',
       confirmLabel: 'Obriši',
       isDestructive: true,
@@ -271,7 +288,7 @@ class _AdminLocationsPanelState extends State<AdminLocationsPanel> {
 
     try {
       await _locationService.deleteLocation(location.id);
-      await _loadData(searchTerm: _searchController.text);
+      await _loadData(searchTerm: _searchController.text, refreshOverview: true);
     } catch (e) {
       setState(() {
         _error = e.toString();
@@ -480,7 +497,9 @@ class _AdminLocationsPanelState extends State<AdminLocationsPanel> {
                                 cells: [
                                   DataCell(
                                     Text(
-                                      location.displayLabel,
+                                      location.region != null && location.region!.isNotEmpty
+                                          ? '${location.name}, ${location.region}'
+                                          : location.name,
                                       style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
                                     ),
                                   ),

@@ -134,6 +134,7 @@ builder.Services.AddScoped<IImageService, ImageService>();
 builder.Services.AddTransient<ICategoryService, CategoryService>();
 builder.Services.AddTransient<ILocationService, LocationService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<IAdminReportService,AdminReportService>();
 
 
 // Email i Background poslovi
@@ -219,6 +220,7 @@ using (var scope = app.Services.CreateScope())
                 new LocationSeeder(),
                 new CategorySeeder(),
                 new TenderOpenSeeder(),
+                new TenderImagesSeeder(),
                 new TenderClosedSeeder(),
                 new TenderAwardedSeeder(),
                 new BidSeeder(),

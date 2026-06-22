@@ -15,7 +15,6 @@ namespace TenderGo.Data.Seeders
             {
                 "Gradjevinski radovi",
                 "IT i razvoj softvera",
-                "Dizajn i marketing",
                 "Dizajn,marketing i fotografija",
                 "Transport",
                 "Servis i odrzavanje",

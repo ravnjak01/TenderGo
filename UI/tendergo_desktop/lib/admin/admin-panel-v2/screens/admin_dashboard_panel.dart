@@ -121,44 +121,10 @@ class _AdminDashboardPanelState extends State<AdminDashboardPanel> {
     return '#${1024 - index}';
   }
 
-  String _parseCategoryLocation(ActivityDto activity) {
-    // Na osnovu tipa akcije izdvajamo tekst za kolonu "Kategorija / Lokacija"
-    switch (activity.activityType) {
-      case ActivityType.tenderCreated:
-        return 'Izgradnja / Sarajevo';
-      case ActivityType.userRegistered:
-        return 'Korisnici';
-      case ActivityType.bidSubmitted:
-        return 'IT Usluge / Banja Luka';
-      default:
-        return 'Mostar';
-    }
-  }
+  String _parseDetails(ActivityDto activity) {
+  return activity.details ?? '-';
+}
 
-  Widget _buildStatusBadge(ActivityDto activity) {
-    // Registracija profila je "Na čekanju" (žuto), ostalo je "Aktivan" (zeleno)
-    final isPending = activity.activityType == ActivityType.userRegistered;
-    
-    final bgColor = isPending ? const Color(0xFFFEF3C7) : const Color(0xFFD1FAE5);
-    final textColor = isPending ? const Color(0xFFD97706) : const Color(0xFF059669);
-    final text = isPending ? 'Na čekanju' : 'Aktivan';
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: textColor,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -197,19 +163,37 @@ class _AdminDashboardPanelState extends State<AdminDashboardPanel> {
                       ),
                       const SizedBox(height: 28),
 
-                      // Grid kartica sa 4 kolone za web/desktop izgled
-                      GridView.count(
-                        crossAxisCount: 4,
-                        crossAxisSpacing: 20,
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        childAspectRatio: 2.1,
-                        children: [
-                          _statCard('UKUPNO KORISNIKA', formatCurrency.format(_usersCount), const Color(0xFF3B82F6)),
-                          _statCard('AKTIVNI TENDERI', '$_activeTendersCount', const Color(0xFF10B981)),
-                          _statCard('BROJ LOKACIJA', '$_locationsCount', const Color(0xFFF59E0B)),
-                          _statCard('NOVE KATEGORIJE', '$_categoriesCount', const Color(0xFFEF4444)),
-                        ],
+                      // Responsive stat cards layout
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final width = constraints.maxWidth;
+                          final itemWidth = width > 1200
+                              ? (width - 60) / 4
+                              : width > 900
+                                  ? (width - 40) / 3
+                                  : width > 700
+                                      ? (width - 20) / 2
+                                      : width;
+
+                          return Wrap(
+                            spacing: 20,
+                            runSpacing: 20,
+                            children: [
+                              SizedBox(
+                                  width: itemWidth,
+                                  child: _statCard('UKUPNO KORISNIKA', formatCurrency.format(_usersCount), const Color(0xFF3B82F6))),
+                              SizedBox(
+                                  width: itemWidth,
+                                  child: _statCard('AKTIVNI TENDERI', '$_activeTendersCount', const Color(0xFF10B981))),
+                              SizedBox(
+                                  width: itemWidth,
+                                  child: _statCard('BROJ LOKACIJA', '$_locationsCount', const Color(0xFFF59E0B))),
+                              SizedBox(
+                                  width: itemWidth,
+                                  child: _statCard('BROJ KATEGORIJA', '$_categoriesCount', const Color(0xFFEF4444))),
+                            ],
+                          );
+                        },
                       ),
 
                       const SizedBox(height: 36),
@@ -234,18 +218,20 @@ class _AdminDashboardPanelState extends State<AdminDashboardPanel> {
                           ],
                           border: Border.all(color: const Color(0xFFE2E8F0)),
                         ),
-                        child: DataTable(
-                          horizontalMargin: 24,
-                          headingRowHeight: 50,
-                          dataRowMaxHeight: 55,
-                          dataRowMinHeight: 45,
-                          headingRowColor: MaterialStateProperty.all(const Color(0xFFF8FAFC)),
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: DataTable(
+                            horizontalMargin: 24,
+                            headingRowHeight: 50,
+                            dataRowMaxHeight: 55,
+                            dataRowMinHeight: 45,
+                            headingRowColor: MaterialStateProperty.all(const Color(0xFFF8FAFC)),
                           columns: const [
                             DataColumn(label: Text('ID', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF64748B)))),
                             DataColumn(label: Text('Korisnik', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF64748B)))),
                             DataColumn(label: Text('Akcija', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF64748B)))),
-                            DataColumn(label: Text('Kategorija / Lokacija', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF64748B)))),
-                            DataColumn(label: Text('Status', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF64748B)))),
+                            DataColumn(label: Text('Detalji', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF64748B)))),
+     
                           ],
                           rows: List.generate(_recentActivities.length, (index) {
                             final activity = _recentActivities[index];
@@ -254,13 +240,14 @@ class _AdminDashboardPanelState extends State<AdminDashboardPanel> {
                                 DataCell(Text(_parseId(activity, index), style: const TextStyle(color: Color(0xFF64748B)))),
                                 DataCell(Text(activity.userName, style: const TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.w500))),
                                 DataCell(Text(activity.action, style: const TextStyle(color: Color(0xFF334155)))),
-                                DataCell(Text(_parseCategoryLocation(activity), style: const TextStyle(color: Color(0xFF334155)))),
-                                DataCell(_buildStatusBadge(activity)),
+                                DataCell(Text(_parseDetails(activity), style: const TextStyle(color: Color(0xFF334155)))),
+                           
                               ],
                             );
                           }),
                         ),
                       ),
+                      )
                     ],
                   ),
                 ),

@@ -80,6 +80,3 @@ namespace TenderGo.Services.Services.Seed
         }
     }
 }
-
-
-//provjeriti da li se u bazi ponavljaju tenderi,ima li greske u seedovima,baca exception kad se pokrene BE da postoji vec neki tenderi u bazi, a u seedovima se ponavljaju, pa treba dodati provjeru da li tender vec postoji prije nego se doda novi tender

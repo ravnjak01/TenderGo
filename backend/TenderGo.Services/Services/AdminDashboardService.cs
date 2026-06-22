@@ -48,7 +48,8 @@ namespace TenderGo.Services.Services
                     CreatedAt = u.CreatedAt,
                     UserName = u.UserName ?? u.Email ?? string.Empty,
                     ActivityType = ActivityType.UserRegistered,
-                    Action = "User registered"
+                    Action = "User registered",
+                    Details = null
                 })
                 .ToListAsync();
 
@@ -62,7 +63,8 @@ namespace TenderGo.Services.Services
                     CreatedAt = t.CreatedAt,
                     UserName = t.CreatedByUser.UserName ?? t.CreatedByUser.Email ?? string.Empty,
                     ActivityType = ActivityType.TenderCreated,
-                    Action = $"Tender created: {t.Title}"
+                    Action = $"Tender created: {t.Title}",
+                    Details= $"{t.Category.Name}, {t.Location.Name}"
                 })
                 .ToListAsync();
 
@@ -76,7 +78,8 @@ namespace TenderGo.Services.Services
                     CreatedAt = b.SubmittedAt,
                     UserName = b.SubmittedByUser.UserName ?? b.SubmittedByUser.Email ?? string.Empty,
                     ActivityType = ActivityType.BidSubmitted,
-                    Action = "Bid submitted"
+                    Action = "Bid submitted",
+                    Details = $"Tender: {b.Tender.Title}, Amount: {b.OfferedPrice:KM}"
                 })
                 .ToListAsync();
 

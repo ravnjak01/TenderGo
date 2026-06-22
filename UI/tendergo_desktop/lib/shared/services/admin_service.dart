@@ -6,6 +6,7 @@ import 'package:tendergo/shared/models/dto/activity_dto.dart';
 import 'package:tendergo/shared/models/dto/admin_dto.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
 import 'package:tendergo/shared/models/dto/user_dto.dart';
+import 'package:tendergo/shared/models/requests/users_search_request.dart';
 import 'package:tendergo/shared/models/ui/api_response.dart';
 import 'package:tendergo/shared/services/api_helper.dart';
 
@@ -113,6 +114,25 @@ Future<ApiResponse<List<ActivityDto>>> getRecentActivities() async {
     }
   }
   
+Future<List<UserDto>> search(UsersSearchRequest request) async {
+    try {
+      final response = await _dio.get(
+        AdminEndpoints.searchUsers,
+        options: await _options(),
+        queryParameters: request.toJson(),
+      );
+
+      final List<dynamic> data = response.data is List 
+        ? response.data 
+        : (response.data['result'] ?? []);
+
+      return data
+          .map((x) => UserDto.fromJson(x as Map<String, dynamic>))
+          .toList();
+    } on DioException catch (e) {
+      throw Exception(e.response?.data ?? 'Error searching users');
+    }
+  }
 
   Future<Options> _options() async {
     final token = await _storage.read(key: 'jwt_token');
