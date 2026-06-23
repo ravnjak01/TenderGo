@@ -43,57 +43,39 @@ namespace TenderGo.Services.Services
             return query.Where(l => l.IsActive);
         }
 
-        public async Task<PagedResult<LocationDTO>> SearchAsync(LocationSearchRequest request)
+        public async Task<PagedResult<LocationDTO>> GetAdminLocationsPagedAsync(LocationSearchRequest request)
         {
             var page = Math.Max(request.Page, 1);
             var pageSize = Math.Max(request.PageSize, 1);
             var query = _context.Locations.AsQueryable();
 
+            // Admin eksplicitno bira hoće li aktivne, neaktivne ili sve
             if (request.IsActive.HasValue)
             {
                 query = query.Where(l => l.IsActive == request.IsActive.Value);
             }
-            else
-            {
-                query = ApplyFilter(query);
-            }
 
-            if (!string.IsNullOrWhiteSpace(request.Country))
-            {
-                var country = request.Country.Trim().ToLower();
-                query = query.Where(l => l.Country.ToLower() == country);
-            }
-
+            // Pretraga u admin panelu
             if (!string.IsNullOrWhiteSpace(request.SearchTerm))
             {
                 var term = request.SearchTerm.Trim().ToLower();
                 var likeTerm = $"%{term}%";
 
                 query = query.Where(l =>
-                    EF.Functions.Like(l.Name, likeTerm) ||
-                    EF.Functions.Like(l.Country, likeTerm) ||
-                    (l.Region != null && EF.Functions.Like(l.Region, likeTerm)));
+                    EF.Functions.Like(l.Name.ToLower(), likeTerm) ||
+                    EF.Functions.Like(l.Country.ToLower(), likeTerm));
             }
 
             var totalCount = await query.CountAsync();
 
             var results = await query
-                .OrderBy(l => l.Country)
-                .ThenBy(l => l.Region)
-                .ThenBy(l => l.Name)
-                .ThenBy(l => l.Id)
+                .OrderByDescending(l => l.Id) // Najnovije lokacije prve u admin panelu
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ProjectTo<LocationDTO>(_mapper.ConfigurationProvider)
                 .ToListAsync();
 
-            return new PagedResult<LocationDTO>
-            {
-                Result = results,
-                TotalCount = totalCount,
-                Page = page,
-                PageSize = pageSize
-            };
+            return new PagedResult<LocationDTO> { Result = results, TotalCount = totalCount, Page = page, PageSize = pageSize };
         }
 
         public async Task<List<LocationDTO>> GetFilteredLocationsAsync(string? country, string? region, bool includeInactive = false)

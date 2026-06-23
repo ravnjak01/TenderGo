@@ -26,13 +26,15 @@ namespace TenderGo.Api.Controllers
             _logger = logger;
         }
 
-        [HttpGet("search")]
-        public async Task<ActionResult<PagedResult<LocationDTO>>> Search([FromQuery] LocationSearchRequest request)
+
+        [Authorize(Roles = AppRoles.Admin)] 
+        [HttpGet("admin-search")]
+        public async Task<IActionResult> GetAdminSearch([FromQuery] LocationSearchRequest request)
         {
-            var result = await _locationService.SearchAsync(request);
+            var result = await _locationService.GetAdminLocationsPagedAsync(request);
             return Ok(result);
+
         }
-    
         [HttpGet("all")]
         public async Task<ActionResult<List<LocationDTO>>> GetAll([FromQuery] LocationFilterRequest request)
         {

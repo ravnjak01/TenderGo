@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:tendergo/shared/models/dto/location_dto.dart';
 import 'package:tendergo/shared/models/requests/location_filter_request.dart';
@@ -18,12 +20,14 @@ class AdminLocationsPanel extends StatefulWidget {
 class _AdminLocationsPanelState extends State<AdminLocationsPanel> {
   final TextEditingController _searchController = TextEditingController();
   late final LocationService _locationService;
+  Timer? _debounceTimer;
 
   List<LocationDto> _locations = [];
   Map<int, LocationStatsDto> _statsByLocation = {};
   LocationOverviewDto? _overview;
   bool _isLoading = true;
   String? _error;
+  bool? _selectedActiveFilter;
 
   @override
   void initState() {
@@ -35,6 +39,7 @@ class _AdminLocationsPanelState extends State<AdminLocationsPanel> {
   @override
   void dispose() {
     _searchController.dispose();
+    _debounceTimer?.cancel();
     super.dispose();
   }
 
@@ -80,9 +85,13 @@ class _AdminLocationsPanelState extends State<AdminLocationsPanel> {
   }
 
   Future<void> _fetchLocations({String searchTerm = ''}) async {
-    _locations = await _locationService.getLocations(
-      LocationFilterRequest(country: searchTerm),
-      includeInactive: true,
+    _locations = await _locationService.search(
+      LocationSearchRequest(
+        searchTerm: searchTerm,
+        page: 1,
+        pageSize: 10,
+        isActive: _selectedActiveFilter,
+      ),
     );
   }
 
@@ -389,20 +398,63 @@ class _AdminLocationsPanelState extends State<AdminLocationsPanel> {
         ? IconButton(
             icon: const Icon(Icons.clear, size: 18, color: Color(0xFF94A3B8)),
             onPressed: () {
-              _searchController.clear(); // Briše tekst iz kontrolera
-              _loadData(searchTerm: ''); // Vraća sve rezultate
+              _searchController.clear();
+              setState(() {}); 
+              _loadData(searchTerm:_searchController.text.trim()); 
             },
           )
         : null,
   ),
   onChanged: (value) {
-    // Ako obriše backspace-om do kraja, value će biti prazan string '' i povući će sve
-    _loadData(searchTerm: value.trim());
+    if (_debounceTimer?.isActive ?? false) _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+      _loadData(searchTerm: value.trim());
+    });
+   setState(() {});
   },
 ),
+
                 ),
               ),
               const SizedBox(width: 18),
+              Container(
+      height: 40,
+      child: SegmentedButton<bool?>(
+        showSelectedIcon: false, // Isključujemo kvačicu radi čistijeg izgleda
+        style: SegmentedButton.styleFrom(
+          backgroundColor: Colors.white,
+          selectedBackgroundColor: const Color(0xFFEFF6FF), // Svjetlo plava za selektovano
+          selectedForegroundColor: const Color(0xFF2563EB), // Plava boja teksta
+          foregroundColor: const Color(0xFF64748B), // Siva boja za neselektovano
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+          side: const BorderSide(color: Color(0xFFE2E8F0)),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+        ),
+        segments: const <ButtonSegment<bool?>>[
+          ButtonSegment<bool?>(
+            value: null,
+            label: Text('Sve', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+          ),
+          ButtonSegment<bool?>(
+            value: true,
+            label: Text('Aktivne', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+          ),
+          ButtonSegment<bool?>(
+            value: false,
+            label: Text('Neaktivne', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+          ),
+        ],
+        selected: <bool?>{_selectedActiveFilter},
+        onSelectionChanged: (Set<bool?> newSelection) {
+          setState(() {
+            _selectedActiveFilter = newSelection.first;
+            _isLoading = true; 
+          });
+          _loadData(searchTerm: _searchController.text);
+        },
+      ),
+    ),
+    const SizedBox(width: 18),
               ElevatedButton.icon(
                 onPressed: _showAddLocationDialog,
                 style: ElevatedButton.styleFrom(
