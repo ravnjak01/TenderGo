@@ -14,7 +14,6 @@ import 'package:tendergo/mobile/screens/tender_post_screen.dart';
 import 'package:tendergo/mobile/screens/tender_shell_screen.dart';
 import 'package:tendergo/mobile/screens/user_profile_screen.dart';
 import 'package:tendergo/mobile/screens/notification_screen.dart';
-import 'package:tendergo/mobile/screens/pdf_preview_screen.dart';
 import 'package:tendergo/mobile/screens/recommendation_screen.dart';
 import 'package:tendergo/mobile/screens/rate_user_screen.dart';
 import 'package:tendergo/mobile/screens/user_profile_public_screen.dart';
@@ -122,24 +121,6 @@ class MobileRoutes {
         return RecommendedForYouMobileScreen(onTenderTapped: onTap);
       },
       AppRoutes.notifications: (context) => const NotificationScreen(),
-      AppRoutes.pdfViewer: (context) {
-        final args = ModalRoute.of(context)?.settings.arguments;
-        final pdfBytes = args is Map
-            ? args['pdfBytes'] as Uint8List? ?? Uint8List(0)
-            : Uint8List(0);
-        final title = args is Map
-            ? (args['title'] ?? 'PDF report').toString()
-            : 'PDF report';
-        final fileName = args is Map
-            ? (args['fileName'] ?? 'report.pdf').toString()
-            : 'report.pdf';
-
-        return PdfPreviewScreen(
-          pdfBytes: pdfBytes,
-          title: title,
-          fileName: fileName,
-        );
-      },
       AppRoutes.bookmarkedTenders: (context) {
         return MobileBookmarkedTendersScreen(
           tenderService: tenderService,

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
 import 'package:tendergo/admin/admin-panel-v2/screens/admin_categories_panel.dart';
 import 'package:tendergo/admin/admin-panel-v2/screens/admin_dashboard_panel.dart';
 import 'package:tendergo/admin/admin-panel-v2/screens/admin_locations_panel.dart';
 import 'package:tendergo/admin/admin-panel-v2/screens/admin_report_panel.dart';
 import 'package:tendergo/admin/admin-panel-v2/screens/admin_tenders_panel.dart';
 import 'package:tendergo/admin/admin-panel-v2/screens/admin_users_panel.dart';
+import 'package:tendergo/shared/services/auth_service.dart';
 
 class MainAdminLayout extends StatefulWidget {
   const MainAdminLayout({super.key});
@@ -15,6 +17,7 @@ class MainAdminLayout extends StatefulWidget {
 
 class _MainAdminLayoutState extends State<MainAdminLayout> {
   int selectedIndex = 0;
+  late AuthService _authService;
 
   final List<Widget> pages = const [
     AdminDashboardPanel(),
@@ -33,6 +36,12 @@ class _MainAdminLayoutState extends State<MainAdminLayout> {
     'Lokacije',
     'Izvještaji',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _authService = AuthService(Dio());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -85,9 +94,12 @@ class _MainAdminLayoutState extends State<MainAdminLayout> {
     final isSelected = selectedIndex == index;
 
     return InkWell(
-      onTap: () {
+      onTap: () async {
         if (index == -1) {
-          // TODO: logout logic
+          await _authService.logout();
+          if (mounted) {
+            Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+          }
           return;
         }
 

@@ -117,18 +117,6 @@ class TenderService {
     }
   }
 
-  Future<List<TenderDto>> getCancelled() async {
-    try {
-      final response = await _dio.get(TenderApiEndpoints.getCancelled);
-
-      return List<TenderDto>.from(
-        response.data.map((x) => TenderDto.fromJson(x)),
-      );
-    } on DioException catch (e) {
-      throw Exception(e.response?.data ?? 'Error fetching cancelled tenders');
-    }
-  }
-
   Future<TenderDto> create(
     TenderInsertRequest data, {
     List<PlatformFile>? imageFiles,

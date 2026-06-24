@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:tendergo/shared/core/actions/card_actions.dart';
 import 'package:tendergo/shared/core/utils/extensions/string_extensions.dart';
 import 'package:tendergo/shared/models/dto/category_dto.dart';
 import 'package:tendergo/shared/models/enums/tenderstatus.dart';
@@ -40,11 +39,13 @@ class AdminTenderCardWidget extends StatelessWidget {
               height: 140,
             ),
             _CardBody(tender: tender),
-            CardActions(
-              onView: onTap,
-              isClosed: tender.status == TenderStatus.closed,
-              onCancelTender: onCancelTender,
-            ),
+            
+
+            ///CardActions(
+            ///   onView: onTap,
+              ///isClosed: tender.status == TenderStatus.closed,
+              ///onCancelTender: onCancelTender,
+            ///),
           ],
         ),
       ),

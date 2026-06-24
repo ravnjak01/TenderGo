@@ -10,21 +10,16 @@ import 'package:tendergo/shared/models/ui/location_filter_selection.dart';
 import 'package:tendergo/shared/providers/base_provider.dart';
 import 'package:tendergo/shared/services/category_service.dart';
 import 'package:tendergo/shared/services/dio_client.dart';
-import 'package:tendergo/shared/services/recommendation_service.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
 
 class TenderProvider extends BaseProvider {
   final TenderService _service;
   final CategoryService _categoryService;
-  final RecommendationService _recommendationService;
   static const _storage = FlutterSecureStorage();
 
   TenderProvider(
     this._service,
-    this._categoryService, {
-    RecommendationService? recommendationService,
-  }) : _recommendationService =
-           recommendationService ?? RecommendationService(DioClient.getDio());
+    this._categoryService);
 
   List<TenderDto> _tenders = [];
   List<CategoryDto> _categories = [];
@@ -45,15 +40,6 @@ class TenderProvider extends BaseProvider {
   Set<int> _savedIds = {};
   Set<int> get savedIds => _savedIds;
 
-  Future<void> loadBookmarks(TenderService service) async {
-    try {
-      final bookmarkedTenders = await service.getBookmarked();
-      _savedIds = bookmarkedTenders.map((t) => t.id).toSet();
-      notifyListeners();
-    } catch (e) {
-      debugPrint('Greška pri učitavanju bookmarka u provideru: $e');
-    }
-  }
 
   void updateBookmarkLocal(int id, bool isBookmarked) {
     if (isBookmarked) {
@@ -139,47 +125,9 @@ class TenderProvider extends BaseProvider {
     _tenders = await _service.getAll();
   });
 
-  Future<TenderDto?> createTender(
-    TenderInsertRequest request, {
-    List<PlatformFile>? imageFiles,
-  }) => handleAsync(() async {
-    final created = await _service.create(request, imageFiles: imageFiles);
-    _tenders.removeWhere((t) => t.id == created.id);
-    _tenders.insert(0, created);
-    return created;
-  }, silent: true);
+  
 
-  Future<void> searchTenders(String query) async {
-    _searchQuery = query.trim();
-    if (_searchQuery.isEmpty) {
-      _searchResults = null;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!isDisposed) safeNotify();
-      });
-      return;
-    }
-    await handleAsync(() async {
-      _searchResults = await _service.search(
-        TenderSearchRequest(searchTerm: _searchQuery),
-      );
-    });
-  }
 
-  Future<void> logSearchActivity(String query) async {
-    final normalized = query.trim();
-    if (normalized.isEmpty || normalized == _lastLoggedSearchQuery) return;
-
-    _lastLoggedSearchQuery = normalized;
-    try {
-      final token = await _storage.read(key: 'jwt_token') ?? '';
-      await _recommendationService.logSearchActivity(
-        query: normalized,
-        authToken: token,
-      );
-    } catch (e) {
-      debugPrint('Failed to log search activity: $e');
-    }
-  }
 
   void clearSearch() {
     _searchQuery = '';
@@ -232,28 +180,7 @@ class TenderProvider extends BaseProvider {
     }
   }
 
-  Future<Map<String, dynamic>?> prepareRatingArguments(BidDto bid) async {
-    final bidderId = bid.submittedByUserId.trim();
-
-    try {
-      final tender = await _service.getById(bid.tenderId);
-
-      final ratedUserId = tender.createdByUserId.trim();
-      final ratedUserName = tender.createdByFullname.trim();
-
-      if (ratedUserId.isEmpty || ratedUserId == bidderId) {
-        return null;
-      }
-
-      return {
-        'tenderId': bid.tenderId.toString(),
-        'ratedUserId': ratedUserId,
-        'ratedUserName': ratedUserName.isEmpty ? null : ratedUserName,
-      };
-    } catch (_) {
-      return null;
-    }
-  }
+  
 
   void setSelectedCategories(Set<String> categories) {
     _selectedCategories

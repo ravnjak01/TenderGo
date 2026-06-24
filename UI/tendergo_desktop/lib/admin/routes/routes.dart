@@ -8,7 +8,6 @@ import 'package:tendergo/admin/admin-panel-v2/screens/login_screen.dart';
 // Screens / Ekran uvozi
 import 'package:tendergo/admin/screens/admin_report_preview_screen.dart';
 import 'package:tendergo/admin/screens/forgot_password_screen.dart';
-import 'package:tendergo/admin/screens/login_screen.dart';
 import 'package:tendergo/admin/screens/reset_passsword.screen.dart';
 
 // Providers uvozi
@@ -66,7 +65,6 @@ class AppRoutes {
 
   }) {
     return {
-      AppRoutes.login: (context) => const AdminLoginScreen(),
       AppRoutes.forgotPassword: (context) => const AdminForgotPasswordScreen(),
       AppRoutes.resetPassword: (context) => const AdminResetPasswordScreen(),
 

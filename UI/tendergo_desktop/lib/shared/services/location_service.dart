@@ -92,25 +92,49 @@ class LocationService extends BaseService<LocationDto> {
       );
     }
   }
-    Future<List<LocationDto>> search(LocationSearchRequest request) async {
+
+//ne radi deactvate
+    Future<LocationDto> deactivateLocation(int id) async {
     try {
-      final response = await dio.get(
-        LocationEndpoints.search(request.searchTerm ?? '', page: request.page, pageSize: request.pageSize  ),
-      );
+      final response = await dio.patch(LocationEndpoints.deactivate(id));
+      final raw = response.data;
+      final payload = raw is Map<String, dynamic>
+          ? (raw['data'] is Map<String, dynamic>
+                ? raw['data'] as Map<String, dynamic>
+                : raw)
+          : const <String, dynamic>{};
 
-      final List<dynamic> data = response.data is List 
-        ? response.data 
-        : (response.data['result'] ?? []);
-
-      return data
-          .map((x) => LocationDto.fromJson(x as Map<String, dynamic>))
-          .toList();
+      return parseJson(payload);
     } on DioException catch (e) {
-      throw Exception(e.response?.data ?? 'Error searching locations');
+      throw Exception(
+        e.response?.data?['message'] ?? 'Error deactivating location',
+      );
     }
   }
 
-//dobijem string is not a subtype of type int in type cast a
+Future<List<LocationDto>> search(LocationSearchRequest request) async {
+  try {
+    final response = await dio.get(
+      LocationEndpoints.search(
+        searchTerm: request.searchTerm, 
+        isActive: request.isActive, // Obavezno dodaj i ovo ako postoji u modelu
+        page: request.page, 
+        pageSize: request.pageSize
+      ),
+    );
+
+    final List<dynamic> data = response.data is List 
+      ? response.data 
+      : (response.data['result'] ?? []);
+
+    return data
+        .map((x) => LocationDto.fromJson(x as Map<String, dynamic>))
+        .toList();
+  } on DioException catch (e) {
+    throw Exception(e.response?.data ?? 'Error searching locations');
+  }
+}
+
   Future<List<LocationStatsDto>> getLocationStatistics() async {
     try {
       final response = await dio.get(LocationEndpoints.locationStatistics);
