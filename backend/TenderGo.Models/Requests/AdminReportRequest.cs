@@ -8,8 +8,8 @@ namespace TenderGo.Models.Requests
 {
     public class AdminReportRequest
     {
-        public string Type { get; set; } = string.Empty;
-        public DateTime? From { get; set; }
-        public DateTime? To { get; set; }
+        public int LocationId { get; set; }
+        public DateTime From { get; set; }
+        public DateTime To { get; set; }
     }
 }

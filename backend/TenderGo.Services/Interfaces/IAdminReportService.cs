@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,5 +13,8 @@ namespace TenderGo.Services.Interfaces
     {
         Task<AdminReportOverviewDTO> GetAdminReportOverview();
         Task<byte[]>GenerateReportAsync(AdminReportRequest request);
+
+        Task<(byte[] PdfBytes, string FileName)>
+            GenerateUserTendersReportAsync(string userId);
     }
 }
