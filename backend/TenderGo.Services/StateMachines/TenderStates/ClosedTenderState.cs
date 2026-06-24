@@ -83,29 +83,13 @@ namespace TenderGo.Services.StateMachines.TenderStates
 
             return _mapper.Map<TenderDTO>(tender);
         }
-        public override async Task<TenderDTO> Cancel(int id)
-        {
-            var tender = await _context.Tenders.FindAsync(id)
-                ?? throw new NotFoundException("Tender not found", new { Entity = "Tender", Id = id });
-
-            tender.Status = TenderStatus.Cancelled;
-            await _context.SaveChangesAsync();
-
-            _logger.LogInformation("Tender {Id} cancelled from Closed state by admin", id);
-            return _mapper.Map<TenderDTO>(tender);
-        }
-
+        
         public override async Task<List<string>> AllowedActions(Tender entity)
         {
             var list = await base.AllowedActions(entity);
 
             var authService = _serviceProvider.GetRequiredService<IAuthService>();
             bool isAdmin = authService.IsInRole(AppRoles.Admin);
-
-            if (isAdmin)
-            {
-                list.Add("Cancel");
-            }
 
             if (entity.Bids != null && entity.Bids.Any(b => b.Status == ApplicationStatus.Pending))
             {

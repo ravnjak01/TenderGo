@@ -7,7 +7,6 @@ import 'package:tendergo/shared/core/utils/extensions/string_extensions.dart';
 import 'package:tendergo/shared/models/dto/bid_dto.dart';
 import 'package:tendergo/shared/providers/tender_provider.dart';
 import 'package:tendergo/shared/services/bid_service.dart';
-import 'package:tendergo/shared/services/pdf_service.dart';
 import 'package:tendergo/mobile/widgets/feedback/snackbar_helper.dart';
 import 'package:tendergo/mobile/widgets/feedback/screen_state_widget.dart';
 import 'package:tendergo/mobile/widgets/common/app_dialogs.dart';
@@ -205,7 +204,7 @@ class _BidCard extends StatelessWidget {
         normalized != 'canceled';
   }
 
-  @override
+@override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -332,61 +331,10 @@ class _BidCard extends StatelessWidget {
                     const SizedBox(height: 12),
                     Align(
                       alignment: Alignment.centerRight,
-                      child: Row(
-                        mainAxisSize:
-                            MainAxisSize.min, // Skuplja Row samo oko dugmadi
-                        children: [
-                          // 🌟 NOVO: Dugme za izvještaj
-                          FilledButton.icon(
-                            style: FilledButton.styleFrom(
-                              backgroundColor: Colors
-                                  .green[700], // Zelena boja za izvještaje/print
-                            ),
-                            onPressed: () async {
-                              /*
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                // Prosjeđujemo ID ponude u ekran koji smo ranije kreirali
-                builder: (context) => OfferReportScreen(offerId: bid.id),
-              ),
-            );
-            */
-                              final pdfService = PdfService();
-                              final bytes = await pdfService.fetchOfferPdf(
-                                bid.id,
-                              );
-
-                              if (bytes != null) {
-                                if (context.mounted) {
-                                  Navigator.of(context).pushNamed(
-                                    AppRoutes.pdfViewer,
-                                    arguments: {
-                                      'pdfBytes': bytes,
-                                      'title': 'Izvještaj o ponudi',
-                                    },
-                                  );
-                                }
-                              } else if (context.mounted) {
-                                SnackbarHelper.show(
-                                  context,
-                                  'Unable to load PDF report.',
-                                  isError: true,
-                                );
-                              }
-                            },
-                            icon: const Icon(Icons.picture_as_pdf_rounded),
-                            label: const Text('Izvještaj'),
-                          ),
-
-                          const SizedBox(width: 8), // Razmak između dva dugmeta
-                          // Postojeće dugme za ocjenjivanje
-                          FilledButton.tonalIcon(
-                            onPressed: onRateUser,
-                            icon: const Icon(Icons.star_rate_rounded),
-                            label: const Text('Rate User'),
-                          ),
-                        ],
+                      child: FilledButton.tonalIcon(
+                        onPressed: onRateUser,
+                        icon: const Icon(Icons.star_rate_rounded),
+                        label: const Text('Rate User'),
                       ),
                     ),
                   ],
@@ -394,31 +342,27 @@ class _BidCard extends StatelessWidget {
                   if (_isCancelableStatus(bid.status.name)) ...[
                     const SizedBox(
                       height: 8,
-                    ), // Smanjio sam malo i razmak iznad
+                    ),
                     Align(
                       alignment: Alignment.centerRight,
                       child: SizedBox(
-                        height:
-                            32, // Fiksna visina dugmeta (standardna je oko 40-48)
-                        // width: 100, // Možeš dodati i fiksnu širinu ako želiš
+                        height: 32,
                         child: OutlinedButton.icon(
                           onPressed: onCancel,
                           style: OutlinedButton.styleFrom(
-                            // Moramo ukloniti defaultni padding da bi tekst stao u 32px visine
                             padding: const EdgeInsets.symmetric(horizontal: 12),
                             side: const BorderSide(
                               color: Colors.red,
-                            ), // Opcionalno: crvena ivica
-                            foregroundColor:
-                                Colors.red, // Tekst i ikona postaju crveni
+                            ),
+                            foregroundColor: Colors.red,
                           ),
                           icon: const Icon(
                             Icons.cancel_outlined,
                             size: 16,
-                          ), // Smanjena ikona
+                          ),
                           label: const Text(
                             'Cancel',
-                            style: TextStyle(fontSize: 12), // Smanjen font
+                            style: TextStyle(fontSize: 12),
                           ),
                         ),
                       ),
@@ -432,6 +376,7 @@ class _BidCard extends StatelessWidget {
       },
     );
   }
+
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

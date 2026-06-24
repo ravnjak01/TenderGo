@@ -274,22 +274,6 @@ public async Task<IEnumerable<TenderDTO>> GetBookmarkedTendersAsync(string userI
             return result;
         }
 
-        public async Task<TenderDTO> Close(int id)
-        {
-            var entity = await AddIncludes(_context.Tenders)
-                .FirstOrDefaultAsync(t => t.Id == id)
-                ?? throw new NotFoundException("Tender not found", new { Entity = "Tender", Id = id });
-
-            var currentUserId = _authService.GetCurrentUserId();
-            if (entity.CreatedByUserId != currentUserId)
-            {
-                throw new ForbiddenException();
-            }
-
-            var state = CreateState(entity.Status);
-            return await state.Close(id);
-        }
-
 
         public async Task<TenderDTO> Award(int id, int bidId)
         {

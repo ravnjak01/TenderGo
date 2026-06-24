@@ -1,9 +1,8 @@
 import 'package:tendergo/shared/models/dto/address_dto.dart';
-import 'package:tendergo/shared/models/has_initials.dart';
 import 'package:tendergo/shared/services/dio_client.dart';
 
 
-class UserDto implements HasInitials {
+class UserDto  {
   final String id;
   final String email;
   final String? profileImageUrl;

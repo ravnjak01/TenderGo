@@ -35,19 +35,33 @@ class AuthProvider extends BaseProvider {
     return result ??
         ApiResponse.failure(error ?? 'Failed to load user', statusCode: 400);
   }
-
-  Future<ApiResponse> login(String email, String password) async {
-    final result = await _authService.login(
-      LoginRequest(email: email, password: password),
-    );
-    if (!result.success) {
-      await _authService.logout();
-      _currentUser = null;
-      notifyListeners();
-      return result;
-    }
-    return loadUser();
+Future<ApiResponse> login(String email, String password) async {
+  final result = await _authService.login(
+    LoginRequest(email: email, password: password),
+  );
+  
+  if (!result.success) {
+    await _authService.logout();
+    _currentUser = null;
+    notifyListeners();
+    return result;
   }
+  
+  // Učitaj korisnika da dobiješ njegove uloge
+  final userResult = await loadUser();
+  
+  // Ako je učitavanje uspjelo, ali korisnik NIJE admin
+  if (userResult.success && !isAdmin) {
+    await _authService.logout();
+    _currentUser = null;
+    notifyListeners();
+    
+    // Vraćamo ApiResponse sa porukom o grešci
+    return ApiResponse.failure('Pristup odbijen. Nemate administratorske privilegije.', statusCode: 403);
+  }
+
+  return userResult;
+}
 
   Future<bool> registerUser(RegisterRequest request) async {
     final result = await handleAsync(() => _authService.register(request));

@@ -5,6 +5,7 @@ import 'package:tendergo/admin/admin-panel-v2/screens/admin_tender_details_scree
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
 import 'package:tendergo/shared/models/enums/tenderstatus.dart';
 import 'package:tendergo/shared/providers/admin_provider.dart';
+import 'package:tendergo/shared/widgets/common/app_dialogs.dart';
 
 class AdminTendersPanel extends StatefulWidget {
   const AdminTendersPanel({super.key});
@@ -72,6 +73,51 @@ class _AdminTendersPanelState extends State<AdminTendersPanel> {
       }
     });
   }
+
+  // Funkcija koja koristi tvoj prilagođeni AppDialogs za potvrdu
+  Future<void> _showCancelDialog(BuildContext context, TenderDto tender) async {
+    // Pozivamo tvoj statički metod iz AppDialogs klase
+    final bool confirm = await AppDialogs.showConfirm(
+      context: context,
+      title: 'Potvrda otkazivanja',
+      content: 'Da li ste sigurni da želite otkazati tender pod nazivom "${tender.title}" (ID #${tender.id}) i označiti ga kao spam?',
+      cancelLabel: 'Odustani',
+      confirmLabel: 'Otkaži tender',
+      isDestructive: true, // Ovo će obojiti dugme u crveno i podebljati ga
+    );
+
+    // Ako je korisnik potvrdio otkazivanje (vraćeno true)
+    if (confirm && mounted) {
+      setState(() => _loading = true);
+      try {
+        final adminProvider = Provider.of<AdminProvider>(context, listen: false);
+        
+        // Pozivamo metodu iz provajdera
+        final updatedTender = await adminProvider.cancelTender(tender.id);
+
+        if (updatedTender != null && updatedTender.status == TenderStatus.cancelled && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tender uspješno otkazan.')),
+      );
+
+          _loadTenders();
+        } else if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Greška prilikom otkazivanja tendera.')),
+          );
+          setState(() => _loading = false);
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Greška: ${e.toString()}')),
+          );
+          setState(() => _loading = false);
+        }
+      }
+    }
+  }
+  
 
   // Helper metoda za generisanje stilova statusnih badge-ova
   Widget _buildStatusBadge(TenderStatus status) {
@@ -222,7 +268,7 @@ class _AdminTendersPanelState extends State<AdminTendersPanel> {
                   horizontalMargin: 24,
                   headingRowHeight: 55,
                   dataRowMaxHeight:
-                      80, // Povećano da stane dvoredni tekst za naziv
+                      80, 
                   dataRowMinHeight: 70,
                   headingRowColor: MaterialStateProperty.all(
                     const Color(0xFFF8FAFC),
@@ -290,7 +336,7 @@ class _AdminTendersPanelState extends State<AdminTendersPanel> {
                     ),
                   ],
                   rows: _filteredTenders.map((tender) {
-                    final isCancelled = tender.status == TenderStatus.cancelled;
+                    final canCancel=tender.status==TenderStatus.open;
 
                     return DataRow(
                       cells: [
@@ -350,80 +396,82 @@ class _AdminTendersPanelState extends State<AdminTendersPanel> {
                         // Status
                         DataCell(_buildStatusBadge(tender.status)),
                         // Akcije
-                        DataCell(
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              OutlinedButton(
-                                onPressed: () {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => AdminTenderDetailsScreen(
-                                        tender: tender,
-                                      ),
-                                    ),
-                                  );
-                                },
-                                style: OutlinedButton.styleFrom(
-                                  minimumSize: const Size(75, 32),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                  ),
-                                  side: const BorderSide(
-                                    color: Color(0xFFCBD5E1),
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                ),
-                                child: const Text(
-                                  'Pregledaj',
-                                  style: TextStyle(
-                                    color: Color(0xFF475569),
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              OutlinedButton(
-                                onPressed: isCancelled
-                                    ? null // Onemogućeno ako je već otkazan
-                                    : () {
-                                        // TODO: Implementirati otkazivanje/spam
-                                      },
-                                style: OutlinedButton.styleFrom(
-                                  minimumSize: const Size(90, 32),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                  ),
-                                  // Ako je otkazan, stavljamo blijedu boju ivice, inače crvenu
-                                  side: BorderSide(
-                                    color: isCancelled
-                                        ? const Color(0xFFFEE2E2)
-                                        : const Color(0xFFFCA5A5),
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  backgroundColor: isCancelled
-                                      ? const Color(0xFFFEF2F2).withOpacity(0.4)
-                                      : null,
-                                ),
-                                child: Text(
-                                  isCancelled ? 'Otkazan' : 'Otkaži (Spam)',
-                                  style: TextStyle(
-                                    color: isCancelled
-                                        ? const Color(0xFFFCA5A5)
-                                        : const Color(0xFFEF4444),
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                       // Akcije
+// Akcije
+DataCell(
+  Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      OutlinedButton(
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => AdminTenderDetailsScreen(
+                tender: tender,
+              ),
+            ),
+          );
+        },
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size(75, 32),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          side: const BorderSide(color: Color(0xFFCBD5E1)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
+        child: const Text(
+          'Pregledaj',
+          style: TextStyle(
+            color: Color(0xFF475569),
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+
+  
+      if (tender.status == TenderStatus.open ||
+          tender.status == TenderStatus.cancelled) ...[
+        const SizedBox(width: 8),
+        OutlinedButton(
+          onPressed: tender.status == TenderStatus.cancelled
+              ? null
+              : () {
+                  _showCancelDialog(context, tender);
+                },
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size(90, 32),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            side: BorderSide(
+              color: tender.status == TenderStatus.cancelled
+                  ? const Color(0xFFFEE2E2)
+                  : const Color(0xFFFCA5A5),
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(4),
+            ),
+            backgroundColor: tender.status == TenderStatus.cancelled
+                ? const Color(0xFFFEF2F2).withOpacity(0.4)
+                : null,
+          ),
+          child: Text(
+            tender.status == TenderStatus.cancelled
+                ? 'Otkazan'
+                : 'Otkaži (Spam)',
+            style: TextStyle(
+              color: tender.status == TenderStatus.cancelled
+                  ? const Color(0xFFFCA5A5)
+                  : const Color(0xFFEF4444),
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
+    ],
+  ),
+),
                       ],
                     );
                   }).toList(),

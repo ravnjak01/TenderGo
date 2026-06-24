@@ -259,7 +259,7 @@ class _AdminReportsPanelState extends State<AdminReportsPanel> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _buildMetricCard(
-                            'Ukupna vrijednost tendera',
+                            'Ukupna vrijednost realizovanih tendera',
                             _overview?.totalTenderValue.toStringAsFixed(2) ?? '0.00',
                             const Color(0xFF2563EB),
                           ),

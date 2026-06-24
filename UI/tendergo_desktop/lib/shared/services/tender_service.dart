@@ -129,45 +129,6 @@ class TenderService {
     }
   }
 
-  Future<TenderDto> create(
-    TenderInsertRequest data, {
-    List<PlatformFile>? imageFiles,
-  }) async {
-    try {
-      final request = await _withImageBytes(data, imageFiles);
-
-      final response = await _dio.post(
-        TenderApiEndpoints.insert,
-        data: request.toJson(),
-      );
-
-      final payload = response.data is Map<String, dynamic>
-          ? (response.data['data'] is Map<String, dynamic>
-                ? response.data['data'] as Map<String, dynamic>
-                : (response.data['result'] is Map<String, dynamic>
-                      ? response.data['result'] as Map<String, dynamic>
-                      : response.data))
-          : const <String, dynamic>{};
-
-      return TenderDto.fromJson(payload);
-    } on DioException catch (e) {
-      throw Exception(e.response?.data ?? 'Error creating tender');
-    } catch (e) {
-      throw Exception('An unexpected error occurred: $e');
-    }
-  }
-
-  Future<TenderDto> award(TenderDto tender, int bidId) async {
-    try {
-      final response = await _dio.patch(
-        TenderApiEndpoints.award(tender, bidId),
-      );
-
-      return TenderDto.fromJson(response.data);
-    } on DioException catch (e) {
-      throw Exception(e.response?.data ?? 'Error awarding tender');
-    }
-  }
 
   Future<TenderDto> cancel(int id) async {
     try {
@@ -239,41 +200,5 @@ class TenderService {
     }
   }
 
-  Future<bool> toggleBookmark(int tenderId) async {
-    try {
-      final response = await _dio.post(
-        TenderApiEndpoints.toggleBookmark(tenderId),
-      );
-
-      if (response.data is Map<String, dynamic>) {
-        return response.data['isBookmarked'] as bool? ?? false;
-      }
-      return false;
-    } on DioException catch (e) {
-      throw Exception(e.response?.data ?? 'Error toggling bookmark');
-    }
-  }
-
-  Future<List<TenderDto>> getBookmarked() async {
-    try {
-      final response = await _dio.get(TenderApiEndpoints.getBookmarks);
-
-      final payload = response.data;
-      List<dynamic> rawList = [];
-
-      if (payload is List) {
-        rawList = payload;
-      } else if (payload is Map<String, dynamic>) {
-        rawList =
-            payload['result'] ?? payload['data'] ?? payload['items'] ?? [];
-      }
-
-      return rawList
-          .whereType<Map<String, dynamic>>()
-          .map((x) => TenderDto.fromJson(x))
-          .toList();
-    } on DioException catch (e) {
-      throw Exception(e.response?.data ?? 'Error fetching bookmarked tenders');
-    }
-  }
+ 
 }

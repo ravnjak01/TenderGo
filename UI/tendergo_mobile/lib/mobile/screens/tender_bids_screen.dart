@@ -9,7 +9,6 @@ import 'package:tendergo/shared/models/enums/application_status.dart';
 import 'package:tendergo/shared/models/enums/tenderstatus.dart';
 import 'package:tendergo/shared/services/bid_service.dart';
 import 'package:tendergo/shared/services/dio_client.dart';
-import 'package:tendergo/mobile/screens/offer_report_screen.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
 import 'package:tendergo/mobile/widgets/common/action_button.dart';
 import 'package:tendergo/mobile/widgets/common/app_badge.dart';
@@ -207,7 +206,7 @@ class _BidCard extends StatelessWidget {
     final priceFormatted = '${bid.offeredPrice.toStringAsFixed(0)} KM';
     final dateFormatted = DateFormat('dd MMM yyyy, HH:mm').format(bid.submittedAt);
 
-    final isAccepted=bid.status==ApplicationStatus.accepted;
+    final isAccepted = bid.status == ApplicationStatus.accepted;
 
     return AppCard(
       title: 'Bidder',
@@ -245,11 +244,11 @@ class _BidCard extends StatelessWidget {
                     icon: Icons.payments_outlined,
                     label: priceFormatted,
                   ),
-                    TenderMetaItem(
-                      icon: Icons.schedule_rounded,
-                      label:
-                          '${bid.deliveryDays} day${bid.deliveryDays > 1 ? 's' : ''}',
-                    ),
+                  TenderMetaItem(
+                    icon: Icons.schedule_rounded,
+                    label:
+                        '${bid.deliveryDays} day${bid.deliveryDays > 1 ? 's' : ''}',
+                  ),
                   TenderMetaItem(
                     icon: Icons.calendar_today_outlined,
                     label: dateFormatted,
@@ -260,35 +259,18 @@ class _BidCard extends StatelessWidget {
                 const SizedBox(height: 12),
                 _ProposalPreview(proposal: bid.proposal!),
               ],
-              if (canAward || isAccepted)   ...[
+              if (canAward) ...[
                 const SizedBox(height: 14),
                 const Divider(height: 1),
                 const SizedBox(height: 10),
                 Align(
                   alignment: Alignment.centerRight,
-                  child: canAward
-                      ? ActionButton(
-                          label: 'Award',
-                          icon: Icons.emoji_events_rounded,
-                          isPrimary: true,
-                          onTap: onAward,
-                        )
-                      : OutlinedButton.icon(
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.green[700],
-                            side: BorderSide(color: Colors.green.shade700),
-                          ),
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => OfferReportScreen(offerId: bid.id),
-                              ),
-                            );
-                          },
-                          icon: const Icon(Icons.picture_as_pdf_rounded),
-                          label: const Text('Izvještaj'),
-                        ),
+                  child: ActionButton(
+                    label: 'Award',
+                    icon: Icons.emoji_events_rounded,
+                    isPrimary: true,
+                    onTap: onAward,
+                  ),
                 ),
               ],
               if (isAccepted) ...[
@@ -319,7 +301,6 @@ class _BidCard extends StatelessWidget {
     );
   }
 }
-
 class _BidAvatar extends StatelessWidget {
   const _BidAvatar({required this.name});
 

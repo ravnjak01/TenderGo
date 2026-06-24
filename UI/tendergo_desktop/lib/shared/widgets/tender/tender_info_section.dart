@@ -68,17 +68,15 @@ class TenderInfoSection extends StatelessWidget {
           runSpacing: 10,
           children: [
             TenderMetaItem(
-              icon: Icons.calendar_today_outlined,
-              label: 'Posted ${formatTenderDate(tender.postedAt)}',
+              icon: Icons.person_outline,
+              label: 'Raspisivač: ${tender.createdByFullname}',
             ),
+            
             TenderMetaItem(
               icon: Icons.location_on_outlined,
               label: tender.location.name,
             ),
-            TenderMetaItem(
-              icon: Icons.account_balance_wallet_outlined,
-              label: 'Budget: ${formatTenderBudget(tender.maxBudget)}',
-            ),
+          
           ],
         ),
         const SizedBox(height: 20),
@@ -114,39 +112,3 @@ class TenderInfoSection extends StatelessWidget {
   }
 }
 
-/// Wraps [TenderInfoSection] in a card container (white background, border).
-/// Used by the mobile screen.
-class TenderInfoCard extends StatelessWidget {
-  const TenderInfoCard({
-    super.key,
-    required this.tender,
-    this.imageHeight = 220,
-  });
-
-  final TenderDto tender;
-  final double imageHeight;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.outline),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const TenderSectionLabel(
-            icon: Icons.description_outlined,
-            label: 'Tender Overview',
-          ),
-          const SizedBox(height: 14),
-          TenderInfoSection(tender: tender, imageHeight: imageHeight),
-        ],
-      ),
-    );
-  }
-}

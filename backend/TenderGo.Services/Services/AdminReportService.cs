@@ -59,7 +59,9 @@ namespace TenderGo.Services.Services
 
             return new AdminReportOverviewDTO
             {
-                TotalTenderValue = await _context.Tenders.SumAsync(t => t.MaxBudget),
+                TotalTenderValue = await _context.Tenders
+                .Where(t=>t.Status == TenderStatus.Awarded)
+                .SumAsync(t => t.WinningBid.OfferedPrice),
                 TenderRealizationPercentage = totalTenders == 0 ? 0 : (double)completedTenders / totalTenders * 100,
                 CancelledTenderCount = await _context.Tenders.CountAsync(t => t.Status == TenderStatus.Cancelled)
             };

@@ -36,8 +36,7 @@ class TenderApiEndpoints {
   /// GET /api/tender/user/{userId}
   static String getByUser(String userId) => '$_tenderBase/user/$userId';
 
-  /// PUT /api/tender/{id}/activate
-  static String activate(int id) => '$_tenderBase/$id/activate';
+
 
   /// PATCH /api/tender/{id}/cancel
   static String cancel(int id) => '$_tenderBase/$id/cancel';

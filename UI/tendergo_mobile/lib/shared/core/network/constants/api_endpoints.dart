@@ -21,9 +21,7 @@ class ApiEndpoints {
 
   static const String refreshToken = '/auth/refresh-token';
 
-  //PDF
 
-  static String downloadPdf(int id) => 'pdf/$id/download';
 
   // USER ACTIVITY
   static const String userActivity='/user-activities/log';

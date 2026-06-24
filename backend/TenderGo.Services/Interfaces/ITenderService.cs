@@ -22,7 +22,6 @@ namespace TenderGo.Services.Interfaces
         Task<List<TenderDTO>> GetTendersByUser(string userId);
 
         Task<TenderDTO> Cancel(int tenderId);
-        Task<TenderDTO> Close(int tenderId);
         Task<TenderDTO> Award(int id, int bidId);
         Task<List<string>> AllowedActions(int id);
         BaseState CreateState(TenderStatus status);

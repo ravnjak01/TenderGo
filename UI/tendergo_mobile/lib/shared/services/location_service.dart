@@ -49,46 +49,5 @@ class LocationService extends BaseService<LocationDto> {
     return regions;
   }
 
-  Future<LocationDto> insertLocation(LocationInsertRequest request) {
-    return insert(
-      LocationDto(
-        id: 0,
-        name: request.name,
-        country: request.country,
-        region: request.region,
-      ),
-    );
-  }
-
-  Future<bool> updateLocation(int id, LocationUpdateRequest request) {
-    return update(
-      id,
-      LocationDto(
-        id: id,
-        name: request.name ?? '',
-        country: request.country ?? '',
-        region: request.region,
-      ),
-    );
-  }
-
-  Future<String> deleteLocation(int id) => delete(id);
-
-  Future<LocationDto> activateLocation(int id) async {
-    try {
-      final response = await dio.patch(LocationEndpoints.activate(id));
-      final raw = response.data;
-      final payload = raw is Map<String, dynamic>
-          ? (raw['data'] is Map<String, dynamic>
-                ? raw['data'] as Map<String, dynamic>
-                : raw)
-          : const <String, dynamic>{};
-
-      return parseJson(payload);
-    } on DioException catch (e) {
-      throw Exception(
-        e.response?.data?['message'] ?? 'Error activating location',
-      );
-    }
-  }
+ 
 }
