@@ -25,6 +25,10 @@ class MobileTenderCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasImage = tender.imageUrl?.trim().isNotEmpty ?? false;
+    final saveAction = onSave;
+    final cancelAction = onCancelTender;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -38,67 +42,35 @@ class MobileTenderCardWidget extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Stack(
-              children: [
-                TenderCardImage(
-                  imageUrl: tender.imageUrl,
-                  theme: themeForCategory(tender.category),
-                  height: 130,
-                ),
-
-                // ===== SJAJNO BOOKMARK (SRCE) DUGME =====
-                if (onSave != null)
-                  Positioned(
-                    top: 8,
-                    left: 8, // Postavljeno skroz lijevo na slici
-                    child: Material(
-                      color: Colors.white.withValues(alpha: 0.9),
-                      shape: const CircleBorder(),
-                      clipBehavior: Clip.antiAlias,
-                      child: IconButton(
-                        constraints: const BoxConstraints(),
-                        padding: const EdgeInsets.all(6),
-                        icon: Icon(
-                          isSaved
-                              ? Icons.favorite_rounded
-                              : Icons.favorite_border_rounded,
-                          size: 20,
-                          color: isSaved ? Colors.red : const Color(0xFF5F5E5A),
-                        ),
-                        onPressed: onSave,
-                      ),
-                    ),
+            if (hasImage)
+              Stack(
+                children: [
+                  TenderCardImage(
+                    imageUrl: tender.imageUrl,
+                    theme: themeForCategory(tender.category),
+                    height: 130,
                   ),
-
-                if (onCancelTender != null)
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Material(
-                      color: Colors.white.withValues(alpha: 0.9),
-                      shape: const CircleBorder(),
-                      clipBehavior: Clip.antiAlias,
-                      child: PopupMenuButton<String>(
-                        icon: const Icon(Icons.more_vert, size: 20),
-                        padding: EdgeInsets.zero,
-                        onSelected: (value) {
-                          if (value == 'cancel') onCancelTender!();
-                        },
-                        itemBuilder: (context) => [
-                          const PopupMenuItem<String>(
-                            value: 'cancel',
-                            child: Text(
-                              'Cancel tender',
-                              style: TextStyle(color: Colors.red),
-                            ),
-                          ),
-                        ],
-                      ),
+                  if (saveAction != null)
+                    Positioned(
+                      top: 8,
+                      left: 8,
+                      child: _SaveButton(isSaved: isSaved, onSave: saveAction),
                     ),
-                  ),
-              ],
+                  if (cancelAction != null)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: _CancelMenu(onCancelTender: cancelAction),
+                    ),
+                ],
+              ),
+            _CardBody(
+              tender: tender,
+              showInlineActions: !hasImage,
+              isSaved: isSaved,
+              onSave: onSave,
+              onCancelTender: onCancelTender,
             ),
-            _CardBody(tender: tender),
             CardActions(
               onView: onTap,
               isClosed: tender.status == TenderStatus.closed,
@@ -111,12 +83,25 @@ class MobileTenderCardWidget extends StatelessWidget {
 }
 
 class _CardBody extends StatelessWidget {
-  const _CardBody({required this.tender});
+  const _CardBody({
+    required this.tender,
+    required this.showInlineActions,
+    required this.isSaved,
+    this.onSave,
+    this.onCancelTender,
+  });
 
   final TenderCardModel tender;
+  final bool showInlineActions;
+  final bool isSaved;
+  final VoidCallback? onSave;
+  final VoidCallback? onCancelTender;
 
   @override
   Widget build(BuildContext context) {
+    final saveAction = onSave;
+    final cancelAction = onCancelTender;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
       child: Column(
@@ -125,6 +110,10 @@ class _CardBody extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
+              if (showInlineActions && saveAction != null) ...[
+                _SaveButton(isSaved: isSaved, onSave: saveAction),
+                const SizedBox(width: 8),
+              ],
               const Icon(
                 Icons.pin_drop_outlined,
                 size: 12,
@@ -143,6 +132,10 @@ class _CardBody extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
+              if (showInlineActions && cancelAction != null) ...[
+                const SizedBox(width: 8),
+                _CancelMenu(onCancelTender: cancelAction),
+              ],
             ],
           ),
           const SizedBox(height: 5),
@@ -207,6 +200,63 @@ class _CardBody extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SaveButton extends StatelessWidget {
+  const _SaveButton({required this.isSaved, required this.onSave});
+
+  final bool isSaved;
+  final VoidCallback onSave;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white.withValues(alpha: 0.9),
+      shape: const CircleBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: IconButton(
+        constraints: const BoxConstraints(),
+        padding: const EdgeInsets.all(6),
+        icon: Icon(
+          isSaved ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+          size: 20,
+          color: isSaved ? Colors.red : const Color(0xFF5F5E5A),
+        ),
+        onPressed: onSave,
+      ),
+    );
+  }
+}
+
+class _CancelMenu extends StatelessWidget {
+  const _CancelMenu({required this.onCancelTender});
+
+  final VoidCallback onCancelTender;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white.withValues(alpha: 0.9),
+      shape: const CircleBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: PopupMenuButton<String>(
+        icon: const Icon(Icons.more_vert, size: 20),
+        padding: EdgeInsets.zero,
+        onSelected: (value) {
+          if (value == 'cancel') onCancelTender();
+        },
+        itemBuilder: (context) => [
+          const PopupMenuItem<String>(
+            value: 'cancel',
+            child: Text(
+              'Cancel tender',
+              style: TextStyle(color: Colors.red),
+            ),
           ),
         ],
       ),

@@ -1,6 +1,8 @@
 // lib/shared/models/dto/tender_bid_dto.dart (ili bid_dto.dart)
+import 'package:http/http.dart';
 import 'package:tendergo/shared/core/utils/json_parser.dart';
 import 'package:tendergo/shared/models/enums/application_status.dart';
+import 'package:tendergo/shared/models/enums/tenderstatus.dart';
 
 class BidDto {
   final int id;
@@ -13,7 +15,8 @@ class BidDto {
   final ApplicationStatus status;
   final String? proposal;
   final int deliveryDays;
-
+final TenderStatus tenderStatus;
+final bool alreadyRated;
   const BidDto({
     required this.id,
     required this.tenderId,
@@ -23,6 +26,8 @@ class BidDto {
     required this.offeredPrice,
     required this.submittedAt,
     required this.status,
+    required this.tenderStatus,
+    required this.alreadyRated,
     this.proposal,
     required this.deliveryDays,
   });
@@ -39,8 +44,10 @@ class BidDto {
           ? DateTime.parse(json['submittedAt'] as String) 
           : DateTime.fromMillisecondsSinceEpoch(0),
       status: ApplicationStatus.fromValue(json['status']),
+      tenderStatus: TenderStatus.fromValue(json['tenderStatus']),
       proposal: JsonParser.readNullableString(json['proposal']),
       deliveryDays: JsonParser.readInt(json['deliveryDays']),
+      alreadyRated: json['alreadyRated'] == true,
     );
   }
 
@@ -55,5 +62,6 @@ class BidDto {
         'status': status.name,
         'proposal': proposal,
         'deliveryDays': deliveryDays,
+        'alreadyRated': alreadyRated,
       };
 }

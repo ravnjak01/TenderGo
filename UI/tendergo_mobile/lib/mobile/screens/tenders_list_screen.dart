@@ -98,6 +98,7 @@ Future<void> _initialLoad() async {
   void _onSearchChanged(String query) {
     final provider = context.read<TenderProvider>();
     if (query.isEmpty) {
+      _controller.cancelDebounce();
       provider.clearSearch();
     } else {
       _controller.onSearchChanged(
@@ -257,7 +258,7 @@ Future<void> _initialLoad() async {
                                 'Try a different category or location filter.',
                             actionLabel: 'Clear filters',
                             onAction: () {
-                              provider.toggleCategory('All');
+                              provider.toggleCategory('All ');
                               provider.clearLocationFilter();
                             },
                           ),

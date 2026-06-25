@@ -47,7 +47,7 @@ namespace TenderGo.Data.Seeders
                     Deadline = now.AddDays(12),
                     Status = TenderStatus.Open,
                     PostedAt = now.AddDays(-2),
-                    CreatedByUserId = GetValueOrFallback(users, "suljo@tendergo.com", "User").Id,
+                    CreatedByUserId = GetValueOrFallback(users, "amina@tendergo.com", "User").Id,
                     CategoryId = GetValueOrFallback(categories, "Kucne usluge", "Category").Id,
                     LocationId = GetValueOrFallback(locations, "Split", "Location").Id
                 },
@@ -88,19 +88,7 @@ namespace TenderGo.Data.Seeders
                     LocationId = GetValueOrFallback(locations, "Zenica", "Location").Id,
                
                 },
-                new Tender
-                {
-                    Title = "Čuvanje kućnih ljubimaca",
-                    Description = "Potrebna osoba za brigu o mački i psu sljedeci vikend.",
-                    MaxBudget = 5000.00m,
-                    Deadline = now.AddDays(3),
-                    Status = TenderStatus.Open,
-                    PostedAt = now.AddDays(-5),
-                    CreatedByUserId = GetValueOrFallback(users, "suljo@tendergo.com", "User").Id,
-                    CategoryId = GetValueOrFallback(categories, "Ostalo", "Category").Id,
-                    LocationId = GetValueOrFallback(locations, "Brcko", "Location").Id,
-                 
-                },
+                
                 new Tender
                 {
                     Title = "Popravka krovne konstrukcije",

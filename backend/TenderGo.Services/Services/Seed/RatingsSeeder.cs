@@ -19,8 +19,16 @@ namespace TenderGo.Services.Services.Seed
                 .Where(t => t.Status == TenderStatus.Awarded)
                 .ToListAsync();
 
+            var excludedUser = await context.Users
+            .FirstAsync(u => u.Email == "amina@tendergo.com");
+
             foreach (var tender in awardedTenders)
             {
+
+                if (tender.CreatedByUserId == excludedUser.Id)
+                {
+                    continue;
+                }
                 var winningBid = tender.WinningBid;
 
                 if (winningBid == null || winningBid.Status != ApplicationStatus.Accepted)
@@ -97,6 +105,8 @@ namespace TenderGo.Services.Services.Seed
                     Count = g.Count()
                 })
                 .ToListAsync();
+
+            //zadnje checklistu mobile zavrsio ,provjeriti ima par sitnica za popravit
 
             foreach (var group in ratingGroups)
             {

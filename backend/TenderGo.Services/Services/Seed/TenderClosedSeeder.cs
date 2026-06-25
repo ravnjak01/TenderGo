@@ -65,7 +65,7 @@ namespace TenderGo.Services.Services.Seed
                     Deadline = now.AddDays(-10),
                     Status = TenderStatus.Closed,
                     PostedAt = now.AddDays(-20),
-                    CreatedByUserId = GetValueOrFallback(users, "suljo@tendergo.com", "User").Id,
+                    CreatedByUserId = GetValueOrFallback(users, "marko@tendergo.com", "User").Id,
                     LocationId = GetValueOrFallback(locations, "Mostar", "Location").Id,
                     CategoryId = GetValueOrFallback(categories, "Transport i logistika", "Category").Id
                 }

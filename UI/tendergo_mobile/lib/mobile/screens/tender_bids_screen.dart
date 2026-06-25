@@ -150,6 +150,7 @@ class _TenderBidsScreenState extends State<TenderBidsScreen> {
                   canAward: widget.tenderDto.status == TenderStatus.closed &&
                       bid.status == ApplicationStatus.pending,
                   onAward: () => _award(bid),
+                  onRatingSubmitted: _controller.refresh,
                   tenderId: widget.tenderId,
                   tenderTitle: widget.tenderTitle ?? widget.tenderDto.title,
                 );
@@ -190,6 +191,7 @@ class _BidCard extends StatelessWidget {
     required this.bid,
     required this.canAward,
     required this.onAward,
+    required this.onRatingSubmitted,
     required this.tenderId,
     required this.tenderTitle,
   });
@@ -197,11 +199,13 @@ class _BidCard extends StatelessWidget {
   final BidDto bid;
   final bool canAward;
   final VoidCallback onAward;
+  final Future<void> Function() onRatingSubmitted;
   final int tenderId;
   final String tenderTitle;
 
   @override
   Widget build(BuildContext context) {
+    print("Ponuda od ${bid.submittedByUserName} - Status: ${bid.status}, Već ocijenjen: ${bid.alreadyRated}");
     final theme = Theme.of(context);
     final priceFormatted = '${bid.offeredPrice.toStringAsFixed(0)} KM';
     final dateFormatted = DateFormat('dd MMM yyyy, HH:mm').format(bid.submittedAt);
@@ -275,24 +279,40 @@ class _BidCard extends StatelessWidget {
               ],
               if (isAccepted) ...[
                 const SizedBox(height: 8),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: FilledButton.tonalIcon(
-                    onPressed: () {
-                      Navigator.of(context).pushNamed(
-                        AppRoutes.rateUser,
-                        arguments: {
-                          'tenderId': tenderId,
-                          'tenderTitle': tenderTitle,
-                          'ratedUserId': bid.submittedByUserId,
-                          'ratedUserName': bid.submittedByUserName,
-                        },
-                      );
-                    },
-                    icon: const Icon(Icons.star_rate_rounded),
-                    label: const Text('Rate User'),
+                if (bid.alreadyRated)
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      "You've already rated this bidder for this bid.",
+                      textAlign: TextAlign.right,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  )
+                else
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: FilledButton.tonalIcon(
+                      onPressed: () async {
+                        final rated = await Navigator.of(context).pushNamed(
+                          AppRoutes.rateUser,
+                          arguments: {
+                            'tenderId': tenderId,
+                            'tenderTitle': tenderTitle,
+                            'ratedUserId': bid.submittedByUserId,
+                            'ratedUserName': bid.submittedByUserName,
+                          },
+                        );
+                        if (rated == true) {
+                          await onRatingSubmitted();
+                        }
+                      },
+                      icon: const Icon(Icons.star_rate_rounded),
+                      label: const Text('Rate User'),
+                    ),
                   ),
-                ),
               ],
             ],
           ),

@@ -174,7 +174,7 @@ class _CategoryDropdown extends StatelessWidget {
   // Returns a short label for the pill button.
   String _buttonLabel() {
     final selected = provider.selectedCategories;
-    if (selected.isEmpty || selected.contains('All')) return 'All ';
+    if (selected.isEmpty || selected.contains('All')) return 'All categories ';
     if (selected.length == 1) return selected.first;
     return '${selected.length} categories';
   }

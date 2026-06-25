@@ -62,17 +62,16 @@ namespace TenderGo.Services.Services.Seed
 
             new Tender
             {
-                Title = "Organizacija transporta građevinskog materijala",
-                Description = "Potreban prevoz građevinskog materijala između više lokacija u roku od sedam dana.",
+                Title = "Organizacija transporta građevinskog materijala", // provjeri tačan puni naziv iz baze
+                Description = "Potreban prevoz građevinskog materijala...",
                 MaxBudget = 1800.00m,
-                Deadline = now.AddDays(-12),
+                Deadline = now.AddDays(-10),
                 Status = TenderStatus.Awarded,
                 PostedAt = now.AddDays(-30),
-                CreatedByUserId = GetValueOrFallback(users, "suljo@tendergo.com", "User").Id,
-                LocationId = GetValueOrFallback(locations, "Mostar", "Location").Id,
-                CategoryId = GetValueOrFallback(categories, "Transport i logistika", "Category").Id
+                CreatedByUserId = GetValueOrFallback(users, "amina@tendergo.com", "User").Id, // Kreirao Suljo prema slici 2
+                LocationId = GetValueOrFallback(locations, "Sarajevo", "Location").Id, // podesi lokaciju
+                CategoryId = GetValueOrFallback(categories, "Transport", "Category").Id // podesi kategoriju
             },
-
             new Tender
             {
                 Title = "Razvoj sistema za online rezervacije",

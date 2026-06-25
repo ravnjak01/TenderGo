@@ -35,8 +35,7 @@ namespace TenderGo.Services.Services.Seed
             // - "Selidba stana"                     -> Vlasnik: suljo@tendergo.com
 
             var seedBids = new[]
-            {
-                // 1. MUJO šalje ponudu na Aminin tender (Dozvoljeno)
+             {
                 new Bid
                 {
                     OfferedPrice = 2100.00m,
@@ -48,19 +47,6 @@ namespace TenderGo.Services.Services.Seed
                     SubmittedByUserId = GetValueOrFallback(users, "mujo@tendergo.com", "User").Id
                 },
 
-                // 2. SULJO šalje ponudu na Aminin tender (Dozvoljeno)
-                new Bid
-                {
-                    OfferedPrice = 1950.00m,
-                    DeliveryDays = 20,
-                    Proposal = "Profesionalna fotografija, obrada slika i izrada albuma uključeni u cijenu.",
-                    Status = ApplicationStatus.Pending,
-                    SubmittedAt = now.AddDays(-12),
-                    TenderId = GetValueOrFallback(tenders, "Fotografisanje svadbenog događaja", "Tender").Id,
-                    SubmittedByUserId = GetValueOrFallback(users, "suljo@tendergo.com", "User").Id
-                },
-
-                // 3. AMINA šalje ponudu na Mujin tender (Dozvoljeno)
                 new Bid
                 {
                     OfferedPrice = 160.00m,
@@ -72,7 +58,6 @@ namespace TenderGo.Services.Services.Seed
                     SubmittedByUserId = GetValueOrFallback(users, "amina@tendergo.com", "User").Id
                 },
 
-                // 4. MARKO šalje ponudu na Suljin tender (Dozvoljeno)
                 new Bid
                 {
                     OfferedPrice = 220.00m,
@@ -81,11 +66,10 @@ namespace TenderGo.Services.Services.Seed
                     Status = ApplicationStatus.Pending,
                     SubmittedAt = now.AddDays(-15),
                     TenderId = GetValueOrFallback(tenders, "Selidba stana", "Tender").Id,
-                    SubmittedByUserId = GetValueOrFallback(users, "marko@tendergo.com", "User").Id
+                    SubmittedByUserId = GetValueOrFallback(users, "mujo@tendergo.com", "User").Id
                 },
 
-                //awarded
-                  new Bid
+                new Bid
                 {
                     OfferedPrice = 2000.00m,
                     DeliveryDays = 13,
@@ -95,7 +79,8 @@ namespace TenderGo.Services.Services.Seed
                     TenderId = GetValueOrFallback(tenders, "Izrada vizuelnog identiteta za restoran", "Tender").Id,
                     SubmittedByUserId = GetValueOrFallback(users, "marko@tendergo.com", "User").Id
                 },
-                    new Bid
+
+                new Bid
                 {
                     OfferedPrice = 4020.00m,
                     DeliveryDays = 5,
@@ -103,28 +88,30 @@ namespace TenderGo.Services.Services.Seed
                     Status = ApplicationStatus.Accepted,
                     SubmittedAt = now.AddDays(-25),
                     TenderId = GetValueOrFallback(tenders, "Nabavka i montaža kancelarijske opreme", "Tender").Id,
-                    SubmittedByUserId = GetValueOrFallback(users, "suljo@tendergo.com", "User").Id
+                    SubmittedByUserId = GetValueOrFallback(users, "amina@tendergo.com", "User").Id
                 },
-                    new Bid
-                    {
-                        OfferedPrice=1700.00m,
-                        DeliveryDays=1,
-                        Proposal="Organizacija transporta građevinskog materijala",
-                        Status = ApplicationStatus.Accepted,
-                        SubmittedAt=now.AddDays(-15),
-                        SubmittedByUserId=GetValueOrFallback(users, "mujo@tendergo.com", "User").Id,
-                        TenderId=GetValueOrFallback(tenders, "Organizacija transporta građevinskog materijala", "Tender").Id
-                    },
-                    new Bid {
 
-                     OfferedPrice=5500.00m,
-                        DeliveryDays=40,
-                        Proposal="Naš tim osigurava kvalitetnu izradu u navedenom roku",
-                        Status = ApplicationStatus.Accepted,
-                        SubmittedAt=now.AddDays(-28),
-                        SubmittedByUserId=GetValueOrFallback(users, "amina@tendergo.com", "User").Id,
-                        TenderId=GetValueOrFallback(tenders, "Razvoj sistema za online rezervacije", "Tender").Id
-                    }
+                new Bid
+                {
+                    OfferedPrice = 1700.00m,
+                    DeliveryDays = 1,
+                    Proposal = "Brz posao garantovan.",
+                    Status = ApplicationStatus.Accepted,
+                    SubmittedAt = now.AddDays(-15),
+                    TenderId = GetValueOrFallback(tenders, "Organizacija transporta građevinskog materijala", "Tender").Id,
+                    SubmittedByUserId = GetValueOrFallback(users, "mujo@tendergo.com", "User").Id
+                },
+
+                new Bid
+                {
+                    OfferedPrice = 5500.00m,
+                    DeliveryDays = 40,
+                    Proposal = "Naš tim osigurava kvalitetnu izradu u navedenom roku.",
+                    Status = ApplicationStatus.Accepted,
+                    SubmittedAt = now.AddDays(-28),
+                    TenderId = GetValueOrFallback(tenders, "Razvoj sistema za online rezervacije", "Tender").Id,
+                    SubmittedByUserId = GetValueOrFallback(users, "amina@tendergo.com", "User").Id
+                }
             };
 
             // 3. UPSERT PETLJA SA SIGURNOSNIM PROVJERAMA

@@ -3,12 +3,14 @@ class ActivityDto {
   final String userName;
   final ActivityType activityType;
   final String action;
+  final String? details;
 
   ActivityDto({
     required this.createdAt,
     required this.userName,
     required this.activityType,
     required this.action,
+    this.details,
   });
 
   factory ActivityDto.fromJson(Map<String, dynamic> json) {
@@ -21,6 +23,7 @@ class ActivityDto {
       json['activityType'],
     ),
       action: json['action'] as String? ?? '',
+      details: json['details'] as String?,
     );
   }
 }
