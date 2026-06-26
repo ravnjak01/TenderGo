@@ -10,7 +10,6 @@ import 'package:tendergo/shared/routes/nav_observer.dart';
 // Services uvozi
 import 'package:tendergo/shared/services/category_service.dart';
 import 'package:tendergo/shared/services/location_service.dart';
-import 'package:tendergo/shared/services/image_service.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
 import 'package:tendergo/shared/services/auth_service.dart';
 import 'package:tendergo/shared/services/admin_service.dart';
@@ -18,7 +17,6 @@ import 'package:tendergo/shared/services/admin_service.dart';
 class AdminApp extends StatelessWidget {
   final AuthService authService;
   final AdminService adminService;
-  final ImageService imageService;
   final TenderService tenderService;
   final bool isLoggedIn;
   final CategoryService categoryService;
@@ -28,7 +26,6 @@ class AdminApp extends StatelessWidget {
     super.key,
     required this.authService,
     required this.adminService,
-    required this.imageService,
     required this.tenderService,
     required this.isLoggedIn,
     required this.categoryService,
@@ -56,7 +53,7 @@ class AdminApp extends StatelessWidget {
       ],
       child: MaterialApp(
         // Ako je korisnik već ulogovan, možeš staviti AppRoutes.tenderList umjesto splash-a po potrebi
-        initialRoute: AppRoutes.loginV2,
+        initialRoute: AppRoutes.login,
         navigatorKey: AppRoutes.navigatorKey,
         navigatorObservers: [routeObserver],
 

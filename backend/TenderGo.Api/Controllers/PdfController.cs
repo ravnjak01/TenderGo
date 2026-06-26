@@ -71,52 +71,6 @@ namespace TenderGo.Api.Controllers
         }
 
 
-        [Authorize(Roles =AppRoles.Admin)]
-        [HttpGet("user/{userId}/tenders")]
-        public async Task<IActionResult> DownloadUserTendersReport(string userId)
-        {
-            var currentUserId = _authService.GetCurrentUserId();
-            
-            var user = await _context.Users
-                .Where(u => u.Id == userId)
-                .Select(u => new { u.FirstName, u.LastName })
-                .FirstOrDefaultAsync();
-
-            if (user == null)
-            {
-                return NotFound($"Korisnik sa ID-jem {userId} ne postoji.");
-            }
-
-            var tendersData = await _context.Tenders
-                .Where(t => t.CreatedByUserId == userId)
-                .Select(t => new TenderWithOffers
-                {
-                    TenderTitle = t.Title,
-                    Status = t.Status.ToString(),
-                    CreatedAt = t.CreatedAt,
-                    Offers = t.Bids.Select(b => new OfferItem
-                    {
-                        BidderName = b.SubmittedByUser.FirstName + " " + b.SubmittedByUser.LastName,
-                        Amount = b.OfferedPrice,
-                        Status = b.Status.ToString(),
-                        Date = b.SubmittedAt
-                    }).ToList()
-                })
-                .ToListAsync();
-
-            var reportModel = new AdminUserTenderReportModel
-            {
-                UserName = $"{user.FirstName} {user.LastName}",
-                Tenders = tendersData
-            };
-
-            var document = new AdminUserTenderReportDocument(reportModel);
-            byte[] pdfBytes = document.GeneratePdf();
-
-            string fileName = $"Izvjestaj_Tenderi_{user.FirstName}_{user.LastName}.pdf";
-            return File(pdfBytes, "application/pdf", fileName);
-        }
-
         
     }
 }

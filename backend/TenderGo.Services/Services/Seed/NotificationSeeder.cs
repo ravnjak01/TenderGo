@@ -28,9 +28,7 @@ namespace TenderGo.Data.Seeders
             {
                 new NotificationSeed("amina@tendergo.com", "Obavijest o  status tendera 'Fotografisanje svadbenog događaja'", "Vaš tender 'Fotografisanje svadbenog događaja' je upravo istekao. Sada možete odabrati pobjednika."),
                 new NotificationSeed("mujo@tendergo.com", "Obavijest o  status tendera 'Instalacija video nadzora'", "Vaš tender 'Instalacija video nadzora' je upravo istekao. Sada možete odabrati pobjednika."),
-                new NotificationSeed("suljo@tendergo.com", "Obavijest o  status tendera 'Selidba stana'", "Vaš tender 'Selidba stana' je upravo istekao. Sada možete odabrati pobjednika."),
                 new NotificationSeed("marko@tendergo.com", "Informacija o tenderu 'Izrada vizuelnog identiteta za restoran'", "Čestitamo! Pobijedili ste na tenderu: Izrada vizuelnog identiteta za restoran."),
-                new NotificationSeed("suljo@tendergo.com", "Informacija o tenderu 'Nabavka i montaža kancelarijske opreme'", "Čestitamo! Pobijedili ste na tenderu: Nabavka i montaža kancelarijske opreme."),
                 new NotificationSeed("mujo@tendergo.com", "Informacija o tenderu 'Organizacija transporta građevinskog materijala'", "Čestitamo! Pobijedili ste na tenderu: Organizacija transporta građevinskog materijala."),
                 new NotificationSeed("amina@tendergo.com", "Informacija o tenderu 'Razvoj sistema za online rezervacije'", "Čestitamo! Pobijedili ste na tenderu: Razvoj sistema za online rezervacije.")
             };

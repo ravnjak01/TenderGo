@@ -46,7 +46,20 @@ class AuthProvider extends BaseProvider {
       notifyListeners();
       return result;
     }
-    return loadUser();
+
+    final userResult=await loadUser();
+
+    if (userResult.success && isAdmin) {
+    await _authService.logout();
+    _currentUser = null;
+    notifyListeners();
+
+    return ApiResponse.failure(
+      'Pristup odbijen. Administratori koriste desktop aplikaciju.',
+      statusCode: 403,
+    );
+  }
+return result;
   }
 
   Future<bool> registerUser(RegisterRequest request) async {

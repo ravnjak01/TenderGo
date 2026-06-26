@@ -16,6 +16,8 @@ namespace TenderGo.Services.Services.Seed
     {
         public int Order => 5;
 
+
+        //obrisao sulju kao korisnika,popravio seedere valjda,obrisao bazu,trebala bi se nakon pokretanja opet kreirait
         public async Task SeedAsync(TenderGoContext context, IServiceProvider serviceProvider)
         {
             var env = serviceProvider.GetRequiredService<IWebHostEnvironment>();

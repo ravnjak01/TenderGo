@@ -35,26 +35,7 @@ namespace TenderGo.Data.Seeders
                         PostalCode = "71000"
                     }
                 },
-                new ApplicationUser
-                {
-                    UserName = "suljo@tendergo.com",
-                    Email = "suljo@tendergo.com",
-                    EmailConfirmed = true,
-                    FirstName = "Suljo",
-                    LastName = "Suljić",
-                    CreatedAt = DateTime.UtcNow,
-                    CreatedBy = "System",
-                    IsBanned = false,
-                    AverageRating = 4.9,
-                    RatingCount = 25,
-                    Address = new Address
-                    {
-                        Country = "Bosna i Hercegovina",
-                        City = "Mostar",
-                        Street = "Braće Fejića 44",
-                        PostalCode = "88000"
-                    }
-                },
+               
                 new ApplicationUser
                 {
                     UserName = "amina@tendergo.com",

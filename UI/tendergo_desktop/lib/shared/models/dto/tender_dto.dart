@@ -98,21 +98,7 @@ class TenderDto {
         'postedAt': postedAt.toIso8601String(),
       };
 
-  // Pretvara TenderDto u model koji direktno očekuje tvoj UI Card Widget
-  TenderCardModel toCardModel() {
-    return TenderCardModel(
-      id: id,
-      title: title,
-      category: categoryName,
-      status: status, // Nema potrebe za mapStatus metodom ako koristiš isti enum
-      valueKM: maxBudget,
-      deadline: deadline,
-      postedAt: postedAt,
-      tags: [location.name, location.country],
-      imageUrl: DioClient.resolveImageUrl(primaryImage?.imageUrl),
-      locationName: location.displayLabel,
-    );
-  }
+
 
   static LocationDto _parseLocation(dynamic value) {
     if (value == null) {

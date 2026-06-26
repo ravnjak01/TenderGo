@@ -1,15 +1,27 @@
+// admin_report_request.dart
 class AdminReportRequest {
-  final String? startDate;
-  final String? endDate;
-  final String? type;
+  final int locationId;
+  final DateTime from;
+  final DateTime to;
 
-  AdminReportRequest({this.startDate, this.endDate, this.type});
+  const AdminReportRequest({
+    required this.locationId,
+    required this.from,
+    required this.to,
+  });
 
   Map<String, dynamic> toJson() {
+    // Pomoćna funkcija za dodavanje vodeće nule (npr. 6 -> "06")
+    String pad(int value) => value.toString().padLeft(2, '0');
+
+    // Formatiramo datume kao čiste "YYYY-MM-DD" stringove, ignorišući sate i UTC pomjeranja
+    final fromString = "${from.year}-${pad(from.month)}-${pad(from.day)}";
+    final toString = "${to.year}-${pad(to.month)}-${pad(to.day)}";
+
     return {
-      'startDate': startDate,
-      'endDate': endDate,
-      'type': type,
+      'locationId': locationId,
+      'from': fromString, 
+      'to': toString,     
     };
   }
 }

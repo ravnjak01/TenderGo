@@ -1,6 +1,4 @@
 import 'package:tendergo/shared/models/requests/login_request.dart';
-import 'package:tendergo/shared/models/requests/register_request.dart';
-import 'package:tendergo/shared/models/requests/reset_password_request.dart';
 import 'package:tendergo/shared/models/ui/api_response.dart';
 import 'package:tendergo/shared/providers/base_provider.dart';
 import 'package:tendergo/shared/models/dto/user_dto.dart';
@@ -62,23 +60,6 @@ Future<ApiResponse> login(String email, String password) async {
 
   return userResult;
 }
-
-  Future<bool> registerUser(RegisterRequest request) async {
-    final result = await handleAsync(() => _authService.register(request));
-    return result ?? false;
-  }
-
-  Future<ApiResponse> resetPassword(ResetPasswordRequest request) async {
-    final result = await handleAsync(() => _authService.resetPassword(request));
-    return result ??
-        ApiResponse.failure(error ?? 'Something went wrong', statusCode: 400);
-  }
-
-  Future<ApiResponse> sendForgotPasswordEmail(String email) async {
-    final result = await handleAsync(() => _authService.forgotPassword(email));
-    return result ??
-        ApiResponse.failure(error ?? 'Something went wrong', statusCode: 400);
-  }
 
   void logout() {
     _currentUser = null;

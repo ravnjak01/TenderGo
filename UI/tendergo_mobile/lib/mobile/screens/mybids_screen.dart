@@ -5,6 +5,8 @@ import 'package:tendergo/shared/controllers/bids_list_controller.dart';
 import 'package:tendergo/shared/core/actions/back_button.dart';
 import 'package:tendergo/shared/core/utils/extensions/string_extensions.dart';
 import 'package:tendergo/shared/models/dto/bid_dto.dart';
+import 'package:tendergo/shared/models/enums/application_status.dart';
+import 'package:tendergo/shared/models/enums/tenderstatus.dart';
 import 'package:tendergo/shared/providers/tender_provider.dart';
 import 'package:tendergo/shared/services/bid_service.dart';
 import 'package:tendergo/mobile/widgets/feedback/snackbar_helper.dart';
@@ -203,6 +205,23 @@ class _BidCard extends StatelessWidget {
         normalized != 'cancelled' &&
         normalized != 'canceled';
   }
+  
+  bool _canCancel(BidDto bid) {
+  final status = bid.status.name.toLowerCase();
+
+  final validBid =
+      status != 'accepted' &&
+      status != 'rejected' &&
+      status != 'withdrawn' &&
+      status != 'cancelled' &&
+      status != 'canceled';
+
+  final tenderOpen =
+      bid.tenderStatus == TenderStatus.open;
+
+  return validBid && tenderOpen;
+}
+
 
 @override
   Widget build(BuildContext context) {
@@ -327,19 +346,49 @@ class _BidCard extends StatelessWidget {
                     ],
                   ),
 
-                  if (_isAwardedStatus(bid.status.name)) ...[
-                    const SizedBox(height: 12),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: FilledButton.tonalIcon(
-                        onPressed: onRateUser,
-                        icon: const Icon(Icons.star_rate_rounded),
-                        label: const Text('Rate User'),
-                      ),
-                    ),
-                  ],
+             if (_isAwardedStatus(bid.status.name)) ...[
+  const SizedBox(height: 12),
 
-                  if (_isCancelableStatus(bid.status.name)) ...[
+  if (bid.alreadyRated)
+    Align(
+      alignment: Alignment.centerRight,
+      child: Text(
+        'User already rated',
+        style: TextStyle(
+          color: colorScheme.onSurfaceVariant,
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    )
+  else
+    Align(
+      alignment: Alignment.centerRight,
+      child: FilledButton.tonalIcon(
+        onPressed: onRateUser,
+        icon: const Icon(Icons.star_rate_rounded),
+        label: const Text('Rate User'),
+      ),
+    ),
+],
+                  if (bid.status == ApplicationStatus.pending &&
+    bid.tenderStatus != TenderStatus.open) ...[
+  const SizedBox(height: 8),
+  Align(
+    alignment: Alignment.centerRight,
+    child: Text(
+      'Tender closed — this bid can no longer be withdrawn.',
+      textAlign: TextAlign.right,
+      style: TextStyle(
+        fontSize: 12,
+        color: colorScheme.onSurfaceVariant,
+        fontStyle: FontStyle.italic,
+      ),
+    ),
+  ),
+],
+
+                  if (_canCancel(bid)) ...[
                     const SizedBox(
                       height: 8,
                     ),

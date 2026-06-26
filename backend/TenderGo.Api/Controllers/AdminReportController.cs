@@ -27,13 +27,28 @@ namespace TenderGo.Api.Controllers
         }
 
         [HttpGet("tenders-by-location")]
-        public async Task<IActionResult> DownloadTendersByLocationReport([FromQuery] AdminReportRequest request)
+        public async Task<IActionResult> DownloadTendersByLocationReport(
+       [FromQuery] AdminReportRequest request)
         {
             var pdfBytes = await _adminReportService.GenerateReportAsync(request);
-            var from = request.From?.ToString("yyyyMMdd") ?? "start";
-            var to = request.To?.ToString("yyyyMMdd") ?? "today";
 
-            return File(pdfBytes, "application/pdf", $"tenders-by-location-{from}-{to}.pdf");
+            var from = request.From.ToString("yyyyMMdd");
+            var to = request.To.ToString("yyyyMMdd");
+
+            return File(
+                pdfBytes,
+                "application/pdf",
+                $"tenders-by-location-{from}-{to}.pdf");
         }
+
+
+        [HttpGet("user/{userId}/tenders")]
+        public async Task<IActionResult> DownloadUserTendersReport(string userId)
+        {
+            var result = await _adminReportService.GenerateUserTendersReportAsync(userId);
+
+            return File(result.PdfBytes, "application/pdf", result.FileName);
+        }
+
     }
 }

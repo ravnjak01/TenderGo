@@ -9,23 +9,8 @@ class ApiEndpoints {
   static const String  me = '/auth/me';
 
 
-  //IMAGES
-
-  static String uploadImage='Images/upload';
-  static String deleteImage='Images';
-
-  // --- RECOMMENDATIONS ---
-  static String recommendSimilar(int tenderId) => '/recommend/similar/$tenderId';
-  static const String recommendForUser = '/recommend/for-user';
-
-
   static const String refreshToken = '/auth/refresh-token';
 
-  //PDF
+  
 
-  static  String downloadPdf(int id)=>'/pdf/$id/download';
-  static String adminReport(String id)=>'pdf/user/$id/tenders';
-
-  // USER ACTIVITY
-  static const String userActivity='/user-activities/log';
 }

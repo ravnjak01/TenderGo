@@ -2,8 +2,6 @@ import 'package:dio/dio.dart';
 import 'package:tendergo/shared/core/network/constants/location_endpoints.dart';
 import 'package:tendergo/shared/models/dto/location_dto.dart';
 import 'package:tendergo/shared/models/requests/location_filter_request.dart';
-import 'package:tendergo/shared/models/requests/location_insert_request.dart';
-import 'package:tendergo/shared/models/requests/location_update_request.dart';
 import 'package:tendergo/shared/services/base_service.dart';
 
 class LocationService extends BaseService<LocationDto> {

@@ -42,16 +42,37 @@ namespace TenderGo.Services.Services
             if (userId != currentUserId && !isAdmin)
             {
                 throw new ForbiddenException();
-
             }
-            
-            return await _context.Bids
-            .Where(x => x.SubmittedByUserId == userId)
-            .ProjectTo<BidDTO>(_mapper.ConfigurationProvider)
-            .ToListAsync();
+
+            var bids = await _context.Bids
+                .Where(x => x.SubmittedByUserId == userId)
+                .ProjectTo<BidDTO>(_mapper.ConfigurationProvider)
+                .ToListAsync();
+
+            var tenderIds = bids.Select(b => b.TenderId).ToList();
+
+            var ratedPairs = await _context.Ratings
+                .Where(r =>
+                    r.RatedByUserId == currentUserId &&
+                    tenderIds.Contains(r.TenderId))
+                .Select(r => new
+                {
+                    r.TenderId,
+                    r.RatedUserId
+                })
+                .ToListAsync();
+
+            foreach (var bid in bids)
+            {
+                bid.AlreadyRated = ratedPairs.Any(r =>
+                    r.TenderId == bid.TenderId &&
+                    r.RatedUserId == bid.TenderCreatedByUserId);
+            }
+
+            return bids;
         }
 
-     public override async Task<BidDTO> Insert(BidInsertRequest request)
+        public override async Task<BidDTO> Insert(BidInsertRequest request)
 {
     try
     {
@@ -133,7 +154,7 @@ namespace TenderGo.Services.Services
         public async Task<List<BidDTO>> GetBidsForTender(int tenderId)
         {
             var tender = await _context.Tenders.FindAsync(tenderId)
-                      ?? throw new NotFoundException("Tender",tenderId);
+                      ?? throw new NotFoundException("Tender", tenderId);
 
             var currentUserId = _authService.GetCurrentUserId();
             bool isAdmin = _authService.IsInRole(AppRoles.Admin);
@@ -141,15 +162,31 @@ namespace TenderGo.Services.Services
             if (tender.CreatedByUserId != currentUserId && !isAdmin)
             {
                 throw new ForbiddenException();
-
             }
-            return await _context.Bids
+
+            // 1. Prvo povuci sve ponude u listu
+            var bids = await _context.Bids
                 .Where(b => b.TenderId == tenderId)
                 .OrderByDescending(b => b.SubmittedAt)
                 .ProjectTo<BidDTO>(_mapper.ConfigurationProvider)
                 .ToListAsync();
-        }
 
+            // 2. Izvuci iz baze sve ocjene koje je trenutni korisnik (vlasnik tendera) 
+            //    već dao na OVOM konkretnom tenderu
+            var ratedUserIds = await _context.Ratings
+                .Where(r => r.RatedByUserId == currentUserId && r.TenderId == tenderId)
+                .Select(r => r.RatedUserId)
+                .ToListAsync();
+
+            // 3. Prođi kroz sve ponude i postavi ispravan AlreadyRated status
+            foreach (var bid in bids)
+            {
+                // Ako je ID korisnika koji je poslao ponudu u listi već ocijenjenih -> true
+                bid.AlreadyRated = ratedUserIds.Contains(bid.SubmittedByUserId);
+            }
+
+            return bids;
+        }
 
         public async Task<List<string>> AllowedActions(int id)
         {

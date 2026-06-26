@@ -20,6 +20,11 @@ class TenderListController {
     _pollingTimer = null;
   }
 
+  void cancelDebounce() {
+  _debounce?.cancel();
+  _debounce = null;
+}
+
   void onSearchChanged(
     String query, {
     required VoidCallback onClear,

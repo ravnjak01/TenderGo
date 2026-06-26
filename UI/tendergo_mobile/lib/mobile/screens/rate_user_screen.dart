@@ -10,7 +10,7 @@ class RateUserScreen extends StatefulWidget {
   final UserService userService;
   final AuthService authService;
   final int tenderId;
-  final String? tenderTitle; // Dodano kako bi UI ispisao naziv tendera umjesto ID-a
+  final String? tenderTitle; 
   final String ratedUserId;
   final String? ratedUserName;
 

@@ -26,15 +26,6 @@ class JsonParser {
     return parsed.isEmpty ? null : parsed;
   }
 
-  static String readFirstString(List<dynamic> options, {String fallback = ''}) {
-    for (final opt in options) {
-      if (opt != null) {
-        final parsed = opt.toString().trim();
-        if (parsed.isNotEmpty) return parsed;
-      }
-    }
-    return fallback;
-  }
 
   static bool readBool(dynamic value, {bool fallback = false}) {
     if (value is bool) return value;

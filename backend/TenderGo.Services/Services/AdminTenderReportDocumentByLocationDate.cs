@@ -3,13 +3,13 @@ using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using TenderGo.Models.Entities;
 
-public class AdminTenderReportDocument : IDocument
+public class AdminTenderReportDocumentByLocationDate : IDocument
 {
     private readonly List<Tender> _tenders;
     private readonly DateTime? _from;
     private readonly DateTime? _to;
 
-    public AdminTenderReportDocument(List<Tender> tenders, DateTime? from, DateTime? to)
+    public AdminTenderReportDocumentByLocationDate(List<Tender> tenders, DateTime? from, DateTime? to)
     {
         _tenders = tenders;
         _from = from;

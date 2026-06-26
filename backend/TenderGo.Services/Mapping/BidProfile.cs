@@ -17,6 +17,12 @@ namespace TenderGo.Services.Mapping
             CreateMap<Bid, BidDTO>()
                 .ForMember(dest => dest.SubmittedByUserName,
                           opt => opt.MapFrom(src => src.SubmittedByUser.FirstName + " " + src.SubmittedByUser.LastName))
+                   .ForMember(
+                dest => dest.TenderStatus,
+                opt => opt.MapFrom(src => src.Tender.Status))
+                   .ForMember(
+    dest => dest.TenderCreatedByUserId,
+    opt => opt.MapFrom(src => src.Tender.CreatedByUserId))
                    .ForMember(dest => dest.TenderTitle, opt => opt.MapFrom(src => src.Tender != null ? src.Tender.Title : null));
 
 

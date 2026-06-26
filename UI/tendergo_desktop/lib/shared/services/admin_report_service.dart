@@ -25,11 +25,6 @@ class AdminReportService {
                   ? raw['result'] as Map<String, dynamic>
                   : raw)
           : <String, dynamic>{};
-
-      if (payload is! Map<String, dynamic>) {
-        throw Exception('Unexpected overview response format');
-      }
-
       return AdminReportOverviewDto.fromJson(Map<String, dynamic>.from(payload));
     } on DioException catch (e) {
       throw Exception(e.response?.data ?? 'Error fetching admin report overview');
@@ -62,6 +57,24 @@ class AdminReportService {
       throw Exception(e.response?.data ?? 'Error fetching tenders by location');
     }
   }
+Future<Uint8List?> fetchUserTenderReportPdf(String userId) async {
+  try {
+    final response = await _dio.get(
+      AdminReportEndpoints.userTenderReport(userId),
+      options: Options(responseType: ResponseType.bytes),
+    );
+
+    if (response.statusCode == 200 && response.data != null) {
+      return Uint8List.fromList(response.data as List<int>);
+    }
+
+    return null;
+  } on DioException catch (e) {
+    throw Exception(
+      e.response?.data ?? 'Error generating user report PDF',
+    );
+  }
+}
 
   Future<Uint8List?> fetchLocationReportPdf({
     required int locationId,
@@ -71,11 +84,11 @@ class AdminReportService {
     try {
       final response = await _dio.get(
         AdminReportEndpoints.tendersByLocation,
-        queryParameters: {
-          'locationId': locationId,
-          'startDate': from.toIso8601String(),
-          'endDate': to.toIso8601String(),
-        },
+        queryParameters: AdminReportRequest(
+          locationId: locationId,
+          from: from,
+          to: to,
+        ).toJson(),
         options: Options(responseType: ResponseType.bytes),
       );
 

@@ -13,4 +13,8 @@ public class BidDTO : IHasId
     public ApplicationStatus Status { get; set; } 
     public string? Proposal { get; set; }
     public int DeliveryDays { get; set; }
+    public TenderStatus TenderStatus { get; set; }
+    public bool AlreadyRated { get; set; }
+    public string TenderCreatedByUserId { get; set; } = string.Empty;
+
 }

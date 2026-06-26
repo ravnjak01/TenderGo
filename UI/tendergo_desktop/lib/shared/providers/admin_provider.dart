@@ -35,11 +35,7 @@ class AdminProvider {
   Future<List<TenderDto>> getAllTenders() =>
       tenderService.getAll(page: 1, pageSize: 100);
 
-  Future<List<TenderDto>> getActiveTenders() => tenderService.getActive();
 
-  Future<List<TenderDto>> getClosedTenders() => tenderService.getClosed();
-
-  Future<List<TenderDto>> getCancelledTenders() => tenderService.getCancelled();
 
   Future<List<CategoryDto>> getCategories() =>
       categoryService.getAll(queryParameters: {'includeInactive': true});
@@ -73,7 +69,6 @@ class AdminProvider {
   Future<bool> updateLocation(int id, LocationUpdateRequest request) =>
       locationService.updateLocation(id, request);
 
-  Future<String> deleteLocation(int id) => locationService.deleteLocation(id);
 
   Future<LocationDto> activateLocation(int id) =>
       locationService.activateLocation(id);

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
-import 'package:tendergo/admin/admin-panel-v2/screens/admin_categories_panel.dart';
-import 'package:tendergo/admin/admin-panel-v2/screens/admin_dashboard_panel.dart';
-import 'package:tendergo/admin/admin-panel-v2/screens/admin_locations_panel.dart';
-import 'package:tendergo/admin/admin-panel-v2/screens/admin_report_panel.dart';
-import 'package:tendergo/admin/admin-panel-v2/screens/admin_tenders_panel.dart';
-import 'package:tendergo/admin/admin-panel-v2/screens/admin_users_panel.dart';
+import 'package:tendergo/admin/screens/admin_categories_panel.dart';
+import 'package:tendergo/admin/screens/admin_dashboard_panel.dart';
+import 'package:tendergo/admin/screens/admin_locations_panel.dart';
+import 'package:tendergo/admin/screens/admin_report_panel.dart';
+import 'package:tendergo/admin/screens/admin_tenders_panel.dart';
+import 'package:tendergo/admin/screens/admin_users_panel.dart';
 import 'package:tendergo/shared/services/auth_service.dart';
 
 class MainAdminLayout extends StatefulWidget {

@@ -2,8 +2,10 @@
 import 'package:tendergo/admin/routes/routes.dart';
 import 'package:tendergo/shared/models/dto/admin_report_overview_dto.dart';
 import 'package:tendergo/shared/models/dto/location_dto.dart';
+import 'package:tendergo/shared/models/dto/user_dto.dart';
 import 'package:tendergo/shared/models/requests/location_filter_request.dart';
 import 'package:tendergo/shared/services/admin_report_service.dart';
+import 'package:tendergo/shared/services/admin_service.dart';
 import 'package:tendergo/shared/services/dio_client.dart';
 import 'package:tendergo/shared/services/location_service.dart';
 
@@ -17,6 +19,12 @@ class AdminReportsPanel extends StatefulWidget {
 class _AdminReportsPanelState extends State<AdminReportsPanel> {
   late final AdminReportService _reportService;
   late final LocationService _locationService;
+  late final AdminService _adminService;
+
+List<UserDto> _users = [];
+String? _selectedUserId;
+bool _isGeneratingUserReport = false;
+String? _userReportError;
   AdminReportOverviewDto? _overview;
   List<LocationDto> _locations = [];
   int? _selectedLocationId;
@@ -32,6 +40,7 @@ class _AdminReportsPanelState extends State<AdminReportsPanel> {
     super.initState();
     _reportService = AdminReportService(DioClient.getDio());
     _locationService = LocationService(DioClient.getDio());
+    _adminService = AdminService(DioClient.getDio());
     _loadData();
   }
 
@@ -42,7 +51,7 @@ class _AdminReportsPanelState extends State<AdminReportsPanel> {
     });
 
     try {
-      await Future.wait([_loadOverview(), _loadLocations()]);
+      await Future.wait([_loadOverview(), _loadLocations(),_loadUsers()]);
       setState(() {
         _isLoading = false;
       });
@@ -53,6 +62,19 @@ class _AdminReportsPanelState extends State<AdminReportsPanel> {
       });
     }
   }
+Future<void> _loadUsers() async {
+  final response = await _adminService.getAllUsers();
+
+  _users = response.data ?? [];
+
+  _users.sort(
+    (a, b) => '${a.firstName} ${a.lastName}'
+        .toLowerCase()
+        .compareTo(
+          '${b.firstName} ${b.lastName}'.toLowerCase(),
+        ),
+  );
+}
 
   Future<void> _loadOverview() async {
     _overview = await _reportService.getOverview();
@@ -84,7 +106,7 @@ class _AdminReportsPanelState extends State<AdminReportsPanel> {
       if (isFrom) {
         _fromDate = DateTime(picked.year, picked.month, picked.day);
       } else {
-        _toDate = DateTime(picked.year, picked.month, picked.day, 23, 59, 59);
+        _toDate = DateTime(picked.year, picked.month, picked.day);
       }
     });
   }
@@ -147,6 +169,60 @@ class _AdminReportsPanelState extends State<AdminReportsPanel> {
       setState(() {
         _isGenerating = false;
         _generatorError = e.toString();
+      });
+    }
+  }
+
+  Future<void> _generateUserReport() async {
+    setState(() {
+      _userReportError = null;
+    });
+
+    if (_selectedUserId == null || _selectedUserId!.isEmpty) {
+      setState(() => _userReportError = 'Odaberite korisnika.');
+      return;
+    }
+
+    setState(() {
+      _isGeneratingUserReport = true;
+      _userReportError = null;
+    });
+
+    try {
+      final bytes = await _reportService.fetchUserTenderReportPdf(_selectedUserId!);
+
+      if (!mounted) return;
+      setState(() => _isGeneratingUserReport = false);
+
+      if (bytes != null && bytes.isNotEmpty) {
+        final selectedUser = _users.firstWhere(
+          (user) => user.id == _selectedUserId,
+          orElse: () => UserDto(
+            id: _selectedUserId!,
+            email: '',
+            username: '',
+            firstName: 'Odabrani',
+            lastName: 'korisnik',
+            roles: const [],
+            isBanned: false,
+          ),
+        );
+
+        Navigator.of(context).pushNamed(
+          AppRoutes.pdfViewer,
+          arguments: {
+            'pdfBytes': bytes,
+            'title': 'Izvještaj korisnika - ${selectedUser.firstName} ${selectedUser.lastName}',
+          },
+        );
+      } else {
+        setState(() => _userReportError = 'Greška pri generisanju korisničkog izvještaja.');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isGeneratingUserReport = false;
+        _userReportError = e.toString();
       });
     }
   }
@@ -294,7 +370,7 @@ class _AdminReportsPanelState extends State<AdminReportsPanel> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              'Generiši PDF izvještaj',
+                              'Generiši PDF izvještaj po lokaciji',
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
@@ -364,9 +440,90 @@ class _AdminReportsPanelState extends State<AdminReportsPanel> {
                           ],
                         ),
                       ),
+                      const SizedBox(height: 24),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.04),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Generiši PDF izvještaj po korisniku',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF111827),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            _buildFieldLabel('Korisnik'),
+                            DropdownButtonFormField<String>(
+                              isExpanded: true,
+                              value: _selectedUserId,
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: Colors.white,
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
+                                ),
+                              ),
+                              items: _users.map((user) {
+                                return DropdownMenuItem<String>(
+                                  value: user.id,
+                                  child: Text('${user.firstName} ${user.lastName}'),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                setState(() {
+                                  _selectedUserId = value;
+                                });
+                              },
+                              hint: const Text('Odaberite korisnika'),
+                            ),
+                            if (_userReportError != null) ...[
+                              const SizedBox(height: 12),
+                              Text(
+                                _userReportError!,
+                                style: const TextStyle(color: Color(0xFFB91C1C)),
+                              ),
+                            ],
+                            const SizedBox(height: 20),
+                            SizedBox(
+                              width: 220,
+                              child: ElevatedButton(
+                                onPressed: _isGeneratingUserReport ? null : _generateUserReport,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  child: _isGeneratingUserReport
+                                      ? const SizedBox(
+                                          height: 18,
+                                          width: 18,
+                                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                        )
+                                      : const Text('Generiši PDF'),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
     );
   }
 }
+
