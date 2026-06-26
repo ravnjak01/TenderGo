@@ -5,8 +5,6 @@ import 'package:tendergo/shared/core/network/constants/api_endpoints.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:tendergo/shared/models/dto/user_dto.dart';
 import 'package:tendergo/shared/models/requests/login_request.dart';
-import 'package:tendergo/shared/models/requests/register_request.dart';
-import 'package:tendergo/shared/models/requests/reset_password_request.dart';
 import 'package:tendergo/shared/models/ui/api_response.dart';
 import 'package:tendergo/shared/services/api_helper.dart';
 
@@ -101,21 +99,7 @@ class AuthService {
     return null;
   }
 
-  Future<bool> register(RegisterRequest request) async {
-    try {
-      final response = await _dio.post(
-        ApiEndpoints.register,
-        data: request.toJson(),
-      );
-
-      return response.statusCode != null &&
-          response.statusCode! >= 200 &&
-          response.statusCode! < 300;
-    } on DioException catch (_) {
-      return false;
-    }
-  }
-
+ 
   Future<ApiResponse<void>> forgotPassword(String email) async {
     try {
       await _dio.post(ApiEndpoints.forgotPassword, data: {'email': email});
@@ -126,27 +110,7 @@ class AuthService {
     }
   }
 
-  Future<ApiResponse<void>> resetPassword(ResetPasswordRequest request) async {
-    try {
-      await _dio.post(ApiEndpoints.resetPassword, data: request.toJson());
-
-      return ApiResponse.success(null, message: 'Password reset successfully.');
-    } on DioException catch (e) {
-      if (e.response != null && e.response?.data != null) {
-        final data = e.response!.data;
-
-        if (data is Map &&
-            data['errors'] != null &&
-            (data['errors'] as List).isNotEmpty) {
-          final firstError = data['errors'][0].toString();
-
-          return ApiResponse.failure(firstError);
-        }
-      }
-
-      return ApiHelper.handleDioError<void>(e);
-    }
-  }
+  
 
   Future<bool> refreshToken() async {
     try {

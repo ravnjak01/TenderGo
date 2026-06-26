@@ -33,23 +33,6 @@ class LocationService extends BaseService<LocationDto> {
     }
   }
 
-  static List<String> distinctCountries(List<LocationDto> locations) {
-    final countries = locations.map((l) => l.country).toSet().toList();
-    countries.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
-    return countries;
-  }
-
-  static List<String> distinctRegions(List<LocationDto> locations) {
-    final regions = locations
-        .map((l) => l.region)
-        .where((r) => r != null && r.isNotEmpty)
-        .cast<String>()
-        .toSet()
-        .toList();
-    regions.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
-    return regions;
-  }
-
   Future<LocationDto> insertLocation(LocationInsertRequest request) {
     return insert(
       LocationDto(

@@ -4,7 +4,6 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:tendergo/shared/models/dto/bid_dto.dart';
 import 'package:tendergo/shared/models/dto/category_dto.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
-import 'package:tendergo/shared/models/requests/tender_insert_request.dart';
 import 'package:tendergo/shared/models/requests/tender_search_request.dart';
 import 'package:tendergo/shared/models/ui/location_filter_selection.dart';
 import 'package:tendergo/shared/providers/base_provider.dart';
@@ -41,52 +40,7 @@ class TenderProvider extends BaseProvider {
   Set<int> get savedIds => _savedIds;
 
 
-  void updateBookmarkLocal(int id, bool isBookmarked) {
-    if (isBookmarked) {
-      _savedIds.add(id);
-    } else {
-      _savedIds.remove(id);
-    }
-    notifyListeners();
-  }
-
-  List<TenderDto> get filteredTenders {
-    var list = List<TenderDto>.from(_searchResults ?? _tenders);
-
-    if (!_selectedCategories.contains('All') &&
-        _selectedCategories.isNotEmpty) {
-      list = list
-          .where((t) => _selectedCategories.contains(t.categoryName))
-          .toList();
-    }
-
-    final filter = _locationFilter;
-    if (filter != null) {
-      if (filter.locationId != null) {
-        list = list.where((t) => t.location.id == filter.locationId).toList();
-      } else if (filter.region != null) {
-        list = list
-            .where(
-              (t) =>
-                  t.location.country.toLowerCase() ==
-                      filter.country.toLowerCase() &&
-                  (t.location.region ?? '').toLowerCase() ==
-                      filter.region!.toLowerCase(),
-            )
-            .toList();
-      } else {
-        list = list
-            .where(
-              (t) =>
-                  t.location.country.toLowerCase() ==
-                  filter.country.toLowerCase(),
-            )
-            .toList();
-      }
-    }
-
-    return list;
-  }
+ 
 
   void setLocationFilter(LocationFilterSelection? filter) {
     _locationFilter = filter;
@@ -99,27 +53,6 @@ class TenderProvider extends BaseProvider {
     safeNotify();
   }
 
-  void toggleCategory(String category) {
-    if (category == 'All') {
-      _selectedCategories
-        ..clear()
-        ..add('All');
-    } else {
-      _selectedCategories.remove('All');
-      if (_selectedCategories.contains(category)) {
-        _selectedCategories.remove(category);
-      } else {
-        _selectedCategories.add(category);
-      }
-      if (_selectedCategories.isEmpty) _selectedCategories.add('All');
-    }
-    safeNotify();
-  }
-
-  Future<void> fetchActiveTenders({bool silent = false}) =>
-      handleAsync(() async {
-        _tenders = await _service.getActive();
-      }, silent: silent);
 
   Future<void> fetchAllTenders() => handleAsync(() async {
     _tenders = await _service.getAll();

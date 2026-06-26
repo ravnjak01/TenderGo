@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:tendergo/admin/admin-panel-v2/screens/admin_tender_details_screen.dart';
+import 'package:tendergo/admin/screens/admin_tender_details_screen.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
 import 'package:tendergo/shared/models/enums/tenderstatus.dart';
 import 'package:tendergo/shared/providers/admin_provider.dart';

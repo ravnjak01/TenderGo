@@ -37,7 +37,6 @@ class _AdminDashboardPanelState extends State<AdminDashboardPanel> {
       final admin = Provider.of<AdminProvider>(context, listen: false);
 
       final usersResp = await admin.getAllUsers();
-      final activeTenders = await admin.getActiveTenders();
       final locations = await admin.getLocations();
       final categories = await admin.getCategories();
       final recentActivitiesResp = await admin.getRecentActivities();
@@ -55,7 +54,6 @@ class _AdminDashboardPanelState extends State<AdminDashboardPanel> {
 
       setState(() {
         _usersCount = usersCount;
-        _activeTendersCount = activeTenders.length;
         _locationsCount = locations.length;
         _categoriesCount = categories.length;
         _recentActivities = recentActivities.take(5).toList();

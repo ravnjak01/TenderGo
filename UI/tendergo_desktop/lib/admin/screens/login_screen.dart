@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:tendergo/admin/screens/admin_layout.dart';
 import 'package:tendergo/admin/routes/routes.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
 import 'package:tendergo/shared/core/utils/validators/validators.dart';
@@ -14,7 +15,7 @@ class AdminLoginScreen extends StatefulWidget {
   const AdminLoginScreen({super.key,});
 
   @override
-  State<AdminLoginScreen> createState() => _AdminLoginScreenState();
+  State<AdminLoginScreen > createState() => _AdminLoginScreenState();
 }
 
 class _AdminLoginScreenState extends State<AdminLoginScreen> {
@@ -41,7 +42,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
     });
     return;
   }
-  Navigator.of(context).pushReplacementNamed(AppRoutes.tenderList);
+  Navigator.of(context).pushReplacementNamed(AppRoutes.mainAdminLayout);
 }
  
 
@@ -108,21 +109,8 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                 onClose: () => setState(() => _errorMessage = null),
               ),
             ],
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: () =>
-                    Navigator.pushNamed(context, AppRoutes.forgotPassword),
-                child: const Text(
-                  'Forgot Password?',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.primary,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
+         
+            const SizedBox(height: 20),
             Consumer<AuthProvider>(
               builder: (context, auth, _) => AuthSubmitButton(
                 label: 'Sign In',
@@ -130,13 +118,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                 onPressed: _handleLogin,
               ),
             ),
-            const SizedBox(height: 16),
-            AuthNavLink(
-              prompt: "Don't have an account? ",
-              linkText: 'Sign up',
-              onTap: () =>
-                  Navigator.pushNamed(context, AppRoutes.registration),
-            ),
+          
           ],
         ),
       ),
