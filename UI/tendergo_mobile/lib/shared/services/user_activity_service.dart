@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:tendergo/shared/core/network/constants/api_endpoints.dart';
+import 'package:tendergo/shared/core/network/constants/multiple_endpoints.dart';
 import 'package:tendergo/shared/models/requests/activity_log_request.dart';
 import 'package:tendergo/shared/models/ui/api_response.dart';
 import 'package:tendergo/shared/services/api_helper.dart';

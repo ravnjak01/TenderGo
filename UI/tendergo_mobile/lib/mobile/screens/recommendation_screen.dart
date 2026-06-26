@@ -29,15 +29,13 @@ class _RecommendedForYouMobileScreenState extends State<RecommendedForYouMobileS
     _provider = RecommendationProvider();
     _loadRecommendations();
   }
-
-  Future<void> _loadRecommendations() async {
-    final token = await _storage.read(key: 'jwt_token') ?? '';
-    await _provider.loadForUser(authToken: token);
+Future<void> _loadRecommendations() async {
+    // Čist poziv, provajder i servis sami rješavaju autorizaciju u pozadini
+    await _provider.loadForUser();
   }
 
   Future<void> _refresh() async {
-    final token = await _storage.read(key: 'jwt_token') ?? '';
-    await _provider.loadForUser(authToken: token);
+    await _provider.loadForUser();
   }
 
   @override

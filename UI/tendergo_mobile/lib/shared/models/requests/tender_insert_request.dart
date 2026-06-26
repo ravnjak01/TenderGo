@@ -20,7 +20,6 @@ class TenderInsertRequest {
     this.imageBytes, 
   });
 
-  /// Convert TenderInsertRequest to JSON Map
   Map<String, dynamic> toJson() {
     return {
       'title': title,

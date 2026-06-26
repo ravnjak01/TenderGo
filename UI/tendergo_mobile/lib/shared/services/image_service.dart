@@ -1,7 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:tendergo/shared/core/network/constants/api_endpoints.dart';
+import 'package:tendergo/shared/core/network/constants/multiple_endpoints.dart';
+import 'package:tendergo/shared/models/dto/tender_image_dto.dart';
+import 'package:tendergo/shared/services/response_parser.dart';
 
 class ImageService {
   final Dio _dio;
@@ -11,7 +13,7 @@ class ImageService {
 
   Future<String?> _getToken() async => _storage.read(key: 'jwt_token');
 
-  Future<String> uploadFile(PlatformFile file, {int? tenderId}) async {
+  Future<TenderImageDto> uploadFile(PlatformFile file) async {
     final MultipartFile multipartFile;
     if (file.path != null && file.path!.isNotEmpty) {
       multipartFile = await MultipartFile.fromFile(
@@ -24,13 +26,9 @@ class ImageService {
       throw Exception('File "${file.name}" has no readable data.');
     }
 
-    final payload = <String, dynamic>{'file': multipartFile};
-    if (tenderId != null) {
-      payload['tenderId'] = tenderId;
-      payload['TenderId'] = tenderId;
-      payload['tenderID'] = tenderId;
-    }
-    final formData = FormData.fromMap(payload);
+    final formData = FormData.fromMap({
+      'file': multipartFile,
+    });
 
     try {
       final token = await _getToken();
@@ -43,37 +41,34 @@ class ImageService {
         ),
       );
 
-      final data = response.data;
-      if (data is String && data.trim().isNotEmpty) return data.trim();
-      if (data is Map<String, dynamic>) {
-        final url =
-            data['url'] ??
-            data['imageUrl'] ??
-            data['path'] ??
-            data['filePath'] ??
-            data['result'];
-        if (url != null) return url.toString();
-      }
-      throw Exception('Unexpected response from image upload.');
+      final innerData = ResponseParser.object(response.data);
+      return TenderImageDto.fromJson(innerData);
     } on DioException catch (e) {
-      throw Exception(
-        e.response?.data ?? 'Error uploading image "${file.name}"',
+      final errorMessage = ResponseParser.errorMessage(
+        e,
+        'Error uploading image "${file.name}"',
       );
+      throw Exception(errorMessage);
     }
   }
 
-  Future<String> uploadForTender(int tenderId, PlatformFile file) {
-    return uploadFile(file, tenderId: tenderId);
+  // POJAŠNJENJE: Pošto backend trenutno NE prima tenderId kroz upload metodu,
+  // ova metoda samo prosleđuje fajl. Ako ti je tenderId neophodan na BE, 
+  // moraš prvo promijeniti parametre u .NET ImagesController-u!
+  // Promijenjeno u Future<TenderImageDto>
+  Future<TenderImageDto> uploadForTender(int tenderId, PlatformFile file) {
+    return uploadFile(file);
   }
 
-  Future<List<String>> uploadAll(List<PlatformFile> files) async {
-    final results = <String>[];
+  // Promijenjeno u Future<List<TenderImageDto>>
+  Future<List<TenderImageDto>> uploadAll(List<PlatformFile> files) async {
+    final results = <TenderImageDto>[]; // Lista sada prima objekte, ne stringove
     final errors = <String>[];
 
     for (final file in files) {
       try {
-        final path = await uploadFile(file);
-        results.add(path);
+        final dto = await uploadFile(file);
+        results.add(dto);
       } catch (e) {
         errors.add(e.toString().replaceFirst('Exception: ', ''));
       }
@@ -86,26 +81,11 @@ class ImageService {
     return results;
   }
 
-  Future<List<String>> uploadAllForTender(
+  // Ne zaboravi prepraviti i uploadAllForTender ako je koristiš:
+  Future<List<TenderImageDto>> uploadAllForTender(
     int tenderId,
     List<PlatformFile> files,
   ) async {
-    final results = <String>[];
-    final errors = <String>[];
-
-    for (final file in files) {
-      try {
-        final path = await uploadFile(file, tenderId: tenderId);
-        results.add(path);
-      } catch (e) {
-        errors.add(e.toString().replaceFirst('Exception: ', ''));
-      }
-    }
-
-    if (results.isEmpty && errors.isNotEmpty) {
-      throw Exception(errors.join('; '));
-    }
-
-    return results;
+    return uploadAll(files);
   }
 }

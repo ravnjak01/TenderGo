@@ -1,11 +1,11 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:tendergo/shared/core/network/constants/user_endpoints.dart';
-import 'package:tendergo/shared/core/error/error_handler.dart';
 import 'package:tendergo/shared/models/dto/review_dto.dart';
 import 'package:tendergo/shared/models/dto/user_public_dto.dart';
 import 'package:tendergo/shared/models/requests/rate_user_request.dart';
 import 'package:tendergo/shared/models/requests/update_profile_request.dart';
+import 'package:tendergo/shared/services/response_parser.dart';
 
 class UserService {
   final Dio _dio;
@@ -28,6 +28,18 @@ class UserService {
     return Options(headers: headers);
   }
 
+  // Pomoćna metoda za bezbjedno odmotavanje uspješnog odgovora iz koverte
+  T _unwrapEnvelope<T>(Response response, T Function(dynamic data) mapper) {
+    return mapper(ResponseParser.data(response.data));
+  }
+
+  // Centralizovano čitanje grešaka iz ApiErrorEnvelope
+  Exception _handleError(DioException e, String defaultMessage) {
+    return Exception(ResponseParser.errorMessage(e, defaultMessage));
+  }
+
+  // ==================== API METODE ====================
+
   Future<UserPublicDto> getUser(String userId) async {
     try {
       final response = await _dio.get(
@@ -35,22 +47,12 @@ class UserService {
         options: await _options(),
       );
 
-      final data = response.data;
-      final payload = data is Map<String, dynamic>
-          ? (data['result'] is Map<String, dynamic>
-                ? data['result'] as Map<String, dynamic>
-                : data['data'] is Map<String, dynamic>
-                ? data['data'] as Map<String, dynamic>
-                : data)
-          : null;
-
-      if (payload == null) {
-        throw Exception('Invalid user payload.');
-      }
-
-      return UserPublicDto.fromJson(payload);
+      return _unwrapEnvelope(response, (data) {
+        if (data == null) throw Exception('Korisnički podaci nisu pronađeni.');
+        return UserPublicDto.fromJson(data as Map<String, dynamic>);
+      });
     } on DioException catch (e) {
-      throw Exception(e.response?.data ?? 'Error fetching user');
+      throw _handleError(e, 'Greška pri učitavanju profila korisnika');
     }
   }
 
@@ -62,9 +64,7 @@ class UserService {
         options: await _options(),
       );
     } on DioException catch (e) {
-      final message = ErrorHandler.extractErrorMessage(e.response?.data) ??
-          'Error submitting rating';
-      throw Exception(message);
+      throw _handleError(e, 'Greška pri spašavanju ocjene');
     }
   }
 
@@ -76,7 +76,7 @@ class UserService {
         options: await _options(),
       );
     } on DioException catch (e) {
-      throw Exception(e.response?.data ?? 'Error updating profile');
+      throw _handleError(e, 'Greška pri ažuriranju profila');
     }
   }
 
@@ -87,16 +87,9 @@ class UserService {
         options: await _options(),
       );
 
-      final List<dynamic> data = response.data;
-
-      return data
-          .map(
-            (reviewJson) =>
-                ReviewDto.fromJson(reviewJson as Map<String, dynamic>),
-          )
-          .toList();
+      return ResponseParser.dtoList(response.data, ReviewDto.fromJson);
     } on DioException catch (e) {
-      throw Exception(e.response?.data ?? 'Greška pri učitavanju recenzija');
+      throw _handleError(e, 'Greška pri učitavanju recenzija');
     }
   }
 }

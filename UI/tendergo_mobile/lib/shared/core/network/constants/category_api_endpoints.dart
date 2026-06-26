@@ -3,7 +3,4 @@ class CategoryApiEndpoints {
 
   static const String getAll = baseUrl;
 
-
-
-
 }

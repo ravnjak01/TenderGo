@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tendergo/mobile/routes/routes.dart';
-import 'package:tendergo/shared/controllers/bids_list_controller.dart';
 import 'package:tendergo/shared/core/actions/back_button.dart';
 import 'package:tendergo/shared/core/utils/extensions/string_extensions.dart';
 import 'package:tendergo/shared/models/dto/bid_dto.dart';
@@ -26,28 +25,99 @@ class MyBidsScreen extends StatefulWidget {
 
 class _MyBidsScreenState extends State<MyBidsScreen> {
   // ── state ──────────────────────────────────────────────────────────────────
-  late BidsListController _controller;
+  final ScrollController _scrollController = ScrollController();
+
+  List<BidDto> _items = [];
+  bool _isLoading = false;
+  bool _hasError = false;
+  String _errorMessage = '';
+
+  int _page = 1;
+  int _pageSize = 10;
+  bool _hasMore = true;
+  bool _hasChanges = false;
 
   // ── lifecycle ──────────────────────────────────────────────────────────────
   @override
   void initState() {
     super.initState();
-    _controller = BidsListController(widget._bidService);
-    _controller.initialize();
-    _controller.fetchInitial();
+    _scrollController.addListener(_onScroll);
+    _fetchInitial();
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
   // ── data fetching ──────────────────────────────────────────────────────────
-  void _refresh() {
-    _controller.refresh().then((_) {
-      if (mounted) setState(() {});
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      _fetchMore();
+    }
+  }
+
+  Future<void> _fetchInitial() async {
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+        _hasError = false;
+        _page = 1;
+        _hasMore = true;
+      });
+    }
+
+    try {
+      final res = await widget._bidService.getMyBids(page: _page, pageSize: _pageSize);
+      if (mounted) {
+        setState(() {
+          _items = res;
+          _isLoading = false;
+          _hasMore = res.length == _pageSize;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _hasError = true;
+          _errorMessage = e.toString().replaceFirst('Exception: ', '');
+        });
+      }
+    }
+  }
+
+  Future<void> _fetchMore() async {
+    if (_isLoading || !_hasMore) return;
+
+    setState(() {
+      _isLoading = true;
     });
+
+    try {
+      final nextPage = _page + 1;
+      final res = await widget._bidService.getMyBids(page: nextPage, pageSize: _pageSize);
+
+      if (mounted) {
+        setState(() {
+          _page = nextPage;
+          _items.addAll(res);
+          _isLoading = false;
+          _hasMore = res.length == _pageSize;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _refresh() async {
+    await _fetchInitial();
   }
 
   Future<void> _withdrawBid(BidDto bid) async {
@@ -62,10 +132,11 @@ class _MyBidsScreenState extends State<MyBidsScreen> {
     if (!confirmed || !mounted) return;
 
     try {
-      final BidDto updated = await widget._bidService.withdraw(bid.id);
+      await widget._bidService.withdraw(bid.id);
       if (!mounted) return;
 
-      _controller.updateBidInList(updated);
+      _hasChanges = true;
+      await _refresh();
 
       SnackbarHelper.show(context, 'Bid withdrawn successfully.');
     } catch (e) {
@@ -80,7 +151,6 @@ class _MyBidsScreenState extends State<MyBidsScreen> {
 
   Future<void> _openRateUser(BidDto bid) async {
     final tenderProvider = context.read<TenderProvider>();
-
     final args = await tenderProvider.prepareRatingArguments(bid);
 
     if (!mounted) return;
@@ -103,45 +173,50 @@ class _MyBidsScreenState extends State<MyBidsScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Scaffold(
-      backgroundColor: colorScheme.surface,
-      appBar: AppBar(
+    return WillPopScope(
+      onWillPop: () async {
+        Navigator.of(context).pop(_hasChanges);
+        return false;
+      },
+      child: Scaffold(
         backgroundColor: colorScheme.surface,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        leading: const CustomBackButton(),
-        title: Text(
-          'My Bids',
-          style: theme.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.w700,
-            color: colorScheme.onSurface,
+        appBar: AppBar(
+          backgroundColor: colorScheme.surface,
+          surfaceTintColor: Colors.transparent,
+          elevation: 0,
+          leading: CustomBackButton(
+            onPressed: () => Navigator.of(context).pop(_hasChanges),
           ),
+          title: Text(
+            'My Bids',
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: colorScheme.onSurface,
+            ),
+          ),
+          actions: [
+            AppIconButton(icon: Icons.refresh_rounded, onTap: _refresh),
+            const SizedBox(width: 8),
+          ],
         ),
-        actions: [
-          AppIconButton(icon: Icons.refresh_rounded, onTap: _refresh),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: ListenableBuilder(
-        listenable: _controller,
-        builder: (context, _) => _buildBody(colorScheme),
+        body: _buildBody(colorScheme),
       ),
     );
   }
 
   Widget _buildBody(ColorScheme colorScheme) {
-    if (_controller.hasError && _controller.items.isEmpty) {
+    if (_hasError && _items.isEmpty) {
       return ScreenErrorState(
-        message: _controller.errorMessage,
+        message: _errorMessage,
         onRetry: _refresh,
       );
     }
 
-    if (_controller.isLoading && _controller.items.isEmpty) {
+    if (_isLoading && _items.isEmpty) {
       return const ScreenLoadingState();
     }
 
-    if (_controller.items.isEmpty) {
+    if (_items.isEmpty) {
       return ScreenEmptyState(
         icon: Icons.gavel_rounded,
         title: 'No bids yet',
@@ -151,23 +226,23 @@ class _MyBidsScreenState extends State<MyBidsScreen> {
     }
 
     return RefreshIndicator(
-      onRefresh: _controller.refresh,
+      onRefresh: _refresh,
       child: ListView.separated(
-        controller: _controller.scrollController,
+        controller: _scrollController,
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-        itemCount: _controller.items.length + (_controller.hasMore ? 1 : 0),
+        itemCount: _items.length + (_hasMore ? 1 : 0),
         separatorBuilder: (context, index) => const SizedBox(height: 12),
         itemBuilder: (context, index) {
-          if (index >= _controller.items.length) {
+          if (index >= _items.length) {
             return const Padding(
               padding: EdgeInsets.symmetric(vertical: 24),
               child: Center(child: CircularProgressIndicator()),
             );
           }
           return _BidCard(
-            bid: _controller.items[index],
-            onRateUser: () => _openRateUser(_controller.items[index]),
-            onCancel: () => _withdrawBid(_controller.items[index]),
+            bid: _items[index],
+            onRateUser: () => _openRateUser(_items[index]),
+            onCancel: () => _withdrawBid(_items[index]),
           );
         },
       ),
@@ -194,36 +269,23 @@ class _BidCard extends StatelessWidget {
     final normalized = (status ?? '').trim().toLowerCase();
     return normalized == 'accepted';
   }
-
-  bool _isCancelableStatus(String? status) {
-    final normalized = (status ?? '').trim().toLowerCase();
-    if (normalized.isEmpty) return true;
-
-    return normalized != 'accepted' &&
-        normalized != 'rejected' &&
-        normalized != 'withdrawn' &&
-        normalized != 'cancelled' &&
-        normalized != 'canceled';
-  }
   
   bool _canCancel(BidDto bid) {
-  final status = bid.status.name.toLowerCase();
+    final status = bid.status.name.toLowerCase();
 
-  final validBid =
-      status != 'accepted' &&
-      status != 'rejected' &&
-      status != 'withdrawn' &&
-      status != 'cancelled' &&
-      status != 'canceled';
+    final validBid =
+        status != 'accepted' &&
+        status != 'rejected' &&
+        status != 'withdrawn' &&
+        status != 'cancelled' &&
+        status != 'canceled';
 
-  final tenderOpen =
-      bid.tenderStatus == TenderStatus.open;
+    final tenderOpen = bid.tenderStatus == TenderStatus.open;
 
-  return validBid && tenderOpen;
-}
+    return validBid && tenderOpen;
+  }
 
-
-@override
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -346,52 +408,49 @@ class _BidCard extends StatelessWidget {
                     ],
                   ),
 
-             if (_isAwardedStatus(bid.status.name)) ...[
-  const SizedBox(height: 12),
-
-  if (bid.alreadyRated)
-    Align(
-      alignment: Alignment.centerRight,
-      child: Text(
-        'User already rated',
-        style: TextStyle(
-          color: colorScheme.onSurfaceVariant,
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-    )
-  else
-    Align(
-      alignment: Alignment.centerRight,
-      child: FilledButton.tonalIcon(
-        onPressed: onRateUser,
-        icon: const Icon(Icons.star_rate_rounded),
-        label: const Text('Rate User'),
-      ),
-    ),
-],
+                  if (_isAwardedStatus(bid.status.name)) ...[
+                    const SizedBox(height: 12),
+                    if (bid.alreadyRated)
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          'User already rated',
+                          style: TextStyle(
+                            color: colorScheme.onSurfaceVariant,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      )
+                    else
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: FilledButton.tonalIcon(
+                          onPressed: onRateUser,
+                          icon: const Icon(Icons.star_rate_rounded),
+                          label: const Text('Rate User'),
+                        ),
+                      ),
+                  ],
                   if (bid.status == ApplicationStatus.pending &&
-    bid.tenderStatus != TenderStatus.open) ...[
-  const SizedBox(height: 8),
-  Align(
-    alignment: Alignment.centerRight,
-    child: Text(
-      'Tender closed — this bid can no longer be withdrawn.',
-      textAlign: TextAlign.right,
-      style: TextStyle(
-        fontSize: 12,
-        color: colorScheme.onSurfaceVariant,
-        fontStyle: FontStyle.italic,
-      ),
-    ),
-  ),
-],
+                      bid.tenderStatus != TenderStatus.open) ...[
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        'Tender closed — this bid can no longer be withdrawn.',
+                        textAlign: TextAlign.right,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: colorScheme.onSurfaceVariant,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ),
+                  ],
 
                   if (_canCancel(bid)) ...[
-                    const SizedBox(
-                      height: 8,
-                    ),
+                    const SizedBox(height: 8),
                     Align(
                       alignment: Alignment.centerRight,
                       child: SizedBox(
@@ -400,9 +459,7 @@ class _BidCard extends StatelessWidget {
                           onPressed: onCancel,
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(horizontal: 12),
-                            side: const BorderSide(
-                              color: Colors.red,
-                            ),
+                            side: const BorderSide(color: Colors.red),
                             foregroundColor: Colors.red,
                           ),
                           icon: const Icon(
@@ -425,7 +482,6 @@ class _BidCard extends StatelessWidget {
       },
     );
   }
-
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -434,7 +490,6 @@ class _BidCard extends StatelessWidget {
 
 class _BidAvatar extends StatelessWidget {
   const _BidAvatar({required this.bidId});
-
   final int bidId;
 
   @override
@@ -461,13 +516,11 @@ class _BidAvatar extends StatelessWidget {
 
 class _StatusChip extends StatelessWidget {
   const _StatusChip({required this.status});
-
   final String status;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-
     final lower = status.toLowerCase();
 
     Color bg;
@@ -482,11 +535,10 @@ class _StatusChip extends StatelessWidget {
     } else if (lower == 'withdrawn') {
       bg = colorScheme.surfaceContainerHigh;
       fg = colorScheme.onSurfaceVariant;
-    } else if (lower == 'cancelled' || lower == 'canceled') {
+    } else if (lower == 'cancelled') {
       bg = Colors.grey.shade200;
       fg = Colors.grey.shade700;
     } else {
-      // pending or unknown
       bg = Colors.amber.shade100;
       fg = Colors.amber.shade900;
     }

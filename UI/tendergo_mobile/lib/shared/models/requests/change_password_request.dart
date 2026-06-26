@@ -1,5 +1,3 @@
-// lib/shared/models/requests/change_password_request.dart
-
 class ChangePasswordRequest {
   final String currentPassword;
   final String newPassword;

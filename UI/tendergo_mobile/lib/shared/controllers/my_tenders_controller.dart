@@ -35,11 +35,7 @@ class MyTendersController with ChangeNotifier {
 
   Future<TenderDto> cancelTender(TenderDto tender) async {
     final updated = await _tenderService.cancel(tender.id);
-    final index = items.indexWhere((item) => item.id == tender.id);
-    if (index != -1) {
-      items[index] = updated;
-      notifyListeners();
-    }
+    await refresh();
     return updated;
   }
 

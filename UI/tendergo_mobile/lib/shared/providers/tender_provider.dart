@@ -171,10 +171,8 @@ class TenderProvider extends BaseProvider {
 
     _lastLoggedSearchQuery = normalized;
     try {
-      final token = await _storage.read(key: 'jwt_token') ?? '';
       await _recommendationService.logSearchActivity(
         query: normalized,
-        authToken: token,
       );
     } catch (e) {
       debugPrint('Failed to log search activity: $e');

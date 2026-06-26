@@ -45,7 +45,7 @@ namespace TenderGo.Services.Services
             }
 
             var bids = await _context.Bids
-                .Where(x => x.SubmittedByUserId == userId)
+                .Where(x => x.SubmittedByUserId == userId  && x.Status!=ApplicationStatus.Withdrawn)
                 .ProjectTo<BidDTO>(_mapper.ConfigurationProvider)
                 .ToListAsync();
 

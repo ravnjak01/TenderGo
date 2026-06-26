@@ -62,30 +62,34 @@ namespace TenderGo.Services.StateMachines.BidStates
             _context.Bids.Add(entity);
             await _context.SaveChangesAsync();
 
+            var savedBid = await _context.Bids
+                .Include(b => b.Tender)
+                .Include(b => b.SubmittedByUser)
+                .FirstAsync(b => b.Id == entity.Id);
 
 
-            try
-            {
-                await _pubSub.PublishAsync(
-                    new BidCreatedEvent
-                    {
-                        TenderId = entity.TenderId,
-                        OwnerUserId = tender.CreatedByUserId,
-                        OfferedPrice = entity.OfferedPrice,
-                        TenderTitle = tender.Title
-                    },
-                    cfg => cfg.WithTopic("bid_created"));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(
-                    ex,
-                    "Bid saved but BidCreatedEvent was not published for tender {TenderId}",
-                    entity.TenderId);
+            //try
+            //{
+            //    await _pubSub.PublishAsync(
+            //        new BidCreatedEvent
+            //        {
+            //            TenderId = entity.TenderId,
+            //            OwnerUserId = tender.CreatedByUserId,
+            //            OfferedPrice = entity.OfferedPrice,
+            //            TenderTitle = tender.Title
+            //        },
+            //        cfg => cfg.WithTopic("bid_created"));
+            //}
+            //catch (Exception ex)
+            //{
+            //    _logger.LogWarning(
+            //        ex,
+            //        "Bid saved but BidCreatedEvent was not published for tender {TenderId}",
+            //        entity.TenderId);
 
-            }
+            //}
 
-            return _mapper.Map<BidDTO>(entity);
+            return _mapper.Map<BidDTO>(savedBid);
         }
 
         public override async Task<BidDTO> Withdraw(int id)

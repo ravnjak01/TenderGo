@@ -3,7 +3,7 @@ import 'package:tendergo/shared/models/dto/tender_dto.dart';
 class TenderApiEndpoints {
   static const String _tenderBase = 'tender';
 
-  // ===== BASE CONTROLLER =====
+
 
   /// GET /api/tender
   static const String getAll = _tenderBase;
@@ -14,8 +14,7 @@ class TenderApiEndpoints {
   /// POST /api/tender
   static const String insert = _tenderBase;
 
-  /// PATCH /api/tender/{id}
-  static String update(int id) => '$_tenderBase/$id';
+
 
   /// DELETE /api/tender/{id}
   static String delete(int id) => '$_tenderBase/$id';
@@ -25,10 +24,7 @@ class TenderApiEndpoints {
   /// GET /api/tender/active
   static const String getActive = '$_tenderBase/active';
 
-  /// GET /api/tender/closed
-  static const String getClosed = '$_tenderBase/closed';
-
-  static const String getCancelled = '$_tenderBase/cancelled';
+ 
 
   /// GET /api/tender/category/{id}
   static String getByCategory(int id) => '$_tenderBase/category/$id';

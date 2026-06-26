@@ -198,7 +198,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
               _UserProfileStatsCard(
                 bidsCount: _bids.length,
                 tendersCount: _tenders.length,
-                onBidsTap: () => Navigator.of(context).pushNamed(AppRoutes.myBids),
+                onBidsTap: _handleMyBids,
                 onTendersTap: () => Navigator.of(context).pushNamed(AppRoutes.myTenders),
               ),
               const SizedBox(height: 32),
@@ -241,6 +241,16 @@ class _UserProfileScreenState extends State<UserProfileScreen>
     );
 
     if (result ?? false) {
+      await _load();
+    }
+  }
+
+  Future<void> _handleMyBids() async {
+    final changed = await Navigator.of(context).pushNamed(
+      AppRoutes.myBids,
+    );
+
+    if (changed == true && mounted) {
       await _load();
     }
   }

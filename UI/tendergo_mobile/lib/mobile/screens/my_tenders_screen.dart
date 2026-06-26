@@ -142,6 +142,7 @@ class _MobileMyTendersScreenState extends State<MobileMyTendersScreen> {
             tender: tender,
             tenderService: widget.tenderService,
             onCancel: () => _cancelTender(tender),
+            onBidsClosed: _controller.refresh,
           );
         },
       ),
@@ -154,11 +155,13 @@ class _MobileTenderCard extends StatelessWidget {
     required this.tender,
     required this.tenderService,
     required this.onCancel,
+    required this.onBidsClosed,
   });
 
   final TenderDto tender;
   final TenderService tenderService;
   final VoidCallback onCancel;
+  final Future<void> Function() onBidsClosed;
 
   @override
   Widget build(BuildContext context) {
@@ -297,7 +300,11 @@ class _MobileTenderCard extends StatelessWidget {
                                 tenderService: tenderService,
                               ),
                             ),
-                          );
+                          ).then((_) async {
+                            if (context.mounted) {
+                              await onBidsClosed();
+                            }
+                          });
                         },
                       ),
                     ],
