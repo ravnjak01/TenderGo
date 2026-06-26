@@ -20,7 +20,7 @@ namespace TenderGo.Api.Controllers
         }
 
         [HttpGet("overview")]
-        public async Task<ActionResult<AdminReportOverviewDTO>> GetReportOverview()
+        public async Task<IActionResult> GetReportOverview() 
         {
             var overview = await _adminReportService.GetAdminReportOverview();
             return Ok(overview);

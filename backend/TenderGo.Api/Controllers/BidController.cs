@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using TenderGo.Api.Database;
+using Microsoft.Extensions.Logging;
 using TenderGo.Models.DTOs;
 using TenderGo.Models.Entities;
 using TenderGo.Models.Requests;
@@ -8,76 +8,71 @@ using TenderGo.Services.Interfaces;
 
 namespace TenderGo.Api.Controllers
 {
-
     [Route("api/bid")]
+    [ApiController] 
     [Authorize(Roles = AppRoles.Admin + "," + AppRoles.User)]
     public class BidController : ControllerBase
     {
         private readonly IBidService _bidService;
 
-        public BidController(IBidService bidService, ILogger<BidController> logger)
+        public BidController(IBidService bidService)
         {
             _bidService = bidService;
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<BidDTO>> GetById(int id)
+        public async Task<IActionResult> GetById(int id)
         {
-            return Ok(await _bidService.GetById(id));
+            var result = await _bidService.GetById(id);
+            return Ok(result);
         }
 
-
         [HttpPost]
-        public async Task<ActionResult<BidDTO>> Insert([FromBody] BidInsertRequest request)
+        public async Task<IActionResult> Insert([FromBody] BidInsertRequest request)
         {
             var result = await _bidService.Insert(request);
             return Ok(result);
         }
 
         [HttpPut("{id}/cancel")]
-        public async Task<ActionResult<BidDTO>> Cancel(int id)
+        public async Task<IActionResult> Cancel(int id)
         {
             var result = await _bidService.Cancel(id);
             return Ok(result);
         }
 
         [HttpPatch("{id}/withdraw")]
-        public async Task<ActionResult<BidDTO>> Withdraw(int id)
+        public async Task<IActionResult> Withdraw(int id)
         {
             var result = await _bidService.Withdraw(id);
             return Ok(result);
         }
 
         [HttpGet("my-bids")]
-        public async Task<ActionResult<List<BidDTO>>> GetMyBids()
+        public async Task<IActionResult> GetMyBids()
         {
+
             var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
-            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(); 
 
             var bids = await _bidService.GetBidsByUser(userId);
             return Ok(bids);
         }
 
-
         [HttpGet("tender/{tenderId}")]
-        public async Task<ActionResult<List<BidDTO>>> GetBidsForTender(int tenderId)
+        public async Task<IActionResult> GetBidsForTender(int tenderId)
         {
             var bids = await _bidService.GetBidsForTender(tenderId);
-
             return Ok(bids);
         }
 
-
         [HttpGet("{id}/allowed-actions")]
-        public async Task<ActionResult<List<string>>> GetAllowedActions(int id)
+        public async Task<IActionResult> GetAllowedActions(int id)
         {
             var actions = await _bidService.AllowedActions(id);
             return Ok(actions);
         }
     }
 }
-
-
-
-

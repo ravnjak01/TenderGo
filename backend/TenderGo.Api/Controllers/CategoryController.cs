@@ -18,20 +18,19 @@ namespace TenderGo.Api.Controllers
         public CategoryController(
             ICategoryService categoryService,
             ILogger<CategoryController> logger)
-            : base(categoryService, categoryService, logger) 
+            : base(categoryService, categoryService, logger)
         {
             _categoryService = categoryService;
         }
 
-
         [HttpPost]
-        public override Task<ActionResult<CategoryDTO>> Insert([FromBody] CategoryDTO request)
+        public override Task<IActionResult> Insert([FromBody] CategoryDTO request) 
         {
             return base.Insert(request);
         }
 
         [HttpGet("search")]
-        public async Task<ActionResult<PagedResult<CategoryDTO>>> Search([FromQuery] CategorySearchRequest request)
+        public async Task<IActionResult> Search([FromQuery] CategorySearchRequest request) 
         {
             var result = await _categoryService.SearchAsync(request);
             return Ok(result);
@@ -50,16 +49,18 @@ namespace TenderGo.Api.Controllers
         }
 
         [HttpPatch("{id}/activate")]
-        public async Task<ActionResult<CategoryDTO>> Activate(int id)
+        public async Task<IActionResult> Activate(int id) 
         {
             var category = await _categoryService.Activate(id);
-            return Ok(new { message = "Category activated successfully.", data = category });
+
+            return Ok(category);
         }
 
         [HttpGet("statistics")]
-        public async Task<ActionResult<List<CategoryStatsDTO>>> GetStatistics()
+        public async Task<IActionResult> GetStatistics() 
         {
-            return Ok(await _categoryService.GetCategoryStatisticsAsync());
+            var stats = await _categoryService.GetCategoryStatisticsAsync();
+            return Ok(stats);
         }
     }
 }

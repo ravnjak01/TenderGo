@@ -1,4 +1,6 @@
 class AdminEndpoints {
+  static const String dashboard = '/admin/dashboard';
+
   // Postojeće rute
   static const String getAllUsers = '/admin/users';
   static const String getAllTenders = '/admin/tenders';

@@ -1,78 +1,72 @@
-import 'dart:io';
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:tendergo/shared/core/network/constants/tender_api_endpoints.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
 import 'package:tendergo/shared/models/requests/tender_search_request.dart';
+import 'package:tendergo/shared/services/base_service.dart';
 
-class TenderService {
-  final Dio _dio;
+class TenderService extends BaseService<TenderDto> {
+  TenderService(Dio dio)
+      : super(dio, TenderApiEndpoints.getAll, TenderDto.fromJson);
 
-  TenderService(this._dio);
-
-
-
-  
-  Future<List<TenderDto>> getAll({int page = 1, int pageSize = 10}) async {
+  @override
+  Future<List<TenderDto>> getAll({
+    int page = 1,
+    int pageSize = 10,
+    Map<String, dynamic>? queryParameters,
+  }) async {
     try {
-      final response = await _dio.get(
+      final response = await dio.get(
         TenderApiEndpoints.getAll,
-        queryParameters: {'page': page, 'pageSize': pageSize},
+        queryParameters: {
+          'page': page,
+          'pageSize': pageSize,
+          ...?queryParameters,
+        },
       );
 
-      final List<dynamic> data = response.data['result'] ?? [];
+      final data = extractList(response.data);
 
       return data
           .map((x) => TenderDto.fromJson(x as Map<String, dynamic>))
           .toList();
     } on DioException catch (e) {
-      throw Exception(e.response?.data ?? 'Error fetching tenders');
+      throw Exception(extractErrorMessage(e, 'Error fetching tenders'));
     }
   }
 
   Future<TenderDto> getById(int id) async {
     try {
-      final response = await _dio.get(TenderApiEndpoints.getById(id));
+      final response = await dio.get(TenderApiEndpoints.getById(id));
 
-      return TenderDto.fromJson(response.data);
+      return TenderDto.fromJson(extractObject(response.data));
     } on DioException catch (e) {
-      throw Exception(e.response?.data ?? 'Error fetching tender');
+      throw Exception(extractErrorMessage(e, 'Error fetching tender'));
     }
   }
-
- 
-
-
 
   Future<TenderDto> cancel(int id) async {
     try {
-      final response = await _dio.patch(TenderApiEndpoints.cancel(id));
+      final response = await dio.patch(TenderApiEndpoints.cancel(id));
 
-      return TenderDto.fromJson(response.data);
+      return TenderDto.fromJson(extractObject(response.data));
     } on DioException catch (e) {
-      throw Exception(e.response?.data ?? 'Error canceling tender');
+      throw Exception(extractErrorMessage(e, 'Error canceling tender'));
     }
   }
 
-
   Future<List<TenderDto>> search(TenderSearchRequest request) async {
     try {
-      final response = await _dio.get(
+      final response = await dio.get(
         TenderApiEndpoints.search(request.searchTerm ?? ''),
       );
 
-      final List<dynamic> data = response.data['result'] ?? [];
+      final data = extractList(response.data);
 
       return data
           .map((x) => TenderDto.fromJson(x as Map<String, dynamic>))
           .toList();
     } on DioException catch (e) {
-      throw Exception(e.response?.data ?? 'Error searching tenders');
+      throw Exception(extractErrorMessage(e, 'Error searching tenders'));
     }
   }
-
- 
-
- 
 }

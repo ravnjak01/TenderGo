@@ -480,7 +480,6 @@ class _AdminLocationsPanelState extends State<AdminLocationsPanel> {
                 _overviewCard('Ukupno lokacija', overview.totalLocations, const Color(0xFF2563EB)),
                 _overviewCard('Aktivne lokacije', overview.activeLocations, const Color(0xFF16A34A)),
                 _overviewCard('Neaktivne lokacije', overview.inactiveLocations, const Color(0xFFF59E0B)),
-                _overviewCard('Aktivni tenderi', overview.locationWithActiveTenders, const Color(0xFFDB2777)),
               ],
             ),
           const SizedBox(height: 24),
@@ -531,7 +530,7 @@ class _AdminLocationsPanelState extends State<AdminLocationsPanel> {
                               ),
                               DataColumn(
                                 label: Text(
-                                  'Aktivni tenderi',
+                                  'Broj svih tendera ',
                                   style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF64748B)),
                                 ),
                               ),

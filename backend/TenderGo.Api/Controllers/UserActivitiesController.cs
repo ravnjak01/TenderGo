@@ -33,11 +33,7 @@ public class UserActivitiesController : ControllerBase
             dto.SearchQuery,
             dto.DurationSeconds);
 
-        return Ok(new
-        {
-            logged,
-            message = logged ? "Activity logged successfully." : "Activity ignored."
-        });
+        return Ok(logged);
     }
 }
 

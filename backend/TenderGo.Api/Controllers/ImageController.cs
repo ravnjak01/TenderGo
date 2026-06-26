@@ -1,42 +1,36 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using TenderGo.Services.Interfaces;
 
-[Route("api/[controller]")]
-[ApiController]
-[Authorize]
-public class ImagesController : ControllerBase
+namespace TenderGo.Api.Controllers
 {
-    private readonly IImageService _imageService;
-
-    public ImagesController(IImageService imageService)
+    [Route("api/[controller]")]
+    [ApiController]
+    [Authorize]
+    public class ImagesController : ControllerBase
     {
-        _imageService = imageService;
-    }
+        private readonly IImageService _imageService;
 
-    [HttpPost("upload")]
-    public async Task<IActionResult> UploadTenderImage(IFormFile file)
-    {
-        try
+        public ImagesController(IImageService imageService)
         {
+            _imageService = imageService;
+        }
+
+        [HttpPost("upload")]
+        public async Task<IActionResult> UploadTenderImage(IFormFile file)
+        {
+          
             var imageDto = await _imageService.UploadImageAsync(file, "tenders");
 
-            return Ok(new { imageUrl = imageDto.ImageUrl });
+            return Ok(imageDto);
         }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(ex.Message);
-        }
-        catch (Exception ex) 
-        {
-            return StatusCode(500, ex.Message); 
-        }
-    }
 
-    [HttpDelete]
-    public IActionResult DeleteImage(string path)
-    {
-        _imageService.DeleteImage(path);
-        return Ok();
+        [HttpDelete]
+        public IActionResult DeleteImage(string path)
+        {
+            _imageService.DeleteImage(path);
+            return Ok(); 
+        }
     }
 }

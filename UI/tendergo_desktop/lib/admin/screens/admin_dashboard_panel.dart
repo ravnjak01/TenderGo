@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:tendergo/shared/providers/admin_provider.dart';
 import 'package:tendergo/shared/models/dto/activity_dto.dart';
 import 'package:intl/intl.dart';
+import 'package:tendergo/shared/services/admin_service.dart';
+import 'package:tendergo/shared/services/dio_client.dart';
 
 class AdminDashboardPanel extends StatefulWidget {
   const AdminDashboardPanel({super.key});
@@ -21,9 +21,13 @@ class _AdminDashboardPanelState extends State<AdminDashboardPanel> {
   int _categoriesCount = 0;
   List<ActivityDto> _recentActivities = [];
 
+  late final AdminService _adminService;
+
   @override
   void initState() {
     super.initState();
+    final dio = DioClient.getDio();
+    _adminService = AdminService(dio);
     _loadStats();
   }
 
@@ -34,29 +38,14 @@ class _AdminDashboardPanelState extends State<AdminDashboardPanel> {
     });
 
     try {
-      final admin = Provider.of<AdminProvider>(context, listen: false);
-
-      final usersResp = await admin.getAllUsers();
-      final locations = await admin.getLocations();
-      final categories = await admin.getCategories();
-      final recentActivitiesResp = await admin.getRecentActivities();
-
-      int usersCount = 0;
-      if (usersResp is List) {
-        usersCount = usersResp.data.length;
-      } else if (usersResp is dynamic && usersResp.data is List) {
-        usersCount = (usersResp.data as List).length;
-      }
-
-      final recentActivities = recentActivitiesResp.data is List<ActivityDto>
-          ? recentActivitiesResp.data as List<ActivityDto>
-          : <ActivityDto>[];
+      final dashboard = await _adminService.getDashboard();
 
       setState(() {
-        _usersCount = usersCount;
-        _locationsCount = locations.length;
-        _categoriesCount = categories.length;
-        _recentActivities = recentActivities.take(5).toList();
+        _usersCount = dashboard.totalUsers;
+        _activeTendersCount = dashboard.activeTenders;
+        _locationsCount = dashboard.totalLocations;
+        _categoriesCount = dashboard.totalCategories;
+        _recentActivities = dashboard.recentActivities.take(5).toList();
         _loading = false;
       });
     } catch (e) {
@@ -66,9 +55,8 @@ class _AdminDashboardPanelState extends State<AdminDashboardPanel> {
       });
     }
   }
-
   // Kartica sa lijevom ivicom u boji prema dizajnu sa slike
- Widget _statCard(String label, String value, Color sideColor) {
+  Widget _statCard(String label, String value, Color sideColor) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       decoration: BoxDecoration(

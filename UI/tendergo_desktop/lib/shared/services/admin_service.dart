@@ -23,7 +23,12 @@ class AdminService {
         options: await _options(),
       );
 
-      final data = response.data;
+      final envelope = response.data;
+      if (envelope is! Map<String, dynamic>) {
+        return false;
+      }
+
+      final data = envelope['data'];
       if (data is! Map<String, dynamic>) {
         return false;
       }
@@ -39,6 +44,19 @@ class AdminService {
     }
   }
 
+  Future<AdminDashboardDto> getDashboard() async {
+    try {
+      final response = await _dio.get(
+        AdminEndpoints.dashboard,
+        options: await _options(),
+      );
+
+      return AdminDashboardDto.fromJson(_extractObject(response.data));
+    } on DioException catch (e) {
+      throw Exception(e.response?.data ?? 'Error fetching dashboard');
+    }
+  }
+
   Future<ApiResponse<List<UserDto>>> getAllUsers() async {
     try {
       final response = await _dio.get(
@@ -46,7 +64,7 @@ class AdminService {
         options: await _options(),
       );
 
-      final List<dynamic> data = response.data;
+      final data = _extractList(response.data);
       final users = data.map((json) => UserDto.fromJson(json)).toList();
 
       return ApiResponse.success(users, message: 'Users fetched successfully.');
@@ -62,10 +80,13 @@ class AdminService {
         options: await _options(),
       );
 
-      final List<dynamic> data = response.data;
+      final data = _extractList(response.data);
       final tenders = data.map((json) => TenderDto.fromJson(json)).toList();
 
-      return ApiResponse.success(tenders, message: 'Tenders fetched successfully.');
+      return ApiResponse.success(
+        tenders,
+        message: 'Tenders fetched successfully.',
+      );
     } on DioException catch (e) {
       return ApiHelper.handleDioError<List<TenderDto>>(e);
     }
@@ -98,23 +119,28 @@ class AdminService {
     }
   }
 
-Future<ApiResponse<List<ActivityDto>>> getRecentActivities() async {
+  Future<ApiResponse<List<ActivityDto>>> getRecentActivities() async {
     try {
       final response = await _dio.get(
         AdminEndpoints.recentActivity,
         options: await _options(),
       );
 
-      final List<dynamic> data = response.data;
-      final activities = data.map((json) => ActivityDto.fromJson(json)).toList();
+      final data = _extractList(response.data);
+      final activities = data
+          .map((json) => ActivityDto.fromJson(json))
+          .toList();
 
-      return ApiResponse.success(activities, message: 'Recent activities fetched successfully.');
+      return ApiResponse.success(
+        activities,
+        message: 'Recent activities fetched successfully.',
+      );
     } on DioException catch (e) {
       return ApiHelper.handleDioError<List<ActivityDto>>(e);
     }
   }
-  
-Future<List<UserDto>> search(UsersSearchRequest request) async {
+
+  Future<List<UserDto>> search(UsersSearchRequest request) async {
     try {
       final response = await _dio.get(
         AdminEndpoints.searchUsers,
@@ -122,9 +148,7 @@ Future<List<UserDto>> search(UsersSearchRequest request) async {
         queryParameters: request.toJson(),
       );
 
-      final List<dynamic> data = response.data is List 
-        ? response.data 
-        : (response.data['result'] ?? []);
+      final data = _extractList(response.data);
 
       return data
           .map((x) => UserDto.fromJson(x as Map<String, dynamic>))
@@ -142,5 +166,39 @@ Future<List<UserDto>> search(UsersSearchRequest request) async {
         'Content-Type': 'application/json',
       },
     );
+  }
+
+  List<dynamic> _extractList(dynamic responseData) {
+    if (responseData is! Map<String, dynamic>) {
+      throw Exception('Invalid response format.');
+    }
+
+    final data = responseData['data'];
+
+    if (data is List) {
+      return data;
+    }
+
+    if (data is Map<String, dynamic>) {
+      final result = data['result'] ?? data['resultList'] ?? data['items'];
+      if (result is List) {
+        return result;
+      }
+    }
+
+    throw Exception('Invalid response format: data is not a list.');
+  }
+
+  Map<String, dynamic> _extractObject(dynamic responseData) {
+    if (responseData is! Map<String, dynamic>) {
+      throw Exception('Invalid response format.');
+    }
+
+    final data = responseData['data'];
+    if (data is Map<String, dynamic>) {
+      return data;
+    }
+
+    throw Exception('Invalid response format: data is not an object.');
   }
 }
