@@ -1,12 +1,19 @@
 import 'package:dio/dio.dart';
 import 'package:tendergo/shared/core/network/constants/category_api_endpoints.dart';
 import 'package:tendergo/shared/models/dto/category_dto.dart';
+import 'package:tendergo/shared/models/requests/category_insert_request.dart';
 import 'package:tendergo/shared/models/requests/category_search_request.dart';
 import 'package:tendergo/shared/services/base_service.dart';
 import 'package:flutter/foundation.dart';
 class CategoryService extends BaseService<CategoryDto> {
   CategoryService(Dio dio)
       : super(dio, CategoryApiEndpoints.baseUrl, CategoryDto.fromJson);
+
+
+Future<CategoryDto> insertCategory(CategoryInsertRequest request) {
+  return insert(request);
+}
+
 
   Future<CategoryDto> activateCategory(int id) async {
     try {
@@ -17,7 +24,7 @@ class CategoryService extends BaseService<CategoryDto> {
         throw Exception('Invalid response format.');
       }
 
-      final data = envelope['result'];
+      final data = envelope['data'];
 
       if (data is! Map<String, dynamic>) {
         throw Exception('Invalid response format: data is not an object.');
@@ -28,6 +35,28 @@ class CategoryService extends BaseService<CategoryDto> {
       throw Exception(_extractErrorMessage(e, 'Error activating category'));
     }
   }
+
+  Future<CategoryDto> deactivateCategory(int id) async {
+    try {
+      final response = await dio.patch(CategoryApiEndpoints.deactivate(id));
+      final envelope = response.data;
+
+      if (envelope is! Map<String, dynamic>) {
+        throw Exception('Invalid response format.');
+      }
+
+      final data = envelope['data'];
+
+      if (data is! Map<String, dynamic>) {
+        throw Exception('Invalid response format: data is not an object.');
+      }
+
+      return parseJson(data);
+    } on DioException catch (e) {
+      throw Exception(_extractErrorMessage(e, 'Error deactivating category'));
+    }
+  }
+
 
   Future<List<CategoryDto>> search(CategorySearchRequest request) async {
     try {
@@ -47,9 +76,8 @@ class CategoryService extends BaseService<CategoryDto> {
         throw Exception('Invalid response format.');
       }
 
-
-      if (data is! List) {
-        throw Exception('Invalid response format: data is not a list.');
+      if (result is! List) {
+        throw Exception('Invalid response format: result is not a list.');
       }
 
       return result
@@ -69,7 +97,7 @@ class CategoryService extends BaseService<CategoryDto> {
         throw Exception('Invalid response format.');
       }
 
-      final data = envelope['result'];
+      final data = envelope['data'];
 
       if (data is! List) {
         throw Exception('Invalid response format: data is not a list.');

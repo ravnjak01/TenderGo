@@ -13,5 +13,7 @@ namespace TenderGo.Models.DTOs
         public string CategoryName { get; set; } = string.Empty;
 
         public int TenderCount { get; set; }
+        public string Description { get; set; }
+        public bool IsActive { get; set; }
     }
 }

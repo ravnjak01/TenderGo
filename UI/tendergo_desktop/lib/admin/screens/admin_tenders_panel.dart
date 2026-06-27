@@ -246,7 +246,7 @@ Widget _buildStatusBadge(TenderStatus status) {
                   controller: _searchController,
                   onChanged: _filterTenders,
                   decoration: InputDecoration(
-                    hintText: 'Pretraži tendere po nazivu ili šifri...',
+                    hintText: 'Pretraži tendere po nazivu ',
                     hintStyle: const TextStyle(
                       color: Color(0xFF94A3B8),
                       fontSize: 13,
@@ -309,7 +309,7 @@ Widget _buildStatusBadge(TenderStatus status) {
                   columns: const [
                     DataColumn(
                       label: Text(
-                        'Šifra i naziv tendera',
+                        'Naziv tendera',
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
                           color: Color(0xFF64748B),
@@ -381,14 +381,7 @@ Widget _buildStatusBadge(TenderStatus status) {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Text(
-                                  'ID #${tender.id}',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF1E293B),
-                                    fontSize: 14,
-                                  ),
-                                ),
+                                
                                 const SizedBox(height: 4),
                                 Text(
                                   tender.title,

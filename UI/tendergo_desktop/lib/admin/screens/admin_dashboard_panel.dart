@@ -213,7 +213,6 @@ class _AdminDashboardPanelState extends State<AdminDashboardPanel> {
                             dataRowMinHeight: 45,
                             headingRowColor: MaterialStateProperty.all(const Color(0xFFF8FAFC)),
                           columns: const [
-                            DataColumn(label: Text('ID', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF64748B)))),
                             DataColumn(label: Text('Korisnik', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF64748B)))),
                             DataColumn(label: Text('Akcija', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF64748B)))),
                             DataColumn(label: Text('Detalji', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF64748B)))),
@@ -223,7 +222,6 @@ class _AdminDashboardPanelState extends State<AdminDashboardPanel> {
                             final activity = _recentActivities[index];
                             return DataRow(
                               cells: [
-                                DataCell(Text(_parseId(activity, index), style: const TextStyle(color: Color(0xFF64748B)))),
                                 DataCell(Text(activity.userName, style: const TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.w500))),
                                 DataCell(Text(activity.action, style: const TextStyle(color: Color(0xFF334155)))),
                                 DataCell(Text(_parseDetails(activity), style: const TextStyle(color: Color(0xFF334155)))),

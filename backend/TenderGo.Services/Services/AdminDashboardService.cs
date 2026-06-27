@@ -79,7 +79,7 @@ namespace TenderGo.Services.Services
                     UserName = b.SubmittedByUser.UserName ?? b.SubmittedByUser.Email ?? string.Empty,
                     ActivityType = ActivityType.BidSubmitted,
                     Action = "Bid submitted",
-                    Details = $"Tender: {b.Tender.Title}, Amount: {b.OfferedPrice:KM}"
+                    Details = $"Tender: {b.Tender.Title}, Amount: {b.OfferedPrice:0.00} KM"
                 })
                 .ToListAsync();
 

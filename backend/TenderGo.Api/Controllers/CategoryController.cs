@@ -11,7 +11,7 @@ namespace TenderGo.Api.Controllers
     [ApiController]
     [Authorize]
     [Route("api/[controller]")]
-    public class CategoryController : BaseController<CategoryDTO, Category, CategoryDTO, CategoryUpdateRequest>
+    public class CategoryController : BaseController<CategoryDTO, Category, CategoryInsertRequest, CategoryUpdateRequest>
     {
         private readonly ICategoryService _categoryService;
 
@@ -24,7 +24,7 @@ namespace TenderGo.Api.Controllers
         }
 
         [HttpPost]
-        public override Task<IActionResult> Insert([FromBody] CategoryDTO request) 
+        public override Task<IActionResult> Insert([FromBody] CategoryInsertRequest request) 
         {
             return base.Insert(request);
         }
@@ -56,6 +56,15 @@ namespace TenderGo.Api.Controllers
             return Ok(category);
         }
 
+        [HttpPatch("{id}/deactivate")]
+        public async Task<IActionResult> Deactivate(int id)
+        {
+            var category = await _categoryService.Deactivate(id);
+
+            return Ok(category);
+
+
+        }
         [HttpGet("statistics")]
         public async Task<IActionResult> GetStatistics() 
         {

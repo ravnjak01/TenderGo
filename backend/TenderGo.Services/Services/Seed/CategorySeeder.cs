@@ -11,30 +11,33 @@ namespace TenderGo.Data.Seeders
 
         public async Task SeedAsync(TenderGoContext context, IServiceProvider serviceProvider)
         {
-            var categoryNames = new[]
-            {
-                "Gradjevinski radovi",
-                "IT i razvoj softvera",
-                "Dizajn,marketing i fotografija",
-                "Transport",
-                "Servis i odrzavanje",
-                "Namjestaj i oprema",
-                "Transport i logistika",
-                "Edukacija i konsultacije",
-                "Ostalo",
-                "Kucne usluge"
-            };
+            var categories = new[]
+{
+                    new Category { Name = "Gradjevinski radovi", Description = "Izgradnja, renoviranje i građevinski projekti.", IsActive = true },
+                    new Category { Name = "IT i razvoj softvera", Description = "Razvoj aplikacija, web stranica i IT rješenja.", IsActive = true },
+                    new Category { Name = "Dizajn,marketing i fotografija", Description = "Grafički dizajn, digitalni marketing i fotografija.", IsActive = true },
+                    new Category { Name = "Transport", Description = "Usluge prevoza putnika i robe.", IsActive = true },
+                    new Category { Name = "Servis i odrzavanje", Description = "Održavanje i servisiranje opreme i objekata.", IsActive = true },
+                    new Category { Name = "Namjestaj i oprema", Description = "Nabavka namještaja, alata i poslovne opreme.", IsActive = true },
+                    new Category { Name = "Transport i logistika", Description = "Logističke usluge, skladištenje i distribucija.", IsActive = true },
+                    new Category { Name = "Edukacija i konsultacije", Description = "Obuke, seminari i stručne konsultantske usluge.", IsActive = true },
+                    new Category { Name = "Ostalo", Description = "Sve usluge koje ne pripadaju ostalim kategorijama.", IsActive = true },
+                    new Category { Name = "Kucne usluge", Description = "Čišćenje, popravke i druge usluge za domaćinstva.", IsActive = true }
+                };
+            var existingCategories = await context.Categories.ToListAsync();
 
-            var existingCategories = await context.Categories
-                .Where(c => categoryNames.Contains(c.Name))
-                .Select(c => c.Name)
-                .ToListAsync();
-
-            foreach (var name in categoryNames)
+            foreach (var category in categories)
             {
-                if (!existingCategories.Contains(name))
+                var existing = existingCategories.FirstOrDefault(c => c.Name == category.Name);
+
+                if (existing == null)
                 {
-                    context.Categories.Add(new Category { Name = name, IsActive = true });
+                    context.Categories.Add(category);
+                }
+                else
+                {
+                    existing.Description = category.Description;
+                    existing.IsActive = category.IsActive;
                 }
             }
 

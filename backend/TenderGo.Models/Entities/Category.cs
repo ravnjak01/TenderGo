@@ -13,6 +13,8 @@ namespace TenderGo.Models.Entities
         [Required]
         public string Name { get; set; }
         public bool IsActive { get; set; } = true;
+        [MaxLength(500)]
+        public string Description { get; set; }
 
     }
 }

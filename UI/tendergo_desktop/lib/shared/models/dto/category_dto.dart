@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 class CategoryDto {
   final int id;
   final String name;
+  final String? description;
   final bool isActive;
 
   CategoryDto({
     required this.id,
     required this.name,
+    this.description,
     this.isActive = true,
   });
 
@@ -15,6 +17,7 @@ class CategoryDto {
     return CategoryDto(
       id: json['id'] as int,
       name: json['name'] as String,
+      description: json['description'] as String?,
       isActive: json['isActive'] as bool? ?? true,
     );
   }
@@ -23,6 +26,7 @@ class CategoryDto {
     return {
       'id': id,
       'name': name,
+      if (description != null) 'description': description,
       'isActive': isActive,
     };
   }
@@ -62,11 +66,15 @@ class CategoryStatisticsDto {
   final int categoryId;
   final String categoryName;
   final int tenderCount;
+  final String description;
+  final bool isActive;
 
   CategoryStatisticsDto({
     required this.categoryId,
     required this.categoryName,
     required this.tenderCount,
+    required this.isActive,
+    required this.description,
   });
 
   factory CategoryStatisticsDto.fromJson(Map<String, dynamic> json) {
@@ -74,6 +82,8 @@ class CategoryStatisticsDto {
       categoryId: json['categoryId'] as int,
       categoryName: json['categoryName'] as String,
       tenderCount: json['tenderCount'] as int,
+      description: json['description'] as String,
+      isActive: json['isActive'] as bool,
     );
   }
 }

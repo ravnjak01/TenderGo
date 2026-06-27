@@ -8,6 +8,8 @@ class CategoryApiEndpoints {
   static String update(int id) => '$baseUrl/$id';
 
   static String activate(int id) => '$baseUrl/$id/activate';
+  static String deactivate(int id) => '$baseUrl/$id/deactivate';
+
 
 // Pazi da baseUrl završava sa /api/category ili ručno dodaj putanju
 static String search(String searchTerm, {int page = 1, int pageSize = 10}) => 
