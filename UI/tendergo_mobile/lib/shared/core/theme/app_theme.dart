@@ -1,37 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-// ─────────────────────────────────────────────────────────────────
-//  AppColors  –  single source of truth for every colour in the app
-// ─────────────────────────────────────────────────────────────────
+
 class AppColors {
   AppColors._();
 
-  // ── Brand ──────────────────────────────────────────────────────
   static const primary     = Color(0xFF2563EB);
   static const primaryDark = Color(0xFF1E40AF);
   static const primaryLight = Color(0xFF3B82F6); // hover / splash tint
   static const secondary   = Color(0xFF185FA5); // tender-specific accent
 
-  // ── Backgrounds ────────────────────────────────────────────────
   static const background  = Color(0xFFF9FAFB); // scaffold
   static const surface     = Color(0xFFFFFFFF); // cards, sheets
   static const surfaceVariant = Color(0xFFF3F4F6); // input fills, alt cards
 
-  /// Used ONLY on the login / register screen as a local override.
-  /// Apply via `Scaffold(backgroundColor: AppColors.authBackground)`.
+
   static const authBackground = Color(0xFF254988);
 
-  // ── Text ───────────────────────────────────────────────────────
   static const textPrimary   = Color(0xFF111827);
   static const textSecondary = Color(0xFF6B7280);
   static const textDisabled  = Color(0xFFD1D5DB);
 
-  // ── Border / Outline ───────────────────────────────────────────
   static const outline      = Color(0xFFE5E7EB);
   static const outlineFocus = primary;
 
-  // ── Semantic ───────────────────────────────────────────────────
   static const success        = Color(0xFF16A34A);
   static const successSurface = Color(0xFFDCFCE7);
   static const error          = Color(0xFFDC2626);
@@ -42,9 +34,7 @@ class AppColors {
   static const infoSurface    = Color(0xFFE0F2FE);
 }
 
-// ─────────────────────────────────────────────────────────────────
-//  AppTheme
-// ─────────────────────────────────────────────────────────────────
+
 class AppTheme {
   AppTheme._();
 
@@ -58,31 +48,26 @@ class AppTheme {
       primaryContainer: Color(0xFFDBEAFE), // light blue tint
       onPrimaryContainer: AppColors.primaryDark,
 
-      // ── Secondary (brand dark, used for FABs, toggles) ─────────
       secondary:          AppColors.primaryDark,
       onSecondary:        Colors.white,
       secondaryContainer: Color(0xFFBFDBFE),
       onSecondaryContainer: AppColors.primaryDark,
 
-      // ── Tertiary (accent – use for chips, badges) ──────────────
       tertiary:          AppColors.info,
       onTertiary:        Colors.white,
       tertiaryContainer: AppColors.infoSurface,
       onTertiaryContainer: Color(0xFF0C4A6E),
 
-      // ── Error ──────────────────────────────────────────────────
       error:          AppColors.error,
       onError:        Colors.white,
       errorContainer: AppColors.errorSurface,
       onErrorContainer: Color(0xFF7F1D1D),
 
-      // ── Surfaces (M3 replaces background/onBackground) ─────────
       surface:                AppColors.surface,
       onSurface:              AppColors.textPrimary,
       surfaceContainerHighest: AppColors.surfaceVariant,
       onSurfaceVariant:       AppColors.textSecondary,
 
-      // ── Misc ───────────────────────────────────────────────────
       outline:        AppColors.outline,
       outlineVariant: Color(0xFFF3F4F6),
       shadow:         Color(0x1A111827),
@@ -96,10 +81,8 @@ class AppTheme {
       useMaterial3: true,
       colorScheme: colorScheme,
 
-      // ── Scaffold ───────────────────────────────────────────────
       scaffoldBackgroundColor: AppColors.background,
 
-      // ── System UI overlay ──────────────────────────────────────
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.surface,
         foregroundColor: AppColors.textPrimary,
@@ -119,7 +102,6 @@ class AppTheme {
         ),
       ),
 
-      // ── Typography ─────────────────────────────────────────────
       textTheme: const TextTheme(
         // Display
         displayLarge:  TextStyle(fontSize: 57, fontWeight: FontWeight.w400, color: AppColors.textPrimary, letterSpacing: -0.25),
@@ -143,13 +125,11 @@ class AppTheme {
         labelSmall:  TextStyle(fontSize: 11, fontWeight: FontWeight.w400, color: AppColors.textSecondary, letterSpacing: 0.5),
       ),
 
-      // ── Icon ───────────────────────────────────────────────────
       iconTheme: const IconThemeData(
         color: AppColors.textSecondary,
         size: 22,
       ),
 
-      // ── Buttons ────────────────────────────────────────────────
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
@@ -369,7 +349,6 @@ class AppTheme {
         }),
       ),
 
-      // ── Progress indicators ────────────────────────────────────
       progressIndicatorTheme: const ProgressIndicatorThemeData(
         color: AppColors.primary,
         linearTrackColor: AppColors.surfaceVariant,

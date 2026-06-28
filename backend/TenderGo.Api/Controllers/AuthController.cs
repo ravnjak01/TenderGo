@@ -48,7 +48,7 @@ namespace TenderGo.Api.Controllers
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest model)
         {
             await _authService.ForgotPasswordAsync(model, HttpContext.RequestAborted);
-            return Ok();
+            return Ok("If the email exists, a reset code has been sent.");
         }
 
         [AllowAnonymous]

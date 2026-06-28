@@ -10,7 +10,7 @@ using TenderGo.Services.Interfaces;
 [Route("api/tender")]
 [Authorize]
 public class TenderController
-   : BaseController<TenderDTO, Tender, TenderInsertRequest, TenderUpdateRequest>
+   : BaseController<TenderDTO, Tender, TenderInsertRequest, TenderDTO>
 {
     private readonly ITenderService _tenderService;
     private readonly IAuthService _authService;

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// 1. Osnovni Enum za status tendera
 enum TenderStatus {
   open(1),
   closed(2),
@@ -35,7 +34,6 @@ enum TenderStatus {
   
 }
 
-/// 2. Ekstenzija koja dodaje UI logiku (boje i tekst) na TenderStatus
 extension TenderStatusX on TenderStatus {
   String get label {
     switch (this) {

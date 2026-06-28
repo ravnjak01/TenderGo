@@ -230,7 +230,6 @@ class _NotificationIcon extends StatelessWidget {
     );
   }
 
-  //na bekendu staviti da seedeer lokacija umjesto Bosna i Herc,pise BiH
 
   (IconData, Color) _resolve(String type) {
     return switch (type) {

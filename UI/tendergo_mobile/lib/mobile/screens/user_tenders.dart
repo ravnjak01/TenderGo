@@ -78,7 +78,7 @@ class UserTendersScreen extends StatelessWidget {
           }
 
           return ListView.separated(
-            padding: const EdgeInsets.all(16), // Optimizovano za mobile (sa 20 na 16)
+            padding: const EdgeInsets.all(16), 
             itemCount: tenders.length,
             separatorBuilder: (_, _) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
@@ -103,18 +103,12 @@ class UserTendersScreen extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          onTap: () {
-            // Navigator.push(context, MaterialPageRoute(builder: (_) => TenderDetailsScreen(id: tender.id)));
-          },
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Gornji dio: Slika + Informacije
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Slika tendera (fiksirana dimenzija pogodna za mobilni grid/listu)
                   Container(
                     width: 90,
                     height: 90,
@@ -131,7 +125,6 @@ class UserTendersScreen extends StatelessWidget {
                     ),
                   ),
                   
-                  // Detalji (Naslov, Kategorija, Budžet)
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(4, 10, 12, 10),
@@ -141,7 +134,6 @@ class UserTendersScreen extends StatelessWidget {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              // Flexible sprječava overflow ako je naziv kategorije predug
                               Flexible(
                                 child: Text(
                                   cardModel.category,
@@ -162,7 +154,7 @@ class UserTendersScreen extends StatelessWidget {
                             cardModel.title,
                             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.w700,
-                                  fontSize: 15, // Blago korigovana veličina za mobilne telefone
+                                  fontSize: 15, 
                                 ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -184,7 +176,6 @@ class UserTendersScreen extends StatelessWidget {
               
               const Divider(height: 1, color: AppColors.outline),
               
-              // Donji dio (Footer): Lokacija i Rok (Osigurano od preklapanja na malim ekranima)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 child: Row(
@@ -236,7 +227,6 @@ class UserTendersScreen extends StatelessWidget {
               ),
             ],
           ),
-        ),
       ),
     );
   }

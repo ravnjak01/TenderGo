@@ -7,8 +7,6 @@ import 'package:tendergo/mobile/screens/user_profile_screen.dart';
 import 'package:tendergo/mobile/screens/tenders_list_screen.dart';
 import 'package:tendergo/mobile/widgets/common/notification_bell_widget.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
-import 'package:tendergo/shared/providers/auth_provider.dart';
-import 'package:tendergo/shared/providers/notification_provider.dart';
 import 'package:tendergo/shared/providers/tender_provider.dart';
 import 'package:tendergo/shared/services/auth_service.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
@@ -30,16 +28,6 @@ class MobileTenderShellScreen extends StatefulWidget {
 }
 
 class _MobileTenderShellScreenState extends State<MobileTenderShellScreen> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      context.read<AuthProvider>().loadUser();
-      context.read<NotificationProvider>().startPolling();
-    });
-  }
-
   Future<void> _openPostTender() async {
     final result = await Navigator.of(context).push<bool>(
       MaterialPageRoute(builder: (_) => const MobileTenderPostScreen()),
@@ -113,7 +101,7 @@ class _MobileTenderShellScreenState extends State<MobileTenderShellScreen> {
             onPressed: _openBookmarkedTenders,
             icon: const Icon(Icons.favorite_outline_rounded),
             color: AppColors.textPrimary,
-            tooltip: 'Sačuvani tenderi',
+            tooltip: 'Saved tenders',
           ),
 
           IconButton(

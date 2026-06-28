@@ -49,6 +49,7 @@ namespace TenderGo.Api.Controllers
 
             return Ok(locations);
         }
+        [Authorize(Roles = AppRoles.Admin)]
 
         [HttpPatch("{id}/activate")]
         public async Task<IActionResult> Activate(int id)
@@ -56,6 +57,7 @@ namespace TenderGo.Api.Controllers
             var location = await _locationService.Activate(id);
             return Ok(location);
         }
+        [Authorize(Roles = AppRoles.Admin)]
 
         [HttpPatch("{id}/deactivate")]
         public async Task<IActionResult> Deactivate(int id)
@@ -63,6 +65,7 @@ namespace TenderGo.Api.Controllers
             var location = await _locationService.Deactivate(id);
             return Ok(location);
         }
+        [Authorize(Roles = AppRoles.Admin)]
 
         [HttpGet("statistics")]
         public async Task<IActionResult> GetStatistics()
@@ -70,6 +73,7 @@ namespace TenderGo.Api.Controllers
             var statistics = await _locationService.GetLocationStatisticsAsync();
             return Ok(statistics);
         }
+        [Authorize(Roles = AppRoles.Admin)]
 
         [HttpGet("overview")]
         public async Task<IActionResult> GetOverview()

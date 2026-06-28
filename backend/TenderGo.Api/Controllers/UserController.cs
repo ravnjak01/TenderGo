@@ -21,6 +21,16 @@ namespace TenderGo.Api.Controllers
             _authService = authService;
         }
 
+
+        [Authorize]
+        [HttpPost("change-password")]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+        {
+            await _userService.ChangePasswordAsync(request);
+            return Ok(new { message = "Password changed successfully." });
+        }
+
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetUserPublic(string id)
         {

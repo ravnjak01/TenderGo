@@ -162,7 +162,7 @@ class UserProfilePublicScreen extends StatelessWidget {
               user.fullName.trim().isEmpty ? 'TenderGo User' : user.fullName;
 
           return SingleChildScrollView(
-            physics: const BouncingScrollPhysics(), // Dodana iOS/Android fizika
+            physics: const BouncingScrollPhysics(), 
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
             child: Column(
               children: [

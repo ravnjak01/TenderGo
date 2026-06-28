@@ -40,27 +40,25 @@ namespace TenderGo.Services.Services
 
         public async Task<bool> ChangePasswordAsync(ChangePasswordRequest dto)
         {
-
             var userId = _authService.GetCurrentUserId();
+
             var user = await _userManager.FindByIdAsync(userId)
                 ?? throw new NotFoundException("User not found", new { User = "User", Id = userId });
 
-            var currentUserId =_authService.GetCurrentUserId();
+            var result = await _userManager.ChangePasswordAsync(
+                user,
+                dto.CurrentPassword,
+                dto.NewPassword
+            );
 
-            if(currentUserId!= userId)
-            {
-                throw new ForbiddenException("You can only change your own password.");
-            }
-
-            var result = await _userManager.ChangePasswordAsync(user, dto.CurrentPassword, dto.NewPassword);
             if (!result.Succeeded)
             {
                 var errorMessage = string.Join(" ", result.Errors.Select(e => e.Description));
                 throw new UserException(errorMessage);
             }
+
             return true;
         }
-
         public async Task<UserPublicDTO> GetPublicByIdAsync(string id)
         {
             var response = await _context.Users
@@ -101,26 +99,14 @@ namespace TenderGo.Services.Services
                   ?? throw new NotFoundException("User not found", new { User = "User", Id = userId });
 
 
-            bool hasFirstName = !string.IsNullOrWhiteSpace(request.FirstName);
-            bool hasLastName = !string.IsNullOrWhiteSpace(request.LastName);
-
-            if (hasFirstName || hasLastName)
+            if (!string.IsNullOrWhiteSpace(request.FirstName))
             {
-                bool isChangingFirstName = hasFirstName && request.FirstName != user.FirstName;
-                bool isChangingLastName = hasLastName && request.LastName != user.LastName;
+                user.FirstName = request.FirstName;
+            }
 
-                if (isChangingFirstName || isChangingLastName)
-                {
-                    if (user.NameChangeCount >= 3)
-                    {
-                        throw new UserException("You have reached the maximum number of name changes (3).");
-                    }
-
-                    user.NameChangeCount++;
-
-                    if (isChangingFirstName) user.FirstName = request.FirstName;
-                    if (isChangingLastName) user.LastName = request.LastName;
-                }
+            if (!string.IsNullOrWhiteSpace(request.LastName))
+            {
+                user.LastName = request.LastName;
             }
 
             if (request.ImageBytes != null && request.ImageBytes.Length > 0)

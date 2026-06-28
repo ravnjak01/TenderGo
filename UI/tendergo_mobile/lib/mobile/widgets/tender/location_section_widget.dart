@@ -270,13 +270,12 @@ class _TenderLocationSectionState extends State<TenderLocationSection> {
     final countrySelected = _selectedCountry != null;
 
     return AnimatedSize(
-      duration: const Duration(milliseconds: 300), // Trajanje animacije širenja
-      curve: Curves.easeInOut, // Stil animacije (glatko ubrzanje i usporenje)
+      duration: const Duration(milliseconds: 300), 
+      curve: Curves.easeInOut, 
       alignment: Alignment.topCenter,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. DROPDOWN ZA DRŽAVU - Uvijek vidljiv
           _buildLabel('Country *'),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
@@ -301,8 +300,6 @@ class _TenderLocationSectionState extends State<TenderLocationSection> {
             onChanged: _onCountryChanged,
           ),
 
-          // 2. ANIMIRANI DIO ZA REGIJU
-          // Prikazuje se ili loader ili dropdown tek kad je država selektovana
           if (countrySelected) ...[
             const SizedBox(height: 16),
             if (_isLoadingCountry)
@@ -371,7 +368,6 @@ class _TenderLocationSectionState extends State<TenderLocationSection> {
                       (location) => Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
-                          // Ako tvoj LocationDto ima displayLabel (npr. "Sarajevo, BiH"), ostavi ga ovdje
                           location.name,
                           overflow: TextOverflow.ellipsis,
                         ),

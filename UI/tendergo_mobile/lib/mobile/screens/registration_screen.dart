@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tendergo/mobile/routes/routes.dart';
+import 'package:tendergo/shared/core/actions/back_button.dart';
 import 'package:tendergo/shared/core/utils/validators/validators.dart';
 import 'package:tendergo/shared/models/requests/register_request.dart';
 import 'package:tendergo/shared/providers/auth_provider.dart';
@@ -8,11 +9,35 @@ import 'package:tendergo/mobile/widgets/feedback/snackbar_helper.dart';
 import 'package:tendergo/mobile/widgets/common/auth_scaffold.dart';
 import 'package:tendergo/mobile/widgets/inputs/custom_auth_field.dart';
 
+const _passwordRequirementMessage =
+    'Use 8+ chars with upper, lower, number, and symbol.';
+
+String? _validatePasswordRequirements(String? value) {
+  if (value == null || value.isEmpty) {
+    return 'Please enter your password';
+  }
+  final hasRequiredLength = value.length >= 8;
+  final hasUppercase = RegExp(r'[A-Z]').hasMatch(value);
+  final hasLowercase = RegExp(r'[a-z]').hasMatch(value);
+  final hasDigit = RegExp(r'\d').hasMatch(value);
+  final hasSymbol = RegExp(r'[^A-Za-z0-9]').hasMatch(value);
+
+  if (!hasRequiredLength ||
+      !hasUppercase ||
+      !hasLowercase ||
+      !hasDigit ||
+      !hasSymbol) {
+    return _passwordRequirementMessage;
+  }
+  return null;
+}
+
 class MobileRegistrationScreen extends StatefulWidget {
   const MobileRegistrationScreen({super.key});
 
   @override
-  State<MobileRegistrationScreen> createState() => _MobileRegistrationScreenState();
+  State<MobileRegistrationScreen> createState() =>
+      _MobileRegistrationScreenState();
 }
 
 class _MobileRegistrationScreenState extends State<MobileRegistrationScreen> {
@@ -22,7 +47,6 @@ class _MobileRegistrationScreenState extends State<MobileRegistrationScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();
-
 
   @override
   void dispose() {
@@ -73,14 +97,32 @@ class _MobileRegistrationScreenState extends State<MobileRegistrationScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Center(
-              child: Text(
-                'Create Account',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
+            Row(
+              children: [
+                CustomBackButton(
+                  onPressed: () {
+                    if (Navigator.of(context).canPop()) {
+                      Navigator.of(context).pop();
+                      return;
+                    }
+                    Navigator.pushReplacementNamed(context, AppRoutes.login);
+                  },
                 ),
-              ),
+                const Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(right: 40),
+                    child: Center(
+                      child: Text(
+                        'Create Account',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 24),
             CustomTextField(
@@ -125,32 +167,31 @@ class _MobileRegistrationScreenState extends State<MobileRegistrationScreen> {
               label: 'Password',
               hint: 'Enter password',
               isPasswordField: true,
+              validator: _validatePasswordRequirements,
+            ),
+            const Padding(
+              padding: EdgeInsets.only(left: 4, bottom: 12),
+              child: Text(
+                _passwordRequirementMessage,
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ),
+            CustomTextField(
+              controller: _confirmController,
+              label: 'Confirm Password',
+              hint: 'Confirm password',
+              isPasswordField: true,
+              prefixIcon: Icons.lock_clock_outlined,
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Please enter your password';
+                  return 'Please confirm your password';
                 }
-                if (value.length < 8) {
-                  return 'Password must be at least 8 characters';
+                if (value != _passwordController.text) {
+                  return 'Passwords do not match';
                 }
                 return null;
               },
             ),
-          CustomTextField(
-                controller: _confirmController,
-                label: 'Confirm Password',
-                hint: 'Confirm password',
-                isPasswordField: true, // <- Ovo mijenja obscure, showToggle i onToggle
-                prefixIcon: Icons.lock_clock_outlined, // Opcionalno, dodaj ikonicu ako želiš
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please confirm your password';
-                  }
-                  if (value != _passwordController.text) {
-                    return 'Passwords do not match';
-                  }
-                  return null;
-                },
-              ),
             const SizedBox(height: 8),
             Consumer<AuthProvider>(
               builder: (context, auth, child) {

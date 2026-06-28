@@ -1,7 +1,6 @@
 import 'package:device_preview/device_preview.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-// Ostaje samo ovaj import za rute jer je sve spojeno unutra
 import 'package:tendergo/mobile/routes/routes.dart'; 
 import 'package:tendergo/shared/core/theme/app_theme.dart';
 import 'package:tendergo/shared/providers/auth_provider.dart';
@@ -55,7 +54,6 @@ class MobileApp extends StatelessWidget {
         navigatorObservers: [routeObserver],
         locale: DevicePreview.locale(context),
         builder: DevicePreview.appBuilder,
-        // AppRoutes i MobileRoutes se povlače bez problema iz istog fajla
         initialRoute: AppRoutes.login,
         navigatorKey: AppRoutes.navigatorKey,
         routes: MobileRoutes.getRoutes(

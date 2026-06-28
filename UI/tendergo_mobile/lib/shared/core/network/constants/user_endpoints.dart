@@ -5,4 +5,5 @@ class UserEndpoints {
   static const String rate = '$_userBase/rate';
   static const String updateProfile = '$_userBase/profile'; 
   static  String getReviews(String id)=>'$_userBase/$id/reviews';
+   static const String changePassword = '$_userBase/change-password';
 }

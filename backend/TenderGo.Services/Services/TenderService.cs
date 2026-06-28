@@ -28,7 +28,7 @@ using TenderGo.Services.StateMachines.TenderStates;
 
 namespace TenderGo.Services.Services
 {
-    public class TenderService : BaseService<TenderDTO, Tender, TenderInsertRequest, TenderUpdateRequest>, ITenderService
+    public class TenderService : BaseService<TenderDTO, Tender, TenderInsertRequest, TenderDTO>, ITenderService
     {
 
         private readonly IAuthService _authService;
@@ -36,17 +36,14 @@ namespace TenderGo.Services.Services
         protected readonly IServiceProvider _serviceProvider;
         protected readonly IImageService _imageService;
         protected readonly IBidService _bidService;
-        private readonly IMemoryCache _cache;
 
-        private const string CacheKey = "active_tenders";
-        public TenderService(TenderGoContext context, IMapper mapper, IHttpContextAccessor httpContextAccessor, IAuthService authService, ILogger<TenderService> logger, IServiceProvider serviceProvider, IImageService imageService, IBidService bidService,IMemoryCache cache) : base(context, mapper, httpContextAccessor)
+        public TenderService(TenderGoContext context, IMapper mapper, IHttpContextAccessor httpContextAccessor, IAuthService authService, ILogger<TenderService> logger, IServiceProvider serviceProvider, IImageService imageService, IBidService bidService) : base(context, mapper, httpContextAccessor)
         {
             _logger = logger;
             _authService = authService;
             _serviceProvider = serviceProvider;
             _imageService = imageService;
             _bidService = bidService;
-            _cache = cache;
         }
 
         protected override IQueryable<Tender> AddIncludes(IQueryable<Tender> query)
@@ -109,6 +106,7 @@ public async Task<IEnumerable<TenderDTO>> GetBookmarkedTendersAsync(string userI
         {
            return await _context.Tenders
                 .Where(t => t.Status == TenderStatus.Open)
+                  .OrderByDescending(t => t.CreatedAt)
                 .ProjectTo<TenderDTO>(_mapper.ConfigurationProvider) 
                 .ToListAsync();
         }

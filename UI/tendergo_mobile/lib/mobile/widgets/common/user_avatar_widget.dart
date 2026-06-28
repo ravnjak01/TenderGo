@@ -3,7 +3,6 @@ import 'package:tendergo/shared/core/theme/app_theme.dart';
 import 'package:tendergo/shared/core/utils/extensions/user_initials_extension.dart';
 import 'package:tendergo/shared/models/dto/user_dto.dart';
 
-/// Reusable circular avatar widget that displays user initials.
 class UserAvatarWidget extends StatelessWidget {
   final UserDto? user;
   final VoidCallback onTap;

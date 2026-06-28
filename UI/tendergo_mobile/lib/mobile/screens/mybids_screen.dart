@@ -24,7 +24,6 @@ class MyBidsScreen extends StatefulWidget {
 }
 
 class _MyBidsScreenState extends State<MyBidsScreen> {
-  // ── state ──────────────────────────────────────────────────────────────────
   final ScrollController _scrollController = ScrollController();
 
   List<BidDto> _items = [];
@@ -37,7 +36,6 @@ class _MyBidsScreenState extends State<MyBidsScreen> {
   bool _hasMore = true;
   bool _hasChanges = false;
 
-  // ── lifecycle ──────────────────────────────────────────────────────────────
   @override
   void initState() {
     super.initState();
@@ -51,7 +49,6 @@ class _MyBidsScreenState extends State<MyBidsScreen> {
     super.dispose();
   }
 
-  // ── data fetching ──────────────────────────────────────────────────────────
   void _onScroll() {
     if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
       _fetchMore();
@@ -167,7 +164,6 @@ class _MyBidsScreenState extends State<MyBidsScreen> {
     Navigator.of(context).pushNamed(AppRoutes.rateUser, arguments: args);
   }
 
-  // ── build ──────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -250,9 +246,6 @@ class _MyBidsScreenState extends State<MyBidsScreen> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Bid Card
-// ─────────────────────────────────────────────────────────────────────────────
 
 class _BidCard extends StatelessWidget {
   const _BidCard({
@@ -308,7 +301,6 @@ class _BidCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── header ───────────────────────────────────────────────
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -348,7 +340,6 @@ class _BidCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 14),
 
-                  // ── proposal preview ────────────────────────────────────
                   if (bid.proposal != null) ...[
                     Container(
                       width: double.infinity,
@@ -370,7 +361,6 @@ class _BidCard extends StatelessWidget {
                     const SizedBox(height: 12),
                   ],
 
-                  // ── meta row ────────────────────────────────────────────
                   Wrap(
                     spacing: 16,
                     runSpacing: 8,
@@ -388,7 +378,6 @@ class _BidCard extends StatelessWidget {
 
                   const SizedBox(height: 12),
 
-                  // ── price ───────────────────────────────────────────────
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -484,9 +473,7 @@ class _BidCard extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Sub-widgets
-// ─────────────────────────────────────────────────────────────────────────────
+
 
 class _BidAvatar extends StatelessWidget {
   const _BidAvatar({required this.bidId});

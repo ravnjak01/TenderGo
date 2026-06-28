@@ -1,6 +1,6 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:tendergo/shared/core/auth/auth_token_store.dart';
 import 'package:tendergo/shared/models/dto/bid_dto.dart';
 import 'package:tendergo/shared/models/dto/category_dto.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
@@ -17,7 +17,7 @@ class TenderProvider extends BaseProvider {
   final TenderService _service;
   final CategoryService _categoryService;
   final RecommendationService _recommendationService;
-  static const _storage = FlutterSecureStorage();
+  static const AuthTokenStore _tokenStore = AuthTokenStore();
 
   TenderProvider(
     this._service,
@@ -46,6 +46,8 @@ class TenderProvider extends BaseProvider {
   Set<int> get savedIds => _savedIds;
 
   Future<void> loadBookmarks(TenderService service) async {
+    if (!await _tokenStore.hasValidAccessToken()) return;
+
     try {
       final bookmarkedTenders = await service.getBookmarked();
       _savedIds = bookmarkedTenders.map((t) => t.id).toSet();
@@ -130,10 +132,16 @@ class TenderProvider extends BaseProvider {
     safeNotify();
   }
 
-  Future<void> fetchActiveTenders({bool silent = false}) =>
-      handleAsync(() async {
+  Future<void> fetchActiveTenders({bool silent = false}) async {
+    if (!await _tokenStore.hasValidAccessToken()) return;
+
+    await handleAsync(
+      () async {
         _tenders = await _service.getActive();
-      }, silent: silent);
+      },
+      silent: silent,
+    );
+  }
 
   Future<void> fetchAllTenders() => handleAsync(() async {
     _tenders = await _service.getAll();
@@ -205,6 +213,8 @@ class TenderProvider extends BaseProvider {
   String? get categoryLoadError => _categoryLoadError;
 
   Future<void> fetchCategories() async {
+    if (!await _tokenStore.hasValidAccessToken()) return;
+
     _isCategoryLoading = true;
     _categoryLoadError = null;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -257,6 +267,22 @@ class TenderProvider extends BaseProvider {
     _selectedCategories
       ..clear()
       ..addAll(categories);
+    safeNotify();
+  }
+
+  void resetSessionState() {
+    _tenders = [];
+    _categories = [];
+    _selectedCategories
+      ..clear()
+      ..add('All');
+    _searchResults = null;
+    _searchQuery = '';
+    _locationFilter = null;
+    _lastLoggedSearchQuery = null;
+    _savedIds = {};
+    _categoryLoadError = null;
+    _isCategoryLoading = false;
     safeNotify();
   }
 }

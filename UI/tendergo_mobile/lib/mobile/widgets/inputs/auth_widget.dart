@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
 
 
-// ─────────────────────────────────────────────────────────────────
-//  AuthSubmitButton — primary action button with loading state
-// ─────────────────────────────────────────────────────────────────
+
 
 class AuthSubmitButton extends StatelessWidget {
   final String label;
@@ -53,9 +51,7 @@ class AuthSubmitButton extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────
-//  AuthNavLink — "Already have an account? Sign in" style row
-// ─────────────────────────────────────────────────────────────────
+
 
 class AuthNavLink extends StatelessWidget {
   final String? prompt;

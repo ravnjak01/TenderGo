@@ -28,8 +28,8 @@ namespace TenderGo.Services.Services
             (0, new byte[] { 0xFF, 0xD8, 0xFF },             "JPEG"),
             (0, new byte[] { 0x89, 0x50, 0x4E, 0x47,
                              0x0D, 0x0A, 0x1A, 0x0A },       "PNG"),
-            (0, new byte[] { 0x47, 0x49, 0x46, 0x38 },       "GIF"),  // GIF87a / GIF89a
-            (0, new byte[] { 0x52, 0x49, 0x46, 0x46 },       "WEBP"), // RIFF....WEBP checked separately
+            (0, new byte[] { 0x47, 0x49, 0x46, 0x38 },       "GIF"),  
+            (0, new byte[] { 0x52, 0x49, 0x46, 0x46 },       "WEBP"), 
             (0, new byte[] { 0x42, 0x4D },                   "BMP"),
         };
 

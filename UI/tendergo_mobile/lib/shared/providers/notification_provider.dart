@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:tendergo/shared/core/auth/auth_token_store.dart';
 import 'package:tendergo/shared/models/dto/notification_dto.dart';
 import 'package:tendergo/shared/providers/base_provider.dart';
 import 'package:tendergo/shared/services/notification_service.dart';
@@ -7,6 +8,7 @@ enum NotificationLoadState { idle, loading, loaded, error }
 
 class NotificationProvider extends BaseProvider {
   final NotificationService _service;
+  static const AuthTokenStore _tokenStore = AuthTokenStore();
 
   NotificationProvider(this._service);
 
@@ -25,10 +27,14 @@ class NotificationProvider extends BaseProvider {
 
   int get unreadCount => _notifications.where((n) => !n.isRead).length;
 
-  void startPolling() {
+  Future<void> startPolling() async {
     if (_pollingTimer?.isActive ?? false) return;
+    if (!await _tokenStore.hasValidAccessToken()) return;
+
     _pollingTimer?.cancel();
-    loadNotifications();
+    await loadNotifications();
+    if (!await _tokenStore.hasValidAccessToken()) return;
+
     _pollingTimer = Timer.periodic(_pollingInterval, (_) {
       loadNotifications(silent: true);
     });
@@ -39,8 +45,18 @@ class NotificationProvider extends BaseProvider {
     _pollingTimer = null;
   }
 
+  void reset() {
+    stopPolling();
+    _state = NotificationLoadState.idle;
+    _notifications = [];
+    _isFetching = false;
+    safeNotify();
+  }
+
   Future<void> loadNotifications({bool silent = false}) async {
     if (_isFetching) return;
+    if (!await _tokenStore.hasValidAccessToken()) return;
+
     _isFetching = true;
 
     if (!silent) _state = NotificationLoadState.loading;

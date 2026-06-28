@@ -52,7 +52,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _firstNameController = TextEditingController(text: widget.user.firstName);
     _lastNameController = TextEditingController(text: widget.user.lastName);
     
-    // Riješen problem s učitavanjem adrese na početku provjerom postojanja address objekta
     _streetController = TextEditingController(
       text: widget.user.address?.street ?? '',
     );

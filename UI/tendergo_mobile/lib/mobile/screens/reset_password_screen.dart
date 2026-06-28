@@ -10,6 +10,29 @@ import 'package:tendergo/mobile/widgets/feedback/snackbar_helper.dart';
 import 'package:tendergo/mobile/widgets/inputs/auth_widget.dart';
 import 'package:tendergo/mobile/widgets/inputs/custom_auth_field.dart';
 
+const _passwordRequirementMessage =
+    'Use 8+ chars with upper, lower, number, and symbol.';
+
+String? _validatePasswordRequirements(String? value) {
+  if (value == null || value.isEmpty) {
+    return 'New password is required';
+  }
+  final hasRequiredLength = value.length >= 8;
+  final hasUppercase = RegExp(r'[A-Z]').hasMatch(value);
+  final hasLowercase = RegExp(r'[a-z]').hasMatch(value);
+  final hasDigit = RegExp(r'\d').hasMatch(value);
+  final hasSymbol = RegExp(r'[^A-Za-z0-9]').hasMatch(value);
+
+  if (!hasRequiredLength ||
+      !hasUppercase ||
+      !hasLowercase ||
+      !hasDigit ||
+      !hasSymbol) {
+    return _passwordRequirementMessage;
+  }
+  return null;
+}
+
 class MobileResetPasswordScreen extends StatefulWidget {
   const MobileResetPasswordScreen({super.key});
 
@@ -100,18 +123,16 @@ class _MobileResetPasswordScreenState extends State<MobileResetPasswordScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- GORNJI RED: BACK DUGME I NASLOV ---
             Row(
               children: [
                 CustomBackButton(
                   onPressed: () {
-                    // Navigira nazad na login ili prethodni ekran
                     Navigator.pushReplacementNamed(context, AppRoutes.login);
                   },
                 ),
                 const Expanded(
                   child: Padding(
-                    padding: EdgeInsets.only(right: 36.0), // Kompenzacija za širinu dugmeta kako bi naslov bio savršeno centriran
+                    padding: EdgeInsets.only(right: 36.0),
                     child: Center(
                       child: Text(
                         'Reset Password',
@@ -174,17 +195,18 @@ class _MobileResetPasswordScreenState extends State<MobileResetPasswordScreen> {
               controller: _newPasswordController,
               isPasswordField: true,
               prefixIcon: Icons.lock_outline,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'New password is required';
-                }
-                if (value.length < 8) {
-                  return 'Password must be at least 8 characters';
-                }
-                return null;
-              },
+              validator: _validatePasswordRequirements,
             ),
-            const SizedBox(height: 16),
+            const Padding(
+              padding: EdgeInsets.only(left: 4, bottom: 16),
+              child: Text(
+                _passwordRequirementMessage,
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 12,
+                ),
+              ),
+            ),
 
             CustomTextField(
               label: 'Confirm Password',

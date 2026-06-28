@@ -17,7 +17,6 @@ class TenderService {
 
   ImageService get imageService => _imageService;
 
-  // Pomoćna metoda za pretvaranje fajlova u bajtove
   Future<TenderInsertRequest> _withImageBytes(
     TenderInsertRequest data,
     List<PlatformFile>? imageFiles,
@@ -49,17 +48,14 @@ class TenderService {
     );
   }
 
-  // Koristi zajednički šablon za bezbjedno izvlačenje podataka iz koverte
   T _unwrapEnvelope<T>(Response response, T Function(dynamic data) mapper) {
     return mapper(ResponseParser.data(response.data));
   }
 
-  // Centralizovano čitanje grešaka iz ApiErrorEnvelope
   Exception _handleError(DioException e, String defaultMessage) {
     return Exception(ResponseParser.errorMessage(e, defaultMessage));
   }
 
-  // ==================== API METODE ====================
 
   Future<List<TenderDto>> getAll({int page = 1, int pageSize = 10}) async {
     try {
@@ -161,14 +157,7 @@ class TenderService {
     }
   }
 
-  Future<List<dynamic>> allowedActions(int id) async {
-    try {
-      final response = await _dio.get(TenderApiEndpoints.allowedActions(id));
-      return List<dynamic>.from(ResponseParser.list(response.data));
-    } on DioException catch (e) {
-      throw _handleError(e, 'Greška pri učitavanju dozvoljenih akcija');
-    }
-  }
+
 
   Future<bool> toggleBookmark(int tenderId) async {
     try {

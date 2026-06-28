@@ -30,7 +30,6 @@ class CategoryDto {
 
 
 
-// --- UI Theme logika za kategorije ---
 
 class CategoryTheme {
   const CategoryTheme({required this.bg, required this.icon});
@@ -38,7 +37,6 @@ class CategoryTheme {
   final IconData icon;
 }
 
-/// Mapa koja povezuje nazive kategorija sa njihovim stilom
 const Map<String, CategoryTheme> categoryThemes = {
   'Construction': CategoryTheme(bg: Color(0xFFE6F1FB), icon: Icons.construction_rounded),
   'IT & Software': CategoryTheme(bg: Color(0xFFEAF3DE), icon: Icons.laptop_mac_rounded),

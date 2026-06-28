@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tendergo/mobile/widgets/tender/tender_widget.dart';
+import 'package:tendergo/shared/core/auth/auth_token_store.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
 import 'package:tendergo/shared/models/ui/tendercardmodel.dart';
@@ -20,6 +21,8 @@ class MobileBookmarkedTendersScreen extends StatefulWidget {
 }
 
 class _MobileBookmarkedTendersScreenState extends State<MobileBookmarkedTendersScreen> {
+  static const AuthTokenStore _tokenStore = AuthTokenStore();
+
   List<TenderDto> _bookmarkedTenders = [];
   bool _isLoading = true;
   String? _errorMessage;
@@ -37,6 +40,15 @@ class _MobileBookmarkedTendersScreenState extends State<MobileBookmarkedTendersS
         _errorMessage = null;
       });
 
+      if (!await _tokenStore.hasValidAccessToken()) {
+        if (!mounted) return;
+        setState(() {
+          _bookmarkedTenders = [];
+          _isLoading = false;
+        });
+        return;
+      }
+
       final tenders = await widget.tenderService.getBookmarked();
 
       setState(() {
@@ -53,7 +65,6 @@ class _MobileBookmarkedTendersScreenState extends State<MobileBookmarkedTendersS
 
   Future<void> _removeBookmark(TenderDto dto) async {
     try {
-      // Backend toggle uklanja bookmark i vraća false
       await widget.tenderService.toggleBookmark(dto.id);
       
       
@@ -83,7 +94,7 @@ class _MobileBookmarkedTendersScreenState extends State<MobileBookmarkedTendersS
         backgroundColor: AppColors.surface,
         elevation: 0,
         title: const Text(
-          'Sačuvani tenderi',
+          'Saved tenders',
           style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
         ),
         iconTheme: const IconThemeData(color: AppColors.textPrimary),
@@ -126,16 +137,15 @@ class _MobileBookmarkedTendersScreenState extends State<MobileBookmarkedTendersS
         itemBuilder: (context, index) {
           final dto = _bookmarkedTenders[index];
           
-          // Mapiranje DTO objekta u UI model kartice
           final cardModel = TenderCardModel.fromDTO(dto);
 
           return Padding(
             padding: const EdgeInsets.only(bottom:12),
             child: MobileTenderCardWidget(
               tender: cardModel,
-              isSaved: true, // Na ovom ekranu su svi po defaultu sačuvani
+              isSaved: true, 
               onTap: () => widget.onTenderSelected(dto.id),
-              onSave: () => _removeBookmark(dto), // Klik na srce uklanja sa liste
+              onSave: () => _removeBookmark(dto), 
             ),
           );
         },

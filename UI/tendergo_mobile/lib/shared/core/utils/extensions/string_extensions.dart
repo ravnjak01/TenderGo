@@ -1,10 +1,8 @@
 extension DateTimeExtensions on DateTime {
-  /// Formatira datum u format: 10.05.2026
   String formatDate() {
     return '${day.toString().padLeft(2, '0')}.${month.toString().padLeft(2, '0')}.$year';
   }
 
-  /// Prikazuje fiksni datum isteka: 10 May 2026
   String formatDeadline() {
     const months = [
       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -13,7 +11,6 @@ extension DateTimeExtensions on DateTime {
     return '$day ${months[month - 1]} $year';
   }
 
-  /// Prikazuje koliko je vremena prošlo od datuma
   String toTimeAgo()  {
     final diff = DateTime.now().difference(this);
     if (diff.inSeconds < 60) return 'Just now';
@@ -22,7 +19,6 @@ extension DateTimeExtensions on DateTime {
     return '${diff.inDays} day${diff.inDays == 1 ? '' : 's'} ago';
   }
 }
-//metoda za formatiranje novcanih vrijednosti
 extension NumberExtensions on double {
   /// Formatira broj u valutu: 1.500 KM
   String formatCurrency() {

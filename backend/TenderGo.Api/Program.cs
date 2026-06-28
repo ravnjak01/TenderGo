@@ -1,4 +1,5 @@
-﻿using System.Security.Claims;
+﻿using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Text;
 using AutoMapper;
 using DotNetEnv;
@@ -86,7 +87,34 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         ValidIssuer = builder.Configuration["Jwt:Issuer"],
         ValidAudience = builder.Configuration["Jwt:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
+        IssuerSigningKey = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
+    };
+
+    options.Events = new JwtBearerEvents
+    {
+        OnTokenValidated = async context =>
+        {
+            var db = context.HttpContext.RequestServices
+                .GetRequiredService<TenderGoContext>();
+
+            var jti = context.Principal?
+                .FindFirstValue(JwtRegisteredClaimNames.Jti);
+
+            if (string.IsNullOrWhiteSpace(jti))
+            {
+                context.Fail("Token does not contain JTI.");
+                return;
+            }
+
+            var isRevoked = await db.RevokedTokens
+                .AnyAsync(x => x.Jti == jti);
+
+            if (isRevoked)
+            {
+                context.Fail("Token has been revoked.");
+            }
+        }
     };
 });
 
@@ -117,6 +145,17 @@ builder.Services.AddSwaggerGen(opt =>
     });
 });
 
+
+builder.Services.Configure<IdentityOptions>(options =>
+{
+    options.Password.RequireDigit = true;
+    options.Password.RequireLowercase = true;
+    options.Password.RequireUppercase = true;
+    options.Password.RequireNonAlphanumeric = true;
+    options.Password.RequiredLength = 8;
+});
+
+
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddMemoryCache();
 
@@ -131,15 +170,15 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IUserAdminService, UserAdminService>();
 builder.Services.AddScoped<IAdminDashboardService, AdminDashboardService>();
 builder.Services.AddScoped<IImageService, ImageService>();
-builder.Services.AddTransient<ICategoryService, CategoryService>();
-builder.Services.AddTransient<ILocationService, LocationService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<ILocationService, LocationService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IAdminReportService,AdminReportService>();
 
 
 // Email i Background poslovi
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
-builder.Services.AddScoped<EmailService>();
+builder.Services.AddScoped<IEmailService,EmailService>();
 builder.Services.AddHostedService<TenderExpiryJob>();
 
 // Recommender i Pametni moduli
@@ -148,11 +187,11 @@ builder.Services.AddTransient<TenderVectorBuilder>();
 builder.Services.AddScoped<IRecommendationService, RecommendationService>();
 
 // State Machine registracije
-builder.Services.AddTransient<BaseState>();
-builder.Services.AddTransient<OpenTenderState>();
-builder.Services.AddTransient<ClosedTenderState>();
-builder.Services.AddTransient<AwardedTenderState>();
-builder.Services.AddTransient<CancelledTenderState>();
+builder.Services.AddScoped<BaseState>();
+builder.Services.AddScoped<OpenTenderState>();
+builder.Services.AddScoped<ClosedTenderState>();
+builder.Services.AddScoped<AwardedTenderState>();
+builder.Services.AddScoped<CancelledTenderState>();
 builder.Services.AddScoped<PendingBidState>();
 builder.Services.AddScoped<FinalBidState>();
 

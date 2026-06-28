@@ -61,8 +61,8 @@ class ActionButton extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(fontSize: 12, color: foreground),
-          maxLines: 1, // Prevent it from expanding vertically
-          overflow: TextOverflow.ellipsis, // Safely drops into '...' if room runs out
+          maxLines: 1, 
+          overflow: TextOverflow.ellipsis, 
         ),
       ),
   ],

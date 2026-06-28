@@ -42,8 +42,6 @@ class _MobileTenderListScreenState extends State<MobileTenderListScreen>   with 
   }
 
 
-//zadnje dodao dispose i didpopnext i route observer u app.dart
-//ne ažurira bookmark znak kad uklonim bookmark u mobile_bookmarked ekranu
   @override
   void dispose() {
     routeObserver.unsubscribe(this);
@@ -75,13 +73,12 @@ Future<void> _refreshBookmarks() async {
 
 Future<void> _initialLoad() async {
   if (!mounted) return;
-  context.read<AuthProvider>().loadUser();
   final p = Provider.of<TenderProvider>(context, listen: false);
   
   await Future.wait([
     p.fetchActiveTenders(),
     p.fetchCategories(),
-    p.loadBookmarks(widget.tenderService), // <-- Poziv providera
+    p.loadBookmarks(widget.tenderService), 
   ]);
 
   if (mounted) {
@@ -156,7 +153,6 @@ Future<void> _initialLoad() async {
 
  Future<void> _toggleSave(TenderDto dto) async {
     try {
-      // Iskoristi widget.tenderService da pristupiš servisu iz gornje klase
       final isBookmarked = await widget.tenderService.toggleBookmark(dto.id);
 
      setState(() {
@@ -170,7 +166,7 @@ Future<void> _initialLoad() async {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(isBookmarked ? 'Tender sačuvan!' : 'Tender uklonjen iz sačuvanih.'),
+            content: Text(isBookmarked ? 'Tender saved!' : 'Tender removed from saved.'),
             duration: const Duration(seconds: 1),
           ),
         );
@@ -229,7 +225,6 @@ Future<void> _initialLoad() async {
                           isLoading: provider.isLoading,
                         ),
                         const SizedBox(height: 10),
-                        // ↓ TenderFilterBar replaces category chips + count text
                         TenderFilterBar(
                           tenderCount: filtered.length,
                           useDropdown: true,

@@ -1,24 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.ComponentModel.DataAnnotations;
 
-namespace TenderGo.Models.Requests
+public class BidInsertRequest
 {
-    public class BidInsertRequest
-    {
-        [Required]
-        public decimal Price { get; set; }
-        [Required]
-        public int TenderId { get; set; }
-        [StringLength(500)]
-        public string? Note { get; set; }
-        [Required]
-        public string UserId { get; set; }
-        [Required]
-        public int DeliveryDays { get; set; }
+    [Required]
+    [Range(0.01, double.MaxValue)]
+    public decimal Price { get; set; }
 
-    }
+    [Required]
+    public int TenderId { get; set; }
+
+    [StringLength(500)]
+    public string? Note { get; set; }
+
+    [Required]
+    public string UserId { get; set; } = string.Empty;
+
+    [Required]
+    [Range(1, int.MaxValue)]
+    public int DeliveryDays { get; set; }
 }

@@ -4,6 +4,7 @@ import 'package:tendergo/mobile/routes/routes.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
 import 'package:tendergo/shared/core/utils/validators/validators.dart';
 import 'package:tendergo/shared/providers/auth_provider.dart';
+import 'package:tendergo/shared/providers/notification_provider.dart';
 import 'package:tendergo/mobile/widgets/common/auth_scaffold.dart';
 import 'package:tendergo/mobile/widgets/common/error_banner_widget.dart';
 import 'package:tendergo/mobile/widgets/inputs/custom_auth_field.dart';
@@ -51,6 +52,9 @@ class _MobileLoginScreenState extends State<MobileLoginScreen> {
       setState(() => _errorMessage = result.message);
       return;
     }
+
+    await context.read<NotificationProvider>().startPolling();
+    if (!mounted) return;
 
     Navigator.of(context).pushReplacementNamed(AppRoutes.tenderList);
   }

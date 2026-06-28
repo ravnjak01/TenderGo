@@ -9,12 +9,9 @@ namespace TenderGo.Models.Requests
 {
     public class RateUserRequest
     {
-        public string? RatedByUserId { get; set; }
         [Required]
         public string RatedUserId { get; set; } = null!;
-        [Required]
         public int TenderId { get; set; }
-        [Required]
         public int Score { get; set; }
         public string? Comment { get; set; }
       

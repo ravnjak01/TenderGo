@@ -10,8 +10,7 @@ import 'package:tendergo/mobile/widgets/tender/location_picker_sheet.dart';
 class TenderFilterBar extends StatelessWidget {
   final int tenderCount;
 
-  /// When true, renders a dropdown instead of a horizontal chip row.
-  /// Pass true from mobile screens; leave false (default) for desktop/tablet.
+
   final bool useDropdown;
 
   const TenderFilterBar({
@@ -124,9 +123,7 @@ class TenderFilterBar extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Chip row — unchanged, used on desktop/tablet
-// ---------------------------------------------------------------------------
+
 
 class _CategoryChips extends StatelessWidget {
   final TenderProvider provider;
@@ -161,17 +158,13 @@ class _CategoryChips extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Multi-select dropdown button — used on mobile only.
-// Tapping opens a bottom sheet with checkboxes; selections apply immediately.
-// ---------------------------------------------------------------------------
+
 
 class _CategoryDropdown extends StatelessWidget {
   final TenderProvider provider;
 
   const _CategoryDropdown({required this.provider});
 
-  // Returns a short label for the pill button.
   String _buttonLabel() {
     final selected = provider.selectedCategories;
     if (selected.isEmpty || selected.contains('All')) return 'All categories ';
@@ -179,7 +172,6 @@ class _CategoryDropdown extends StatelessWidget {
     return '${selected.length} categories';
   }
 
-  // Whether any specific (non-All) filter is active.
   bool get _isFiltered =>
       provider.selectedCategories.isNotEmpty &&
       !provider.selectedCategories.contains('All');
@@ -246,9 +238,7 @@ class _CategoryDropdown extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Bottom sheet content — stateful so checkbox state updates instantly.
-// ---------------------------------------------------------------------------
+
 
 class _CategoryPickerSheet extends StatefulWidget {
   final List<String> items;
@@ -264,7 +254,6 @@ class _CategoryPickerSheet extends StatefulWidget {
 }
 
 class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
-  // Local copy so the sheet re-renders on each tap without rebuilding the tree.
   late Set<String> _selected;
 
   @override
@@ -287,7 +276,6 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
         }
       }
     });
-    // Apply to provider immediately so the list updates in the background.
     widget.provider.setSelectedCategories(Set.of(_selected));
   }
 

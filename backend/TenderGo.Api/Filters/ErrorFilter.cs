@@ -75,21 +75,21 @@ public sealed class ErrorFilter : Attribute, IAsyncExceptionFilter, IAsyncResult
         await next();
     }
 
-    // Pomoćna metoda koja pakuje sirove podatke kontrolera u ApiSuccessEnvelope
     private ObjectResult ToSuccessObjectResult(IActionResult currentResult, int statusCode)
     {
         object? rawData = null;
         string message = "Request processed successfully.";
 
-        // Ako je kontroler vratio npr. Ok(userDto) ili Created(uri, userDto)
         if (currentResult is ObjectResult obj && obj.Value is not null)
         {
-            rawData = obj.Value;
-        }
-        // Ako je kontroler vratio samo Ok() ili NoContent() bez tijela
-        else if (currentResult is StatusCodeResult)
-        {
-            rawData = null;
+            if (obj.Value is string text)
+            {
+                message = text;
+            }
+            else
+            {
+                rawData = obj.Value;
+            }
         }
 
         var payload = new ApiSuccessEnvelope

@@ -40,7 +40,6 @@ class ErrorHandler {
 
       if (data is String && data.trim().isNotEmpty) return data;
     } catch (_) {
-      // Don't throw from error parsing.
     }
 
     return null;

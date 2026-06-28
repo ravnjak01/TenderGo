@@ -30,7 +30,6 @@ class _RecommendedForYouMobileScreenState extends State<RecommendedForYouMobileS
     _loadRecommendations();
   }
 Future<void> _loadRecommendations() async {
-    // Čist poziv, provajder i servis sami rješavaju autorizaciju u pozadini
     await _provider.loadForUser();
   }
 
@@ -125,7 +124,6 @@ Future<void> _loadRecommendations() async {
               );
             }
 
-            // Čisti mobilni prikaz sa Pull-to-Refresh i listom
             return RefreshIndicator(
               onRefresh: _refresh,
               child: ListView.builder(

@@ -4,26 +4,20 @@ namespace TenderGo.Recommender;
 
 public class TenderFeatureVector
 {
-    // Identity
+   
     public int TenderId { get; set; }
     public string Title { get; set; } = null!;
 
-    // === FEATURES USED FOR SIMILARITY ===
 
-    // From Category (one-hot encoded as string key)
-    public string Category { get; set; } = null!;       // e.g. "Construction"
+    public string Category { get; set; } = null!;       
 
-    // From Location
-    public string Country { get; set; } = null!;        // e.g. "BA"
-    public string City { get; set; } = null!;   // e.g. "Sarajevo"
+    public string Country { get; set; } = null!;        
+    public string City { get; set; } = null!;   
     public string Region { get; set; }
 
-    // From Budget — bucketed so nearby budgets score as similar
-    public string BudgetBucket { get; set; } = null!;   // e.g. "10k-50k"
+    public string BudgetBucket { get; set; } = null!;   
 
-    // From Title + Description — extracted keywords
-    public List<string> Keywords { get; set; } = new(); // e.g. ["road","construction","asphalt"]
+    public List<string> Keywords { get; set; } = new(); 
 
-    // Only open tenders should ever be recommended
     public TenderStatus Status { get; set; }
 }

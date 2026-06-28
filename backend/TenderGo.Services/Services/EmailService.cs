@@ -3,26 +3,28 @@ using Microsoft.Extensions.Options;
 using System.Net;
 using System.Net.Mail;
 using TenderGo.Models.Entities;
+using TenderGo.Services.Interfaces;
 using TenderGo.Services.Services;
 
-public class EmailService 
+public class EmailService: IEmailService
 {
     private readonly EmailSettings _emailSettings;
     private readonly ILogger<EmailService> _logger;
 
 
-    public EmailService(IOptions<EmailSettings> emailSettings,ILogger<EmailService> logger
+
+    public EmailService(IOptions<EmailSettings> emailSettings, ILogger<EmailService> logger
         )
     {
         _emailSettings = emailSettings.Value;
         _logger = logger;
 
         if (string.IsNullOrEmpty(_emailSettings.From))
-            throw new Exception("KONFIGURACIJA NIJE UCITANA! Proveri Program.cs i JSON.");
+            throw new Exception("KONFIGURACIJA NIJE UCITANA!");
     }
 
 
-    public async Task SendResetPasswordEmail(string toEmail, string resetLink, CancellationToken cancellationToken)
+    public async Task SendResetPasswordEmail(string toEmail, string resetCode, CancellationToken cancellationToken)
     {
         try
         {
@@ -32,8 +34,7 @@ public class EmailService
             {
                 From = new MailAddress(_emailSettings.From),
                 Subject = "Password reset ",
-                Body = $"Click on link to reset a password: {resetLink}",
-                IsBodyHtml = true 
+                IsBodyHtml = true
             };
             mail.To.Add(toEmail);
 

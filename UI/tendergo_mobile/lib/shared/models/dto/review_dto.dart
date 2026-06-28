@@ -1,7 +1,7 @@
 class ReviewDto {
   final int id;
   final int rating;
-  final String? comment; // Nullable jer korisnik ne mora ostaviti komentar
+  final String? comment; 
   final DateTime createdAt;
   final String reviewerName;
   final int tenderId;
@@ -17,7 +17,6 @@ class ReviewDto {
     required this.tenderTitle,
   });
 
-  // Fabrički konstruktor za mapiranje iz JSON formata koji stiže sa backenda
   factory ReviewDto.fromJson(Map<String, dynamic> json) {
     return ReviewDto(
        id: json['id'] as int? ?? 0,
@@ -32,7 +31,6 @@ class ReviewDto {
     );
   }
 
-  // (Opcionalno) Ako ti ikada zatreba da ponovo pretvoriš objekat u JSON
   Map<String, dynamic> toJson() {
     return {
       'id':id,
