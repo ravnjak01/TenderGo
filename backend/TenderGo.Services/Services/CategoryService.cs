@@ -12,7 +12,7 @@ using TenderGo.Services.Services.Exceptions;
 
 namespace TenderGo.Services.Services
 {
-    public class CategoryService : BaseService<CategoryDTO, Category, CategoryDTO, CategoryUpdateRequest>, ICategoryService
+    public class CategoryService : BaseService<CategoryDTO, Category, CategoryInsertRequest, CategoryUpdateRequest>, ICategoryService
     {
         private readonly IAuthService _authService;
         protected readonly ILogger<CategoryService> _logger;
@@ -114,6 +114,18 @@ namespace TenderGo.Services.Services
             return _mapper.Map<CategoryDTO>(category);
         }
 
+        public async Task<CategoryDTO> Deactivate(int id)
+        {
+            var category = await _context.Categories.FindAsync(id)
+                ?? throw new UserException("Category not found");
+
+            category.IsActive = false;
+            await _context.SaveChangesAsync();
+
+            return _mapper.Map<CategoryDTO>(category);
+        }
+
+
         public async Task<List<CategoryStatsDTO>> GetCategoryStatisticsAsync()
         {
             return await _context.Categories
@@ -121,7 +133,9 @@ namespace TenderGo.Services.Services
                 {
                     CategoryId = c.Id,
                     CategoryName = c.Name,
-                    TenderCount = _context.Tenders.Count(t => t.CategoryId == c.Id)
+                    TenderCount = _context.Tenders.Count(t => t.CategoryId == c.Id),
+                    Description= c.Description,
+                    IsActive=c.IsActive
                 })
                 .OrderByDescending(c => c.TenderCount)
                 .ToListAsync();

@@ -89,7 +89,7 @@ class TenderDto {
         'deadline': deadline.toIso8601String(),
         'createdByUserId': createdByUserId,
         'createdByFullname': createdByFullname,
-        'status': status.value, // Šalje int ili string zavisno od enuma
+        'status': status.value, 
         'totalBids': totalBids,
         'images': images.map((img) => img.toJson()).toList(),
         'location': location.toJson(),
@@ -98,13 +98,12 @@ class TenderDto {
         'postedAt': postedAt.toIso8601String(),
       };
 
-  // Pretvara TenderDto u model koji direktno očekuje tvoj UI Card Widget
   TenderCardModel toCardModel() {
     return TenderCardModel(
       id: id,
       title: title,
       category: categoryName,
-      status: status, // Nema potrebe za mapStatus metodom ako koristiš isti enum
+      status: status, 
       valueKM: maxBudget,
       deadline: deadline,
       postedAt: postedAt,

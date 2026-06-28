@@ -26,6 +26,7 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
     public DbSet<PasswordResetCode>PasswordResetCodes {get;set;}
     public DbSet<TenderBookmark>TenderBookmarks {get;set;}
     public DbSet<UserActivity>UserActivities {get;set;}
+    public DbSet<RevokedToken> RevokedTokens { get; set; }
 
 
 
@@ -37,6 +38,27 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
     {
 
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<RevokedToken>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+            entity.HasIndex(x => x.Jti).IsUnique();
+
+            entity.Property(x => x.Jti)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(x => x.UserId)
+                .IsRequired();
+
+            entity.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+
+        });
 
         //tender
         modelBuilder.Entity<Tender>(entity =>
@@ -113,9 +135,15 @@ modelBuilder.Entity<ApplicationUser>(entity =>
             modelBuilder.Entity<Rating>()
                 .HasIndex(r => new { r.TenderId, r.RatedByUserId, r.RatedUserId })
                  .IsUnique();
-        
+            entity.HasOne(r => r.Tender)
+            .WithMany()
+            .HasForeignKey(r => r.TenderId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         });
+
         OnModelCreatingPartial(modelBuilder);
+    
 
 
         //bid
@@ -197,16 +225,37 @@ modelBuilder.Entity<ApplicationUser>(entity =>
         });
 
         modelBuilder.Entity<TenderBookmark>().HasKey(tb => new { tb.UserId, tb.TenderId });
+        modelBuilder.Entity<TenderBookmark>(entity =>
+        {
+            entity.HasKey(tb => new { tb.UserId, tb.TenderId });
+
+            entity.HasOne(tb => tb.User)
+                .WithMany()
+                .HasForeignKey(tb => tb.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(tb => tb.Tender)
+                .WithMany()
+                .HasForeignKey(tb => tb.TenderId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
 
         modelBuilder.Entity<UserActivity>(entity =>
         {
-            entity.ToTable("UserActivites");
+            entity.ToTable("UserActivities");
 
             entity.HasKey(ua => ua.Id);
 
+            entity.HasOne<ApplicationUser>()
+              .WithMany()
+              .HasForeignKey(ua => ua.UserId)
+              .OnDelete(DeleteBehavior.Cascade);
+
             entity.HasOne(ua => ua.Tender)
                 .WithMany()
-                .HasForeignKey(ua => ua.TenderId);
+                .HasForeignKey(ua => ua.TenderId)
+                .OnDelete(DeleteBehavior.SetNull);
+
         });
 
     }

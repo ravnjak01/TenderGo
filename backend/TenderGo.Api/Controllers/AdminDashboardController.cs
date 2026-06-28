@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using TenderGo.Models.DTOs;
 using TenderGo.Models.Entities;
 using TenderGo.Services.Interfaces;
 
@@ -19,14 +18,14 @@ namespace TenderGo.Api.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<AdminDashboardDTO>> GetDashboard()
+        public async Task<IActionResult> GetDashboard() 
         {
             var dashboard = await _adminDashboardService.GetDashboardAsync();
             return Ok(dashboard);
         }
 
         [HttpGet("recent-activities")]
-        public async Task<ActionResult<List<ActivityDTO>>> GetRecentActivities()
+        public async Task<IActionResult> GetRecentActivities() 
         {
             var recentActivities = await _adminDashboardService.GetRecentActivitiesAsync();
             return Ok(recentActivities);

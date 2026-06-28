@@ -6,9 +6,7 @@ import 'package:tendergo/mobile/widgets/tender/tender_image_gallery.dart';
 import 'package:tendergo/mobile/widgets/tender/tender_meta_item.dart';
 import 'package:tendergo/mobile/widgets/tender/tender_section_label.dart';
 
-/// Displays tender category, title, meta row and optional image gallery.
-/// Pass [imageHeight] to control gallery height
-/// (e.g. 320 for admin/desktop, 220 for mobile).
+
 class TenderInfoSection extends StatelessWidget {
   const TenderInfoSection({
     super.key,
@@ -20,7 +18,6 @@ class TenderInfoSection extends StatelessWidget {
   final TenderDto tender;
   final double imageHeight;
 
-  /// Override the title text style (e.g. headlineMedium vs headlineSmall).
   final TextStyle? titleStyle;
 
   @override
@@ -91,8 +88,7 @@ class TenderInfoSection extends StatelessWidget {
   }
 }
 
-/// Wraps [TenderInfoSection] in a card container (white background, border).
-/// Used by the mobile screen.
+
 class TenderInfoCard extends StatelessWidget {
   const TenderInfoCard({
     super.key,

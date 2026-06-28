@@ -12,13 +12,10 @@ namespace TenderGo.Models.Entities
         public int Id { get; set; }
         [Required]
         public string ImageUrl { get; set; } = string.Empty;
-        [Required]
         public bool IsPrimary { get; set; } = false;
         [Required]
         public string ImageHash { get; set; } = string.Empty;
-        [Required]
         public int TenderId { get; set; }
-        [Required]
         public virtual Tender Tender { get; set; } = null!;
     }
 }

@@ -14,7 +14,10 @@ import 'package:tendergo/shared/core/utils/extensions/string_extensions.dart';
 import 'package:tendergo/shared/models/dto/bid_dto.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
 import 'package:tendergo/shared/models/dto/user_dto.dart';
+import 'package:tendergo/shared/models/requests/change_password_request.dart';
 import 'package:tendergo/shared/providers/auth_provider.dart';
+import 'package:tendergo/shared/providers/notification_provider.dart';
+import 'package:tendergo/shared/providers/tender_provider.dart';
 import 'package:tendergo/mobile/screens/edit_profile_screen.dart';
 import 'package:tendergo/shared/services/auth_service.dart';
 import 'package:tendergo/shared/services/bid_service.dart';
@@ -22,6 +25,29 @@ import 'package:tendergo/shared/services/dio_client.dart';
 import 'package:tendergo/shared/services/image_service.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
 import 'package:tendergo/shared/services/user_service.dart';
+
+const _passwordRequirementMessage =
+    'Use 8+ chars with upper, lower, number, and symbol.';
+
+String? _validatePasswordRequirements(String? value) {
+  if (value == null || value.isEmpty) {
+    return 'New password is required';
+  }
+  final hasRequiredLength = value.length >= 8;
+  final hasUppercase = RegExp(r'[A-Z]').hasMatch(value);
+  final hasLowercase = RegExp(r'[a-z]').hasMatch(value);
+  final hasDigit = RegExp(r'\d').hasMatch(value);
+  final hasSymbol = RegExp(r'[^A-Za-z0-9]').hasMatch(value);
+
+  if (!hasRequiredLength ||
+      !hasUppercase ||
+      !hasLowercase ||
+      !hasDigit ||
+      !hasSymbol) {
+    return _passwordRequirementMessage;
+  }
+  return null;
+}
 
 class UserProfileScreen extends StatefulWidget {
   final AuthService authService;
@@ -198,8 +224,9 @@ class _UserProfileScreenState extends State<UserProfileScreen>
               _UserProfileStatsCard(
                 bidsCount: _bids.length,
                 tendersCount: _tenders.length,
-                onBidsTap: () => Navigator.of(context).pushNamed(AppRoutes.myBids),
-                onTendersTap: () => Navigator.of(context).pushNamed(AppRoutes.myTenders),
+                onBidsTap: _handleMyBids,
+                onTendersTap: () =>
+                    Navigator.of(context).pushNamed(AppRoutes.myTenders),
               ),
               const SizedBox(height: 32),
               ActionTile(
@@ -211,7 +238,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
               ActionTile(
                 icon: Icons.lock_outline_rounded,
                 label: 'Change Password',
-                onTap: () => Navigator.of(context).pushNamed(AppRoutes.forgotPassword),
+                onTap: _handleChangePassword,
               ),
               const SizedBox(height: 10),
               ActionTile(
@@ -245,6 +272,30 @@ class _UserProfileScreenState extends State<UserProfileScreen>
     }
   }
 
+  Future<void> _handleMyBids() async {
+    final changed = await Navigator.of(context).pushNamed(
+      AppRoutes.myBids,
+    );
+
+    if (changed == true && mounted) {
+      await _load();
+    }
+  }
+
+  Future<void> _handleChangePassword() async {
+    final changed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => _ChangePasswordDialog(userService: _userService),
+    );
+
+    if (!mounted || changed != true) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Password changed successfully.')),
+    );
+  }
+
   Future<void> _handleLogout() async {
     final confirm = await AppDialogs.showConfirm(
       context: context,
@@ -257,10 +308,15 @@ class _UserProfileScreenState extends State<UserProfileScreen>
     if (!confirm) return;
 
     try {
-      await widget.authService.logout();
+      context.read<NotificationProvider>().reset();
+      context.read<TenderProvider>().resetSessionState();
+      await context.read<AuthProvider>().logout();
       if (!mounted) return;
 
-      Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.login, (route) => false);
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        AppRoutes.login,
+        (route) => false,
+      );
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -270,7 +326,185 @@ class _UserProfileScreenState extends State<UserProfileScreen>
   }
 }
 
-// ── Privatni pomoćni widgeti koji pripadaju mobilnom prikazu ─────────────────
+class _ChangePasswordDialog extends StatefulWidget {
+  const _ChangePasswordDialog({required this.userService});
+
+  final UserService userService;
+
+  @override
+  State<_ChangePasswordDialog> createState() => _ChangePasswordDialogState();
+}
+
+class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _currentPasswordController = TextEditingController();
+  final _newPasswordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+
+  bool _isSubmitting = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _currentPasswordController.dispose();
+    _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    setState(() {
+      _isSubmitting = true;
+      _error = null;
+    });
+
+    try {
+      await widget.userService.changePassword(
+        ChangePasswordRequest(
+          currentPassword: _currentPasswordController.text,
+          newPassword: _newPasswordController.text,
+          confirmPassword: _confirmPasswordController.text,
+        ),
+      );
+
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isSubmitting = false;
+        _error = e.toString().replaceFirst('Exception: ', '');
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Change Password'),
+      content: SizedBox(
+        width: 420,
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: _currentPasswordController,
+                  obscureText: true,
+                  enabled: !_isSubmitting,
+                  decoration: const InputDecoration(
+                    labelText: 'Current Password',
+                    prefixIcon: Icon(Icons.lock_outline_rounded),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Current password is required';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _newPasswordController,
+                  obscureText: true,
+                  enabled: !_isSubmitting,
+                  decoration: const InputDecoration(
+                    labelText: 'New Password',
+                    prefixIcon: Icon(Icons.lock_reset_rounded),
+                  ),
+                  validator: (value) {
+                    final requirementsError =
+                        _validatePasswordRequirements(value);
+                    if (requirementsError != null) return requirementsError;
+                    if (value == _currentPasswordController.text) {
+                      return 'New password must be different';
+                    }
+                    return null;
+                  },
+                ),
+                const Padding(
+                  padding: EdgeInsets.only(top: 6, left: 4),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      _passwordRequirementMessage,
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _confirmPasswordController,
+                  obscureText: true,
+                  enabled: !_isSubmitting,
+                  decoration: const InputDecoration(
+                    labelText: 'Confirm Password',
+                    prefixIcon: Icon(Icons.lock_clock_outlined),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please confirm your password';
+                    }
+                    if (value != _newPasswordController.text) {
+                      return 'Passwords do not match';
+                    }
+                    return null;
+                  },
+                ),
+                if (_error != null) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.errorSurface,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.error),
+                    ),
+                    child: Text(
+                      _error!,
+                      style: const TextStyle(
+                        color: AppColors.error,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: _isSubmitting ? null : _submit,
+          child: _isSubmitting
+              ? const SizedBox(
+                  height: 18,
+                  width: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : const Text('Change'),
+        ),
+      ],
+    );
+  }
+}
 
 class _UserProfileRolesSection extends StatelessWidget {
   const _UserProfileRolesSection({required this.roles});

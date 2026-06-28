@@ -1,4 +1,3 @@
-// lib/shared/core/utils/json_parser.dart
 class JsonParser {
   static int readInt(dynamic value, {int fallback = 0}) {
     if (value is int) return value;

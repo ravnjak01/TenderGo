@@ -7,7 +7,7 @@ class FadeInWrapper extends StatefulWidget {
   const FadeInWrapper({
     super.key,
     required this.child,
-    this.durationMs = 540, // Tvojih 540ms kao default
+    this.durationMs = 540, 
   });
 
   @override
@@ -37,7 +37,7 @@ class _FadeInWrapperState extends State<FadeInWrapper>
 
   @override
   void dispose() {
-    _aniCtrl.dispose(); // Važno: oslobađa memoriju na mobitelu
+    _aniCtrl.dispose(); 
     super.dispose();
   }
 

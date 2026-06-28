@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tendergo/shared/models/dto/tenderrecommendation_dto.dart';
 
-/// A card widget displaying a single recommended tender.
-/// Tap it to navigate to the full tender detail page.
+
 class TenderRecommendationCard extends StatelessWidget {
   final TenderRecommendation tender;
   final VoidCallback? onTap;
@@ -21,14 +20,12 @@ class TenderRecommendationCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Card(
-        // Smanjen horizontalni margin na mobilnim uređajima da dobijemo više prostora sa strana
         margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         elevation: 2,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- Thumbnail (if available) ---
             if (tender.thumbnailUrl != null)
               ClipRRect(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
@@ -46,7 +43,6 @@ class TenderRecommendationCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // --- Match score badge + Category ---
                   Wrap(
                     spacing: 8,
                     runSpacing: 4,
@@ -91,11 +87,10 @@ class TenderRecommendationCard extends StatelessWidget {
                   _RecommendationExplanation(tender: tender),
                   const SizedBox(height: 12),
 
-                  // --- POPRAVLJEN FOOTER: Koristi Wrap umjesto Row ---
-                  // Wrap automatski prebacuje element u novi red ako nema mjesta na telefonu
+                 
                   Wrap(
-                    spacing: 12,    // Razmak između elemenata horizontalno
-                    runSpacing: 6,   // Razmak ako se prebaci u novi red
+                    spacing: 12,    
+                    runSpacing: 6,   
                     alignment: WrapAlignment.start,
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
@@ -132,9 +127,6 @@ class TenderRecommendationCard extends StatelessWidget {
   }
 }
 
-// ----------------------------------------------------------------
-// Sub-widgets
-// ----------------------------------------------------------------
 
 class _RecommendationExplanation extends StatelessWidget {
   final TenderRecommendation tender;
@@ -182,9 +174,7 @@ class _RecommendationExplanation extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 5),
-          
-          // Glavni tekst objašnjenja - maknut maxLines da se tekst na mobitelu 
-          // cjelovito prikaže i prebaci u nove redove umjesto da se odsječe
+
           Text(
             tender.explanationText,
             style: theme.textTheme.bodySmall,
@@ -193,11 +183,9 @@ class _RecommendationExplanation extends StatelessWidget {
           if (signals.isNotEmpty) ...[
             const SizedBox(height: 8),
             
-            // Dinamički prikaz balončića ovisno o širini ekrana
             LayoutBuilder(
               builder: (context, constraints) {
-                // Ako je širina manja od npr. 340px (tipično unutar mobilne kartice),
-                // slažemo balončiće vertikalno kako bi tekst stao u potpunosti
+           
                 final isMobileLayout = constraints.maxWidth < 340;
 
                 if (isMobileLayout) {
@@ -212,7 +200,7 @@ class _RecommendationExplanation extends StatelessWidget {
                   );
                 }
 
-                // Ako ima dovoljno mjesta (Desktop grid), ostaje horizontalni Wrap
+           
                 return Wrap(
                   spacing: 6,
                   runSpacing: 5,
@@ -243,7 +231,6 @@ class _SignalChip extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      // Ako je na mobitelu, balončić zauzima punu širinu i dopušta tekstu da ode u novi red
       width: isMobile ? double.infinity : null,
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
@@ -257,7 +244,7 @@ class _SignalChip extends StatelessWidget {
           fontWeight: FontWeight.w600,
           height: 1.2, // Bolji prored za tekst koji se prelomi
         ),
-        // Na mobitelu gasimo maxLines i elipsu da se vidi CIJELI tekst (npr. "Similar to locations you viewed...")
+      
         maxLines: isMobile ? null : 1,
         overflow: isMobile ? TextOverflow.visible : TextOverflow.ellipsis,
       ),
@@ -310,8 +297,7 @@ class _InfoChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Dodan Flexible i TextOverflow kako bi unutar Wrap-a dugačka lokacija (npr. "Banja Luka") 
-    // elegantno dobila tri tačke ako je ekran kritično uzak
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [

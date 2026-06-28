@@ -121,7 +121,7 @@ class _MobileForgotPasswordScreenState
                               color: Colors.white,
                             ),
                           )
-                        : const Text('Send Reset Link'),
+                        : const Text('Send Reset Code'),
                   ),
                 );
               },

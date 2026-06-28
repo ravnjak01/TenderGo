@@ -108,34 +108,40 @@ class _CardBody extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.end,
             children: [
               if (showInlineActions && saveAction != null) ...[
                 _SaveButton(isSaved: isSaved, onSave: saveAction),
                 const SizedBox(width: 8),
               ],
-              const Icon(
-                Icons.pin_drop_outlined,
-                size: 12,
-                color: Color(0xFF185FA5),
-              ),
-              const SizedBox(width: 4),
-              Flexible(
-                child: Text(
-                  tender.locationName,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF5F5E5A),
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+              Expanded(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    const Icon(
+                      Icons.pin_drop_outlined,
+                      size: 12,
+                      color: Color(0xFF185FA5),
+                    ),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        tender.locationName,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF5F5E5A),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (showInlineActions && cancelAction != null) ...[
+                      const SizedBox(width: 8),
+                      _CancelMenu(onCancelTender: cancelAction),
+                    ],
+                  ],
                 ),
               ),
-              if (showInlineActions && cancelAction != null) ...[
-                const SizedBox(width: 8),
-                _CancelMenu(onCancelTender: cancelAction),
-              ],
             ],
           ),
           const SizedBox(height: 5),

@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:tendergo/admin/screens/admin_tender_details_screen.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
 import 'package:tendergo/shared/models/enums/tenderstatus.dart';
-import 'package:tendergo/shared/providers/admin_provider.dart';
+import 'package:tendergo/shared/services/tender_service.dart';
 import 'package:tendergo/shared/widgets/common/app_dialogs.dart';
 
 class AdminTendersPanel extends StatefulWidget {
@@ -34,28 +34,32 @@ class _AdminTendersPanelState extends State<AdminTendersPanel> {
     super.dispose();
   }
 
-  Future<void> _loadTenders() async {
+ Future<void> _loadTenders() async {
+  setState(() {
+    _loading = true;
+    _error = null;
+  });
+
+  try {
+    final tenderService = context.read<TenderService>();
+
+    final tenders = await tenderService.getAll(
+      page: 1,
+      pageSize: 100,
+    );
+
     setState(() {
-      _loading = true;
-      _error = null;
+      _allTenders = tenders;
+      _filteredTenders = List.from(tenders);
+      _loading = false;
     });
-
-    try {
-      final adminProvider = Provider.of<AdminProvider>(context, listen: false);
-      final tenders = await adminProvider.getAllTenders();
-
-      setState(() {
-        _allTenders = tenders;
-        _filteredTenders = List.from(tenders);
-        _loading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _loading = false;
-      });
-    }
+  } catch (e) {
+    setState(() {
+      _error = e.toString();
+      _loading = false;
+    });
   }
+}
 
   void _filterTenders(String query) {
     final q = query.trim().toLowerCase();
@@ -76,71 +80,96 @@ class _AdminTendersPanelState extends State<AdminTendersPanel> {
 
   // Funkcija koja koristi tvoj prilagođeni AppDialogs za potvrdu
   Future<void> _showCancelDialog(BuildContext context, TenderDto tender) async {
-    // Pozivamo tvoj statički metod iz AppDialogs klase
-    final bool confirm = await AppDialogs.showConfirm(
-      context: context,
-      title: 'Potvrda otkazivanja',
-      content: 'Da li ste sigurni da želite otkazati tender pod nazivom "${tender.title}" (ID #${tender.id}) i označiti ga kao spam?',
-      cancelLabel: 'Odustani',
-      confirmLabel: 'Otkaži tender',
-      isDestructive: true, // Ovo će obojiti dugme u crveno i podebljati ga
-    );
+  final bool confirm = await AppDialogs.showConfirm(
+    context: context,
+    title: 'Potvrda otkazivanja',
+    content:
+        'Da li ste sigurni da želite otkazati tender pod nazivom "${tender.title}" (ID #${tender.id}) i označiti ga kao spam?',
+    cancelLabel: 'Odustani',
+    confirmLabel: 'Otkaži tender',
+    isDestructive: true,
+  );
 
-    // Ako je korisnik potvrdio otkazivanje (vraćeno true)
-    if (confirm && mounted) {
-      setState(() => _loading = true);
-      try {
-        final adminProvider = Provider.of<AdminProvider>(context, listen: false);
-        
-        // Pozivamo metodu iz provajdera
-        final updatedTender = await adminProvider.cancelTender(tender.id);
+  if (confirm && mounted) {
+    setState(() => _loading = true);
 
-        if (updatedTender != null && updatedTender.status == TenderStatus.cancelled && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tender uspješno otkazan.')),
-      );
+    try {
+      final tenderService = context.read<TenderService>();
 
-          _loadTenders();
-        } else if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Greška prilikom otkazivanja tendera.')),
-          );
-          setState(() => _loading = false);
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Greška: ${e.toString()}')),
-          );
-          setState(() => _loading = false);
-        }
+      final updatedTender = await tenderService.cancel(tender.id);
+
+      if (updatedTender.status == TenderStatus.cancelled && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Tender uspješno otkazan.')),
+        );
+
+        await _loadTenders();
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Greška prilikom otkazivanja tendera.'),
+          ),
+        );
+        setState(() => _loading = false);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Greška: ${e.toString()}')),
+        );
+        setState(() => _loading = false);
       }
     }
   }
+}
   
 
   // Helper metoda za generisanje stilova statusnih badge-ova
-  Widget _buildStatusBadge(TenderStatus status) {
-    final label = _localStatusLabel(status);
-    final bgColor = status.badgeBg;
-    final fgColor = status.badgeFg;
+Widget _buildStatusBadge(TenderStatus status) {
+  final label = _localStatusLabel(status);
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: fgColor,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
+  Color bgColor;
+  Color fgColor;
+
+  switch (status) {
+   
+    case TenderStatus.open:
+      bgColor = Colors.green.shade100;
+      fgColor = Colors.green.shade800;
+      break;
+
+    case TenderStatus.closed:
+      bgColor = Colors.orange.shade100;
+      fgColor = Colors.orange.shade800;
+      break;
+
+    case TenderStatus.awarded:
+      bgColor = Colors.blue.shade100;
+      fgColor = Colors.blue.shade800;
+      break;
+
+    case TenderStatus.cancelled:
+      bgColor = Colors.red.shade100;
+      fgColor = Colors.red.shade800;
+      break;
   }
+
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+    decoration: BoxDecoration(
+      color: bgColor,
+      borderRadius: BorderRadius.circular(4),
+    ),
+    child: Text(
+      label,
+      style: TextStyle(
+        color: fgColor,
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+      ),
+    ),
+  );
+}
 
   String _localStatusLabel(TenderStatus status) {
     switch (status) {
@@ -217,7 +246,7 @@ class _AdminTendersPanelState extends State<AdminTendersPanel> {
                   controller: _searchController,
                   onChanged: _filterTenders,
                   decoration: InputDecoration(
-                    hintText: 'Pretraži tendere po nazivu ili šifri...',
+                    hintText: 'Pretraži tendere po nazivu ',
                     hintStyle: const TextStyle(
                       color: Color(0xFF94A3B8),
                       fontSize: 13,
@@ -249,7 +278,11 @@ class _AdminTendersPanelState extends State<AdminTendersPanel> {
 
           // Tabela
           Expanded(
-            child: Container(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : _error != null
+                    ? Center(child: Text('Greška pri učitavanju: $_error'))
+                    : Container(
               width: double.infinity,
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -276,7 +309,7 @@ class _AdminTendersPanelState extends State<AdminTendersPanel> {
                   columns: const [
                     DataColumn(
                       label: Text(
-                        'Šifra i naziv tendera',
+                        'Naziv tendera',
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
                           color: Color(0xFF64748B),
@@ -348,14 +381,7 @@ class _AdminTendersPanelState extends State<AdminTendersPanel> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Text(
-                                  'ID #${tender.id}',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF1E293B),
-                                    fontSize: 14,
-                                  ),
-                                ),
+                                
                                 const SizedBox(height: 4),
                                 Text(
                                   tender.title,

@@ -50,7 +50,6 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
     _loadCountries();
   }
 
-  //ostali error u ova tri ekrana
 
   Future<void> _loadCountries() async {
     setState(() {
@@ -102,7 +101,6 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
     }
   }
 
-  //zadnje implementirano lokacija izaberena iz popisa gradova u regiji
 
   void _openCityStep(String region) {
     setState(() {

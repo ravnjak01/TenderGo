@@ -1,3 +1,4 @@
+import 'package:tendergo/shared/core/auth/auth_token_store.dart';
 import 'package:tendergo/shared/models/requests/login_request.dart';
 import 'package:tendergo/shared/models/requests/register_request.dart';
 import 'package:tendergo/shared/models/requests/reset_password_request.dart';
@@ -8,6 +9,7 @@ import 'package:tendergo/shared/services/auth_service.dart';
 
 class AuthProvider extends BaseProvider {
   final AuthService _authService;
+  static const AuthTokenStore _tokenStore = AuthTokenStore();
 
   AuthProvider(this._authService);
 
@@ -22,6 +24,12 @@ class AuthProvider extends BaseProvider {
   }
 
   Future<ApiResponse> loadUser() async {
+    if (!await _tokenStore.hasValidAccessToken()) {
+      _currentUser = null;
+      safeNotify();
+      return ApiResponse.failure('Not authenticated.', statusCode: 401);
+    }
+
     final result = await handleAsync(() => _authService.getCurrentUser());
     if (result != null && result.success) {
       _currentUser = result.data;
@@ -47,19 +55,23 @@ class AuthProvider extends BaseProvider {
       return result;
     }
 
-    final userResult=await loadUser();
+    final userResult = await loadUser();
 
-    if (userResult.success && isAdmin) {
-    await _authService.logout();
-    _currentUser = null;
-    notifyListeners();
+    if (!userResult.success) {
+      return userResult;
+    }
 
-    return ApiResponse.failure(
-      'Pristup odbijen. Administratori koriste desktop aplikaciju.',
-      statusCode: 403,
-    );
-  }
-return result;
+    if (isAdmin) {
+      await _authService.logout();
+      _currentUser = null;
+      notifyListeners();
+
+      return ApiResponse.failure(
+        'Pristup odbijen. Administratori koriste desktop aplikaciju.',
+        statusCode: 403,
+      );
+    }
+    return result;
   }
 
   Future<bool> registerUser(RegisterRequest request) async {
@@ -79,7 +91,8 @@ return result;
         ApiResponse.failure(error ?? 'Something went wrong', statusCode: 400);
   }
 
-  void logout() {
+  Future<void> logout() async {
+    await _authService.logout();
     _currentUser = null;
     safeNotify();
   }

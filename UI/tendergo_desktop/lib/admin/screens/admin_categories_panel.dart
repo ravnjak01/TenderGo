@@ -3,7 +3,7 @@ import 'package:tendergo/shared/services/category_service.dart';
 import 'package:tendergo/shared/services/dio_client.dart';
 import 'package:tendergo/shared/widgets/common/app_dialogs.dart';
 import 'package:tendergo/shared/models/dto/category_dto.dart';
-import 'package:tendergo/shared/models/requests/category_search_request.dart';
+import 'package:tendergo/shared/models/requests/category_insert_request.dart';
 
 class AdminCategoriesPanel extends StatefulWidget {
   const AdminCategoriesPanel({super.key});
@@ -17,6 +17,7 @@ class _AdminCategoriesPanelState extends State<AdminCategoriesPanel> {
   late CategoryService _categoryService;
 
   List<CategoryDto> _categories = [];
+  Map<int, CategoryStatisticsDto> _statsByCategory = {};
   bool _isLoading = true;
   String? _error;
 
@@ -34,16 +35,30 @@ class _AdminCategoriesPanelState extends State<AdminCategoriesPanel> {
     });
 
     try {
-      final request = CategorySearchRequest(
-        searchTerm: searchTerm,
-        page: 1,
-        pageSize: 10,
-      );
+      final normalizedSearch = searchTerm.trim().toLowerCase();
+      final statistics = await _categoryService.getCategoryStatistics();
+      final filteredStatistics = statistics.where((stat) {
+        if (normalizedSearch.isEmpty) return true;
 
-      final result = await _categoryService.search(request);
+        return stat.categoryName.toLowerCase().contains(normalizedSearch) ||
+            stat.description.toLowerCase().contains(normalizedSearch);
+      }).toList();
+      final categories = filteredStatistics
+          .map(
+            (stat) => CategoryDto(
+              id: stat.categoryId,
+              name: stat.categoryName,
+              description: stat.description,
+              isActive: stat.isActive,
+            ),
+          )
+          .toList();
 
       setState(() {
-        _categories = result;
+        _categories = categories;
+        _statsByCategory = {
+          for (final stat in statistics) stat.categoryId: stat,
+        };
         _isLoading = false;
       });
     } catch (e) {
@@ -52,6 +67,10 @@ class _AdminCategoriesPanelState extends State<AdminCategoriesPanel> {
         _isLoading = false;
       });
     }
+  }
+
+  Future<void> _refreshCategories() {
+    return _fetchCategories(searchTerm: _searchController.text);
   }
 
   Future<void> _showEditCategoryDialog(CategoryDto category) async {
@@ -93,14 +112,20 @@ class _AdminCategoriesPanelState extends State<AdminCategoriesPanel> {
     try {
       final success = await _categoryService.update(
         category.id,
-        CategoryDto(id: category.id, name: newName),
+        CategoryDto(
+          id: category.id,
+          name: newName,
+          description:
+              _statsByCategory[category.id]?.description ?? category.description,
+          isActive: category.isActive,
+        ),
       );
 
       if (!success) {
         throw Exception('Nije moguće ažurirati kategoriju.');
       }
 
-      await _fetchCategories(searchTerm: _searchController.text);
+      await _refreshCategories();
     } catch (e) {
       setState(() {
         _error = e.toString();
@@ -110,17 +135,32 @@ class _AdminCategoriesPanelState extends State<AdminCategoriesPanel> {
   }
 
   Future<void> _showAddCategoryDialog() async {
-    final controller = TextEditingController();
+    final nameController = TextEditingController();
+    final descriptionController = TextEditingController();
     final shouldSave = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Dodaj novu kategoriju'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(
-            labelText: 'Naziv kategorije',
-            border: OutlineInputBorder(),
-          ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(
+                labelText: 'Naziv kategorije',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: descriptionController,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                labelText: 'Opis kategorije',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -135,10 +175,13 @@ class _AdminCategoriesPanelState extends State<AdminCategoriesPanel> {
       ),
     );
 
-    if (shouldSave != true) return;
+    final name = nameController.text.trim();
+    final description = descriptionController.text.trim();
+    nameController.dispose();
+    descriptionController.dispose();
 
-    final name = controller.text.trim();
-    if (name.isEmpty) return;
+    if (shouldSave != true) return;
+    if (name.isEmpty || description.isEmpty) return;
 
     setState(() {
       _isLoading = true;
@@ -146,8 +189,42 @@ class _AdminCategoriesPanelState extends State<AdminCategoriesPanel> {
     });
 
     try {
-      await _categoryService.insert(CategoryDto(id: 0, name: name));
-      await _fetchCategories(searchTerm: _searchController.text);
+      await _categoryService.insertCategory(
+        CategoryInsertRequest(
+          name: name,
+          description: description,
+        ),
+      );
+      await _refreshCategories();
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _activateCategory(CategoryDto category) async {
+    final confirmed = await AppDialogs.showConfirm(
+      context: context,
+      title: 'Aktiviraj kategoriju',
+      content:
+          'Da li ste sigurni da \u017eelite aktivirati kategoriju "${category.name}"?',
+      cancelLabel: 'Otka\u017ei',
+      confirmLabel: 'Aktiviraj',
+      isDestructive: false,
+    );
+
+    if (!confirmed) return;
+
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      await _categoryService.activateCategory(category.id);
+      await _refreshCategories();
     } catch (e) {
       setState(() {
         _error = e.toString();
@@ -157,13 +234,44 @@ class _AdminCategoriesPanelState extends State<AdminCategoriesPanel> {
   }
 
   Future<void> _deleteCategory(CategoryDto category) async {
+    if (_hasConnectedTenders(category)) {
+      final shouldDeactivate = await AppDialogs.showConfirm(
+        context: context,
+        title: 'Kategorija ima povezane tendere',
+        content:
+            'Ova kategorija se ne mo\u017ee obrisati jer je povezana sa tenderima. '
+            'Da li \u017eelite da je deaktivirate umjesto brisanja?',
+        cancelLabel: 'Otka\u017ei',
+        confirmLabel: 'Deaktiviraj',
+        isDestructive: false,
+      );
+
+      if (!shouldDeactivate) return;
+
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+
+      try {
+        await _categoryService.deactivateCategory(category.id);
+        await _refreshCategories();
+      } catch (e) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
+      return;
+    }
+
     final confirmed = await AppDialogs.showConfirm(
       context: context,
       title: 'Potvrdi brisanje',
       content:
           'Da li ste sigurni da želite obrisati kategoriju "${category.name}"?',
       cancelLabel: 'Otkaži',
-      confirmLabel: 'Obriši',
+      confirmLabel: 'Obri\u0161i',
       isDestructive: true,
     );
 
@@ -176,7 +284,7 @@ class _AdminCategoriesPanelState extends State<AdminCategoriesPanel> {
 
     try {
       await _categoryService.delete(category.id);
-      await _fetchCategories(searchTerm: _searchController.text);
+      await _refreshCategories();
     } catch (e) {
       setState(() {
         _error = e.toString();
@@ -198,11 +306,27 @@ class _AdminCategoriesPanelState extends State<AdminCategoriesPanel> {
     return '📁';
   }
 
+  CategoryStatisticsDto? _categoryStats(CategoryDto category) {
+    return _statsByCategory[category.id];
+  }
 
+  String _categoryDescription(CategoryDto category) {
+    final description =
+        _categoryStats(category)?.description ?? category.description;
 
-  int _getTenderCount(int index) {
-    final counts = [18, 14, 6, 9, 4];
-    return index < counts.length ? counts[index] : 0;
+    if (description == null || description.trim().isEmpty) {
+      return 'Nema opisa';
+    }
+
+    return description.trim();
+  }
+
+  int _categoryTenderCount(CategoryDto category) {
+    return _categoryStats(category)?.tenderCount ?? 0;
+  }
+
+  bool _hasConnectedTenders(CategoryDto category) {
+    return _categoryTenderCount(category) > 0;
   }
 
   @override
@@ -352,6 +476,15 @@ class _AdminCategoriesPanelState extends State<AdminCategoriesPanel> {
                           ),
                           DataColumn(
                             label: Text(
+                              'Status',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF64748B),
+                              ),
+                            ),
+                          ),
+                          DataColumn(
+                            label: Text(
                               'Ukupno\ntendera',
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
@@ -371,6 +504,7 @@ class _AdminCategoriesPanelState extends State<AdminCategoriesPanel> {
                         ],
                         rows: List.generate(_categories.length, (index) {
                           final category = _categories[index];
+                          final tenderCount = _categoryTenderCount(category);
 
                           return DataRow(
                             cells: [
@@ -401,8 +535,7 @@ class _AdminCategoriesPanelState extends State<AdminCategoriesPanel> {
                                 SizedBox(
                                   width: 300,
                                   child: Text(
-                                    //  category.description ??
-                                    'Nema opisa',
+                                    _categoryDescription(category),
                                     style: const TextStyle(
                                       color: Color(0xFF475569),
                                     ),
@@ -412,6 +545,32 @@ class _AdminCategoriesPanelState extends State<AdminCategoriesPanel> {
                                 ),
                               ),
                               // Broj potkategorija (Badge)
+
+                              // Status kategorije
+                              DataCell(
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: category.isActive
+                                        ? const Color(0xFFE6FFFA)
+                                        : const Color(0xFFFEE2E2),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    category.isActive ? 'Aktivna' : 'Neaktivna',
+                                    style: TextStyle(
+                                      color: category.isActive
+                                          ? const Color(0xFF047857)
+                                          : const Color(0xFFB91C1C),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ),
 
                               // Ukupno tendera (Plavi tekst/Badge)
                               DataCell(
@@ -425,7 +584,7 @@ class _AdminCategoriesPanelState extends State<AdminCategoriesPanel> {
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Text(
-                                    '${_getTenderCount(index)} aktivnih',
+                                    '$tenderCount aktivnih',
                                     style: const TextStyle(
                                       color: Color(0xFF2563EB),
                                       fontSize: 12,
@@ -468,13 +627,16 @@ class _AdminCategoriesPanelState extends State<AdminCategoriesPanel> {
                                       ),
                                       const SizedBox(height: 4),
                                       OutlinedButton(
-                                        onPressed: () =>
-                                            _deleteCategory(category),
+                                        onPressed: () => category.isActive
+                                            ? _deleteCategory(category)
+                                            : _activateCategory(category),
                                         style: OutlinedButton.styleFrom(
                                           minimumSize: const Size(65, 26),
                                           padding: EdgeInsets.zero,
-                                          side: const BorderSide(
-                                            color: Color(0xFFFECACA),
+                                          side: BorderSide(
+                                            color: category.isActive
+                                                ? const Color(0xFFFECACA)
+                                                : const Color(0xFFBBF7D0),
                                           ),
                                           shape: RoundedRectangleBorder(
                                             borderRadius: BorderRadius.circular(
@@ -482,10 +644,14 @@ class _AdminCategoriesPanelState extends State<AdminCategoriesPanel> {
                                             ),
                                           ),
                                         ),
-                                        child: const Text(
-                                          'Obriši',
+                                        child: Text(
+                                          category.isActive
+                                              ? 'Obri\u0161i'
+                                              : 'Aktiviraj',
                                           style: TextStyle(
-                                            color: Color(0xFFEF4444),
+                                            color: category.isActive
+                                                ? const Color(0xFFEF4444)
+                                                : const Color(0xFF16A34A),
                                             fontSize: 11,
                                           ),
                                         ),

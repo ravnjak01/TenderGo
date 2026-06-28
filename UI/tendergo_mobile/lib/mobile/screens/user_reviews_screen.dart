@@ -63,7 +63,7 @@ class UserReviewsScreen extends StatelessWidget {
           }
 
           return ListView.separated(
-            padding: const EdgeInsets.all(16), // Optimizovano za mobilne ekrane sa 20 na 16
+            padding: const EdgeInsets.all(16), 
             itemCount: reviews.length,
             separatorBuilder: (_, _) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
@@ -90,7 +90,6 @@ class UserReviewsScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Gornji red: Naziv tendera i ocjena
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -117,7 +116,6 @@ class UserReviewsScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              // Zvjezdica i ocjena
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
@@ -145,7 +143,6 @@ class UserReviewsScreen extends StatelessWidget {
             padding: EdgeInsets.symmetric(vertical: 12),
             child: Divider(height: 1, color: AppColors.outline),
           ),
-          // Srednji red: Autor recenzije i datum (Osigurano od overflow-a na uskim ekranima)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -169,7 +166,6 @@ class UserReviewsScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          // Donji dio: Komentar recenzije
           Text(
             isCommentEmpty ? 'No comment left.' : review.comment!,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(

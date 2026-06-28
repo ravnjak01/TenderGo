@@ -33,6 +33,7 @@ class _MobileTenderPostScreenState extends State<MobileTenderPostScreen> {
     DioClient.getDio(),
   );
   DateTime? _deadline;
+  String? _deadlineError;
   final List<PlatformFile> _imageFiles = [];
 
   bool _isCategoryLoading = true;
@@ -83,7 +84,6 @@ class _MobileTenderPostScreenState extends State<MobileTenderPostScreen> {
         withData: true,
       );
 
-      // 🌟 Rješenje 1: Ako je korisnik napustio ekran dok je birao slike, prekini izvršavanje
       if (!mounted) return;
 
       if (picked == null || picked.files.isEmpty) return;
@@ -100,7 +100,6 @@ class _MobileTenderPostScreenState extends State<MobileTenderPostScreen> {
       }
 
       if (newFiles.isEmpty) {
-        // Ovdje je context sada siguran jer smo iznad stavili 'if (!mounted) return;'
         SnackbarHelper.show(
           context,
           'Selected files are already added.',
@@ -111,7 +110,6 @@ class _MobileTenderPostScreenState extends State<MobileTenderPostScreen> {
 
       setState(() => _imageFiles.addAll(newFiles));
     } catch (e) {
-      // 🌟 Rješenje 2: Osiguraj se i unutar catch bloka prije prikazivanja snackbar-a
       if (!mounted) return;
 
       SnackbarHelper.show(
@@ -142,7 +140,9 @@ class _MobileTenderPostScreenState extends State<MobileTenderPostScreen> {
       return;
     }
     if (_deadline == null) {
-      SnackbarHelper.show(context, 'Please select a deadline.', isError: true);
+      setState(() {
+        _deadlineError = 'Please select a deadline.';
+      });
       return;
     }
     if (_selectedLocationId == null) {
@@ -281,9 +281,23 @@ class _MobileTenderPostScreenState extends State<MobileTenderPostScreen> {
                 onDateSelected: (newDate) {
                   setState(() {
                     _deadline = newDate;
+                    _deadlineError = null;
                   });
                 },
               ),
+              if (_deadlineError != null) ...[
+                const SizedBox(height: 6),
+                Padding(
+                  padding: const EdgeInsets.only(left: 12),
+                  child: Text(
+                    _deadlineError!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(height: 12),
               TextFormField(
                 controller: _descCtrl,

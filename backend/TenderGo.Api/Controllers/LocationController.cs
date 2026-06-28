@@ -1,18 +1,17 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using TenderGo.Models.DTOs;
 using TenderGo.Models.Entities;
 using TenderGo.Models.Requests;
 using TenderGo.Services.Interfaces;
-using TenderGo.Services.Services;
 
 namespace TenderGo.Api.Controllers
 {
     [ApiController]
     [Authorize]
     [Route("api/[controller]")]
-
-    public class LocationController : BaseController<LocationDTO,Location,LocationInsertRequest,LocationUpdateRequest>
+    public class LocationController : BaseController<LocationDTO, Location, LocationInsertRequest, LocationUpdateRequest>
     {
         private readonly ILocationService _locationService;
         private readonly ILogger<LocationController> _logger;
@@ -20,23 +19,22 @@ namespace TenderGo.Api.Controllers
         public LocationController(
             ILocationService locationService,
             ILogger<LocationController> logger)
-            : base(locationService, locationService, logger) 
+            : base(locationService, locationService, logger)
         {
             _locationService = locationService;
             _logger = logger;
         }
 
-
-        [Authorize(Roles = AppRoles.Admin)] 
+        [Authorize(Roles = AppRoles.Admin)]
         [HttpGet("admin-search")]
         public async Task<IActionResult> GetAdminSearch([FromQuery] LocationSearchRequest request)
         {
             var result = await _locationService.GetAdminLocationsPagedAsync(request);
             return Ok(result);
-
         }
+
         [HttpGet("all")]
-        public async Task<ActionResult<List<LocationDTO>>> GetAll([FromQuery] LocationFilterRequest request)
+        public async Task<IActionResult> GetAll([FromQuery] LocationFilterRequest request)
         {
             if (!User.IsInRole(AppRoles.Admin))
             {
@@ -47,36 +45,41 @@ namespace TenderGo.Api.Controllers
                 request.Country,
                 request.Region,
                 request.IncludeInactive
-    );
+            );
 
             return Ok(locations);
         }
+        [Authorize(Roles = AppRoles.Admin)]
 
         [HttpPatch("{id}/activate")]
-        public async Task<ActionResult<LocationDTO>> Activate(int id)
+        public async Task<IActionResult> Activate(int id)
         {
             var location = await _locationService.Activate(id);
-            return Ok(new { message = "Location activated successfully.", data = location });
+            return Ok(location);
         }
+        [Authorize(Roles = AppRoles.Admin)]
 
         [HttpPatch("{id}/deactivate")]
-        public async Task<ActionResult<LocationDTO>> Deactivate(int id)
+        public async Task<IActionResult> Deactivate(int id)
         {
             var location = await _locationService.Deactivate(id);
-            return Ok(new { message = "Location deactivated successfully.", data = location });
-
+            return Ok(location);
         }
+        [Authorize(Roles = AppRoles.Admin)]
+
         [HttpGet("statistics")]
-        public async Task<ActionResult<List<LocationStatsDTO>>> GetStatistics()
+        public async Task<IActionResult> GetStatistics()
         {
             var statistics = await _locationService.GetLocationStatisticsAsync();
             return Ok(statistics);
         }
+        [Authorize(Roles = AppRoles.Admin)]
 
         [HttpGet("overview")]
-        public async Task<ActionResult<LocationOverviewDTO>> GetOverview()
+        public async Task<IActionResult> GetOverview()
         {
-            return Ok(await _locationService.GetOverviewAsync());
+            var overview = await _locationService.GetOverviewAsync();
+            return Ok(overview);
         }
     }
 }

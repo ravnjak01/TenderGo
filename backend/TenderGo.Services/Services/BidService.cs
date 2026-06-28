@@ -26,7 +26,8 @@ namespace TenderGo.Services.Services
         private readonly IAuthService _authService;
         protected readonly ILogger<BidService> _logger;
         protected readonly IServiceProvider _serviceProvider;
-        public BidService(TenderGoContext context, IMapper mapper, IHttpContextAccessor httpContextAccessor,IAuthService authService, ILogger<BidService> logger, IServiceProvider serviceProvider) : base(context, mapper, httpContextAccessor)
+        public BidService(TenderGoContext context, IMapper mapper, IHttpContextAccessor httpContextAccessor,
+            IAuthService authService, ILogger<BidService> logger, IServiceProvider serviceProvider) : base(context, mapper, httpContextAccessor)
         {
             _authService = authService;
             _logger = logger;
@@ -45,7 +46,7 @@ namespace TenderGo.Services.Services
             }
 
             var bids = await _context.Bids
-                .Where(x => x.SubmittedByUserId == userId)
+                .Where(x => x.SubmittedByUserId == userId  && x.Status!=ApplicationStatus.Withdrawn)
                 .ProjectTo<BidDTO>(_mapper.ConfigurationProvider)
                 .ToListAsync();
 
@@ -164,24 +165,20 @@ namespace TenderGo.Services.Services
                 throw new ForbiddenException();
             }
 
-            // 1. Prvo povuci sve ponude u listu
             var bids = await _context.Bids
                 .Where(b => b.TenderId == tenderId)
                 .OrderByDescending(b => b.SubmittedAt)
                 .ProjectTo<BidDTO>(_mapper.ConfigurationProvider)
                 .ToListAsync();
 
-            // 2. Izvuci iz baze sve ocjene koje je trenutni korisnik (vlasnik tendera) 
-            //    već dao na OVOM konkretnom tenderu
+        
             var ratedUserIds = await _context.Ratings
                 .Where(r => r.RatedByUserId == currentUserId && r.TenderId == tenderId)
                 .Select(r => r.RatedUserId)
                 .ToListAsync();
 
-            // 3. Prođi kroz sve ponude i postavi ispravan AlreadyRated status
             foreach (var bid in bids)
             {
-                // Ako je ID korisnika koji je poslao ponudu u listi već ocijenjenih -> true
                 bid.AlreadyRated = ratedUserIds.Contains(bid.SubmittedByUserId);
             }
 

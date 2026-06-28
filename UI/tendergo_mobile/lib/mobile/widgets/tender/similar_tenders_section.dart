@@ -44,10 +44,8 @@ class _SimilarTendersSectionState extends State<SimilarTendersSection> {
   }
 
   Future<List<TenderRecommendation>> _loadSimilarTenders() async {
-    final token = await _storage.read(key: 'jwt_token') ?? '';
     return _service.getSimilarTenders(
       tenderId: widget.tenderId,
-      authToken: token,
       topN: widget.limit,
     );
   }

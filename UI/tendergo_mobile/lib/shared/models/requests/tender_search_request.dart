@@ -1,7 +1,6 @@
 class TenderSearchRequest{
   final String? searchTerm;
  
-
   TenderSearchRequest({
    this.searchTerm,
   });

@@ -45,8 +45,5 @@ namespace TenderGo.Models.Entities
         public string? BanReason { get; set; }
         public DateTime? BannedAt { get; set; }
 
-        [Required]
-
-        public int NameChangeCount { get; set; } = 0;
     }
 }

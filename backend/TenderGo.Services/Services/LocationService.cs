@@ -49,13 +49,11 @@ namespace TenderGo.Services.Services
             var pageSize = Math.Max(request.PageSize, 1);
             var query = _context.Locations.AsQueryable();
 
-            // Admin eksplicitno bira hoće li aktivne, neaktivne ili sve
             if (request.IsActive.HasValue)
             {
                 query = query.Where(l => l.IsActive == request.IsActive.Value);
             }
 
-            // Pretraga u admin panelu
             if (!string.IsNullOrWhiteSpace(request.SearchTerm))
             {
                 var term = request.SearchTerm.Trim().ToLower();
@@ -69,7 +67,7 @@ namespace TenderGo.Services.Services
             var totalCount = await query.CountAsync();
 
             var results = await query
-                .OrderByDescending(l => l.Id) // Najnovije lokacije prve u admin panelu
+                .OrderByDescending(l => l.Id) 
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ProjectTo<LocationDTO>(_mapper.ConfigurationProvider)

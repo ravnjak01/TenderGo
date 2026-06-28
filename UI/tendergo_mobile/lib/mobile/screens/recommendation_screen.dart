@@ -29,15 +29,12 @@ class _RecommendedForYouMobileScreenState extends State<RecommendedForYouMobileS
     _provider = RecommendationProvider();
     _loadRecommendations();
   }
-
-  Future<void> _loadRecommendations() async {
-    final token = await _storage.read(key: 'jwt_token') ?? '';
-    await _provider.loadForUser(authToken: token);
+Future<void> _loadRecommendations() async {
+    await _provider.loadForUser();
   }
 
   Future<void> _refresh() async {
-    final token = await _storage.read(key: 'jwt_token') ?? '';
-    await _provider.loadForUser(authToken: token);
+    await _provider.loadForUser();
   }
 
   @override
@@ -127,7 +124,6 @@ class _RecommendedForYouMobileScreenState extends State<RecommendedForYouMobileS
               );
             }
 
-            // Čisti mobilni prikaz sa Pull-to-Refresh i listom
             return RefreshIndicator(
               onRefresh: _refresh,
               child: ListView.builder(

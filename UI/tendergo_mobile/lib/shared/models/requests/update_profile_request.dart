@@ -1,8 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
-
 import 'package:tendergo/shared/models/requests/update_address_request.dart';
-
 
 class UpdateProfileRequest {
   final String? firstName;

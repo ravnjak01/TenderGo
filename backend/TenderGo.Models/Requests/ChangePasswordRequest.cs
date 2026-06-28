@@ -1,25 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace TenderGo.Models.Requests
 {
     public class ChangePasswordRequest
     {
-        [Required]
-        public string CurrentPassword { get; set; }
+        [Required(ErrorMessage = "Current password is required")]
+        public string CurrentPassword { get; set; } = string.Empty;
 
-        [Required]
-        [MinLength(8, ErrorMessage = "Password has to be 8 characters minimum.")]
+        [Required(ErrorMessage = "New password is required")]
+        public string NewPassword { get; set; } = string.Empty;
 
-        [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$", ErrorMessage = "Password has to contain capital letter,small letter and number.")]
-        public string NewPassword { get; set; }
-
-        [Required]
-        [Compare("NewPassword", ErrorMessage = "Passwords dont match.")]
-        public string ConfirmPassword { get; set; }
+        [Required(ErrorMessage = "Confirm password is required")]
+        [Compare(nameof(NewPassword), ErrorMessage = "Passwords do not match.")]
+        public string ConfirmPassword { get; set; } = string.Empty;
     }
 }

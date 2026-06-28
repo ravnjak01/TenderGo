@@ -1,27 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.ComponentModel.DataAnnotations;
+using TenderGo.Models.Entities;
 
-namespace TenderGo.Models.Entities
+public class Notification
 {
-    public class Notification
-    {
-        public int Id { get; set; }
-        [Required]
-        public string UserId { get; set; }
+    public int Id { get; set; }
 
-        public virtual  ApplicationUser User{ get; set; }
-        [Required]
-        public string Title { get; set; }
+    [Required]
+    public string UserId { get; set; } = string.Empty;
 
-        [Required]
-        public string Message { get; set; }
-        [Required]
-        public DateTime CreatedAt { get; set; }
-        [Required]
-        public bool IsRead { get; set; }
-    }
+    public virtual ApplicationUser User { get; set; } = null!;
+
+    [Required]
+    public string Title { get; set; } = string.Empty;
+
+    [Required]
+    public string Message { get; set; } = string.Empty;
+
+    public DateTime CreatedAt { get; set; }
+
+    public bool IsRead { get; set; }
 }

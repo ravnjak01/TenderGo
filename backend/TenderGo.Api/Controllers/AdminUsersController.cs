@@ -36,14 +36,14 @@ namespace TenderGo.Api.Controllers
         public async Task<IActionResult> BanUser(string userId, [FromBody] BanRequest reason)
         {
             if (string.IsNullOrWhiteSpace(reason.Reason))
-                return BadRequest("Ban reason is required.");
+                return BadRequest("Ban reason is required."); 
 
             var result = await _adminUserService.BanUserAsync(userId, reason);
 
             if (!result)
                 return NotFound($"User with ID '{userId}' not found.");
 
-            return Ok(new { message = $"User {userId} has been banned." });
+            return Ok(); 
         }
 
         [HttpPost("{userId}/unban")]
@@ -52,19 +52,16 @@ namespace TenderGo.Api.Controllers
             var result = await _adminUserService.UnbanUserAsync(userId);
 
             if (!result)
-                return NotFound($"User with ID '{userId}' not found .");
+                return NotFound($"User with ID '{userId}' not found.");
 
-            return Ok(new { message = $"User {userId} has been unbanned." });
+            return Ok();
         }
 
         [HttpPut("{userId}/reset-password")]
         public async Task<IActionResult> AdminResetPassword(string userId, [FromBody] AdminResetPasswordRequest request)
         {
             await _adminUserService.AdminResetPasswordAsync(userId, request.NewPassword);
-
-            return Ok(new { Message = "User password has been successfully reset by administrator." });
+            return Ok();
         }
     }
-
-    //zadnje razdvoji admin kontroler,sljedece mijenjati generisanje pdf izvještaja
 }

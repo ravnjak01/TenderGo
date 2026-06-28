@@ -85,10 +85,8 @@ class _MobileTenderDetailsScreenState extends State<MobileTenderDetailsScreen> {
 
   Future<void> _logViewActivityAsync(int tenderId) async {
     try {
-      final token = await _storage.read(key: 'jwt_token') ?? '';
       await _recommendationService.logViewActivity(
         tenderId: tenderId,
-        authToken: token,
         durationSeconds: 5,
       );
     } catch (e) {

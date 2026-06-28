@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:tendergo/shared/models/dto/location_dto.dart';
-import 'package:tendergo/shared/models/requests/location_filter_request.dart';
 import 'package:tendergo/shared/models/requests/location_insert_request.dart';
 import 'package:tendergo/shared/models/requests/location_search_request.dart';
 import 'package:tendergo/shared/models/requests/location_update_request.dart';
@@ -102,6 +101,13 @@ class _AdminLocationsPanelState extends State<AdminLocationsPanel> {
   bool _hasActiveTenders(LocationDto location) {
     return _activeTenderCount(location) > 0;
   }
+
+  Future<void> _refreshData() {
+    return _loadData(
+      searchTerm: _searchController.text.trim(),
+      refreshOverview: true,
+    );
+  }
   
   Future<void> _showAddLocationDialog() async {
     final nameController = TextEditingController();
@@ -165,7 +171,7 @@ class _AdminLocationsPanelState extends State<AdminLocationsPanel> {
           region: region.isEmpty ? null : region,
         ),
       );
-      await _loadData(searchTerm: _searchController.text, refreshOverview: true);
+      await _refreshData();
     } catch (e) {
       setState(() {
         _error = e.toString();
@@ -237,7 +243,35 @@ class _AdminLocationsPanelState extends State<AdminLocationsPanel> {
           region: region.isEmpty ? null : region,
         ),
       );
-      await _loadData(searchTerm: _searchController.text, refreshOverview: true);
+      await _refreshData();
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _activateLocation(LocationDto location) async {
+    final confirmed = await AppDialogs.showConfirm(
+      context: context,
+      title: 'Aktiviraj lokaciju',
+      content: 'Da li ste sigurni da \u017eelite aktivirati lokaciju "${location.displayLabel}"?',
+      cancelLabel: 'Otka\u017ei',
+      confirmLabel: 'Aktiviraj',
+      isDestructive: false,
+    );
+
+    if (!confirmed) return;
+
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      await _locationService.activateLocation(location.id);
+      await _refreshData();
     } catch (e) {
       setState(() {
         _error = e.toString();
@@ -268,7 +302,7 @@ class _AdminLocationsPanelState extends State<AdminLocationsPanel> {
 
       try {
         await _locationService.deactivateLocation(location.id);
-        await _loadData(searchTerm: _searchController.text, refreshOverview: true);
+        await _refreshData();
       } catch (e) {
         setState(() {
           _error = e.toString();
@@ -297,7 +331,7 @@ class _AdminLocationsPanelState extends State<AdminLocationsPanel> {
 
     try {
       await _locationService.deleteLocation(location.id);
-      await _loadData(searchTerm: _searchController.text, refreshOverview: true);
+      await _refreshData();
     } catch (e) {
       setState(() {
         _error = e.toString();
@@ -455,6 +489,7 @@ class _AdminLocationsPanelState extends State<AdminLocationsPanel> {
       ),
     ),
     const SizedBox(width: 18),
+              const SizedBox(width: 10),
               ElevatedButton.icon(
                 onPressed: _showAddLocationDialog,
                 style: ElevatedButton.styleFrom(
@@ -480,7 +515,6 @@ class _AdminLocationsPanelState extends State<AdminLocationsPanel> {
                 _overviewCard('Ukupno lokacija', overview.totalLocations, const Color(0xFF2563EB)),
                 _overviewCard('Aktivne lokacije', overview.activeLocations, const Color(0xFF16A34A)),
                 _overviewCard('Neaktivne lokacije', overview.inactiveLocations, const Color(0xFFF59E0B)),
-                _overviewCard('Aktivni tenderi', overview.locationWithActiveTenders, const Color(0xFFDB2777)),
               ],
             ),
           const SizedBox(height: 24),
@@ -531,7 +565,7 @@ class _AdminLocationsPanelState extends State<AdminLocationsPanel> {
                               ),
                               DataColumn(
                                 label: Text(
-                                  'Aktivni tenderi',
+                                  'Broj svih tendera ',
                                   style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF64748B)),
                                 ),
                               ),
@@ -616,16 +650,27 @@ class _AdminLocationsPanelState extends State<AdminLocationsPanel> {
                                           ),
                                           const SizedBox(height: 4),
                                           OutlinedButton(
-                                            onPressed: () => _deleteLocation(location),
+                                            onPressed: () => location.isActive
+                                                ? _deleteLocation(location)
+                                                : _activateLocation(location),
                                             style: OutlinedButton.styleFrom(
                                               minimumSize: const Size(65, 26),
                                               padding: EdgeInsets.zero,
-                                              side: const BorderSide(color: Color(0xFFFECACA)),
+                                              side: BorderSide(
+                                                color: location.isActive
+                                                    ? const Color(0xFFFECACA)
+                                                    : const Color(0xFFBBF7D0),
+                                              ),
                                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                                             ),
-                                            child: const Text(
-                                              'Obriši',
-                                              style: TextStyle(color: Color(0xFFEF4444), fontSize: 11),
+                                            child: Text(
+                                              location.isActive ? 'Obri\u0161i' : 'Aktiviraj',
+                                              style: TextStyle(
+                                                color: location.isActive
+                                                    ? const Color(0xFFEF4444)
+                                                    : const Color(0xFF16A34A),
+                                                fontSize: 11,
+                                              ),
                                             ),
                                           ),
                                         ],

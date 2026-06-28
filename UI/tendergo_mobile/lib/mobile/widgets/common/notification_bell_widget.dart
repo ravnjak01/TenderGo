@@ -3,8 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:tendergo/mobile/routes/routes.dart';
 import 'package:tendergo/shared/providers/notification_provider.dart';
 
-/// An IconButton that shows a badge with the unread notification count.
-/// Drop this wherever you need a notification bell (app bar, nav bar, etc.)
+
 
 class NotificationBell extends StatelessWidget {
   final Color? iconColor;
@@ -28,7 +27,6 @@ class NotificationBell extends StatelessWidget {
               ),
               tooltip: 'Notifications',
               onPressed: () {
-                context.read<NotificationProvider>().startPolling();
                 Navigator.of(context).pushNamed(AppRoutes.notifications);
               },
             ),

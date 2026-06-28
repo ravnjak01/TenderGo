@@ -154,7 +154,6 @@ class _RateUserScreenState extends State<RateUserScreen> {
                           ),
                     ),
                     const SizedBox(height: 4),
-                    // Ovdje je ubačen info o tenderu za koji je ocjena vezana
                     Text(
                       tenderInfo,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -178,7 +177,7 @@ class _RateUserScreenState extends State<RateUserScreen> {
                             onPressed: _submitting
                                 ? null
                                 : () => setState(() => _score = value),
-                            iconSize: 40, // Malo povećano radi lakšeg dodira na mobitelu (Fat finger friendly)
+                            iconSize: 40, 
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
                             icon: Icon(

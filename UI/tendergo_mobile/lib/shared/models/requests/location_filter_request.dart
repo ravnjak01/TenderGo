@@ -1,4 +1,3 @@
-// lib/shared/models/requests/location_filter_request.dart
 
 class LocationFilterRequest {
   final String? country;

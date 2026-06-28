@@ -1,7 +1,6 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using TenderGo.Models.DTOs;
 using TenderGo.Services.Interfaces;
 
 namespace TenderGo.Api.Controllers;
@@ -19,7 +18,7 @@ public class NotificationController : ControllerBase
     }
 
     [HttpGet("my")]
-    public async Task<ActionResult<List<NotificationDTO>>> GetMyNotifications()
+    public async Task<IActionResult> GetMyNotifications()
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
@@ -27,7 +26,7 @@ public class NotificationController : ControllerBase
     }
 
     [HttpPatch("{id:int}/read")]
-    public async Task<ActionResult<NotificationDTO>> MarkAsRead(int id)
+    public async Task<IActionResult> MarkAsRead(int id)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
@@ -40,7 +39,7 @@ public class NotificationController : ControllerBase
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
         await _notificationService.MarkAllAsReadAsync(userId);
-        return NoContent();
+        return Ok();
     }
 
     [HttpDelete("{id:int}")]
@@ -49,6 +48,6 @@ public class NotificationController : ControllerBase
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
         await _notificationService.DeleteAsync(id, userId);
-        return NoContent();
+        return Ok();
     }
 }

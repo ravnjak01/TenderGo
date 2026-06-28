@@ -1,8 +1,9 @@
 import 'package:dio/dio.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:tendergo/shared/core/error/error_handler.dart';
-import 'package:tendergo/shared/core/network/constants/api_endpoints.dart';
+import 'package:flutter/foundation.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:tendergo/shared/core/auth/auth_token_store.dart';
+import 'package:tendergo/shared/core/error/error_handler.dart';
+import 'package:tendergo/shared/core/network/constants/multiple_endpoints.dart';
 import 'package:tendergo/shared/models/dto/user_dto.dart';
 import 'package:tendergo/shared/models/requests/login_request.dart';
 import 'package:tendergo/shared/models/requests/register_request.dart';
@@ -12,7 +13,7 @@ import 'package:tendergo/shared/services/api_helper.dart';
 
 class AuthService {
   final Dio _dio;
-  static const _storage = FlutterSecureStorage();
+  static const AuthTokenStore _tokenStore = AuthTokenStore();
 
   AuthService(this._dio);
 
@@ -24,25 +25,32 @@ class AuthService {
       );
 
       if (response.statusCode == 200) {
-        if (response.data == null || response.data is! Map) {
-          return ApiResponse.failure(
-            'Server returned an empty or invalid response.',
-          );
-        }
+        final envelope = response.data as Map<String, dynamic>?;
+        final innerData = envelope?['data'] as Map<String, dynamic>?;
 
-        final token = response.data['token']?.toString();
-        final refreshToken = response.data['refreshToken']?.toString();
+        final token = innerData?['token']?.toString();
+        final refreshToken = innerData?['refreshToken']?.toString();
 
-        if (token == null || token.isEmpty) {
+        if (token == null || token.isEmpty || token.split('.').length != 3) {
           return ApiResponse.failure('Invalid response from server.');
         }
 
-        await _storage.write(key: 'jwt_token', value: token);
-        if (refreshToken != null && refreshToken.isNotEmpty) {
-          await _storage.write(key: 'refresh_token', value: refreshToken);
+        await _tokenStore.saveTokens(
+          accessToken: token,
+          refreshToken: refreshToken,
+        );
+
+        if (kDebugMode) {
+          final saved = await _tokenStore.readAccessToken();
+          debugPrint('SAVED JWT: $saved');
+          debugPrint(
+            'JWT valid format: ${saved != null && saved.split('.').length == 3}',
+          );
         }
+
         return ApiResponse.success(null);
       }
+
       return ApiResponse.failure(
         'Sign in not successful. Please check your credentials.',
       );
@@ -57,29 +65,13 @@ class AuthService {
   }
 
   Future<void> logout() async {
-    await _storage.delete(key: 'jwt_token');
-    await _storage.delete(key: 'refresh_token');
+    await _tokenStore.clear();
   }
 
-  static Future<bool> isLoggedIn() async {
-    String? token = await _storage.read(key: 'jwt_token');
-
-    if (token == null) {
-      return false;
-    }
-
-    bool isTokenExpired = JwtDecoder.isExpired(token);
-
-    if (isTokenExpired) {
-      await _storage.delete(key: 'jwt_token');
-      return false;
-    }
-
-    return true;
-  }
+  static Future<bool> isLoggedIn() => _tokenStore.hasValidAccessToken();
 
   static Future<String?> getCurrentUserId() async {
-    final token = await _storage.read(key: 'jwt_token');
+    final token = await _tokenStore.readAccessToken();
     if (token == null || token.isEmpty || JwtDecoder.isExpired(token)) {
       return null;
     }
@@ -121,15 +113,18 @@ class AuthService {
     }
   }
 
-  Future<ApiResponse<void>> forgotPassword(String email) async {
-    try {
-      await _dio.post(ApiEndpoints.forgotPassword, data: {'email': email});
+Future<ApiResponse<void>> forgotPassword(String email) async {
+  try {
+    final response = await _dio.post(
+      ApiEndpoints.forgotPassword,
+      data: {'email': email},
+    );
 
-      return ApiResponse.success(null);
-    } on DioException catch (e) {
-      return ApiHelper.handleDioError<void>(e);
-    }
+    return ApiResponse<void>.fromJson(response.data);
+  } on DioException catch (e) {
+    return ApiHelper.handleDioError<void>(e);
   }
+}
 
   Future<ApiResponse<void>> resetPassword(ResetPasswordRequest request) async {
     try {
@@ -155,7 +150,7 @@ class AuthService {
 
   Future<bool> refreshToken() async {
     try {
-      final storedRefresh = await _storage.read(key: 'refresh_token');
+      final storedRefresh = await _tokenStore.readRefreshToken();
       if (storedRefresh == null || storedRefresh.isEmpty) return false;
 
       final plainDio = Dio(_dio.options);
@@ -165,18 +160,21 @@ class AuthService {
       );
 
       if (response.statusCode == 200) {
-        final newToken = response.data['token']?.toString();
-        final newRefresh = response.data['refreshToken']?.toString();
+        final innerData =
+            (response.data as Map<String, dynamic>?)?['data']
+                as Map<String, dynamic>?;
+        final newToken = innerData?['token']?.toString();
+        final newRefresh = innerData?['refreshToken']?.toString();
 
         if (newToken == null || newToken.isEmpty) {
           await logout();
           return false;
         }
 
-        await _storage.write(key: 'jwt_token', value: newToken);
-        if (newRefresh != null && newRefresh.isNotEmpty) {
-          await _storage.write(key: 'refresh_token', value: newRefresh);
-        }
+        await _tokenStore.updateTokens(
+          accessToken: newToken,
+          refreshToken: newRefresh,
+        );
         return true;
       }
 
@@ -189,88 +187,27 @@ class AuthService {
   }
 
   Future<ApiResponse<UserDto?>> getCurrentUser() async {
+    if (!await _tokenStore.hasValidAccessToken()) {
+      return ApiResponse.failure('Not authenticated.', statusCode: 401);
+    }
+
     try {
-      final response = await _dio.get(
-        ApiEndpoints.me,
-        options: await _options(),
-      );
-      final data = response.data;
+      final response = await _dio.get(ApiEndpoints.me);
+
+      final data =
+          (response.data as Map<String, dynamic>)['data']
+              as Map<String, dynamic>?;
 
       if (data == null) {
-        return ApiResponse.failure(
-          'Empty response from server.',
-          statusCode: 500,
-        );
+        return ApiResponse.failure('Empty user payload.', statusCode: 500);
       }
 
-      if (data is! Map<String, dynamic>) {
-        return ApiResponse.failure(
-          'Unexpected response format.',
-          statusCode: 500,
-        );
-      }
-
-      final payload = _extractUserPayload(data);
-      final user = payload != null ? UserDto.fromJson(payload) : null;
-
-      if (user != null) {
-        return ApiResponse.success(
-          user,
-          message: 'User data retrieved successfully.',
-        );
-      } else {
-        return ApiResponse.failure('Invalid user payload.', statusCode: 400);
-      }
+      return ApiResponse.success(
+        UserDto.fromJson(data),
+        message: 'User data retrieved successfully.',
+      );
     } on DioException catch (e) {
       return ApiHelper.handleDioError<UserDto?>(e);
     }
-  }
-
-  Map<String, dynamic>? _extractUserPayload(dynamic data) {
-    if (data is! Map<String, dynamic>) {
-      return null;
-    }
-
-    final directCandidates = <dynamic>[
-      data['result'],
-      data['data'],
-      data['user'],
-      data['User'],
-      data,
-    ];
-
-    for (final candidate in directCandidates) {
-      if (candidate is! Map) continue;
-      final map = candidate is Map<String, dynamic>
-          ? candidate
-          : candidate.map((key, value) => MapEntry(key.toString(), value));
-
-      final nestedUser =
-          map['user'] ?? map['User'] ?? map['result'] ?? map['data'];
-      if (nestedUser is Map<String, dynamic>) {
-        return nestedUser;
-      }
-      if (nestedUser is Map) {
-        return nestedUser.map((key, value) => MapEntry(key.toString(), value));
-      }
-
-      if (map.containsKey('email') ||
-          map.containsKey('userName') ||
-          map.containsKey('username')) {
-        return map;
-      }
-    }
-
-    return null;
-  }
-
-  Future<Options> _options() async {
-    final token = await _storage.read(key: 'jwt_token');
-    return Options(
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-    );
   }
 }

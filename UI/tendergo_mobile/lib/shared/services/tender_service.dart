@@ -7,6 +7,7 @@ import 'package:tendergo/shared/models/dto/tender_dto.dart';
 import 'package:tendergo/shared/models/requests/tender_insert_request.dart';
 import 'package:tendergo/shared/models/requests/tender_search_request.dart';
 import 'package:tendergo/shared/services/image_service.dart';
+import 'package:tendergo/shared/services/response_parser.dart';
 
 class TenderService {
   final Dio _dio;
@@ -20,9 +21,7 @@ class TenderService {
     TenderInsertRequest data,
     List<PlatformFile>? imageFiles,
   ) async {
-    if (imageFiles == null || imageFiles.isEmpty) {
-      return data;
-    }
+    if (imageFiles == null || imageFiles.isEmpty) return data;
 
     final byteImages = <Uint8List>[];
     for (final file in imageFiles) {
@@ -30,18 +29,13 @@ class TenderService {
         byteImages.add(file.bytes!);
         continue;
       }
-
       if (file.path != null && file.path!.isNotEmpty) {
         final diskBytes = await File(file.path!).readAsBytes();
-        if (diskBytes.isNotEmpty) {
-          byteImages.add(diskBytes);
-        }
+        if (diskBytes.isNotEmpty) byteImages.add(diskBytes);
       }
     }
 
-    if (byteImages.isEmpty) {
-      return data;
-    }
+    if (byteImages.isEmpty) return data;
 
     return TenderInsertRequest(
       title: data.title,
@@ -54,6 +48,15 @@ class TenderService {
     );
   }
 
+  T _unwrapEnvelope<T>(Response response, T Function(dynamic data) mapper) {
+    return mapper(ResponseParser.data(response.data));
+  }
+
+  Exception _handleError(DioException e, String defaultMessage) {
+    return Exception(ResponseParser.errorMessage(e, defaultMessage));
+  }
+
+
   Future<List<TenderDto>> getAll({int page = 1, int pageSize = 10}) async {
     try {
       final response = await _dio.get(
@@ -61,23 +64,18 @@ class TenderService {
         queryParameters: {'page': page, 'pageSize': pageSize},
       );
 
-      final List<dynamic> data = response.data['result'] ?? [];
-
-      return data
-          .map((x) => TenderDto.fromJson(x as Map<String, dynamic>))
-          .toList();
+      return ResponseParser.dtoList(response.data, TenderDto.fromJson);
     } on DioException catch (e) {
-      throw Exception(e.response?.data ?? 'Error fetching tenders');
+      throw _handleError(e, 'Greška pri učitavanju tendera');
     }
   }
 
   Future<TenderDto> getById(int id) async {
     try {
       final response = await _dio.get(TenderApiEndpoints.getById(id));
-
-      return TenderDto.fromJson(response.data);
+      return _unwrapEnvelope(response, (data) => TenderDto.fromJson(data as Map<String, dynamic>));
     } on DioException catch (e) {
-      throw Exception(e.response?.data ?? 'Error fetching tender');
+      throw _handleError(e, 'Greška pri učitavanju detalja tendera');
     }
   }
 
@@ -85,35 +83,9 @@ class TenderService {
     try {
       final response = await _dio.get(TenderApiEndpoints.getActive);
 
-      final data = response.data;
-      if (data is! List) {
-        throw Exception('Unexpected active tenders response format');
-      }
-
-      final tenders = <TenderDto>[];
-      for (final item in data) {
-        if (item is! Map<String, dynamic>) continue;
-        try {
-          tenders.add(TenderDto.fromJson(item));
-        } catch (e, stack) {
-          debugPrint('Skipping malformed active tender: $e\n$stack');
-        }
-      }
-      return tenders;
+      return ResponseParser.dtoList(response.data, TenderDto.fromJson);
     } on DioException catch (e) {
-      throw Exception(e.response?.data ?? 'Error fetching active tenders');
-    }
-  }
-
-  Future<List<TenderDto>> getClosed() async {
-    try {
-      final response = await _dio.get(TenderApiEndpoints.getClosed);
-
-      return List<TenderDto>.from(
-        response.data.map((x) => TenderDto.fromJson(x)),
-      );
-    } on DioException catch (e) {
-      throw Exception(e.response?.data ?? 'Error fetching closed tenders');
+      throw _handleError(e, 'Greška pri učitavanju aktivnih tendera');
     }
   }
 
@@ -123,81 +95,53 @@ class TenderService {
   }) async {
     try {
       final request = await _withImageBytes(data, imageFiles);
-
       final response = await _dio.post(
         TenderApiEndpoints.insert,
         data: request.toJson(),
       );
 
-      final payload = response.data is Map<String, dynamic>
-          ? (response.data['data'] is Map<String, dynamic>
-                ? response.data['data'] as Map<String, dynamic>
-                : (response.data['result'] is Map<String, dynamic>
-                      ? response.data['result'] as Map<String, dynamic>
-                      : response.data))
-          : const <String, dynamic>{};
-
-      return TenderDto.fromJson(payload);
+      return _unwrapEnvelope(response, (data) => TenderDto.fromJson(data as Map<String, dynamic>));
     } on DioException catch (e) {
-      throw Exception(e.response?.data ?? 'Error creating tender');
-    } catch (e) {
-      throw Exception('An unexpected error occurred: $e');
+      throw _handleError(e, 'Greška pri kreiranju tendera');
     }
   }
 
   Future<TenderDto> award(TenderDto tender, int bidId) async {
     try {
-      final response = await _dio.patch(
-        TenderApiEndpoints.award(tender, bidId),
-      );
-
-      return TenderDto.fromJson(response.data);
+      final response = await _dio.patch(TenderApiEndpoints.award(tender, bidId));
+      return _unwrapEnvelope(response, (data) => TenderDto.fromJson(data as Map<String, dynamic>));
     } on DioException catch (e) {
-      throw Exception(e.response?.data ?? 'Error awarding tender');
+      throw _handleError(e, 'Greška pri dodjeljivanju tendera');
     }
   }
 
   Future<TenderDto> cancel(int id) async {
     try {
       final response = await _dio.patch(TenderApiEndpoints.cancel(id));
-
-      return TenderDto.fromJson(response.data);
+      return _unwrapEnvelope(response, (data) => TenderDto.fromJson(data as Map<String, dynamic>));
     } on DioException catch (e) {
-      throw Exception(e.response?.data ?? 'Error canceling tender');
+      throw _handleError(e, 'Greška pri otkazivanju tendera');
     }
   }
 
   Future<List<dynamic>> getByCategory(int id) async {
     try {
       final response = await _dio.get(TenderApiEndpoints.getByCategory(id));
-
-      return List<dynamic>.from(response.data);
+      return List<dynamic>.from(ResponseParser.list(response.data));
     } on DioException catch (e) {
-      throw Exception(e.response?.data ?? 'Error fetching by category');
+      throw _handleError(e, 'Greška pri učitavanju kategorije');
     }
   }
 
   Future<List<dynamic>> getByUser(String userId) async {
     try {
       final response = await _dio.get(TenderApiEndpoints.getByUser(userId));
-
-      final payload = response.data;
-      if (payload is List) {
-        return List<dynamic>.from(payload);
-      }
-      if (payload is Map<String, dynamic>) {
-        final listLike =
-            payload['result'] ?? payload['items'] ?? payload['data'];
-        if (listLike is List) {
-          return List<dynamic>.from(listLike);
-        }
-      }
-      return const [];
+      return List<dynamic>.from(ResponseParser.list(response.data));
     } on DioException catch (e) {
       if (e.response?.statusCode == 404 || e.response?.statusCode == 405) {
         return const [];
       }
-      throw Exception(e.response?.data ?? 'Error fetching user tenders');
+      throw _handleError(e, 'Greška pri dohvaćanju korisničkih tendera');
     }
   }
 
@@ -207,38 +151,21 @@ class TenderService {
         TenderApiEndpoints.search(request.searchTerm ?? ''),
       );
 
-      final List<dynamic> data = response.data['result'] ?? [];
-
-      return data
-          .map((x) => TenderDto.fromJson(x as Map<String, dynamic>))
-          .toList();
+      return ResponseParser.dtoList(response.data, TenderDto.fromJson);
     } on DioException catch (e) {
-      throw Exception(e.response?.data ?? 'Error searching tenders');
+      throw _handleError(e, 'Greška pri pretrazi tendera');
     }
   }
 
-  Future<List<dynamic>> allowedActions(int id) async {
-    try {
-      final response = await _dio.get(TenderApiEndpoints.allowedActions(id));
 
-      return List<dynamic>.from(response.data);
-    } on DioException catch (e) {
-      throw Exception(e.response?.data ?? 'Error fetching actions');
-    }
-  }
 
   Future<bool> toggleBookmark(int tenderId) async {
     try {
-      final response = await _dio.post(
-        TenderApiEndpoints.toggleBookmark(tenderId),
-      );
-
-      if (response.data is Map<String, dynamic>) {
-        return response.data['isBookmarked'] as bool? ?? false;
-      }
-      return false;
+      final response = await _dio.post(TenderApiEndpoints.toggleBookmark(tenderId));
+      final data = ResponseParser.data(response.data);
+      return data is bool ? data : false;
     } on DioException catch (e) {
-      throw Exception(e.response?.data ?? 'Error toggling bookmark');
+      throw _handleError(e, 'Greška pri izmjeni bookmark-a');
     }
   }
 
@@ -246,22 +173,9 @@ class TenderService {
     try {
       final response = await _dio.get(TenderApiEndpoints.getBookmarks);
 
-      final payload = response.data;
-      List<dynamic> rawList = [];
-
-      if (payload is List) {
-        rawList = payload;
-      } else if (payload is Map<String, dynamic>) {
-        rawList =
-            payload['result'] ?? payload['data'] ?? payload['items'] ?? [];
-      }
-
-      return rawList
-          .whereType<Map<String, dynamic>>()
-          .map((x) => TenderDto.fromJson(x))
-          .toList();
+      return ResponseParser.dtoList(response.data, TenderDto.fromJson);
     } on DioException catch (e) {
-      throw Exception(e.response?.data ?? 'Error fetching bookmarked tenders');
+      throw _handleError(e, 'Greška pri učitavanju bookmark-ovanih tendera');
     }
   }
 }

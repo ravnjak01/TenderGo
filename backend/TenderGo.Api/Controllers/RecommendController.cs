@@ -22,10 +22,7 @@ public class RecommendController : ControllerBase
         var result = await _recommendationService.GetSimilarAsync(tenderId, topN);
 
         if (result is null)
-            return NotFound(new { message = $"Tender {tenderId} not found." });
-
-        if (!string.IsNullOrWhiteSpace(result.Message))
-            return Ok(new { message = result.Message, recommendations = result.Recommendations });
+            return NotFound($"Tender {tenderId} not found.");
 
         return Ok(result.Recommendations);
     }
@@ -39,9 +36,6 @@ public class RecommendController : ControllerBase
             return Unauthorized();
 
         var result = await _recommendationService.GetForCurrentUserAsync(userId, topN);
-
-        if (!string.IsNullOrWhiteSpace(result.Message))
-            return Ok(new { message = result.Message, recommendations = result.Recommendations });
 
         return Ok(result.Recommendations);
     }

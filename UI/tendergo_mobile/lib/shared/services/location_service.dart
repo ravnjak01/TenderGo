@@ -3,6 +3,7 @@ import 'package:tendergo/shared/core/network/constants/location_endpoints.dart';
 import 'package:tendergo/shared/models/dto/location_dto.dart';
 import 'package:tendergo/shared/models/requests/location_filter_request.dart';
 import 'package:tendergo/shared/services/base_service.dart';
+import 'package:tendergo/shared/services/response_parser.dart';
 
 class LocationService extends BaseService<LocationDto> {
   LocationService(Dio dio)
@@ -23,10 +24,12 @@ class LocationService extends BaseService<LocationDto> {
         queryParameters: queryParameters,
       );
 
-      final List<dynamic> data = response.data;
+      final data = ResponseParser.list(response.data);
       return data.map((x) => parseJson(x as Map<String, dynamic>)).toList();
     } on DioException catch (e) {
-      throw Exception(e.response?.data ?? 'Error fetching locations');
+      throw Exception(
+        ResponseParser.errorMessage(e, 'Error fetching locations'),
+      );
     }
   }
 
@@ -46,6 +49,4 @@ class LocationService extends BaseService<LocationDto> {
     regions.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
     return regions;
   }
-
- 
 }

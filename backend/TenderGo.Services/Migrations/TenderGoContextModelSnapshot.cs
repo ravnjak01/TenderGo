@@ -155,6 +155,39 @@ namespace TenderGo.Services.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("Notification", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Notifications");
+                });
+
             modelBuilder.Entity("PasswordResetCode", b =>
                 {
                     b.Property<int>("Id")
@@ -198,6 +231,158 @@ namespace TenderGo.Services.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("PasswordResetCodes");
+                });
+
+            modelBuilder.Entity("RefreshToken", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedByUserId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("Expires")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsRevoked")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedByUserId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("RefreshTokens");
+                });
+
+            modelBuilder.Entity("RevokedToken", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Jti")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("RevokedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Jti")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("RevokedTokens");
+                });
+
+            modelBuilder.Entity("Tender", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CategoryId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("(getdate())");
+
+                    b.Property<string>("CreatedByUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("Deadline")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("LocationId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("MaxBudget")
+                        .HasColumnType("decimal(18, 2)");
+
+                    b.Property<DateTime?>("PostedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedByUserId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("WinningBidId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id")
+                        .HasName("PK__Tenders__3214EC07AD891A81");
+
+                    b.HasIndex("CategoryId");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("LocationId");
+
+                    b.HasIndex("WinningBidId");
+
+                    b.ToTable("Tenders");
                 });
 
             modelBuilder.Entity("TenderBookmark", b =>
@@ -268,9 +453,6 @@ namespace TenderGo.Services.Migrations
 
                     b.Property<DateTimeOffset?>("LockoutEnd")
                         .HasColumnType("datetimeoffset");
-
-                    b.Property<int>("NameChangeCount")
-                        .HasColumnType("int");
 
                     b.Property<string>("NormalizedEmail")
                         .HasMaxLength(256)
@@ -390,6 +572,11 @@ namespace TenderGo.Services.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
@@ -436,39 +623,6 @@ namespace TenderGo.Services.Migrations
                     b.ToTable("Locations", (string)null);
                 });
 
-            modelBuilder.Entity("TenderGo.Models.Entities.Notification", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsRead")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Message")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("Notifications");
-                });
-
             modelBuilder.Entity("TenderGo.Models.Entities.Rating", b =>
                 {
                     b.Property<int>("Id")
@@ -507,125 +661,6 @@ namespace TenderGo.Services.Migrations
                         .IsUnique();
 
                     b.ToTable("Ratings");
-                });
-
-            modelBuilder.Entity("TenderGo.Models.Entities.RefreshToken", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreatedByUserId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("Expires")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsRevoked")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime?>("RevokedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Token")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdatedByUserId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("RefreshTokens");
-                });
-
-            modelBuilder.Entity("TenderGo.Models.Entities.Tender", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("CategoryId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("(getdate())");
-
-                    b.Property<string>("CreatedByUserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime>("Deadline")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("LocationId")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("MaxBudget")
-                        .HasColumnType("decimal(18, 2)");
-
-                    b.Property<DateTime?>("PostedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdatedByUserId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("WinningBidId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id")
-                        .HasName("PK__Tenders__3214EC07AD891A81");
-
-                    b.HasIndex("CategoryId");
-
-                    b.HasIndex("CreatedByUserId");
-
-                    b.HasIndex("LocationId");
-
-                    b.HasIndex("WinningBidId");
-
-                    b.ToTable("Tenders");
                 });
 
             modelBuilder.Entity("TenderGo.Models.Entities.TenderImage", b =>
@@ -695,13 +730,15 @@ namespace TenderGo.Services.Migrations
 
                     b.Property<string>("UserId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
 
                     b.HasIndex("TenderId");
 
-                    b.ToTable("UserActivites", (string)null);
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserActivities", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -755,6 +792,17 @@ namespace TenderGo.Services.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Notification", b =>
+                {
+                    b.HasOne("TenderGo.Models.Entities.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("PasswordResetCode", b =>
                 {
                     b.HasOne("TenderGo.Models.Entities.ApplicationUser", "User")
@@ -766,9 +814,63 @@ namespace TenderGo.Services.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("RefreshToken", b =>
+                {
+                    b.HasOne("TenderGo.Models.Entities.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("RevokedToken", b =>
+                {
+                    b.HasOne("TenderGo.Models.Entities.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Tender", b =>
+                {
+                    b.HasOne("TenderGo.Models.Entities.Category", "Category")
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TenderGo.Models.Entities.ApplicationUser", "CreatedByUser")
+                        .WithMany("CreatedTenders")
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TenderGo.Models.Entities.Location", "Location")
+                        .WithMany()
+                        .HasForeignKey("LocationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TenderGo.Models.Entities.Bid", "WinningBid")
+                        .WithMany()
+                        .HasForeignKey("WinningBidId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Category");
+
+                    b.Navigation("CreatedByUser");
+
+                    b.Navigation("Location");
+
+                    b.Navigation("WinningBid");
+                });
+
             modelBuilder.Entity("TenderBookmark", b =>
                 {
-                    b.HasOne("TenderGo.Models.Entities.Tender", "Tender")
+                    b.HasOne("Tender", "Tender")
                         .WithMany()
                         .HasForeignKey("TenderId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -827,7 +929,7 @@ namespace TenderGo.Services.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("TenderGo.Models.Entities.Tender", "Tender")
+                    b.HasOne("Tender", "Tender")
                         .WithMany("Bids")
                         .HasForeignKey("TenderId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -836,17 +938,6 @@ namespace TenderGo.Services.Migrations
                     b.Navigation("SubmittedByUser");
 
                     b.Navigation("Tender");
-                });
-
-            modelBuilder.Entity("TenderGo.Models.Entities.Notification", b =>
-                {
-                    b.HasOne("TenderGo.Models.Entities.ApplicationUser", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("TenderGo.Models.Entities.Rating", b =>
@@ -863,10 +954,10 @@ namespace TenderGo.Services.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("TenderGo.Models.Entities.Tender", "Tender")
+                    b.HasOne("Tender", "Tender")
                         .WithMany()
                         .HasForeignKey("TenderId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("RatedByUser");
@@ -876,54 +967,9 @@ namespace TenderGo.Services.Migrations
                     b.Navigation("Tender");
                 });
 
-            modelBuilder.Entity("TenderGo.Models.Entities.RefreshToken", b =>
-                {
-                    b.HasOne("TenderGo.Models.Entities.ApplicationUser", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("TenderGo.Models.Entities.Tender", b =>
-                {
-                    b.HasOne("TenderGo.Models.Entities.Category", "Category")
-                        .WithMany()
-                        .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("TenderGo.Models.Entities.ApplicationUser", "CreatedByUser")
-                        .WithMany("CreatedTenders")
-                        .HasForeignKey("CreatedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("TenderGo.Models.Entities.Location", "Location")
-                        .WithMany()
-                        .HasForeignKey("LocationId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("TenderGo.Models.Entities.Bid", "WinningBid")
-                        .WithMany()
-                        .HasForeignKey("WinningBidId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("Category");
-
-                    b.Navigation("CreatedByUser");
-
-                    b.Navigation("Location");
-
-                    b.Navigation("WinningBid");
-                });
-
             modelBuilder.Entity("TenderGo.Models.Entities.TenderImage", b =>
                 {
-                    b.HasOne("TenderGo.Models.Entities.Tender", "Tender")
+                    b.HasOne("Tender", "Tender")
                         .WithMany("Images")
                         .HasForeignKey("TenderId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -934,11 +980,25 @@ namespace TenderGo.Services.Migrations
 
             modelBuilder.Entity("TenderGo.Models.Entities.UserActivity", b =>
                 {
-                    b.HasOne("TenderGo.Models.Entities.Tender", "Tender")
+                    b.HasOne("Tender", "Tender")
                         .WithMany()
-                        .HasForeignKey("TenderId");
+                        .HasForeignKey("TenderId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("TenderGo.Models.Entities.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Tender");
+                });
+
+            modelBuilder.Entity("Tender", b =>
+                {
+                    b.Navigation("Bids");
+
+                    b.Navigation("Images");
                 });
 
             modelBuilder.Entity("TenderGo.Models.Entities.ApplicationUser", b =>
@@ -948,13 +1008,6 @@ namespace TenderGo.Services.Migrations
                     b.Navigation("RatingsGiven");
 
                     b.Navigation("RatingsReceived");
-                });
-
-            modelBuilder.Entity("TenderGo.Models.Entities.Tender", b =>
-                {
-                    b.Navigation("Bids");
-
-                    b.Navigation("Images");
                 });
 #pragma warning restore 612, 618
         }

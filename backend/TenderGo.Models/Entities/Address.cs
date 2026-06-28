@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -8,10 +9,14 @@ namespace TenderGo.Models.Entities
 {
     public class Address
     {
-        public string Country { get; set; }
-        public string City { get; set; }
-        public string Street { get; set; }
-        public string PostalCode { get; set; }
+        [Required]
+        public string Country { get; set; } = string.Empty;
+        [Required]
+        public string City { get; set; } = string.Empty;
+        [Required]
+        public string Street { get; set; } = string.Empty;
+        [Required]
+        public string PostalCode { get; set; } = string.Empty;
 
     }
 }

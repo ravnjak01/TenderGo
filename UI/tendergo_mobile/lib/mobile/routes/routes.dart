@@ -2,7 +2,6 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:tendergo/mobile/screens/mybids_screen.dart';
-import 'package:tendergo/mobile/screens/splash_screen.dart';
 import 'package:tendergo/mobile/screens/forgot_password_screen.dart';
 import 'package:tendergo/mobile/screens/login_screen.dart';
 import 'package:tendergo/mobile/screens/mobile_bookmarked_screen.dart';
@@ -57,7 +56,6 @@ class MobileRoutes {
     required CategoryService categoryService,
   }) {
     return {
-      AppRoutes.splash: (context) => const SplashScreen(),
       AppRoutes.login: (context) => const MobileLoginScreen(),
       AppRoutes.registration: (context) => const MobileRegistrationScreen(),
       AppRoutes.forgotPassword: (context) => const MobileForgotPasswordScreen(),

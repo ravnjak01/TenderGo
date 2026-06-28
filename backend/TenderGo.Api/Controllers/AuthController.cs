@@ -1,9 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using TenderGo.Models.DTOs;
 using TenderGo.Models.Requests;
 using TenderGo.Services.Interfaces;
-using TenderGo.Services.Services.Exceptions;
 
 namespace TenderGo.Api.Controllers
 {
@@ -18,72 +16,62 @@ namespace TenderGo.Api.Controllers
         {
             _authService = authService;
         }
+
         [AllowAnonymous]
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest dto)
         {
             await _authService.RegisterAsync(dto);
-            return Ok(new { Message = "User registered successfully" });
+            return Ok(); 
         }
+
         [AllowAnonymous]
         [HttpPost("login")]
-            public async Task<IActionResult> Login([FromBody] LoginRequest dto)
-            {
+        public async Task<IActionResult> Login([FromBody] LoginRequest dto)
+        {
             var result = await _authService.LoginAsync(dto);
             if (result == null)
-                return Unauthorized(new { Message = "Invalid email or password" });
+                return Unauthorized(); 
 
-            return Ok(result);
+            return Ok(result); 
         }
 
         [HttpPost("logout")]
-
         public async Task<IActionResult> Logout()
         {
             await _authService.LogoutAsync();
-            return Ok(new { Message = "User logged out successfully" });
+            return Ok();
         }
 
-      [AllowAnonymous]
+        [AllowAnonymous]
         [HttpPost("forgot-password")]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest model)
         {
             await _authService.ForgotPasswordAsync(model, HttpContext.RequestAborted);
-            
-            return Ok(new { message = "If an account with the mentioned email exists, a verification code was sent." });
+            return Ok("If the email exists, a reset code has been sent.");
         }
+
         [AllowAnonymous]
         [HttpPost("reset-password")]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest model)
         {
-
-
-            if (!ModelState.IsValid) return BadRequest(ModelState);
-
+        
             var result = await _authService.ResetPasswordAsync(model);
 
             if (result.Succeeded)
             {
-                return Ok(new { message = "Password was reset successfully." });
+                return Ok();
             }
 
-            return BadRequest(result);
-
+            return BadRequest(result); 
         }
+
         [HttpGet("me")]
-        public async Task<ActionResult<UserDTO>> GetMe()
+        public async Task<IActionResult> GetMe() 
         {
-             try
-            {
-                var result = await _authService.GetMyProfile();
-                return Ok(result); 
-            }
-            catch (UserException ex)
-            {
-                return Unauthorized(new { Message = ex.Message });
-            }
+            var result = await _authService.GetMyProfile();
+            return Ok(result);
         }
-
 
         [HttpPost("refresh-token")]
         [AllowAnonymous]
@@ -92,6 +80,5 @@ namespace TenderGo.Api.Controllers
             var result = await _authService.RefreshTokenAsync(request?.RefreshToken);
             return Ok(result);
         }
-
     }
 }

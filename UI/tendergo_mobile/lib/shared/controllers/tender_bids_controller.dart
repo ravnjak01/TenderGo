@@ -11,14 +11,14 @@ class TenderBidsController with ChangeNotifier {
     required TenderService tenderService,
     required BidService bidService,
   })  : _tenderId = tenderId,
-        _tender = tender,
+        tender = tender,
         _tenderService = tenderService,
         _bidService = bidService;
 
   final int _tenderId;
-  final TenderDto _tender;
   final TenderService _tenderService;
   final BidService _bidService;
+  TenderDto tender;
 
   List<BidDto> bids = [];
   bool isLoading = false;
@@ -30,7 +30,7 @@ class TenderBidsController with ChangeNotifier {
   Future<void> refresh() => _fetch();
 
   Future<void> award(BidDto bid) async {
-    await _tenderService.award(_tender, bid.id);
+    tender = await _tenderService.award(tender, bid.id);
     await refresh();
   }
 

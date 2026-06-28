@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:tendergo/mobile/screens/tender_bids_screen.dart';
-// CHANGE THIS: Point to your mobile version of the bids screen
 import 'package:tendergo/shared/controllers/my_tenders_controller.dart';
 import 'package:tendergo/shared/core/actions/back_button.dart';
 import 'package:tendergo/shared/core/utils/extensions/string_extensions.dart';
@@ -142,6 +141,7 @@ class _MobileMyTendersScreenState extends State<MobileMyTendersScreen> {
             tender: tender,
             tenderService: widget.tenderService,
             onCancel: () => _cancelTender(tender),
+            onBidsClosed: _controller.refresh,
           );
         },
       ),
@@ -154,11 +154,13 @@ class _MobileTenderCard extends StatelessWidget {
     required this.tender,
     required this.tenderService,
     required this.onCancel,
+    required this.onBidsClosed,
   });
 
   final TenderDto tender;
   final TenderService tenderService;
   final VoidCallback onCancel;
+  final Future<void> Function() onBidsClosed;
 
   @override
   Widget build(BuildContext context) {
@@ -249,12 +251,12 @@ class _MobileTenderCard extends StatelessWidget {
               color: colorScheme.onSurface,
             ),
             maxLines: 1,
-            overflow: TextOverflow.ellipsis, // Safe fallback for massive numbers
+            overflow: TextOverflow.ellipsis, 
           ),
         ],
       ),
     ),
-    const SizedBox(width: 8), // Small safety gap
+    const SizedBox(width: 8), 
     Text(
       'Posted ${model.postedAt.toTimeAgo()}',
       style: theme.textTheme.bodySmall?.copyWith(
@@ -297,7 +299,11 @@ class _MobileTenderCard extends StatelessWidget {
                                 tenderService: tenderService,
                               ),
                             ),
-                          );
+                          ).then((_) async {
+                            if (context.mounted) {
+                              await onBidsClosed();
+                            }
+                          });
                         },
                       ),
                     ],

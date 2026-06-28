@@ -1,20 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.ComponentModel.DataAnnotations;
 using TenderGo.Models.DTOs;
-using TenderGo.Models.Entities;
 
 namespace TenderGo.Models.Requests
 {
     public class UpdateProfileRequest
     {
+        [MaxLength(100)]
         public string? FirstName { get; set; }
+
+        [MaxLength(100)]
         public string? LastName { get; set; }
+
+        [Phone]
+        [MaxLength(30)]
         public string? PhoneNumber { get; set; }
+
         public UpdateAddressRequest? Address { get; set; }
+
         public byte[]? ImageBytes { get; set; }
- 
     }
 }

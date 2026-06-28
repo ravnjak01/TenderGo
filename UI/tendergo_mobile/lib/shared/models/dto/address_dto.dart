@@ -1,7 +1,4 @@
 
-
-
-
 class AddressDto {
   final int id;
   final String country;

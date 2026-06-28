@@ -63,17 +63,14 @@ class TenderRecommendation {
     );
   }
 
-  /// How many days until the deadline
   int get daysUntilDeadline => deadline.difference(DateTime.now()).inDays;
 
-  /// Budget formatted as currency string
   String get budgetFormatted {
     if (maxBudget >= 1000000) return '${(maxBudget / 1000000).toStringAsFixed(1)}M';
     if (maxBudget >= 1000) return '${(maxBudget / 1000).toStringAsFixed(0)}k';
     return maxBudget.toStringAsFixed(0);
   }
 
-  /// Similarity as a percentage string
   String get matchPercent => '${(similarityScore * 100).toStringAsFixed(0)}%';
 
   bool get hasExplanation =>

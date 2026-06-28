@@ -1,4 +1,3 @@
-// lib/shared/models/requests/rate_user_request.dart
 
 class RateUserRequest {
   final String ratedByUserId;

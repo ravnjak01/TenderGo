@@ -64,8 +64,6 @@ namespace TenderGo.Services.Services
             var pageSize = Math.Max(request.PageSize, 1);
             var query = _context.Users.AsQueryable();
 
-            if (request.IsBanned.HasValue)
-                query = query.Where(u => u.IsBanned == request.IsBanned.Value);
 
             if (!string.IsNullOrWhiteSpace(request.SearchTerm))
             {

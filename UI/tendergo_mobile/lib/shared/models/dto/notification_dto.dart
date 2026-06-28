@@ -3,13 +3,11 @@ class NotificationDto {
   final String title;
   final String message;
 
-  /// e.g. bid_received | bid_accepted | bid_rejected | bid_withdrawn |
-  ///       tender_closed | tender_cancelled | tender_awarded | general
+ 
   final String type;
   final bool isRead;
   final DateTime createdAt;
 
-  /// When set, tapping the notification navigates to tender details.
   final int? tenderId;
 
   const NotificationDto({

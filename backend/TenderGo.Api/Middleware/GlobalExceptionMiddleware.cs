@@ -1,6 +1,8 @@
 ﻿using System.Net;
-using TenderGo.Models.DTOs;
-using TenderGo.Services.Services.Exceptions;
+using System.Text.Json;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
+using static TenderGo.Api.Filters.ErrorFilter; 
 
 namespace TenderGo.Api.Middleware
 {
@@ -23,7 +25,7 @@ namespace TenderGo.Api.Middleware
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Something went wrong: {ex}");
+                _logger.LogError(ex, "Unhandled exception caught in middleware.");
                 await HandleExceptionAsync(httpContext, ex);
             }
         }
@@ -31,38 +33,19 @@ namespace TenderGo.Api.Middleware
         private static Task HandleExceptionAsync(HttpContext context, Exception exception)
         {
             context.Response.ContentType = "application/json";
+            context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
 
-            var statusCode = (int)HttpStatusCode.InternalServerError;
-            var message = "Internal Server Error from the custom middleware.";
-
-            // Provjeravamo o kojem se specifičnom Exceptionu radi
-            switch (exception)
+            var envelope = new ApiErrorEnvelope
             {
-                case BaseException customEx: // Tvoja bazna klasa koju smo ranije kreirali
-                    statusCode = customEx.StatusCode;
-                    message = customEx.Message;
-                    break;
+                success = false,
+                message = "Internal Server Error from global middleware.",
+                errors = new[] { exception.Message }, 
+                statusCode = context.Response.StatusCode,
+                traceId = context.TraceIdentifier
+            };
 
-                case UnauthorizedAccessException:
-                    statusCode = (int)HttpStatusCode.Unauthorized;
-                    message = "Unauthorized access.";
-                    break;
-
-             
-                // Ovdje možeš dodati još specifičnih sistemskih exceptiona
-                default:
-                    message = exception.Message; // U produkciji ovdje stavi općenitu poruku
-                    break;
-            }
-
-            context.Response.StatusCode = statusCode;
-
-            return context.Response.WriteAsync(new ErrorDetails()
-            {
-                StatusCode = context.Response.StatusCode,
-                Message = message,
-                Type = exception.GetType().Name
-            }.ToString());
+            var jsonOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+            return context.Response.WriteAsync(JsonSerializer.Serialize(envelope, jsonOptions));
         }
     }
 }

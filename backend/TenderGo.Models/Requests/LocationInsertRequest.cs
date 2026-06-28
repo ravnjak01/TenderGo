@@ -1,18 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace TenderGo.Models.Requests
 {
     public class LocationInsertRequest
     {
-        public string Country { get; set; }
-        public string Name { get; set; }
+        [Required]
+        [StringLength(100)]
+        public string Country { get; set; } = string.Empty;
+
+        [Required]
+        [StringLength(100)]
+        public string Name { get; set; } = string.Empty;
+
+        [StringLength(100)]
         public string? Region { get; set; }
-
-
-
     }
 }

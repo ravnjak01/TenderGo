@@ -34,11 +34,12 @@ namespace TenderGo.Services.Services
         private readonly TenderGoContext _context;
         private readonly IMapper _mapper;
         private readonly ILogger<AuthService> _logger;
-        private readonly EmailService _emailService;
+        private readonly IEmailService _emailService;
         private readonly IConfiguration _configuration;
         private readonly string _cloudName;
         private readonly IWebHostEnvironment _env;
-        public AuthService(UserManager<ApplicationUser> userManager, IConfiguration config, IHttpContextAccessor httpContextAccessor, TenderGoContext context, IMapper mapper, ILogger<AuthService> logger, EmailService emailService, IConfiguration configuration
+        public AuthService(UserManager<ApplicationUser> userManager, IConfiguration config, IHttpContextAccessor httpContextAccessor,
+            TenderGoContext context, IMapper mapper, ILogger<AuthService> logger, IEmailService emailService, IConfiguration configuration
            ,IWebHostEnvironment env )
         {
             _logger = logger;
@@ -186,19 +187,16 @@ namespace TenderGo.Services.Services
             var refreshToken = _httpContextAccessor.HttpContext?.Request.Cookies["refreshToken"];
 
             if (string.IsNullOrEmpty(refreshToken))
-            {
                 throw new UserException("Not found refresh token.");
-            }
-
 
             var userId = _httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
-            {
                 throw new UserException("User is not defined.");
-            }
 
-            var storedToken = await _context.RefreshTokens.FirstOrDefaultAsync(rt => rt.Token == refreshToken && rt.UserId == userId && !rt.IsRevoked);
-
+            var storedToken = await _context.RefreshTokens
+                .FirstOrDefaultAsync(rt => rt.Token == refreshToken
+                                        && rt.UserId == userId
+                                        && !rt.IsRevoked);
 
             if (storedToken != null)
             {
@@ -206,10 +204,36 @@ namespace TenderGo.Services.Services
                 storedToken.RevokedAt = DateTime.UtcNow;
                 storedToken.UpdatedAt = DateTime.UtcNow;
                 storedToken.UpdatedByUserId = userId;
-                await _context.SaveChangesAsync();
             }
 
+            var jti = _httpContextAccessor.HttpContext?.User
+                ?.FindFirstValue(JwtRegisteredClaimNames.Jti);
+            var expClaim = _httpContextAccessor.HttpContext?.User
+                ?.FindFirstValue(JwtRegisteredClaimNames.Exp);
 
+            if (!string.IsNullOrWhiteSpace(jti) && !string.IsNullOrWhiteSpace(expClaim))
+            {
+                if (long.TryParse(expClaim, out var expUnix))
+                {
+                    var expiresAt = DateTimeOffset.FromUnixTimeSeconds(expUnix).UtcDateTime;
+
+                    var alreadyRevoked = await _context.RevokedTokens.AnyAsync(x => x.Jti == jti);
+                    if (!alreadyRevoked)
+                    {
+                        _context.RevokedTokens.Add(new RevokedToken
+                        {
+                            Jti = jti,
+                            UserId = userId,
+                            RevokedAt = DateTime.UtcNow,
+                            ExpiresAt = expiresAt
+                        });
+                    }
+                }
+
+               
+            }
+
+            await _context.SaveChangesAsync();
 
             _httpContextAccessor.HttpContext?.Response.Cookies.Delete("refreshToken", new CookieOptions
             {
@@ -326,8 +350,8 @@ public async Task ForgotPasswordAsync(ForgotPasswordRequest model, CancellationT
     var resetCode = new PasswordResetCode
     {
         UserId = user.Id,
-        Code = Convert.ToBase64String(hashedBytes), // U bazu ide heš kao Base64 string
-        Salt = Convert.ToBase64String(saltBytes),// U bazu ide hešovana verzija
+        Code = Convert.ToBase64String(hashedBytes), 
+        Salt = Convert.ToBase64String(saltBytes),
         CreatedAt = DateTime.UtcNow,
         ExpiryTime = DateTime.UtcNow.AddMinutes(10),
         IsUsed = false,
@@ -342,7 +366,6 @@ public async Task ForgotPasswordAsync(ForgotPasswordRequest model, CancellationT
     await _emailService.SendResetPasswordEmail(user.Email, message, cancellationToken);
 }
 
-// Pomoćna metoda za SHA-256 hešovanje
 private byte[] HashCodePbkdf2(string input, byte[] salt)
 {
     const int iterations = 100_000; 
@@ -379,11 +402,9 @@ public async Task<IdentityResult> ResetPasswordAsync(ResetPasswordRequest model)
         return IdentityResult.Failed(new IdentityError { Description = "Code locked due to too many failed attempts." });
     }
 
-    // 2. Provera roka trajanja
     if (resetRecord.ExpiryTime < DateTime.UtcNow)
         return IdentityResult.Failed(new IdentityError { Description = "Code expired." });
 
-    // 3. REKONSTRUKCIJA HEŠA I "isCorrect" PROVERA
     var saltBytes = Convert.FromBase64String(resetRecord.Salt);
     var verificationHash = HashCodePbkdf2(model.Code, saltBytes); 
 
@@ -399,7 +420,6 @@ public async Task<IdentityResult> ResetPasswordAsync(ResetPasswordRequest model)
         return IdentityResult.Failed(new IdentityError { Description = "Invalid code." });
     }
 
-    // 4. Ako je kod ispravan, nastavlja se tvoja standardna ASP.NET Identity logika
     var token = await _userManager.GeneratePasswordResetTokenAsync(user);
     var result = await _userManager.ResetPasswordAsync(user, token, model.NewPassword);
 

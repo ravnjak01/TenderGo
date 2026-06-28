@@ -147,7 +147,7 @@ class _TenderBidsScreenState extends State<TenderBidsScreen> {
                 final bid = _controller.bids[index];
                 return _BidCard(
                   bid: bid,
-                  canAward: widget.tenderDto.status == TenderStatus.closed &&
+                  canAward: _controller.tender.status == TenderStatus.closed &&
                       bid.status == ApplicationStatus.pending,
                   onAward: () => _award(bid),
                   onRatingSubmitted: _controller.refresh,

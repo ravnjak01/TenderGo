@@ -26,22 +26,20 @@ class RecommendationProvider extends BaseProvider {
 
   Future<void> loadSimilar({
     required int tenderId,
-    required String authToken,
   }) async {
     _state = RecommendationState.loading;
     await handleAsync(() async {
       _recommendations = await _service.getSimilarTenders(
         tenderId: tenderId,
-        authToken: authToken,
       );
       _state = RecommendationState.loaded;
     }, onError: (_) => _state = RecommendationState.error);
   }
 
-  Future<void> loadForUser({required String authToken}) async {
+  Future<void> loadForUser() async {
     _state = RecommendationState.loading;
     await handleAsync(() async {
-      _recommendations = await _service.getForCurrentUser(authToken: authToken);
+      _recommendations = await _service.getForCurrentUser();
       _state = RecommendationState.loaded;
     }, onError: (_) => _state = RecommendationState.error);
   }

@@ -9,7 +9,7 @@ import 'package:tendergo/shared/services/base_service.dart';
 
 class LocationService extends BaseService<LocationDto> {
   LocationService(Dio dio)
-    : super(dio, LocationEndpoints.baseUrl, LocationDto.fromJson);
+      : super(dio, LocationEndpoints.baseUrl, LocationDto.fromJson);
 
   Future<List<LocationDto>> getLocations(
     LocationFilterRequest filter, {
@@ -26,34 +26,22 @@ class LocationService extends BaseService<LocationDto> {
         queryParameters: queryParameters,
       );
 
-      final List<dynamic> data = response.data;
-      return data.map((x) => parseJson(x as Map<String, dynamic>)).toList();
+      final data = extractList(response.data);
+
+      return data
+          .map((x) => parseJson(Map<String, dynamic>.from(x as Map)))
+          .toList();
     } on DioException catch (e) {
-      throw Exception(e.response?.data ?? 'Error fetching locations');
+      throw Exception(extractErrorMessage(e, 'Error fetching locations'));
     }
   }
 
   Future<LocationDto> insertLocation(LocationInsertRequest request) {
-    return insert(
-      LocationDto(
-        id: 0,
-        name: request.name,
-        country: request.country,
-        region: request.region,
-      ),
-    );
+    return insert(request);
   }
 
   Future<bool> updateLocation(int id, LocationUpdateRequest request) {
-    return update(
-      id,
-      LocationDto(
-        id: id,
-        name: request.name ?? '',
-        country: request.country ?? '',
-        region: request.region,
-      ),
-    );
+    return update(id, request);
   }
 
   Future<String> deleteLocation(int id) => delete(id);
@@ -61,88 +49,75 @@ class LocationService extends BaseService<LocationDto> {
   Future<LocationDto> activateLocation(int id) async {
     try {
       final response = await dio.patch(LocationEndpoints.activate(id));
-      final raw = response.data;
-      final payload = raw is Map<String, dynamic>
-          ? (raw['data'] is Map<String, dynamic>
-                ? raw['data'] as Map<String, dynamic>
-                : raw)
-          : const <String, dynamic>{};
-
-      return parseJson(payload);
+      return _parseSingleLocation(response.data);
     } on DioException catch (e) {
-      throw Exception(
-        e.response?.data?['message'] ?? 'Error activating location',
-      );
+      throw Exception(extractErrorMessage(e, 'Error activating location'));
     }
   }
 
-//ne radi deactvate
-    Future<LocationDto> deactivateLocation(int id) async {
+  Future<LocationDto> deactivateLocation(int id) async {
     try {
       final response = await dio.patch(LocationEndpoints.deactivate(id));
-      final raw = response.data;
-      final payload = raw is Map<String, dynamic>
-          ? (raw['data'] is Map<String, dynamic>
-                ? raw['data'] as Map<String, dynamic>
-                : raw)
-          : const <String, dynamic>{};
-
-      return parseJson(payload);
+      return _parseSingleLocation(response.data);
     } on DioException catch (e) {
-      throw Exception(
-        e.response?.data?['message'] ?? 'Error deactivating location',
-      );
+      throw Exception(extractErrorMessage(e, 'Error deactivating location'));
     }
   }
 
-Future<List<LocationDto>> search(LocationSearchRequest request) async {
-  try {
-    final response = await dio.get(
-      LocationEndpoints.search(
-        searchTerm: request.searchTerm, 
-        isActive: request.isActive, // Obavezno dodaj i ovo ako postoji u modelu
-        page: request.page, 
-        pageSize: request.pageSize
-      ),
-    );
+  Future<List<LocationDto>> search(LocationSearchRequest request) async {
+    try {
+      final response = await dio.get(
+        LocationEndpoints.search(
+          searchTerm: request.searchTerm,
+          isActive: request.isActive,
+          page: request.page,
+          pageSize: request.pageSize,
+        ),
+      );
 
-    final List<dynamic> data = response.data is List 
-      ? response.data 
-      : (response.data['result'] ?? []);
+      final data = extractList(response.data);
 
-    return data
-        .map((x) => LocationDto.fromJson(x as Map<String, dynamic>))
-        .toList();
-  } on DioException catch (e) {
-    throw Exception(e.response?.data ?? 'Error searching locations');
+      return data
+          .map((x) => LocationDto.fromJson(Map<String, dynamic>.from(x as Map)))
+          .toList();
+    } on DioException catch (e) {
+      throw Exception(extractErrorMessage(e, 'Error searching locations'));
+    }
   }
-}
 
   Future<List<LocationStatsDto>> getLocationStatistics() async {
     try {
       final response = await dio.get(LocationEndpoints.locationStatistics);
-      final List<dynamic> data = response.data is List ? response.data : [];
+
+      final data = extractList(response.data);
+
       return data
-          .map((x) => LocationStatsDto.fromJson(x as Map<String, dynamic>))
+          .map(
+            (x) => LocationStatsDto.fromJson(
+              Map<String, dynamic>.from(x as Map),
+            ),
+          )
           .toList();
     } on DioException catch (e) {
-      throw Exception(e.response?.data ?? 'Error fetching location statistics');
+      throw Exception(
+        extractErrorMessage(e, 'Error fetching location statistics'),
+      );
     }
   }
 
-Future<LocationOverviewDto> getLocationOverview() async {
+  Future<LocationOverviewDto> getLocationOverview() async {
     try {
       final response = await dio.get(LocationEndpoints.locationOverview);
-      final raw = response.data;
-      final payload = raw is Map<String, dynamic>
-          ? (raw['data'] is Map<String, dynamic>
-                ? raw['data'] as Map<String, dynamic>
-                : raw)
-          : const <String, dynamic>{};
 
-      return LocationOverviewDto.fromJson(payload);
+      return LocationOverviewDto.fromJson(extractObject(response.data));
     } on DioException catch (e) {
-      throw Exception(e.response?.data ?? 'Error fetching location overview');
+      throw Exception(
+        extractErrorMessage(e, 'Error fetching location overview'),
+      );
     }
+  }
+
+  LocationDto _parseSingleLocation(dynamic envelope) {
+    return parseJson(extractObject(envelope));
   }
 }

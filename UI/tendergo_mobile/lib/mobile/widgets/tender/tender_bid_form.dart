@@ -8,10 +8,7 @@ import 'package:tendergo/shared/models/requests/bid_insert_request.dart';
 import 'package:tendergo/shared/providers/auth_provider.dart';
 import 'package:tendergo/shared/services/bid_service.dart';
 
-/// Self-contained bid form. Manages its own controllers and submission state.
-///
-/// [onBidSuccess] is called after a successful submission so the parent screen
-/// can reload the tender.
+
 class TenderBidForm extends StatefulWidget {
   const TenderBidForm({
     super.key,
@@ -81,7 +78,6 @@ class _TenderBidFormState extends State<TenderBidForm> {
     
     submitted = true;
 
-    // 🌟 Ako je sve prošlo uspješno i widget je još tu, gasi loading
     if (!mounted) return;
     setState(() {
       _isSubmitting = false;
@@ -91,19 +87,19 @@ class _TenderBidFormState extends State<TenderBidForm> {
     if (!mounted) return;
     setState(() {
       _error = e.message;
-      _isSubmitting = false; // 🌟 Ugasi loading ovdje
+      _isSubmitting = false; 
     });
   } on BidServiceException catch (e) {
     if (!mounted) return;
     setState(() {
       _error = e.message;
-      _isSubmitting = false; // 🌟 Ugasi loading ovdje
+      _isSubmitting = false; 
     });
   } catch (_) {
     if (!mounted) return;
     setState(() {
       _error = 'Could not submit bid. Please try again.';
-      _isSubmitting = false; // 🌟 Ugasi loading ovdje
+      _isSubmitting = false; 
     });
   }
 
@@ -117,7 +113,6 @@ class _TenderBidFormState extends State<TenderBidForm> {
       context,
     ).showSnackBar(const SnackBar(content: Text('Bid sent successfully.')));
 
-    // Parent refresh failures should not turn a successful submit into an error.
     try {
       widget.onBidSuccess();
     } catch (_) {}
