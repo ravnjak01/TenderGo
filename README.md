@@ -1,113 +1,45 @@
 
-| Kontekst         | Korisničko ime        | Lozinka   |
-|------------------|-----------------------|------------|
-| Desktop/Mobile   | admin@tendergo.com   | Admin123! |
-| Desktop/Mobile   | mujo@tendergo.com    | User123!  |
-| Desktop/Mobile   | suljo@tendergo.com   | User123!  |
-| Desktop/Mobile   | amina@tendergo.com   | User123!  |
-      
+# TenderGo
+
+## Kredencijali za testiranje
+
+| Kontekst         | Korisničko ime       | Lozinka   |
+|------------------|----------------------|-----------|
+| Desktop          | `admin@tendergo.com` | Admin123! |
+| Mobile           | `amina@tendergo.com` | User123!  |
 
 
-Pokretanje aplikacije:
-Prije pokretanja aplikacije potrebno je instalirati sljedeće alate:
+ > **Napomena:** U bazi postoji više predefinisanih mobilnih korisnika. Za potpuno testiranje svih funkcionalnosti aplikacije preporučuje se korištenje korisničkog računa amina@tendergo.com, jer su za njega seedani svi podaci potrebni za demonstraciju sistema (tenderi, ponude, notifikacije, ocjene i ostali testni podaci). Za korisničke račune marko@tendergo.com i mujo@tendergo.com nisu seedani svi podaci, te se oni mogu koristiti samo za djelimično testiranje pojedinih funkcionalnosti.
+> Seeder se automatski izvršava pri pokretanju aplikacije.
 
-Docker Desktop
-Flutter SDK
-.NET 8 SDK
-Visual Studio 2022 ili VS Code
-Android emulator ili fizički uređaj za testiranje mobilne aplikacije
+## Preduslovi
 
-Nakon instalacije potrebno je klonirati repozitorij:
+- Docker Desktop
+- Android emulator ili fizički Android uređaj (za testiranje mobilne aplikacije)
 
-git clone <repo-link>
-cd TenderGo
+## Pokretanje projekta
 
-U root direktoriju projekta potrebno je kreirati .env fajl sa konfiguracijskim podacima.
+1. **Preuzimanje projekta**
 
-Primjer .env fajla:
-Jwt__Key=TVOJ_TAJNI_JWT_KLJUC_MINIMALNO_32_KARAKTERA
-Jwt__Issuer=TenderGo.Api
-Jwt__Audience=TenderGo.ApiUsers
-Jwt__ExpiresInMinutes=60
+   Preuzmite najnoviju verziju projekta sa GitHub Releases stranice i raspakujte arhivu.
+   
+2. **Priprema okruženja**
 
-SA_PASSWORD=TVAJA_JAKA_SA_LOZINKA
-DB_NAME=TenderGo
-DB_CONNECTION=Server=tendergo-sql;Database=TenderGo;User Id=sa;Password=TVAJA_JAKA_SA_LOZINKA;TrustServerCertificate=True;
+   Raspakujte `.env` datoteku u root direktorijum projekta (`TenderGo/`).
 
-RABBITMQ_USER=tendergo_user
-RABBITMQ_PASS=TVOJA_RABBITMQ_LOZINKA
-ConnectionStrings__RabbitMQ=host=tendergo-rabbitmq;username=tendergo_user;password=TVOJA_RABBITMQ_LOZINKA;timeout=30
+3. **Pokretanje Docker Desktop-a**
 
-FRONTEND_URL=http://localhost:3000
-ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001,http://localhost:5000,http://127.0.0.1:3000
+   Provjerite da je Docker Desktop pokrenut prije nastavka.   
 
-EmailSettings__From=tvoj.email@gmail.com
-EmailSettings__SmtpServer=smtp.gmail.com
-EmailSettings__Port=587
-EmailSettings__Username=tvoj.email@gmail.com
-EmailSettings__Password=TVOJ_GMAIL_APP_PASSWORD_OD_16_SLOVA
+4. **Pokretanje backend servisa**
 
-Nakon toga potrebno je pokrenuti Docker kontejnere iz root direktorija projekta:
+   U root direktorijumu projekta izvršite naredbu:
 
-docker compose up --build
+   ```bash
+   docker compose up --build
 
-Ova komanda pokreće SQL Server bazu, RabbitMQ, ASP.NET Web API i recommender subscriber servis.
-
-Backend aplikacija će biti dostupna na adresi:
-
-http://localhost:8080
-
-Swagger dokumentacija će biti dostupna na:
-
-http://localhost:8080/swagger
-
-RabbitMQ management panel dostupan je na:
-
-http://localhost:15672
-
-Default kredencijali za RabbitMQ su:
-
-username: guest
-password: guest
-
-Za pokretanje Flutter aplikacije potrebno je otvoriti Flutter projekat:
-
-Mobilna aplikacija:
-
-cd UI/tendergo_mobile
-
-Desktop aplikacija:
-
-cd UI/tendergo_desktop
-
-Zatim instalirati dependencies:
-
-flutter pub get
-
-Pokretanje mobilne aplikacije:
-
-flutter run
-
-Pokretanje desktop aplikacije:
-
-flutter run -d windows
-
-Aplikacija prilikom pokretanja automatski seed-a testne podatke uključujući administratore, korisnike, tendere, kategorije i lokacije.
-
-Testni admin nalog:
-
-Email: admin@tendergo.com
-Password: Admin123!
-
-Testni korisnički nalog:
-
-Email: user@tendergo.com
-Password: User123!
-
-Napomene:
-
-Docker Desktop mora biti pokrenut prije izvršavanja docker compose up.
-Seeder se automatski izvršava pri pokretanju aplikacije.
-Za testiranje na fizičkom mobilnom uređaju potrebno je postaviti lokalnu IP adresu backend servera u Flutter aplikaciji.
-Nakon izmjena backend koda potrebno je ponovo pokrenuti:
-docker compose up --build
+5. **Pokretanje desktop aplikacije**
+   Pokrenite priloženu desktop aplikaciju (TenderGoDesktop.exe).
+   
+6. **Pokretanje mobilne aplikacije**
+Instalirajte priloženu TenderGo.apk datoteku na Android uređaj ili emulator i pokrenite aplikaciju
