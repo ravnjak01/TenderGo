@@ -78,7 +78,6 @@ class _AdminTendersPanelState extends State<AdminTendersPanel> {
     });
   }
 
-  // Funkcija koja koristi tvoj prilagođeni AppDialogs za potvrdu
   Future<void> _showCancelDialog(BuildContext context, TenderDto tender) async {
   final bool confirm = await AppDialogs.showConfirm(
     context: context,
@@ -124,7 +123,6 @@ class _AdminTendersPanelState extends State<AdminTendersPanel> {
 }
   
 
-  // Helper metoda za generisanje stilova statusnih badge-ova
 Widget _buildStatusBadge(TenderStatus status) {
   final label = _localStatusLabel(status);
 
@@ -184,7 +182,6 @@ Widget _buildStatusBadge(TenderStatus status) {
     }
   }
 
-  // Formatiranje cifre u format sa zarezom (npr. 45,000 KM)
   String _formatCurrency(double value) {
     RegExp reg = RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))');
     String Function(Match) matchFunc = (Match match) => '${match[1]},';
@@ -386,11 +383,12 @@ Widget _buildStatusBadge(TenderStatus status) {
                                 Text(
                                   tender.title,
                                   style: const TextStyle(
-                                    color: Color(0xFF94A3B8),
-                                    fontSize: 12,
+                                    color: Color(0xFF1E293B),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                   overflow: TextOverflow.ellipsis,
-                                ),
+                                )
                               ],
                             ),
                           ),

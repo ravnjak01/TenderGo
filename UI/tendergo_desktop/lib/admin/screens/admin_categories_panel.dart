@@ -4,6 +4,7 @@ import 'package:tendergo/shared/services/dio_client.dart';
 import 'package:tendergo/shared/widgets/common/app_dialogs.dart';
 import 'package:tendergo/shared/models/dto/category_dto.dart';
 import 'package:tendergo/shared/models/requests/category_insert_request.dart';
+import 'package:tendergo/shared/models/requests/category_update_request.dart';
 
 class AdminCategoriesPanel extends StatefulWidget {
   const AdminCategoriesPanel({super.key});
@@ -74,16 +75,54 @@ class _AdminCategoriesPanelState extends State<AdminCategoriesPanel> {
   }
 
   Future<void> _showEditCategoryDialog(CategoryDto category) async {
-    final controller = TextEditingController(text: category.name);
+    final currentDescription =
+        _statsByCategory[category.id]?.description ??
+        category.description ??
+        '';
+    final nameController = TextEditingController(text: category.name);
+    final descriptionController = TextEditingController(
+      text: currentDescription,
+    );
+    final formKey = GlobalKey<FormState>();
+
     final shouldSave = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Uredi kategoriju'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(
-            labelText: 'Naziv kategorije',
-            border: OutlineInputBorder(),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Naziv kategorije',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Naziv kategorije je obavezan.';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: descriptionController,
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  labelText: 'Opis kategorije',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Opis kategorije je obavezan.';
+                  }
+                  return null;
+                },
+              ),
+            ],
           ),
         ),
         actions: [
@@ -92,17 +131,34 @@ class _AdminCategoriesPanelState extends State<AdminCategoriesPanel> {
             child: const Text('Otkaži'),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                Navigator.pop(context, true);
+              }
+            },
             child: const Text('Sačuvaj'),
           ),
         ],
       ),
     );
 
-    if (shouldSave != true) return;
+    final newName = nameController.text.trim();
+    final newDescription = descriptionController.text.trim();
 
-    final newName = controller.text.trim();
-    if (newName.isEmpty || newName == category.name) return;
+    if (shouldSave != true) {
+      return;
+    }
+
+    final request = CategoryUpdateRequest.fromChangedFields(
+      originalName: category.name,
+      originalDescription: currentDescription,
+      newName: newName,
+      newDescription: newDescription,
+    );
+
+    if (request.toJson().isEmpty) {
+      return;
+    }
 
     setState(() {
       _isLoading = true;
@@ -110,15 +166,9 @@ class _AdminCategoriesPanelState extends State<AdminCategoriesPanel> {
     });
 
     try {
-      final success = await _categoryService.update(
+      final success = await _categoryService.updateCategory(
         category.id,
-        CategoryDto(
-          id: category.id,
-          name: newName,
-          description:
-              _statsByCategory[category.id]?.description ?? category.description,
-          isActive: category.isActive,
-        ),
+        request,
       );
 
       if (!success) {
@@ -137,30 +187,47 @@ class _AdminCategoriesPanelState extends State<AdminCategoriesPanel> {
   Future<void> _showAddCategoryDialog() async {
     final nameController = TextEditingController();
     final descriptionController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
     final shouldSave = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Dodaj novu kategoriju'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'Naziv kategorije',
-                border: OutlineInputBorder(),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Naziv kategorije',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Naziv kategorije je obavezan.';
+                  }
+                  return null;
+                },
               ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: descriptionController,
-              maxLines: 3,
-              decoration: const InputDecoration(
-                labelText: 'Opis kategorije',
-                border: OutlineInputBorder(),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: descriptionController,
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  labelText: 'Opis kategorije',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Opis kategorije je obavezan.';
+                  }
+                  return null;
+                },
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -168,7 +235,11 @@ class _AdminCategoriesPanelState extends State<AdminCategoriesPanel> {
             child: const Text('Otkaži'),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                Navigator.pop(context, true);
+              }
+            },
             child: const Text('Sačuvaj'),
           ),
         ],
@@ -177,11 +248,28 @@ class _AdminCategoriesPanelState extends State<AdminCategoriesPanel> {
 
     final name = nameController.text.trim();
     final description = descriptionController.text.trim();
-    nameController.dispose();
-    descriptionController.dispose();
 
-    if (shouldSave != true) return;
-    if (name.isEmpty || description.isEmpty) return;
+    if (shouldSave != true) {
+      nameController.dispose();
+      descriptionController.dispose();
+      return;
+    }
+
+    final request = CategoryInsertRequest(
+      name: name,
+      description: description,
+    );
+    final validationError = request.validate();
+
+    if (validationError != null) {
+      nameController.dispose();
+      descriptionController.dispose();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(validationError)),
+      );
+      return;
+    }
 
     setState(() {
       _isLoading = true;
@@ -189,18 +277,16 @@ class _AdminCategoriesPanelState extends State<AdminCategoriesPanel> {
     });
 
     try {
-      await _categoryService.insertCategory(
-        CategoryInsertRequest(
-          name: name,
-          description: description,
-        ),
-      );
+      await _categoryService.insertCategory(request);
       await _refreshCategories();
     } catch (e) {
       setState(() {
         _error = e.toString();
         _isLoading = false;
       });
+    } finally {
+      nameController.dispose();
+      descriptionController.dispose();
     }
   }
 

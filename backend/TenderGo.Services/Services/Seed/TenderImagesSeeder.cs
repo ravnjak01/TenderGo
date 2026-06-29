@@ -17,7 +17,6 @@ namespace TenderGo.Services.Services.Seed
         public int Order => 5;
 
 
-        //obrisao sulju kao korisnika,popravio seedere valjda,obrisao bazu,trebala bi se nakon pokretanja opet kreirait
         public async Task SeedAsync(TenderGoContext context, IServiceProvider serviceProvider)
         {
             var env = serviceProvider.GetRequiredService<IWebHostEnvironment>();
@@ -54,20 +53,16 @@ namespace TenderGo.Services.Services.Seed
                     {
                         continue;
                     }
-                    // Uzimamo naziv slike dodijeljen ovom tenderu
                     string imageName = imageMapping[tender.Title];
                     string fullImagePath = Path.Combine(absoluteFolderPath, imageName);
 
-                    // Dodatna sigurnost: Provjeri da li taj fajl stvarno postoji u wwwroot-u
                     if (!File.Exists(fullImagePath))
                     {
-                        // Ako slike nema u folderu, preskačemo da se seeder ne sruši
                         continue;
                     }
 
                     string dbImageUrl = $"/{relativeFolderPath}/{imageName}";
 
-                    // 4. Upisujemo sliku za taj specifičan tender
                     context.TenderImages.Add(new TenderImage
                     {
                         TenderId = tender.Id,

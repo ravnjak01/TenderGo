@@ -34,7 +34,6 @@ static void LoadEnvFile()
 
 static string BuildRabbitMqConnectionString(IConfiguration config)
 {
-    // Docker: environment varijable imaju prioritet
     var host = Environment.GetEnvironmentVariable("RabbitMQ__Host")
                    ?? config["RabbitMQ:Host"]
                    ?? "localhost";

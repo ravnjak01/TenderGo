@@ -59,27 +59,27 @@ namespace TenderGo.Services.StateMachines.TenderStates
 
             await _context.SaveChangesAsync();
 
-            //try
-            //{
-            //    await _pubSub.PublishAsync(
-            //        new TenderAwardedEvent
-            //        {
-            //            TenderId = tender.Id,
-            //            TenderTitle = tender.Title,
-            //            WinnerUserId = winningBid.SubmittedByUserId,
-            //            OtherUserIds = otherPendingBids
-            //                .Select(b => b.SubmittedByUserId)
-            //                .ToList()
-            //        },
-            //        cfg => cfg.WithTopic("tender_awarded"));
-            //}
-            //catch (Exception ex)
-            //{
-            //    _logger.LogWarning(
-            //        ex,
-            //        "Tender {TenderId} awarded but TenderAwardedEvent was not published",
-            //        tender.Id);
-            //}
+            try
+            {
+                await _pubSub.PublishAsync(
+                    new TenderAwardedEvent
+                    {
+                        TenderId = tender.Id,
+                        TenderTitle = tender.Title,
+                        WinnerUserId = winningBid.SubmittedByUserId,
+                        OtherUserIds = otherPendingBids
+                            .Select(b => b.SubmittedByUserId)
+                            .ToList()
+                    },
+                    cfg => cfg.WithTopic("tender_awarded"));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Tender {TenderId} awarded but TenderAwardedEvent was not published",
+                    tender.Id);
+            }
 
             return _mapper.Map<TenderDTO>(tender);
         }

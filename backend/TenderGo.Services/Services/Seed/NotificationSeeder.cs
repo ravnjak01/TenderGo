@@ -56,7 +56,7 @@ namespace TenderGo.Data.Seeders
                         IsRead = false
                     });
                 }
-            }
+            } 
 
             await context.SaveChangesAsync();
         }

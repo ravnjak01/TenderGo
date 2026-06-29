@@ -84,7 +84,7 @@ services:
       - .env
     environment:
       - DOTNET_RUNNING_IN_CONTAINER=true
-      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_ENVIRONMENT=Development
       - RabbitMQ__Host=tendergo-rabbitmq
       - RabbitMQ__Username=${RABBITMQ_USER}
       - RabbitMQ__Password=${RABBITMQ_PASS}

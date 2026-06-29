@@ -18,21 +18,15 @@ namespace TenderGo.Services.Services.Seed
         {
             var now = DateTime.UtcNow;
 
-            // 1. Povlačimo sve korisnike i tendere iz baze
             var users = await context.Users.ToDictionaryAsync(u => u.Email!, u => u);
             var tenders = await context.Tenders.ToDictionaryAsync(t => t.Title, t => t);
 
-            // Pomoćna funkcija za sigurno preuzimanje entiteta iz rečnika
             T GetValueOrFallback<T>(Dictionary<string, T> dict, string key, string entityName) where T : class
             {
                 if (dict.TryGetValue(key, out var val)) return val;
                 throw new Exception($"Bid Seeding failed: Required {entityName} '{key}' was not found in the database.");
             }
 
-            // Definišemo tačno ko kreira tender (iz tvog TenderClosedSeeder-a) radi lakše vizuelne provjere pravila:
-            // - "Fotografisanje svadbenog događaja" -> Vlasnik: amina@tendergo.com
-            // - "Instalacija video nadzora"        -> Vlasnik: mujo@tendergo.com
-            // - "Selidba stana"                     -> Vlasnik: suljo@tendergo.com
 
             var seedBids = new[]
              {
@@ -57,6 +51,38 @@ namespace TenderGo.Services.Services.Seed
                     TenderId = GetValueOrFallback(tenders, "Instalacija video nadzora", "Tender").Id,
                     SubmittedByUserId = GetValueOrFallback(users, "amina@tendergo.com", "User").Id
                 },
+                new Bid
+{
+    OfferedPrice = 6900.00m,
+    DeliveryDays = 3,
+    Proposal = "Nudim detaljno čišćenje apartmana sa svom potrebnom opremom i sredstvima.",
+    Status = ApplicationStatus.Pending,
+    SubmittedAt = now.AddDays(-1),
+    TenderId = GetValueOrFallback(tenders, "Generalno čišćenje apartmana", "Tender").Id,
+    SubmittedByUserId = GetValueOrFallback(users, "mujo@tendergo.com", "User").Id
+},
+
+new Bid
+{
+    OfferedPrice = 720.00m,
+    DeliveryDays = 1,
+    Proposal = "Mogu izvršiti transport namještaja kombijem uz utovar i istovar.",
+    Status = ApplicationStatus.Pending,
+    SubmittedAt = now.AddDays(-2),
+    TenderId = GetValueOrFallback(tenders, "Transport namještaja između gradova", "Tender").Id,
+    SubmittedByUserId = GetValueOrFallback(users, "marko@tendergo.com", "User").Id
+},
+
+new Bid
+{
+    OfferedPrice = 10500.00m,
+    DeliveryDays = 4,
+    Proposal = "Nudim postavljanje laminata sa pripremom podloge i završnim lajsnama.",
+    Status = ApplicationStatus.Pending,
+    SubmittedAt = now.AddDays(-1),
+    TenderId = GetValueOrFallback(tenders, "Postavljanje laminata", "Tender").Id,
+    SubmittedByUserId = GetValueOrFallback(users, "mujo@tendergo.com", "User").Id
+},
 
                 new Bid
                 {

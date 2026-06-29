@@ -18,7 +18,6 @@ namespace TenderGo.Data.Seeders
             var categories = await context.Categories.ToDictionaryAsync(c => c.Name, c => c);
             var locations = await context.Locations.ToDictionaryAsync(l => l.Name, l => l);
 
-            // Pomoćna lokalna funkcija za sigurno preuzimanje ID-eva (izbjegava pucanje koda ako ključ fali)
             T GetValueOrFallback<T>(Dictionary<string, T> dict, string key, string entityName) where T : class
             {
                 if (dict.TryGetValue(key, out var val)) return val;
@@ -134,7 +133,6 @@ namespace TenderGo.Data.Seeders
                 .Where(t => titles.Contains(t.Title))
                 .ToDictionaryAsync(t => t.Title, t => t);
 
-            // 3. UPSERT PETLJA
             foreach (var seedTender in seedTenders)
             {
                 if (existingTenders.TryGetValue(seedTender.Title, out var existingTender))

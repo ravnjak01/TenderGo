@@ -3,6 +3,7 @@ import 'package:tendergo/shared/core/network/constants/category_api_endpoints.da
 import 'package:tendergo/shared/models/dto/category_dto.dart';
 import 'package:tendergo/shared/models/requests/category_insert_request.dart';
 import 'package:tendergo/shared/models/requests/category_search_request.dart';
+import 'package:tendergo/shared/models/requests/category_update_request.dart';
 import 'package:tendergo/shared/services/base_service.dart';
 import 'package:flutter/foundation.dart';
 class CategoryService extends BaseService<CategoryDto> {
@@ -10,10 +11,23 @@ class CategoryService extends BaseService<CategoryDto> {
       : super(dio, CategoryApiEndpoints.baseUrl, CategoryDto.fromJson);
 
 
-Future<CategoryDto> insertCategory(CategoryInsertRequest request) {
-  return insert(request);
-}
+  Future<CategoryDto> insertCategory(CategoryInsertRequest request) {
+    return insert(request);
+  }
 
+  Future<bool> updateCategory(int id, CategoryUpdateRequest request) async {
+    try {
+      final response = await dio.patch(
+        CategoryApiEndpoints.update(id),
+        data: request.toJson(),
+      );
+
+      final statusCode = response.statusCode ?? 0;
+      return statusCode >= 200 && statusCode < 300;
+    } on DioException catch (e) {
+      throw Exception(_extractErrorMessage(e, 'Error updating category'));
+    }
+  }
 
   Future<CategoryDto> activateCategory(int id) async {
     try {
