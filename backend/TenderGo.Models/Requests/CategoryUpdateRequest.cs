@@ -1,8 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-public class CategoryUpdateRequest
+﻿public class CategoryUpdateRequest
 {
-    [Required]
-    [StringLength(100)]
-    public string Name { get; set; } = string.Empty;
+    public string? Name { get; set; }
+    public string? Description { get; set; }
 }

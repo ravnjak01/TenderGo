@@ -16,7 +16,6 @@ namespace TenderGo.Data.Seeders
                     new Category { Name = "Gradjevinski radovi", Description = "Izgradnja, renoviranje i građevinski projekti.", IsActive = true },
                     new Category { Name = "IT i razvoj softvera", Description = "Razvoj aplikacija, web stranica i IT rješenja.", IsActive = true },
                     new Category { Name = "Dizajn,marketing i fotografija", Description = "Grafički dizajn, digitalni marketing i fotografija.", IsActive = true },
-                    new Category { Name = "Transport", Description = "Usluge prevoza putnika i robe.", IsActive = true },
                     new Category { Name = "Servis i odrzavanje", Description = "Održavanje i servisiranje opreme i objekata.", IsActive = true },
                     new Category { Name = "Namjestaj i oprema", Description = "Nabavka namještaja, alata i poslovne opreme.", IsActive = true },
                     new Category { Name = "Transport i logistika", Description = "Logističke usluge, skladištenje i distribucija.", IsActive = true },

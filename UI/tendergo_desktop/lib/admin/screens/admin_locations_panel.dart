@@ -113,21 +113,36 @@ class _AdminLocationsPanelState extends State<AdminLocationsPanel> {
     final nameController = TextEditingController();
     final countryController = TextEditingController();
     final regionController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
 
     final shouldSave = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Dodaj lokaciju'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+            TextFormField(
               controller: nameController,
               decoration: const InputDecoration(labelText: 'Naziv lokacije'),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Naziv lokacije je obavezan.';
+                }
+                return null;
+              },
             ),
             const SizedBox(height: 12),
-            TextField(
+            TextFormField(
               controller: countryController,
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Drzava je obavezna.';
+                }
+                return null;
+              },
               decoration: const InputDecoration(labelText: 'Država'),
             ),
             const SizedBox(height: 12),
@@ -135,7 +150,8 @@ class _AdminLocationsPanelState extends State<AdminLocationsPanel> {
               controller: regionController,
               decoration: const InputDecoration(labelText: 'Region (opcionalno)'),
             ),
-          ],
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -143,7 +159,11 @@ class _AdminLocationsPanelState extends State<AdminLocationsPanel> {
             child: const Text('Otkaži'),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                Navigator.pop(context, true);
+              }
+            },
             child: const Text('Sačuvaj'),
           ),
         ],

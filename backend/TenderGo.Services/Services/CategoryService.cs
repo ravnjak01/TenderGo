@@ -84,6 +84,36 @@ namespace TenderGo.Services.Services
                 PageSize = pageSize
             };
         }
+        public override async Task<CategoryDTO> Update(int id, CategoryUpdateRequest request)
+        {
+            var entity = await _context.Categories.FindAsync(id)
+                ?? throw new UserException("Category not found.");
+
+            if (request.Name == null && request.Description == null)
+            {
+                throw new UserException("No fields provided for update.");
+            }
+
+            if (request.Name != null)
+            {
+                if (string.IsNullOrWhiteSpace(request.Name))
+                    throw new UserException("Category name cannot be empty.");
+
+                entity.Name = request.Name.Trim();
+            }
+
+            if (request.Description != null)
+            {
+                if (string.IsNullOrWhiteSpace(request.Description))
+                    throw new UserException("Category description cannot be empty.");
+
+                entity.Description = request.Description.Trim();
+            }
+
+            await _context.SaveChangesAsync();
+
+            return _mapper.Map<CategoryDTO>(entity);
+        }
 
         public override async Task<string> Delete(int id)
         {

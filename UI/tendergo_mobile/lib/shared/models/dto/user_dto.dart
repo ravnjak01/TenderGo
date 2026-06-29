@@ -35,13 +35,17 @@ class UserDto implements HasInitials {
         ? List<String>.from(rawRoles.map((r) => r.toString())) 
         : const [];
 
+ 
+
     return UserDto(
       id: json['id'] as String,
       email: json['email'] as String? ?? '',
       username: json['username'] as String? ?? '',
       firstName: json['firstName'] as String? ?? '',
       lastName: json['lastName'] as String? ?? '',
-      profileImageUrl: DioClient.resolveImageUrl(json['profileImageUrl'] as String? ?? ''),
+     profileImageUrl: DioClient.resolveImageUrl(
+          json['profileImageUrl'] as String?,
+        ),
         address: json['address'] != null                          
           ? AddressDto.fromJson(json['address'] as Map<String, dynamic>)
           : null,

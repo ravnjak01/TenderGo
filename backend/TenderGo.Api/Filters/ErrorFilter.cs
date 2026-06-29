@@ -42,10 +42,8 @@ public sealed class ErrorFilter : Attribute, IAsyncExceptionFilter, IAsyncResult
             return;
         }
 
-        // Izvlačimo trenutni statusni kod iz rezultata (default je 200 ako nije postavljen)
         TryGetStatusCode(context.Result, out var existingStatusCode);
 
-        // --- OVDJE MANIPULIŠEMO GREŠKAMA (status >= 400) ---
         if (existingStatusCode >= 400)
         {
             if (IsStandardEnvelope(context.Result))
@@ -57,10 +55,8 @@ public sealed class ErrorFilter : Attribute, IAsyncExceptionFilter, IAsyncResult
             var (message, errors) = MapErrorResult(context.Result, existingStatusCode);
             context.Result = ToObjectResult(context, existingStatusCode, message, errors);
         }
-        // --- OVDJE MANIPULIŠEMO USPJEŠNIM ODGOVORIMA (status < 400) ---
         else
         {
-            // Ako je već umotano u našu kovertu (bilo za uspeh ili grešku), nemoj ponovo umotavati
             if (context.Result is ObjectResult objResult &&
                 (objResult.Value is ApiSuccessEnvelope || objResult.Value is ApiErrorEnvelope))
             {
@@ -68,7 +64,6 @@ public sealed class ErrorFilter : Attribute, IAsyncExceptionFilter, IAsyncResult
                 return;
             }
 
-            // Standardizujemo uspješan odgovor
             context.Result = ToSuccessObjectResult(context.Result, existingStatusCode);
         }
 
@@ -103,7 +98,6 @@ public sealed class ErrorFilter : Attribute, IAsyncExceptionFilter, IAsyncResult
         return new ObjectResult(payload) { StatusCode = statusCode };
     }
 
-    // --- SVE OSTALE TVOJE METODE OSTAJU KAO ŠTO SU BILE ---
 
     private (int statusCode, string message, IReadOnlyList<string>? errors) MapException(ExceptionContext context)
     {

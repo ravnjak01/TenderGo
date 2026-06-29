@@ -34,6 +34,8 @@ class UserPublicDto implements HasInitials{
   });
 
   factory UserPublicDto.fromJson(Map<String, dynamic> json) {
+   
+
     return UserPublicDto(
       id: (json['id'] ?? '').toString(),
       username: (json['userName'] ?? json['username'] ?? '').toString(),
@@ -44,7 +46,8 @@ class UserPublicDto implements HasInitials{
       reviewCount: json['reviewCount'] ?? 0,
       tenderCount: json['tenderCount'] ?? 0,
       bidsCount: json['bidsCount'] ?? 0,
-      profileImageUrl: DioClient.resolveImageUrl(json['profileImageUrl'] as String? ?? ''),
+       profileImageUrl: DioClient.resolveImageUrl(
+          json['profileImageUrl'] as String?)
     );
   }
 

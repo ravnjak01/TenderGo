@@ -68,26 +68,26 @@ namespace TenderGo.Services.StateMachines.BidStates
                 .FirstAsync(b => b.Id == entity.Id);
 
 
-            //try
-            //{
-            //    await _pubSub.PublishAsync(
-            //        new BidCreatedEvent
-            //        {
-            //            TenderId = entity.TenderId,
-            //            OwnerUserId = tender.CreatedByUserId,
-            //            OfferedPrice = entity.OfferedPrice,
-            //            TenderTitle = tender.Title
-            //        },
-            //        cfg => cfg.WithTopic("bid_created"));
-            //}
-            //catch (Exception ex)
-            //{
-            //    _logger.LogWarning(
-            //        ex,
-            //        "Bid saved but BidCreatedEvent was not published for tender {TenderId}",
-            //        entity.TenderId);
+            try
+            {
+                await _pubSub.PublishAsync(
+                    new BidCreatedEvent
+                    {
+                        TenderId = entity.TenderId,
+                        OwnerUserId = tender.CreatedByUserId,
+                        OfferedPrice = entity.OfferedPrice,
+                        TenderTitle = tender.Title
+                    },
+                    cfg => cfg.WithTopic("bid_created"));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Bid saved but BidCreatedEvent was not published for tender {TenderId}",
+                    entity.TenderId);
 
-            //}
+            }
 
             return _mapper.Map<BidDTO>(savedBid);
         }
