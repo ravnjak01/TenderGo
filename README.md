@@ -11,6 +11,7 @@
 
  > **Napomena:** U bazi postoji više predefinisanih mobilnih korisnika. Za potpuno testiranje svih funkcionalnosti aplikacije preporučuje se korištenje korisničkog računa amina@tendergo.com, jer su za njega seedani svi podaci potrebni za demonstraciju sistema (tenderi, ponude, notifikacije, ocjene i ostali testni podaci). Za korisničke račune marko@tendergo.com i mujo@tendergo.com nisu seedani svi podaci, te se oni mogu koristiti samo za djelimično testiranje pojedinih funkcionalnosti.
 > Seeder se automatski izvršava pri pokretanju aplikacije.
+> Za testiranje funkcionalnosti registracije i resetovanja lozinke preporučuje se kreiranje novog korisničkog računa sa vlastitom email adresom, kako bi reset kodovi bili dostavljeni na email kojem korisnik ima pristup.
 
 ## Preduslovi
 
