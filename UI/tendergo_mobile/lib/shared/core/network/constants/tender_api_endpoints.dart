@@ -12,18 +12,15 @@ class TenderApiEndpoints {
   static const String insert = _tenderBase;
 
 
-
   static String delete(int id) => '$_tenderBase/$id';
 
 
   static const String getActive = '$_tenderBase/active';
 
- 
 
   static String getByCategory(int id) => '$_tenderBase/category/$id';
 
   static String getByUser(String userId) => '$_tenderBase/user/$userId';
-
 
 
   static String cancel(int id) => '$_tenderBase/$id/cancel';

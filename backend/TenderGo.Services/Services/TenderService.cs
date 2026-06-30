@@ -191,37 +191,20 @@ public async Task<IEnumerable<TenderDTO>> GetBookmarkedTendersAsync(string userI
 
                 _context.Tenders.Add(entity);
 
-                if (request.ImageBytes != null && request.ImageBytes.Any())
+                if (request.Images != null && request.Images.Any())
                 {
                     entity.Images = new List<TenderImage>();
-                    for (int i = 0; i < request.ImageBytes.Count; i++)
+                    for (int i = 0; i < request.Images.Count; i++)
                     {
+                        var imgReq = request.Images[i];
 
-                        var bytes = request.ImageBytes[i];
-                        var hash = await _imageService.CalculateHash(bytes);
-
-                        var existingImage = await _context.TenderImages
-                            .FirstOrDefaultAsync(img => img.ImageHash == hash);
-
-                        if (existingImage != null)
+                        // Dodajemo sliku u bazu i povezujemo je sa tenderom
+                        entity.Images.Add(new TenderImage
                         {
-                            entity.Images.Add(new TenderImage
-                            {
-                                ImageUrl = existingImage.ImageUrl,
-                                ImageHash = hash,
-                                IsPrimary = i == 0
-                            });
-                        }
-                        else
-                        {
-                            var uploadResult = await _imageService.UploadImageAsync(bytes, "tenders", i == 0);
-                            entity.Images.Add(new TenderImage
-                            {
-                                ImageUrl = uploadResult.ImageUrl,
-                                ImageHash = hash,
-                                IsPrimary = i == 0
-                            });
-                        }
+                            ImageUrl = imgReq.ImageUrl,
+                            ImageHash = imgReq.ImageHash,
+                            IsPrimary = i == 0 // Prva slika u nizu je primarna
+                        });
                     }
                 }
 

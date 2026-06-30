@@ -72,11 +72,16 @@ class AuthInterceptor extends Interceptor {
     final statusCode = err.response?.statusCode;
     final path = err.requestOptions.path;
 
+    if (err.requestOptions.extra['isRetry'] == true) {
+  return handler.next(err);
+}
+
     if (statusCode != 401 ||
-        _isPublicPath(path) ||
-        path == ApiEndpoints.refreshToken) {
-      return handler.next(err);
-    }
+    _isPublicPath(path) ||
+    path == ApiEndpoints.refreshToken ||
+    err.requestOptions.extra['isRetry'] == true) { // <-- DODAJ OVO
+  return handler.next(err);
+}
 
     if (_isRefreshing) {
       final completer = Completer<Response<dynamic>>();
@@ -152,8 +157,9 @@ class AuthInterceptor extends Interceptor {
     }
   }
 
-  Future<Response<dynamic>> _retry(RequestOptions original) async {
+ Future<Response<dynamic>> _retry(RequestOptions original) async {
     final token = await _tokenStore.readAccessToken();
+    print("RETRY TOKEN: $token");
     final headers = Map<String, dynamic>.from(original.headers);
 
     if (token != null && token.trim().isNotEmpty && _looksLikeJwt(token)) {
@@ -162,13 +168,40 @@ class AuthInterceptor extends Interceptor {
       headers.remove('Authorization');
     }
 
+    dynamic finalData = original.data;
+
+    // RJEŠENJE ZA RE-TRY MULTIPART PODATAKA
+    if (original.data is FormData) {
+      final originalFormData = original.data as FormData;
+      final newFormData = FormData();
+
+      // 1. Kopiraj obična tekstualna polja
+      newFormData.fields.addAll(originalFormData.fields);
+
+      // 2. Kloniraj datoteke koristeći ugrađenu .clone() metodu iz Dio paketa
+      for (final filePair in originalFormData.files) {
+        newFormData.files.add(
+          MapEntry(
+            filePair.key,
+            filePair.value.clone(), // Sprečava "already been finalized" grešku
+          ),
+        );
+      }
+      finalData = newFormData;
+      
+      // Ukloni stari content-type da se generira novi boundary header
+      headers.remove('content-type'); 
+    }
+
+    // --- OVO JE LINIJA KOJA JE NEDOSTAJALA ---
     return _dio.request<dynamic>(
       original.path,
-      data: original.data,
+      data: finalData,
       queryParameters: original.queryParameters,
       options: Options(
         method: original.method,
         headers: headers,
+        extra: {'isRetry': true},
       ),
     );
   }

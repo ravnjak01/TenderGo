@@ -1,6 +1,4 @@
-import 'dart:io';
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:tendergo/shared/core/network/constants/tender_api_endpoints.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
@@ -16,37 +14,6 @@ class TenderService {
   TenderService(this._dio, this._imageService);
 
   ImageService get imageService => _imageService;
-
-  Future<TenderInsertRequest> _withImageBytes(
-    TenderInsertRequest data,
-    List<PlatformFile>? imageFiles,
-  ) async {
-    if (imageFiles == null || imageFiles.isEmpty) return data;
-
-    final byteImages = <Uint8List>[];
-    for (final file in imageFiles) {
-      if (file.bytes != null && file.bytes!.isNotEmpty) {
-        byteImages.add(file.bytes!);
-        continue;
-      }
-      if (file.path != null && file.path!.isNotEmpty) {
-        final diskBytes = await File(file.path!).readAsBytes();
-        if (diskBytes.isNotEmpty) byteImages.add(diskBytes);
-      }
-    }
-
-    if (byteImages.isEmpty) return data;
-
-    return TenderInsertRequest(
-      title: data.title,
-      maxBudget: data.maxBudget,
-      locationId: data.locationId,
-      description: data.description,
-      categoryId: data.categoryId,
-      deadline: data.deadline,
-      imageBytes: byteImages,
-    );
-  }
 
   T _unwrapEnvelope<T>(Response response, T Function(dynamic data) mapper) {
     return mapper(ResponseParser.data(response.data));
@@ -94,13 +61,27 @@ class TenderService {
     List<PlatformFile>? imageFiles,
   }) async {
     try {
-      final request = await _withImageBytes(data, imageFiles);
+      final uploadedImages = imageFiles == null || imageFiles.isEmpty
+          ? data.images
+          : await _imageService.uploadAll(imageFiles);
+      final request = TenderInsertRequest(
+        title: data.title,
+        maxBudget: data.maxBudget,
+        locationId: data.locationId,
+        description: data.description,
+        categoryId: data.categoryId,
+        deadline: data.deadline,
+        images: uploadedImages,
+      );
       final response = await _dio.post(
         TenderApiEndpoints.insert,
         data: request.toJson(),
       );
 
-      return _unwrapEnvelope(response, (data) => TenderDto.fromJson(data as Map<String, dynamic>));
+      return _unwrapEnvelope(
+        response,
+        (data) => TenderDto.fromJson(data as Map<String, dynamic>),
+      );
     } on DioException catch (e) {
       throw _handleError(e, 'Greška pri kreiranju tendera');
     }

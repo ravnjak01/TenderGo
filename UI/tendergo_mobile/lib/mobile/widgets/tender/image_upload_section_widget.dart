@@ -9,6 +9,7 @@ class TenderImageUploadSection extends StatelessWidget {
   final bool isButtonFullWidth;
   final double buttonHeight;
   final double buttonWidth;
+  final bool isEnabled;
 
   const TenderImageUploadSection({
     super.key,
@@ -18,6 +19,7 @@ class TenderImageUploadSection extends StatelessWidget {
     this.isButtonFullWidth = true,
     this.buttonHeight = 48,
     this.buttonWidth = 220,
+    this.isEnabled = true,
   });
 
   @override
@@ -29,9 +31,9 @@ class TenderImageUploadSection extends StatelessWidget {
           child: SizedBox(
             width: isButtonFullWidth ? double.infinity : buttonWidth,
             child: FilledButton.icon(
-              onPressed: onPickFromDisk,
+              onPressed: isEnabled ? onPickFromDisk : null,
               icon: const Icon(Icons.upload_file_rounded, size: 16),
-              label: const Text('Upload image'),
+              label: const Text('Upload images'),
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
@@ -45,66 +47,127 @@ class TenderImageUploadSection extends StatelessWidget {
         ),
         if (imageFiles.isNotEmpty) ...[
           const SizedBox(height: 12),
-          _ImageFileChips(imageFiles: imageFiles, onRemoveFile: onRemoveFile),
+          _ImagePreviewList(
+            imageFiles: imageFiles,
+            onRemoveFile: onRemoveFile,
+            isEnabled: isEnabled,
+          ),
         ],
       ],
     );
   }
 }
 
-class _ImageFileChips extends StatelessWidget {
+class _ImagePreviewList extends StatelessWidget {
   final List<PlatformFile> imageFiles;
   final ValueChanged<int> onRemoveFile;
+  final bool isEnabled;
 
-  const _ImageFileChips({required this.imageFiles, required this.onRemoveFile});
+  const _ImagePreviewList({
+    required this.imageFiles,
+    required this.onRemoveFile,
+    required this.isEnabled,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: List.generate(
-        imageFiles.length,
-        (i) => Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: AppColors.surfaceVariant,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppColors.outline),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.upload_file_rounded,
-                size: 13,
-                color: AppColors.textSecondary,
-              ),
-              const SizedBox(width: 5),
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 160),
-                child: Text(
-                  imageFiles[i].name,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
+    return SizedBox(
+      height: 96,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: imageFiles.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        itemBuilder: (context, index) {
+          final file = imageFiles[index];
+
+          return SizedBox(
+            width: 96,
+            height: 96,
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceVariant,
+                        border: Border.all(color: AppColors.outline),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: _ImagePreview(file: file),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 6),
-              GestureDetector(
-                onTap: () => onRemoveFile(i),
-                child: const Icon(
-                  Icons.close_rounded,
-                  size: 13,
-                  color: AppColors.error,
+                Positioned(
+                  top: 4,
+                  right: 4,
+                  child: Material(
+                    color: AppColors.error,
+                    borderRadius: BorderRadius.circular(999),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(999),
+                      onTap: isEnabled ? () => onRemoveFile(index) : null,
+                      child: const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: Icon(
+                          Icons.close_rounded,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _ImagePreview extends StatelessWidget {
+  final PlatformFile file;
+
+  const _ImagePreview({required this.file});
+
+  @override
+  Widget build(BuildContext context) {
+    final bytes = file.bytes;
+    if (bytes != null && bytes.isNotEmpty) {
+      return Image.memory(
+        bytes,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+      );
+    }
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Icon(
+          Icons.image_rounded,
+          color: AppColors.textSecondary,
+          size: 24,
+        ),
+        const SizedBox(height: 6),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+          child: Text(
+            file.name,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 11,
+            ),
           ),
         ),
-      ),
+      ],
     );
   }
 }

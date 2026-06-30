@@ -53,7 +53,6 @@ class TenderProvider extends BaseProvider {
       _savedIds = bookmarkedTenders.map((t) => t.id).toSet();
       notifyListeners();
     } catch (e) {
-      debugPrint('Greška pri učitavanju bookmarka u provideru: $e');
     }
   }
 
@@ -183,7 +182,6 @@ class TenderProvider extends BaseProvider {
         query: normalized,
       );
     } catch (e) {
-      debugPrint('Failed to log search activity: $e');
     }
   }
 
@@ -257,6 +255,7 @@ class TenderProvider extends BaseProvider {
         'tenderId': bid.tenderId.toString(),
         'ratedUserId': ratedUserId,
         'ratedUserName': ratedUserName.isEmpty ? null : ratedUserName,
+        'tenderTitle':bid.tenderTitle
       };
     } catch (_) {
       return null;

@@ -30,9 +30,7 @@ class ImageService {
       final response = await _dio.post(
         ApiEndpoints.uploadImage,
         data: formData,
-        options: Options(
-          contentType: Headers.multipartFormDataContentType,
-        ),
+        
       );
 
       final innerData = ResponseParser.object(response.data);
@@ -64,7 +62,7 @@ class ImageService {
       }
     }
 
-    if (results.isEmpty && errors.isNotEmpty) {
+    if (errors.isNotEmpty) {
       throw Exception(errors.join('; '));
     }
 

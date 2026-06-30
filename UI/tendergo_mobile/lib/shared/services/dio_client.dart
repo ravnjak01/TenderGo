@@ -1,11 +1,17 @@
 import 'dart:io';
-
 import 'package:dio/dio.dart';
 import 'package:dio/io.dart' as dio_io;
 import 'package:flutter/foundation.dart';
 import 'package:tendergo/shared/core/network/interceptors/auth_interceptor.dart';
 
 class DioClient {
+  // 1. Privatni konstruktor i statička instanca (Singleton)
+  DioClient._internal();
+  static final DioClient _instance = DioClient._internal();
+  factory DioClient() => _instance;
+
+  static Dio? _dio;
+
   static const String _configuredApiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
   );
@@ -14,11 +20,9 @@ class DioClient {
     if (_configuredApiBaseUrl.trim().isNotEmpty) {
       return _configuredApiBaseUrl;
     }
-
     if (!kIsWeb && Platform.isAndroid) {
       return 'http://10.0.2.2:8080';
     }
-
     return 'http://localhost:8080';
   }
 
@@ -37,7 +41,6 @@ class DioClient {
     if (withoutTrailingSlash.endsWith('/api')) {
       return '$withoutTrailingSlash/';
     }
-
     return '$withoutTrailingSlash/api/';
   }
 
@@ -52,24 +55,27 @@ class DioClient {
     return trimmed.startsWith('/') ? '$origin$trimmed' : '$origin/$trimmed';
   }
 
+  // 2. Vrati uvijek ISTU instancu
   static Dio getDio() {
+    if (_dio != null) return _dio!;
+
     String finalUrl = _baseUrl;
     if (!finalUrl.endsWith('/')) {
       finalUrl = '$finalUrl/';
     }
 
-    final dio = Dio(
+    _dio = Dio(
       BaseOptions(
         baseUrl: finalUrl,
         connectTimeout: const Duration(seconds: 10),
         receiveTimeout: const Duration(seconds: 10),
         responseType: ResponseType.json,
-        contentType: 'application/json',
+        // UKLONJEN 'application/json' odavde da ne kvari Multipart preglede!
       ),
     );
 
-    if (dio.httpClientAdapter is dio_io.IOHttpClientAdapter) {
-      (dio.httpClientAdapter as dio_io.IOHttpClientAdapter).createHttpClient =
+    if (_dio!.httpClientAdapter is dio_io.IOHttpClientAdapter) {
+      (_dio!.httpClientAdapter as dio_io.IOHttpClientAdapter).createHttpClient =
           () {
             final client = HttpClient();
             client.badCertificateCallback =
@@ -80,10 +86,10 @@ class DioClient {
           };
     }
 
-    dio.interceptors.add(AuthInterceptor(dio));
+    _dio!.interceptors.add(AuthInterceptor(_dio!));
 
     if (kDebugMode) {
-      dio.interceptors.add(
+      _dio!.interceptors.add(
         LogInterceptor(
           request: true,
           requestHeader: true,
@@ -96,6 +102,6 @@ class DioClient {
       );
     }
 
-    return dio;
+    return _dio!;
   }
 }
