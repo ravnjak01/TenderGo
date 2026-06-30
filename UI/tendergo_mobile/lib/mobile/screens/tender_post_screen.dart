@@ -164,7 +164,6 @@ class _MobileTenderPostScreenState extends State<MobileTenderPostScreen> {
             : _descCtrl.text.trim(),
         categoryId: _selectedCategoryId!,
         deadline: _deadline!,
-        imageBytes: null,
       );
 
       final provider = context.read<TenderProvider>();
@@ -174,6 +173,9 @@ class _MobileTenderPostScreenState extends State<MobileTenderPostScreen> {
       );
       if (!mounted) return;
       if (created == null) {
+        setState(() {
+          _isLoading = false;
+        });
         SnackbarHelper.show(
           context,
           provider.error ?? 'Failed to post tender',
@@ -197,158 +199,196 @@ class _MobileTenderPostScreenState extends State<MobileTenderPostScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final categories = context.watch<TenderProvider>().categories;
-    final bool isDesktopWidth = MediaQuery.sizeOf(context).width >= 900;
-    final int descriptionLines = isDesktopWidth ? 5 : 4;
+@override
+Widget build(BuildContext context) {
+  final categories = context.watch<TenderProvider>().categories;
+  final bool isDesktopWidth = MediaQuery.sizeOf(context).width >= 900;
+  final int descriptionLines = isDesktopWidth ? 5 : 4;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.surface,
-        elevation: 0,
-        leading: const CustomBackButton(),
-        title: const Text('Post Tender'),
-      ),
-      body: SafeArea(
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-            children: [
-              TextFormField(
-                controller: _titleCtrl,
-                decoration: const InputDecoration(labelText: 'Title *'),
-                validator: (v) => _validateRequired(v, 'Title'),
+  // Jedinstven stil za sve nazive (labele) iznad polja
+  const labelStyle = TextStyle(
+    fontSize: 14,
+    fontWeight: FontWeight.w600,
+    color: Colors.black87,
+  );
+
+  return Scaffold(
+    backgroundColor: AppColors.background,
+    appBar: AppBar(
+      backgroundColor: AppColors.surface,
+      elevation: 0,
+      leading: const CustomBackButton(),
+      title: const Text('Create New Tender'),
+    ),
+    body: SafeArea(
+      child: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+          children: [
+            // --- TITLE ---
+            const Text('Title *', style: labelStyle),
+            const SizedBox(height: 6),
+            TextFormField(
+              controller: _titleCtrl,
+              decoration: const InputDecoration(
+                hintText: 'Enter tender title',
               ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _budgetCtrl,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                inputFormatters: [
-                  FilteringTextInputFormatter.deny(RegExp(r'-')),
-                  FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*$')),
-                ],
-                decoration: const InputDecoration(labelText: 'Max Budget *'),
-                validator: (v) {
-                  if (v == null || v.trim().isEmpty) {
-                    return 'Budget is required';
-                  }
-                  final parsed = double.tryParse(v.trim());
-                  if (parsed == null || parsed <= 0) return 'Invalid amount';
-                  return null;
-                },
+              validator: (v) => _validateRequired(v, 'Title'),
+            ),
+            const SizedBox(height: 16),
+
+            // --- MAX BUDGET ---
+            const Text('Max Budget *', style: labelStyle),
+            const SizedBox(height: 6),
+            TextFormField(
+              controller: _budgetCtrl,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
               ),
-              const SizedBox(height: 12),
-              TenderCategorySection(
-                isLoading: _isCategoryLoading,
-                loadError: _categoryLoadError,
-                onRetry: _loadCategories,
-                categories: categories,
-                selectedCategoryId: _selectedCategoryId,
-                validator: (value) {
-                  if (value == null) {
-                    return 'Please select a category';
-                  }
-                  return null;
-                },
-                onChanged: (value) {
-                  setState(() {
-                    _selectedCategoryId = value;
-                  });
-                },
-              ),
-              const SizedBox(height: 12),
-              TenderLocationSection(
-                locationService: _locationService,
-                selectedLocationId: _selectedLocationId,
-                onChanged: (value) {
-                  setState(() => _selectedLocationId = value);
-                },
-                validator: (value) {
-                  if (value == null) {
-                    return 'Please select a city';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 12),
-              DatepickerWidget(
-                deadline: _deadline,
-                onDateSelected: (newDate) {
-                  setState(() {
-                    _deadline = newDate;
-                    _deadlineError = null;
-                  });
-                },
-              ),
-              if (_deadlineError != null) ...[
-                const SizedBox(height: 6),
-                Padding(
-                  padding: const EdgeInsets.only(left: 12),
-                  child: Text(
-                    _deadlineError!,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
+              inputFormatters: [
+                FilteringTextInputFormatter.deny(RegExp(r'-')),
+                FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*$')),
               ],
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _descCtrl,
-                minLines: descriptionLines,
-                maxLines: descriptionLines,
-                decoration: const InputDecoration(
-                  labelText: 'Description (optional)',
-                ),
+              decoration: const InputDecoration(
+                hintText: 'Enter maximum budget',
               ),
-              const SizedBox(height: 16),
-              TenderImageUploadSection(
-                imageFiles: _imageFiles,
-                onPickFromDisk: _pickImagesFromDisk,
-                onRemoveFile: _removeImageFile,
-                isButtonFullWidth: false,
-                buttonWidth: 190,
-                buttonHeight: 42,
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton.icon(
-                  onPressed: _isLoading ? null : _submitTender,
-                  icon: _isLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Icon(Icons.publish_rounded, color: Colors.white),
-                  label: const Text(
-                    'Publish',
-                    style: TextStyle(color: Colors.white, fontSize: 16),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 0,
+              validator: (v) {
+                if (v == null || v.trim().isEmpty) {
+                  return 'Budget is required';
+                }
+                final parsed = double.tryParse(v.trim());
+                if (parsed == null || parsed <= 0) return 'Invalid amount';
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+
+            // --- CATEGORY ---
+            const Text('Category *', style: labelStyle),
+            const SizedBox(height: 6),
+            TenderCategorySection(
+              isLoading: _isCategoryLoading,
+              loadError: _categoryLoadError,
+              onRetry: _loadCategories,
+              categories: categories,
+              selectedCategoryId: _selectedCategoryId,
+              validator: (value) {
+                if (value == null) {
+                  return 'Please select a category';
+                }
+                return null;
+              },
+              onChanged: (value) {
+                setState(() {
+                  _selectedCategoryId = value;
+                });
+              },
+            ),
+            const SizedBox(height: 16), // Usklađen razmak na 16px
+
+            // --- LOCATION / COUNTRY ---
+            const Text('Location *', style: labelStyle),
+            const SizedBox(height: 6),
+            TenderLocationSection(
+              locationService: _locationService,
+              selectedLocationId: _selectedLocationId,
+              onChanged: (value) {
+                setState(() => _selectedLocationId = value);
+              },
+              validator: (value) {
+                if (value == null) {
+                  return 'Please select a city';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+
+            // --- DEADLINE ---
+            const Text('Deadline *', style: labelStyle),
+            const SizedBox(height: 6),
+            DatepickerWidget(
+              deadline: _deadline,
+              onDateSelected: (newDate) {
+                setState(() {
+                  _deadline = newDate;
+                  _deadlineError = null;
+                });
+              },
+            ),
+            if (_deadlineError != null) ...[
+              const SizedBox(height: 6),
+              Padding(
+                padding: const EdgeInsets.only(left: 12),
+                child: Text(
+                  _deadlineError!,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.error,
+                    fontSize: 12,
                   ),
                 ),
               ),
             ],
-          ),
+            const SizedBox(height: 16),
+            
+            // --- DESCRIPTION ---
+            const Text('Description (optional)', style: labelStyle),
+            const SizedBox(height: 6),
+            TextFormField(
+              controller: _descCtrl,
+              minLines: descriptionLines,
+              maxLines: descriptionLines,
+              decoration: const InputDecoration(
+                hintText: 'Enter tender description...',
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // --- IMAGES ---
+            TenderImageUploadSection(
+              imageFiles: _imageFiles,
+              onPickFromDisk: _pickImagesFromDisk,
+              onRemoveFile: _removeImageFile,
+              isEnabled: !_isLoading,
+              isButtonFullWidth: false,
+              buttonWidth: 190,
+              buttonHeight: 42,
+            ),
+            const SizedBox(height: 24),
+
+            // --- BUTTON ---
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton.icon(
+                onPressed: _isLoading ? null : _submitTender,
+                icon: _isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.publish_rounded, color: Colors.white),
+                label: const Text(
+                  'Create',
+                  style: TextStyle(color: Colors.white, fontSize: 16),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
-    );
-  }
-}
+    ),
+  );
+}}

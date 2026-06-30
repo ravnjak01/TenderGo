@@ -50,7 +50,6 @@ class _MobileTenderListScreenState extends State<MobileTenderListScreen>   with 
 
   @override
   void didPopNext() {
-    debugPrint("--- DID POP NEXT FIRED SUCCESSFULLY ---");
     _refreshBookmarks();
   }
 

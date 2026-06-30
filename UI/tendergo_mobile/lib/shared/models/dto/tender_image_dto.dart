@@ -1,5 +1,3 @@
-import 'package:tendergo/shared/core/utils/json_parser.dart';
-
 class TenderImageDto {
   final String imageUrl;
   final bool isPrimary;
@@ -23,6 +21,7 @@ class TenderImageDto {
 
   Map<String, dynamic> toJson() => {
         'imageUrl': imageUrl,
+        'imageHash': imageHash,
         'isPrimary': isPrimary,
       };
 }

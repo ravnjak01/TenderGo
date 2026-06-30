@@ -1,14 +1,13 @@
-import 'dart:convert';
-import 'dart:typed_data';
+import 'package:tendergo/shared/models/dto/tender_image_dto.dart';
 
 class TenderInsertRequest {
   final String title;
-  final double maxBudget;
+  final double maxBudget; 
   final int locationId;
-  final String? description;
+  final String? description; 
   final int categoryId;
   final DateTime deadline;
-  final List<Uint8List>? imageBytes;
+  final List<TenderImageDto> images;
 
   TenderInsertRequest({
     required this.title,
@@ -17,19 +16,25 @@ class TenderInsertRequest {
     this.description,
     required this.categoryId,
     required this.deadline,
-    this.imageBytes, 
+    this.images = const [],
   });
 
   Map<String, dynamic> toJson() {
     return {
       'title': title,
-      'maxBudget': maxBudget,
+      'maxBudget': maxBudget, 
       'locationId': locationId,
-      'description': description,
+      'description': description, 
       'categoryId': categoryId,
       'deadline': deadline.toIso8601String(),
-      'imageBytes': imageBytes?.map((bytes) => base64Encode(bytes)).toList(),
+      'images': images
+          .map(
+            (image) => {
+              'imageUrl': image.imageUrl,
+              'imageHash': image.imageHash,
+            },
+          )
+          .toList(),
     };
   }
-
 }

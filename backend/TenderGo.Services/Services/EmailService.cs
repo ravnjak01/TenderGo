@@ -34,7 +34,12 @@ public class EmailService: IEmailService
             {
                 From = new MailAddress(_emailSettings.From),
                 Subject = "Password reset ",
-                IsBodyHtml = true
+                IsBodyHtml = true,
+                Body = $@"
+                <h3>Password Reset Request</h3>
+                <p>You requested a password reset. Please use the following code to reset your password:</p>
+                <h2 style='color: #2B6CB0; letter-spacing: 2px;'>{resetCode}</h2>
+                <p>If you didn't request this, you can safely ignore this email.</p>"
             };
             mail.To.Add(toEmail);
 

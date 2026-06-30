@@ -90,7 +90,6 @@ class _MobileTenderDetailsScreenState extends State<MobileTenderDetailsScreen> {
         durationSeconds: 5,
       );
     } catch (e) {
-      debugPrint('Failed to log tender view activity: $e');
     }
   }
 

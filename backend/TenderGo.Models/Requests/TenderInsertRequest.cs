@@ -25,6 +25,11 @@ namespace TenderGo.Models.Requests
 
         [Required(ErrorMessage = "Deadline is required.")]
         public DateTime Deadline { get; set; }
-        public List<byte[]>? ImageBytes { get; set; } = new();
+        public List<TenderImageUploadModel> Images { get; set; } = new();
+    }
+    public class TenderImageUploadModel
+    {
+        public string ImageUrl { get; set; }
+        public string ImageHash { get; set; }
     }
 }

@@ -42,10 +42,7 @@ class AuthService {
 
         if (kDebugMode) {
           final saved = await _tokenStore.readAccessToken();
-          debugPrint('SAVED JWT: $saved');
-          debugPrint(
-            'JWT valid format: ${saved != null && saved.split('.').length == 3}',
-          );
+        
         }
 
         return ApiResponse.success(null);
