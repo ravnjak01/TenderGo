@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-// ─────────────────────────────────────────────────────────────────
-//  AppColors  –  single source of truth for every colour in the app
-// ─────────────────────────────────────────────────────────────────
+
 class AppColors {
   AppColors._();
 

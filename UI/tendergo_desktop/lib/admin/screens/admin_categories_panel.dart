@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:tendergo/shared/models/dto/paged_result.dart';
+import 'package:tendergo/shared/models/requests/category_search_request.dart';
 import 'package:tendergo/shared/services/category_service.dart';
 import 'package:tendergo/shared/services/dio_client.dart';
 import 'package:tendergo/shared/widgets/common/app_dialogs.dart';
@@ -21,48 +23,60 @@ class _AdminCategoriesPanelState extends State<AdminCategoriesPanel> {
   Map<int, CategoryStatisticsDto> _statsByCategory = {};
   bool _isLoading = true;
   String? _error;
-
+int _currentPage = 1;
+  int _pageSize = 5; 
+  int _totalCount = 0;
   @override
   void initState() {
     super.initState();
     _categoryService = CategoryService(DioClient.getDio());
-    _fetchCategories();
+    _loadData();
   }
 
-  Future<void> _fetchCategories({String searchTerm = ''}) async {
+  // 1. GLAVNA METODA ZA INICIJALNO UČITAVANJE I REFRESH
+  Future<void> _loadData({String searchTerm = '', bool refreshAll = false, bool isNewSearch = false}) async {
+    if (isNewSearch) {
+      _currentPage = 1;
+    }
+
     setState(() {
       _isLoading = true;
       _error = null;
     });
 
     try {
-      final normalizedSearch = searchTerm.trim().toLowerCase();
-      final statistics = await _categoryService.getCategoryStatistics();
-      final filteredStatistics = statistics.where((stat) {
-        if (normalizedSearch.isEmpty) return true;
+      // Ako je prvo učitavanje ILI eksplicitan refresh, povuci i statistiku i kategorije paralelno
+      if (refreshAll || _categories.isEmpty) {
+        final results = await Future.wait([
+          _categoryService.getCategoryStatistics(),
+          _categoryService.search(CategorySearchRequest(
+            searchTerm: searchTerm.isEmpty ? null : searchTerm,
+            page: _currentPage,
+            pageSize: _pageSize,
+          )),
+        ]);
 
-        return stat.categoryName.toLowerCase().contains(normalizedSearch) ||
-            stat.description.toLowerCase().contains(normalizedSearch);
-      }).toList();
-      final categories = filteredStatistics
-          .map(
-            (stat) => CategoryDto(
-              id: stat.categoryId,
-              name: stat.categoryName,
-              description: stat.description,
-              isActive: stat.isActive,
-            ),
-          )
-          .toList();
+        final statistics = results[0] as List<CategoryStatisticsDto>;
+        final pagedResult = results[1] as PagedResult<CategoryDto>;
 
-      setState(() {
-        _categories = categories;
-        _statsByCategory = {
-          for (final stat in statistics) stat.categoryId: stat,
-        };
-        _isLoading = false;
-      });
+        if (!mounted) return;
+
+        setState(() {
+          _statsByCategory = {
+            for (final stat in statistics) stat.categoryId: stat,
+          };
+          _categories = pagedResult.result;
+          _totalCount = pagedResult.totalCount;
+          _currentPage = pagedResult.page;
+          _pageSize = pagedResult.pageSize;
+          _isLoading = false;
+        });
+      } else {
+        // Ako je samo kucanje pretrage ili prelazak na stranicu, povuci SAMO paginirane kategorije
+        await _fetchCategoriesOnly(searchTerm: searchTerm);
+      }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
         _isLoading = false;
@@ -70,9 +84,31 @@ class _AdminCategoriesPanelState extends State<AdminCategoriesPanel> {
     }
   }
 
-  Future<void> _refreshCategories() {
-    return _fetchCategories(searchTerm: _searchController.text);
+  // 2. POMOĆNA METODA KOJA RADI SAMO PRETRAGU I PAGINACIJU (BEZ STATISTIKE)
+  Future<void> _fetchCategoriesOnly({String searchTerm = ''}) async {
+    final request = CategorySearchRequest(
+      searchTerm: searchTerm.isEmpty ? null : searchTerm,
+      page: _currentPage,
+      pageSize: _pageSize,
+    );
+
+    final pagedResult = await _categoryService.search(request);
+
+    if (!mounted) return;
+
+    setState(() {
+      _categories = pagedResult.result;
+      _totalCount = pagedResult.totalCount;
+      _currentPage = pagedResult.page;
+      _pageSize = pagedResult.pageSize;
+      _isLoading = false;
+    });
   }
+
+
+Future<void> _refreshCategories() {
+  return _loadData(searchTerm: _searchController.text, refreshAll: true);
+}
 
   Future<void> _showEditCategoryDialog(CategoryDto category) async {
     final currentDescription =
@@ -416,345 +452,400 @@ class _AdminCategoriesPanelState extends State<AdminCategoriesPanel> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: const Color(0xFFF8FAFC), // Svijetlo siva pozadina panela
-      width: double.infinity,
-      padding: const EdgeInsets.all(32.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Naslov i informacije o prijavljenom korisniku
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Upravljanje kategorijama',
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E293B),
-                ),
-              ),
-              RichText(
-                text: const TextSpan(
-                  style: TextStyle(color: Color(0xFF64748B), fontSize: 14),
-                  children: [
-                    TextSpan(text: 'Prijavljen: '),
-                    TextSpan(
-                      text: 'Admin Korisnik',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E293B),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 28),
+Widget build(BuildContext context) {
+  // Izračunavanje ukupnog broja stranica
+  final int totalPages = (_totalCount / _pageSize).ceil();
 
-          // Search bar i Akciono dugme
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                width: 300,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.white,
+  return Container(
+    color: const Color(0xFFF8FAFC), // Svijetlo siva pozadina panela
+    width: double.infinity,
+    padding: const EdgeInsets.all(32.0),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Naslov i informacije o prijavljenom korisniku
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Upravljanje kategorijama',
+              style: TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1E293B),
+              ),
+            ),
+            RichText(
+              text: const TextSpan(
+                style: TextStyle(color: Color(0xFF64748B), fontSize: 14),
+                children: [
+                  TextSpan(text: 'Prijavljen: '),
+                  TextSpan(
+                    text: 'Admin Korisnik',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1E293B),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 28),
+
+        // Search bar i Akciono dugme
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Container(
+              width: 300,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: TextField(
+                controller: _searchController,
+                decoration: const InputDecoration(
+                  hintText: 'Pretraži kategorije...',
+                  hintStyle: TextStyle(
+                    color: Color(0xFF94A3B8),
+                    fontSize: 14,
+                  ),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                  border: InputBorder.none,
+                ),
+                onChanged: (value) {
+                  // Dodat isNewSearch: true kako bi resetovali na prvu stranicu pri novom kucanju
+                  _loadData(searchTerm: value, isNewSearch: true);
+                },
+              ),
+            ),
+            ElevatedButton.icon(
+              onPressed: _showAddCategoryDialog,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF2563EB), // Plava boja
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
+                shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
                 ),
-                child: TextField(
-                  controller: _searchController,
-                  decoration: const InputDecoration(
-                    hintText: 'Pretraži kategorije...',
-                    hintStyle: TextStyle(
-                      color: Color(0xFF94A3B8),
-                      fontSize: 14,
-                    ),
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
-                    border: InputBorder.none,
-                  ),
-                  onChanged: (value) {
-                    _fetchCategories(searchTerm: value);
-                  },
-                ),
+                elevation: 0,
               ),
-              ElevatedButton.icon(
-                onPressed: _showAddCategoryDialog,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(
-                    0xFF2563EB,
-                  ), // Plava boja sa slike
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  elevation: 0,
-                ),
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text(
-                  'Dodaj novu kategoriju',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                ),
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text(
+                'Dodaj novu kategoriju',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
               ),
-            ],
-          ),
-          const SizedBox(height: 24),
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
 
-          // Glavna tabela sa podacima
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _error != null
-                ? Center(child: Text('Greška pri učitavanju: $_error'))
-                : Container(
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.01),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
+        // Glavna tabela sa podacima
+        Expanded(
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _error != null
+              ? Center(child: Text('Greška pri učitavanju: $_error'))
+              : Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.01),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: SingleChildScrollView(
+                    child: DataTable(
+                      horizontalMargin: 24,
+                      headingRowHeight: 55,
+                      dataRowMaxHeight: 75,
+                      dataRowMinHeight: 65,
+                      headingRowColor: MaterialStateProperty.all(
+                        const Color(0xFFF8FAFC),
+                      ),
+                      columns: const [
+                        DataColumn(
+                          label: Text(
+                            'Naziv kategorije',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
+                        ),
+                        DataColumn(
+                          label: Text(
+                            'Opis',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
+                        ),
+                        DataColumn(
+                          label: Text(
+                            'Status',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
+                        ),
+                        DataColumn(
+                          label: Text(
+                            'Ukupno\ntendera',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
+                        ),
+                        DataColumn(
+                          label: Text(
+                            'Akcije',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
                         ),
                       ],
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
-                    ),
-                    child: SingleChildScrollView(
-                      child: DataTable(
-                        horizontalMargin: 24,
-                        headingRowHeight: 55,
-                        dataRowMaxHeight: 75,
-                        dataRowMinHeight: 65,
-                        headingRowColor: MaterialStateProperty.all(
-                          const Color(0xFFF8FAFC),
-                        ),
-                        columns: const [
-                          DataColumn(
-                            label: Text(
-                              'Naziv kategorije',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF64748B),
-                              ),
-                            ),
-                          ),
-                          DataColumn(
-                            label: Text(
-                              'Opis',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF64748B),
-                              ),
-                            ),
-                          ),
-                          DataColumn(
-                            label: Text(
-                              'Status',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF64748B),
-                              ),
-                            ),
-                          ),
-                          DataColumn(
-                            label: Text(
-                              'Ukupno\ntendera',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF64748B),
-                              ),
-                            ),
-                          ),
-                          DataColumn(
-                            label: Text(
-                              'Akcije',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF64748B),
-                              ),
-                            ),
-                          ),
-                        ],
-                        rows: List.generate(_categories.length, (index) {
-                          final category = _categories[index];
-                          final tenderCount = _categoryTenderCount(category);
+                      rows: List.generate(_categories.length, (index) {
+                        final category = _categories[index];
+                        final tenderCount = _categoryTenderCount(category);
 
-                          return DataRow(
-                            cells: [
-                              // Naziv kategorije sa ikonom
-                              DataCell(
-                                Row(
-                                  children: [
-                                    Text(
-                                      _getCategoryIcon(category.name),
-                                      style: const TextStyle(fontSize: 18),
+                        return DataRow(
+                          cells: [
+                            DataCell(
+                              Row(
+                                children: [
+                                  Text(
+                                    _getCategoryIcon(category.name),
+                                    style: const TextStyle(fontSize: 18),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      category.name,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF1E293B),
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: Text(
-                                        category.name,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: Color(0xFF1E293B),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            DataCell(
+                              SizedBox(
+                                width: 300,
+                                child: Text(
+                                  _categoryDescription(category),
+                                  style: const TextStyle(
+                                    color: Color(0xFF475569),
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 2,
+                                ),
+                              ),
+                            ),
+                            DataCell(
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: category.isActive
+                                      ? const Color(0xFFE6FFFA)
+                                      : const Color(0xFFFEE2E2),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  category.isActive ? 'Aktivna' : 'Neaktivna',
+                                  style: TextStyle(
+                                    color: category.isActive
+                                        ? const Color(0xFF047857)
+                                        : const Color(0xFFB91C1C),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            DataCell(
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEFF6FF),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  '$tenderCount aktivnih',
+                                  style: const TextStyle(
+                                    color: Color(0xFF2563EB),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            DataCell(
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 6.0,
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    OutlinedButton(
+                                      onPressed: () =>
+                                          _showEditCategoryDialog(category),
+                                      style: OutlinedButton.styleFrom(
+                                        minimumSize: const Size(65, 26),
+                                        padding: EdgeInsets.zero,
+                                        side: const BorderSide(
+                                          color: Color(0xFFCBD5E1),
                                         ),
-                                        overflow: TextOverflow.ellipsis,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                      ),
+                                      child: const Text(
+                                        'Uredi',
+                                        style: TextStyle(
+                                          color: Color(0xFF475569),
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    OutlinedButton(
+                                      onPressed: () => category.isActive
+                                          ? _deleteCategory(category)
+                                          : _activateCategory(category),
+                                      style: OutlinedButton.styleFrom(
+                                        minimumSize: const Size(65, 26),
+                                        padding: EdgeInsets.zero,
+                                        side: BorderSide(
+                                          color: category.isActive
+                                              ? const Color(0xFFFECACA)
+                                              : const Color(0xFFBBF7D0),
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        category.isActive
+                                            ? 'Obriši'
+                                            : 'Aktiviraj',
+                                        style: TextStyle(
+                                          color: category.isActive
+                                              ? const Color(0xFFEF4444)
+                                              : const Color(0xFF16A34A),
+                                          fontSize: 11,
+                                        ),
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-                              // Opis kategorije
-                              DataCell(
-                                SizedBox(
-                                  width: 300,
-                                  child: Text(
-                                    _categoryDescription(category),
-                                    style: const TextStyle(
-                                      color: Color(0xFF475569),
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                    maxLines: 2,
-                                  ),
-                                ),
-                              ),
-                              // Broj potkategorija (Badge)
-
-                              // Status kategorije
-                              DataCell(
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: category.isActive
-                                        ? const Color(0xFFE6FFFA)
-                                        : const Color(0xFFFEE2E2),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    category.isActive ? 'Aktivna' : 'Neaktivna',
-                                    style: TextStyle(
-                                      color: category.isActive
-                                          ? const Color(0xFF047857)
-                                          : const Color(0xFFB91C1C),
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ),
-
-                              // Ukupno tendera (Plavi tekst/Badge)
-                              DataCell(
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFEFF6FF),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    '$tenderCount aktivnih',
-                                    style: const TextStyle(
-                                      color: Color(0xFF2563EB),
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              // Akcije (Uredi / Obriši dugmad)
-                              DataCell(
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 6.0,
-                                  ),
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      OutlinedButton(
-                                        onPressed: () =>
-                                            _showEditCategoryDialog(category),
-                                        style: OutlinedButton.styleFrom(
-                                          minimumSize: const Size(65, 26),
-                                          padding: EdgeInsets.zero,
-                                          side: const BorderSide(
-                                            color: Color(0xFFCBD5E1),
-                                          ),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              4,
-                                            ),
-                                          ),
-                                        ),
-                                        child: const Text(
-                                          'Uredi',
-                                          style: TextStyle(
-                                            color: Color(0xFF475569),
-                                            fontSize: 11,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      OutlinedButton(
-                                        onPressed: () => category.isActive
-                                            ? _deleteCategory(category)
-                                            : _activateCategory(category),
-                                        style: OutlinedButton.styleFrom(
-                                          minimumSize: const Size(65, 26),
-                                          padding: EdgeInsets.zero,
-                                          side: BorderSide(
-                                            color: category.isActive
-                                                ? const Color(0xFFFECACA)
-                                                : const Color(0xFFBBF7D0),
-                                          ),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              4,
-                                            ),
-                                          ),
-                                        ),
-                                        child: Text(
-                                          category.isActive
-                                              ? 'Obri\u0161i'
-                                              : 'Aktiviraj',
-                                          style: TextStyle(
-                                            color: category.isActive
-                                                ? const Color(0xFFEF4444)
-                                                : const Color(0xFF16A34A),
-                                            fontSize: 11,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          );
-                        }),
-                      ),
+                            ),
+                          ],
+                        );
+                      }),
                     ),
                   ),
+                ),
+        ),
+        
+        // Paginacijska traka dodana na dno panela
+        if (!_isLoading && _error == null && _totalCount > 0) ...[
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Prikazano ${((_currentPage - 1) * _pageSize) + 1} - ${(_currentPage * _pageSize) > _totalCount ? _totalCount : (_currentPage * _pageSize)} od $_totalCount stavki',
+                style: const TextStyle(color: Color(0xFF64748B), fontSize: 14),
+              ),
+              Row(
+                children: [
+                  // Prethodna stranica dugme
+                  OutlinedButton(
+                    onPressed: _currentPage > 1
+                        ? () {
+                            setState(() => _currentPage--);
+                            _fetchCategoriesOnly(searchTerm: _searchController.text);
+                          }
+                        : null,
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFFE2E8F0)),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                    child: const Icon(Icons.arrow_back_ios, size: 14, color: Color(0xFF475569)),
+                  ),
+                  const SizedBox(width: 8),
+                  
+                  // Prikaz broja stranica (Npr. Stranica 1 od 3)
+                  Text(
+                    'Stranica $_currentPage od $totalPages',
+                    style: const TextStyle(
+                      color: Color(0xFF1E293B),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  
+                  // Sljedeća stranica dugme
+                  OutlinedButton(
+                    onPressed: _currentPage < totalPages
+                        ? () {
+                            setState(() => _currentPage++);
+                            _fetchCategoriesOnly(searchTerm: _searchController.text);
+                          }
+                        : null,
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFFE2E8F0)),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                    child: const Icon(Icons.arrow_forward_ios, size: 14, color: Color(0xFF475569)),
+                  ),
+                ],
+              ),
+            ],
           ),
         ],
-      ),
-    );
-  }
+      ],
+    ),
+  );
+}
 }

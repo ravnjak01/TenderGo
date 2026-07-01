@@ -27,6 +27,9 @@ class _AdminLocationsPanelState extends State<AdminLocationsPanel> {
   bool _isLoading = true;
   String? _error;
   bool? _selectedActiveFilter;
+int _currentPage = 1;
+int _pageSize = 5; // Možeš staviti i 3 ako želiš manje redova kao za korisnike
+int _totalCount = 0;
 
   @override
   void initState() {
@@ -42,37 +45,39 @@ class _AdminLocationsPanelState extends State<AdminLocationsPanel> {
     super.dispose();
   }
 
-  Future<void> _loadData({String searchTerm = '', bool refreshOverview = false}) async {
-    final shouldShowLoader = refreshOverview || (searchTerm.isEmpty && _locations.isEmpty);
+  Future<void> _loadData({String searchTerm = '', bool refreshOverview = false, bool isNewSearch = false}) async {
+  final shouldShowLoader = refreshOverview || (searchTerm.isEmpty && _locations.isEmpty);
+
+  if (shouldShowLoader) {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+  }
+
+  try {
+    if (refreshOverview || _locations.isEmpty) {
+      await Future.wait([
+        _fetchOverview(),
+        _fetchStatistics(),
+        _fetchLocations(searchTerm: searchTerm, isNewSearch: isNewSearch),
+      ]);
+    } else {
+      await _fetchLocations(searchTerm: searchTerm, isNewSearch: isNewSearch);
+    }
 
     if (shouldShowLoader) {
       setState(() {
-        _isLoading = true;
-        _error = null;
-      });
-    }
-
-    try {
-      if (refreshOverview || _locations.isEmpty) {
-        await Future.wait([
-          _fetchOverview(),
-          _fetchStatistics(),
-          _fetchLocations(searchTerm: searchTerm),
-        ]);
-      } else {
-        await _fetchLocations(searchTerm: searchTerm);
-      }
-
-      setState(() {
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _error = e.toString();
         _isLoading = false;
       });
     }
+  } catch (e) {
+    setState(() {
+      _error = e.toString();
+      _isLoading = false;
+    });
   }
+}
 
   Future<void> _fetchOverview() async {
     _overview = await _locationService.getLocationOverview();
@@ -83,17 +88,46 @@ class _AdminLocationsPanelState extends State<AdminLocationsPanel> {
     _statsByLocation = {for (var stat in stats) stat.locationId: stat};
   }
 
-  Future<void> _fetchLocations({String searchTerm = ''}) async {
-    _locations = await _locationService.search(
-      LocationSearchRequest(
-        searchTerm: searchTerm,
-        page: 1,
-        pageSize: 10,
-        isActive: _selectedActiveFilter,
-      ),
-    );
+Future<void> _fetchLocations({String searchTerm = '', bool isNewSearch = false}) async {
+  if (isNewSearch) {
+    _currentPage = 1;
   }
 
+  setState(() {
+    _isLoading = true;
+    _error = null;
+  });
+
+  try {
+    // 1. Kreiramo request objekat sa trenutnom stranicom i filterima
+    final request = LocationSearchRequest(
+      searchTerm: searchTerm.isEmpty ? null : searchTerm,
+      page: _currentPage,
+      pageSize: _pageSize,
+      isActive: _selectedActiveFilter,
+    );
+
+    // 2. Pozivamo servis koji sada vraća PagedResult<LocationDto>
+    final pagedResult = await _locationService.search(request);
+    
+    if (!mounted) return;
+
+    // 3. Spasavamo podatke u State varijable
+    setState(() {
+      _locations = pagedResult.result;       // Lista lokacija za tabelu
+      _totalCount = pagedResult.totalCount; // Ukupan broj za paginaciju
+      _currentPage = pagedResult.page;       // Sinhronizacija trenutne stranice
+      _pageSize = pagedResult.pageSize;     // Veličina stranice
+      _isLoading = false;
+    });
+  } catch (e) {
+    if (!mounted) return;
+    setState(() {
+      _error = e.toString();
+      _isLoading = false;
+    });
+  }
+}
   int _activeTenderCount(LocationDto location) {
     return _statsByLocation[location.id]?.tenderCount ?? 0;
   }
@@ -106,6 +140,7 @@ class _AdminLocationsPanelState extends State<AdminLocationsPanel> {
     return _loadData(
       searchTerm: _searchController.text.trim(),
       refreshOverview: true,
+      isNewSearch: true,
     );
   }
   
@@ -360,6 +395,16 @@ class _AdminLocationsPanelState extends State<AdminLocationsPanel> {
     }
   }
 
+  void _onSearchChanged(String value) {
+  if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
+  
+  _debounceTimer = Timer(const Duration(milliseconds: 400), () {
+    // Svaka nova pretraga mora početi od stranice 1
+    _loadData(searchTerm: value.trim(), isNewSearch: true);
+  });
+}
+
+
   Widget _overviewCard(String title, int value, Color color) {
     return Expanded(
       child: Container(
@@ -390,322 +435,374 @@ class _AdminLocationsPanelState extends State<AdminLocationsPanel> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final overview = _overview;
+Widget build(BuildContext context) {
+  final overview = _overview;
 
-    return Container(
-      color: const Color(0xFFF8FAFC),
-      width: double.infinity,
-      padding: const EdgeInsets.all(32.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Upravljanje lokacijama',
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E293B),
+  // Izračunavanje parametara za paginaciju
+  final totalPages = (_totalCount / _pageSize).ceil();
+  final hasPreviousPage = _currentPage > 1;
+  final hasNextPage = _currentPage < totalPages;
+
+  return Container(
+    color: const Color(0xFFF8FAFC),
+    width: double.infinity,
+    padding: const EdgeInsets.all(32.0),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // TOP NASLOV I KORISNIK
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Upravljanje lokacijama',
+              style: TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1E293B),
+              ),
+            ),
+            RichText(
+              text: const TextSpan(
+                style: TextStyle(color: Color(0xFF64748B), fontSize: 14),
+                children: [
+                  TextSpan(text: 'Prijavljen: '),
+                  TextSpan(
+                    text: 'Admin Korisnik',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1E293B),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 28),
+
+        // FILTERI I PRETRAGA
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Container(
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Pretraži lokacije...',
+                    hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    border: InputBorder.none,
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 18, color: Color(0xFF94A3B8)),
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() {});
+                          _fetchLocations(searchTerm: '', isNewSearch: true);
+                            },
+                          )
+                        : null,
+                  ),
+                  onChanged: (value) {
+                    setState(() {});
+                    // Koristimo optimizovani debounce sa isNewSearch: true
+                    if (_debounceTimer?.isActive ?? false) _debounceTimer?.cancel();
+                    _debounceTimer = Timer(const Duration(milliseconds: 400), () {
+                  _fetchLocations(searchTerm: value.trim(), isNewSearch: true);
+                    });
+                  },
                 ),
               ),
-              RichText(
-                text: const TextSpan(
-                  style: TextStyle(color: Color(0xFF64748B), fontSize: 14),
-                  children: [
-                    TextSpan(text: 'Prijavljen: '),
-                    TextSpan(
-                      text: 'Admin Korisnik',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E293B),
+            ),
+            const SizedBox(width: 18),
+            SizedBox(
+              height: 40,
+              child: SegmentedButton<bool?>(
+                showSelectedIcon: false,
+                style: SegmentedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  selectedBackgroundColor: const Color(0xFFEFF6FF),
+                  selectedForegroundColor: const Color(0xFF2563EB),
+                  foregroundColor: const Color(0xFF64748B),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                  side: const BorderSide(color: Color(0xFFE2E8F0)),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                ),
+                segments: const <ButtonSegment<bool?>>[
+                  ButtonSegment<bool?>(
+                    value: null,
+                    label: Text('Sve', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+                  ),
+                  ButtonSegment<bool?>(
+                    value: true,
+                    label: Text('Aktivne', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+                  ),
+                  ButtonSegment<bool?>(
+                    value: false,
+                    label: Text('Neaktivne', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+                  ),
+                ],
+                selected: <bool?>{_selectedActiveFilter},
+                onSelectionChanged: (Set<bool?> newSelection) {
+                  setState(() {
+                    _selectedActiveFilter = newSelection.first;
+                  });
+                  _fetchLocations(searchTerm: '', isNewSearch: true);
+                },
+              ),
+            ),
+            const SizedBox(width: 18),
+            ElevatedButton.icon(
+              onPressed: _showAddLocationDialog,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF2563EB),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                elevation: 0,
+              ),
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text(
+                'Dodaj novu lokaciju',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+
+        // STATISTIČKE KARTICE (OVERVIEW)
+        if (overview != null)
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _overviewCard('Ukupno lokacija', overview.totalLocations, const Color(0xFF2563EB)),
+              _overviewCard('Aktivne lokacije', overview.activeLocations, const Color(0xFF16A34A)),
+              _overviewCard('Neaktivne lokacije', overview.inactiveLocations, const Color(0xFFF59E0B)),
+            ],
+          ),
+        const SizedBox(height: 24),
+
+        // TABELA I PAGINACIJA
+        Expanded(
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _error != null
+                  ? Center(child: Text('Greška pri učitavanju: $_error'))
+                  : Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.01),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          // 1. ZAGLAVLJE PODEŠENE TABELE (HEADER ROW)
+                          Container(
+                            color: const Color(0xFFF8FAFC),
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                            child: const Row(
+                              children: [
+                                Expanded(flex: 3, child: Text('Lokacija', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF64748B)))),
+                                Expanded(flex: 2, child: Text('Država', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF64748B)))),
+                                Expanded(flex: 2, child: Text('Status', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF64748B)))),
+                                Expanded(flex: 2, child: Text('Broj svih tendera', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF64748B)))),
+                                Expanded(flex: 2, child: Text('Akcije', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF64748B)))),
+                              ],
+                            ),
+                          ),
+                          const Divider(height: 1, color: Color(0xFFE2E8F0)),
+
+                          // 2. REDOVI TABELE (BODY)
+                          Expanded(
+                            child: _locations.isEmpty
+                                ? const Center(child: Text('Nema pronađenih lokacija.', style: TextStyle(color: Color(0xFF64748B))))
+                                : ListView.separated(
+                                    itemCount: _locations.length,
+                                    separatorBuilder: (context, index) => const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                                    itemBuilder: (context, index) {
+                                      final location = _locations[index];
+                                      final tenderCount = _activeTenderCount(location);
+
+                                      return Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                        child: Row(
+                                          children: [
+                                            Expanded(
+                                              flex: 3,
+                                              child: Text(
+                                                location.region != null && location.region!.isNotEmpty
+                                                    ? '${location.name}, ${location.region}'
+                                                    : location.name,
+                                                style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                                              ),
+                                            ),
+                                            Expanded(
+                                              flex: 2,
+                                              child: Text(location.country, style: const TextStyle(color: Color(0xFF475569))),
+                                            ),
+                                            Expanded(
+                                              flex: 2,
+                                              child: Align(
+                                                alignment: Alignment.centerLeft,
+                                                child: Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                                  decoration: BoxDecoration(
+                                                    color: location.isActive ? const Color(0xFFE6FFFA) : const Color(0xFFFEE2E2),
+                                                    borderRadius: BorderRadius.circular(12),
+                                                  ),
+                                                  child: Text(
+                                                    location.isActive ? 'Aktivna' : 'Neaktivna',
+                                                    style: TextStyle(
+                                                      color: location.isActive ? const Color(0xFF047857) : const Color(0xFFB91C1C),
+                                                      fontSize: 12,
+                                                      fontWeight: FontWeight.w600,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            Expanded(
+                                              flex: 2,
+                                              child: Align(
+                                                alignment: Alignment.centerLeft,
+                                                child: Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                                  decoration: BoxDecoration(
+                                                    color: const Color(0xFFEFF6FF),
+                                                    borderRadius: BorderRadius.circular(12),
+                                                  ),
+                                                  child: Text(
+                                                    tenderCount.toString(),
+                                                    style: const TextStyle(color: Color(0xFF2563EB), fontSize: 12, fontWeight: FontWeight.w600),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            Expanded(
+                                              flex: 2,
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  OutlinedButton(
+                                                    onPressed: () => _showEditLocationDialog(location),
+                                                    style: OutlinedButton.styleFrom(
+                                                      minimumSize: const Size(65, 26),
+                                                      padding: EdgeInsets.zero,
+                                                      side: const BorderSide(color: Color(0xFFCBD5E1)),
+                                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                                                    ),
+                                                    child: const Text('Uredi', style: TextStyle(color: Color(0xFF475569), fontSize: 11)),
+                                                  ),
+                                                  const SizedBox(width: 6),
+                                                  OutlinedButton(
+                                                    onPressed: () => location.isActive ? _deleteLocation(location) : _activateLocation(location),
+                                                    style: OutlinedButton.styleFrom(
+                                                      minimumSize: const Size(65, 26),
+                                                      padding: EdgeInsets.zero,
+                                                      side: BorderSide(color: location.isActive ? const Color(0xFFFECACA) : const Color(0xFFBBF7D0)),
+                                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                                                    ),
+                                                    child: Text(
+                                                      location.isActive ? 'Obriši' : 'Aktiviraj',
+                                                      style: TextStyle(
+                                                        color: location.isActive ? const Color(0xFFEF4444) : const Color(0xFF16A34A),
+                                                        fontSize: 11,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  ),
+                          ),
+                          
+                          // 3. PODNOŽJE SA PAGINACIJOM (FOOTER ROW)
+                          const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                            color: const Color(0xFFF8FAFC),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Ukupno rezultata: $_totalCount',
+                                  style: const TextStyle(color: Color(0xFF64748B), fontSize: 13, fontWeight: FontWeight.w500),
+                                ),
+                                Row(
+                                  children: [
+                                    OutlinedButton(
+                                      onPressed: hasPreviousPage
+                                          ? () {
+                                              _currentPage--;
+                                              _loadData(searchTerm: _searchController.text);
+                                            }
+                                          : null,
+                                      style: OutlinedButton.styleFrom(
+                                        side: const BorderSide(color: Color(0xFFE2E8F0)),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                      ),
+                                      child: const Text('Prethodna', style: TextStyle(fontSize: 13)),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFF1F5F9),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        'Stranica $_currentPage od ${totalPages == 0 ? 1 : totalPages}',
+                                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Color(0xFF1E293B)),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    OutlinedButton(
+                                      onPressed: hasNextPage
+                                          ? () {
+                                              _currentPage++;
+                                              _loadData(searchTerm: _searchController.text);
+                                            }
+                                          : null,
+                                      style: OutlinedButton.styleFrom(
+                                        side: const BorderSide(color: Color(0xFFE2E8F0)),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                      ),
+                                      child: const Text('Sljedeća', style: TextStyle(fontSize: 13)),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 28),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                child: Container(
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                  ),
-                  child: TextField(
-  controller: _searchController,
-  decoration: InputDecoration(
-    hintText: 'Pretraži lokacije...',
-    hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
-    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-    border: InputBorder.none,
-    // Dodajemo suffixIcon za brisanje teksta
-    suffixIcon: _searchController.text.isNotEmpty
-        ? IconButton(
-            icon: const Icon(Icons.clear, size: 18, color: Color(0xFF94A3B8)),
-            onPressed: () {
-              _searchController.clear();
-              setState(() {}); 
-              _loadData(searchTerm:_searchController.text.trim()); 
-            },
-          )
-        : null,
-  ),
-  onChanged: (value) {
-    if (_debounceTimer?.isActive ?? false) _debounceTimer?.cancel();
-    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
-      _loadData(searchTerm: value.trim());
-    });
-   setState(() {});
-  },
-),
-
-                ),
-              ),
-              const SizedBox(width: 18),
-              Container(
-      height: 40,
-      child: SegmentedButton<bool?>(
-        showSelectedIcon: false, // Isključujemo kvačicu radi čistijeg izgleda
-        style: SegmentedButton.styleFrom(
-          backgroundColor: Colors.white,
-          selectedBackgroundColor: const Color(0xFFEFF6FF), // Svjetlo plava za selektovano
-          selectedForegroundColor: const Color(0xFF2563EB), // Plava boja teksta
-          foregroundColor: const Color(0xFF64748B), // Siva boja za neselektovano
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-          side: const BorderSide(color: Color(0xFFE2E8F0)),
-          padding: const EdgeInsets.symmetric(horizontal: 12),
         ),
-        segments: const <ButtonSegment<bool?>>[
-          ButtonSegment<bool?>(
-            value: null,
-            label: Text('Sve', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
-          ),
-          ButtonSegment<bool?>(
-            value: true,
-            label: Text('Aktivne', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
-          ),
-          ButtonSegment<bool?>(
-            value: false,
-            label: Text('Neaktivne', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
-          ),
-        ],
-        selected: <bool?>{_selectedActiveFilter},
-        onSelectionChanged: (Set<bool?> newSelection) {
-          setState(() {
-            _selectedActiveFilter = newSelection.first;
-            _isLoading = true; 
-          });
-          _loadData(searchTerm: _searchController.text);
-        },
-      ),
+      ],
     ),
-    const SizedBox(width: 18),
-              const SizedBox(width: 10),
-              ElevatedButton.icon(
-                onPressed: _showAddLocationDialog,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2563EB),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                  elevation: 0,
-                ),
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text(
-                  'Dodaj novu lokaciju',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          if (overview != null)
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _overviewCard('Ukupno lokacija', overview.totalLocations, const Color(0xFF2563EB)),
-                _overviewCard('Aktivne lokacije', overview.activeLocations, const Color(0xFF16A34A)),
-                _overviewCard('Neaktivne lokacije', overview.inactiveLocations, const Color(0xFFF59E0B)),
-              ],
-            ),
-          const SizedBox(height: 24),
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _error != null
-                    ? Center(child: Text('Greška pri učitavanju: $_error'))
-                    : Container(
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.01),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                          border: Border.all(color: const Color(0xFFE2E8F0)),
-                        ),
-                        child: SingleChildScrollView(
-                          child: DataTable(
-                            horizontalMargin: 24,
-                            headingRowHeight: 55,
-                            dataRowMaxHeight: 75,
-                            dataRowMinHeight: 65,
-                            headingRowColor: MaterialStateProperty.all(const Color(0xFFF8FAFC)),
-                            columns: const [
-                              DataColumn(
-                                label: Text(
-                                  'Lokacija',
-                                  style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF64748B)),
-                                ),
-                              ),
-                              DataColumn(
-                                label: Text(
-                                  'Država',
-                                  style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF64748B)),
-                                ),
-                              ),
-                              DataColumn(
-                                label: Text(
-                                  'Status',
-                                  style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF64748B)),
-                                ),
-                              ),
-                              DataColumn(
-                                label: Text(
-                                  'Broj svih tendera ',
-                                  style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF64748B)),
-                                ),
-                              ),
-                              DataColumn(
-                                label: Text(
-                                  'Akcije',
-                                  style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF64748B)),
-                                ),
-                              ),
-                            ],
-                            rows: _locations.map((location) {
-                              final tenderCount = _activeTenderCount(location);
-
-                              return DataRow(
-                                cells: [
-                                  DataCell(
-                                    Text(
-                                      location.region != null && location.region!.isNotEmpty
-                                          ? '${location.name}, ${location.region}'
-                                          : location.name,
-                                      style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-                                    ),
-                                  ),
-                                  DataCell(
-                                    Text(
-                                      location.country,
-                                      style: const TextStyle(color: Color(0xFF475569)),
-                                    ),
-                                  ),
-                                  DataCell(
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                      decoration: BoxDecoration(
-                                        color: location.isActive ? const Color(0xFFE6FFFA) : const Color(0xFFFEE2E2),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Text(
-                                        location.isActive ? 'Aktivna' : 'Neaktivna',
-                                        style: TextStyle(
-                                          color: location.isActive ? const Color(0xFF047857) : const Color(0xFFB91C1C),
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  DataCell(
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFEFF6FF),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Text(
-                                        tenderCount.toString(),
-                                        style: const TextStyle(
-                                          color: Color(0xFF2563EB),
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  DataCell(
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(vertical: 6.0),
-                                      child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          OutlinedButton(
-                                            onPressed: () => _showEditLocationDialog(location),
-                                            style: OutlinedButton.styleFrom(
-                                              minimumSize: const Size(65, 26),
-                                              padding: EdgeInsets.zero,
-                                              side: const BorderSide(color: Color(0xFFCBD5E1)),
-                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                                            ),
-                                            child: const Text(
-                                              'Uredi',
-                                              style: TextStyle(color: Color(0xFF475569), fontSize: 11),
-                                            ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          OutlinedButton(
-                                            onPressed: () => location.isActive
-                                                ? _deleteLocation(location)
-                                                : _activateLocation(location),
-                                            style: OutlinedButton.styleFrom(
-                                              minimumSize: const Size(65, 26),
-                                              padding: EdgeInsets.zero,
-                                              side: BorderSide(
-                                                color: location.isActive
-                                                    ? const Color(0xFFFECACA)
-                                                    : const Color(0xFFBBF7D0),
-                                              ),
-                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                                            ),
-                                            child: Text(
-                                              location.isActive ? 'Obri\u0161i' : 'Aktiviraj',
-                                              style: TextStyle(
-                                                color: location.isActive
-                                                    ? const Color(0xFFEF4444)
-                                                    : const Color(0xFF16A34A),
-                                                fontSize: 11,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                      ),
-          ),
-        ],
-      ),
-    );
-  }
+  );
+}
 }

@@ -1,5 +1,4 @@
 
-/// 1. Osnovni Enum za status tendera
 enum TenderStatus {
   open(1),
   closed(2),

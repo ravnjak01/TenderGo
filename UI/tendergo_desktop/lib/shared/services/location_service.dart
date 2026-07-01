@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:tendergo/shared/core/network/constants/location_endpoints.dart';
 import 'package:tendergo/shared/models/dto/location_dto.dart';
+import 'package:tendergo/shared/models/dto/paged_result.dart';
 import 'package:tendergo/shared/models/requests/location_filter_request.dart';
 import 'package:tendergo/shared/models/requests/location_insert_request.dart';
 import 'package:tendergo/shared/models/requests/location_search_request.dart';
@@ -64,26 +65,29 @@ class LocationService extends BaseService<LocationDto> {
     }
   }
 
-  Future<List<LocationDto>> search(LocationSearchRequest request) async {
-    try {
-      final response = await dio.get(
-        LocationEndpoints.search(
-          searchTerm: request.searchTerm,
-          isActive: request.isActive,
-          page: request.page,
-          pageSize: request.pageSize,
-        ),
-      );
+Future<PagedResult<LocationDto>> search(LocationSearchRequest request) async {
+  try {
+    final response = await dio.get(
+      LocationEndpoints.search(), // Koristi bazičnu putanju endpoimta (npr. '/admin/locations')
+      queryParameters: request.toJson(), // Svi parametri (page, pageSize, searchTerm, isActive) idu ovdje!
+    );
 
-      final data = extractList(response.data);
+    // 1. Pretvaramo kompletan odgovor u mapu (ApiSuccessEnvelope)
+    final envelope = response.data as Map<String, dynamic>;
 
-      return data
-          .map((x) => LocationDto.fromJson(Map<String, dynamic>.from(x as Map)))
-          .toList();
-    } on DioException catch (e) {
-      throw Exception(extractErrorMessage(e, 'Error searching locations'));
-    }
+    // 2. Izvlačimo unutrašnje polje 'data' gdje se nalazi PagedResult sa lokacijama
+    final pagedData = envelope['data'] as Map<String, dynamic>;
+
+    // 3. Prosljeđujemo 'pagedData' u našu PagedResult fabriku koja je sada neprobojna
+    return PagedResult<LocationDto>.fromJson(
+      pagedData,
+      (json) => LocationDto.fromJson(json as Map<String, dynamic>),
+    );
+    
+  } on DioException catch (e) {
+    throw Exception(extractErrorMessage(e, 'Error searching locations'));
   }
+}
 
   Future<List<LocationStatsDto>> getLocationStatistics() async {
     try {

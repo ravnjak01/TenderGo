@@ -12,7 +12,7 @@ namespace TenderGo.Services.Interfaces
     {
         Task<bool> BanUserAsync(string userId, BanRequest reason);
         Task<bool> UnbanUserAsync(string userId);
-        Task<IEnumerable<UserDTO>> GetAllUsersAsync();
+        Task<PagedResult<UserDTO>> GetAllUsersAsync(int page,int pageSize);
         Task<PagedResult<UserDTO>> SearchAsync(AdminUserSearchRequest request);
         Task AdminResetPasswordAsync(string userId, string newPassword);
     }

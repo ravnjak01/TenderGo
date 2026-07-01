@@ -37,7 +37,6 @@ class AppRoutes {
   static const String adminReports = '/admin-reports';
   static const String adminDashboard = '/admin-dashboard';
 
-  // Metoda koja generiše mapu ruta sa proslijeđenim servisima
   static Map<String, WidgetBuilder> getRoutes({
     required AuthService authService,
     required AdminService adminService,

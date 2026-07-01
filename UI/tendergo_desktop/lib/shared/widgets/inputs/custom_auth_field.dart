@@ -30,7 +30,6 @@ class CustomTextField extends StatefulWidget {
 }
 
 class _CustomTextFieldState extends State<CustomTextField> {
-  // Stanje se koristi i menja interno samo ako je u pitanju password polje
   late bool _obscureText;
 
   @override

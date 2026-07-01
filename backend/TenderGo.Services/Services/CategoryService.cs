@@ -46,17 +46,9 @@ namespace TenderGo.Services.Services
         public async Task<PagedResult<CategoryDTO>> SearchAsync(CategorySearchRequest request)
         {
             var page = Math.Max(request.Page, 1);
-            var pageSize = Math.Max(request.PageSize, 1);
+            var pageSize = Math.Clamp(request.PageSize, 1, 100);
             var query = _context.Categories.AsQueryable();
 
-            if (request.IsActive.HasValue)
-            {
-                query = query.Where(c => c.IsActive == request.IsActive.Value);
-            }
-            else
-            {
-                query = ApplyFilter(query);
-            }
 
             if (!string.IsNullOrWhiteSpace(request.SearchTerm))
             {

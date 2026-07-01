@@ -3,7 +3,6 @@ import 'package:tendergo/shared/models/dto/tender_dto.dart';
 class TenderApiEndpoints {
   static const String _tenderBase = 'tender';
 
-  // ===== BASE CONTROLLER =====
 
   /// GET /api/tender
   static const String getAll = _tenderBase;

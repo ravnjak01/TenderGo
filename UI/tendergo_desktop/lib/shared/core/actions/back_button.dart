@@ -27,13 +27,13 @@ class CustomBackButton extends StatelessWidget {
 
     return MouseRegion(
   cursor: SystemMouseCursors.click,
-  child: SizedBox( // Promijeni u SizedBox jer Material preuzima boju i oblik
+  child: SizedBox( 
     width: buttonSize,
     height: buttonSize,
     child: Material(
       color: backgroundColor ?? theme.colorScheme.surface.withValues(alpha: isDesktop ? 0.8 : 0.6),
-      shape: const CircleBorder(), // Ovo ga čini krugom
-      clipBehavior: Clip.antiAlias, // Sprečava da splash "pobjegne" van kruga
+      shape: const CircleBorder(), 
+      clipBehavior: Clip.antiAlias, 
       child: InkWell(
         onTap: onPressed ?? () => Navigator.of(context).maybePop(),
         child: Center(

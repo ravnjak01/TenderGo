@@ -3,6 +3,7 @@ using AutoMapper.QueryableExtensions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using QuestPDF.Helpers;
 using TenderGo.Api.Database;
 using TenderGo.Models.DTOs;
 using TenderGo.Models.Entities;
@@ -46,7 +47,8 @@ namespace TenderGo.Services.Services
         public async Task<PagedResult<LocationDTO>> GetAdminLocationsPagedAsync(LocationSearchRequest request)
         {
             var page = Math.Max(request.Page, 1);
-            var pageSize = Math.Max(request.PageSize, 1);
+            var pageSize = Math.Clamp(request.PageSize, 1, 100);
+
             var query = _context.Locations.AsQueryable();
 
             if (request.IsActive.HasValue)

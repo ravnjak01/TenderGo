@@ -4,9 +4,11 @@ import 'package:tendergo/shared/core/network/constants/api_endpoints.dart';
 import 'package:tendergo/shared/core/network/constants/admin_endpoints.dart';
 import 'package:tendergo/shared/models/dto/activity_dto.dart';
 import 'package:tendergo/shared/models/dto/admin_dto.dart';
+import 'package:tendergo/shared/models/dto/paged_result.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
 import 'package:tendergo/shared/models/dto/user_dto.dart';
-import 'package:tendergo/shared/models/requests/users_search_request.dart';
+import 'package:tendergo/shared/models/requests/admin_user_search_request.dart';
+import 'package:tendergo/shared/models/requests/paged_search_request.dart';
 import 'package:tendergo/shared/models/ui/api_response.dart';
 import 'package:tendergo/shared/services/api_helper.dart';
 
@@ -57,21 +59,35 @@ class AdminService {
     }
   }
 
-  Future<ApiResponse<List<UserDto>>> getAllUsers() async {
-    try {
-      final response = await _dio.get(
-        AdminEndpoints.getAllUsers,
-        options: await _options(),
-      );
+Future<ApiResponse<PagedResult<UserDto>>> getAllUsers({
+  int page = 1, 
+  int pageSize = 20,
+}) async {
+  try {
+    final response = await _dio.get(
+      AdminEndpoints.getAllUsers,
+      // Prosljeđivanje parametara backendu kroz URL query (?page=1&pageSize=20)
+      queryParameters: {
+        'page': page,
+        'pageSize': pageSize,
+      },
+      options: await _options(),
+    );
 
-      final data = _extractList(response.data);
-      final users = data.map((json) => UserDto.fromJson(json)).toList();
+    // Pretpostavka je da response.data direktno sadrži PagedResult objekat,
+    // ili koristiš svoj _extractData ako imaš omotač na bazi cijelog API-ja.
+    final dynamic responseData = response.data; 
 
-      return ApiResponse.success(users, message: 'Users fetched successfully.');
-    } on DioException catch (e) {
-      return ApiHelper.handleDioError<List<UserDto>>(e);
-    }
+    final pagedUsers = PagedResult<UserDto>.fromJson(
+      responseData, 
+      (json) => UserDto.fromJson(json as Map<String, dynamic>),
+    );
+
+    return ApiResponse.success(pagedUsers, message: 'Users fetched successfully.');
+  } on DioException catch (e) {
+    return ApiHelper.handleDioError<PagedResult<UserDto>>(e);
   }
+}
 
   Future<ApiResponse<List<TenderDto>>> getAllTenders() async {
     try {
@@ -140,19 +156,20 @@ class AdminService {
     }
   }
 
-  Future<List<UserDto>> search(UsersSearchRequest request) async {
+  Future<PagedResult<UserDto>> search(AdminUserSearchRequest request) async {
     try {
       final response = await _dio.get(
         AdminEndpoints.searchUsers,
         options: await _options(),
         queryParameters: request.toJson(),
       );
+      final envelope = response.data as Map<String, dynamic>;
+      final pagedData = envelope['data'] as Map<String, dynamic>;
 
-      final data = _extractList(response.data);
-
-      return data
-          .map((x) => UserDto.fromJson(x as Map<String, dynamic>))
-          .toList();
+     return PagedResult<UserDto>.fromJson(
+      pagedData,
+      (json) => UserDto.fromJson(json as Map<String, dynamic>),
+    );
     } on DioException catch (e) {
       throw Exception(e.response?.data ?? 'Error searching users');
     }

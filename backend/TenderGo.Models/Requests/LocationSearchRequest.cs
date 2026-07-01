@@ -4,6 +4,5 @@ namespace TenderGo.Models.Requests
     {
         public string? SearchTerm { get; set; }
         public bool? IsActive { get; set; }
-        public string? Country { get; set; }
     }
 }

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:tendergo/admin/routes/nav_observer.dart';
 import 'package:tendergo/admin/routes/routes.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
 import 'package:tendergo/shared/providers/auth_provider.dart';
 import 'package:tendergo/shared/providers/tender_provider.dart';
-import 'package:tendergo/shared/routes/nav_observer.dart';
 
 // Services uvozi
 import 'package:tendergo/shared/services/category_service.dart';
@@ -44,12 +44,10 @@ class AdminApp extends StatelessWidget {
         
       ],
       child: MaterialApp(
-        // Ako je korisnik već ulogovan, možeš staviti AppRoutes.tenderList umjesto splash-a po potrebi
         initialRoute: AppRoutes.login,
         navigatorKey: AppRoutes.navigatorKey,
         navigatorObservers: [routeObserver],
 
-        // 🌟 POPRAVLJENO: Sada pozivamo getRoutes direktno iz AppRoutes klase
         routes: AppRoutes.getRoutes(
           authService: authService,
           adminService: adminService,

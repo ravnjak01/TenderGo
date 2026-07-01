@@ -6,8 +6,7 @@ class ErrorHandler {
     if (data == null) return null;
 
     try {
-      // New standardized backend envelope:
-      // { "success": false, "message": "...", "errors": ["..."], "statusCode": 400, "traceId": "..." }
+  
       if (data is Map<String, dynamic>) {
         final msg = data['message'];
         if (msg != null && msg.toString().trim().isNotEmpty) {
@@ -19,8 +18,6 @@ class ErrorHandler {
           return errors.first.toString();
         }
 
-        // Legacy format (older backend):
-        // {"errors": {"UserError": ["Poruka"], "ERROR": ["Poruka"]}}
         if (data.containsKey('errors') && data['errors'] is Map<String, dynamic>) {
           final mapErrors = data['errors'] as Map<String, dynamic>;
           if (mapErrors.isNotEmpty) {
@@ -42,7 +39,6 @@ class ErrorHandler {
 
       if (data is String && data.trim().isNotEmpty) return data;
     } catch (_) {
-      // Don't throw from error parsing.
     }
 
     return null;

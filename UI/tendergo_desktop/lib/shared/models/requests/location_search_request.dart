@@ -3,14 +3,21 @@ import 'package:tendergo/shared/models/requests/paged_search_request.dart';
 class LocationSearchRequest extends PagedSearchRequest {
   final String? searchTerm;
   final bool? isActive;
-  final String? country;
+ 
 
- LocationSearchRequest({
+LocationSearchRequest({
     this.searchTerm,
     this.isActive,
-    this.country,
-    int page = 1,         // Dodano s defaultnom vrijednošću
-    int pageSize = 10,     // Dodano s defaultnom vrijednošću
-  }) : super(page: page, pageSize: pageSize); // Prosljeđivanje unesenih vrijednosti u super
+    required super.page,
+    required super.pageSize,
+  });
 
+
+ @override
+  Map<String, dynamic> toJson() => {
+        'Page': page,
+        'PageSize': pageSize,
+        if (searchTerm != null && searchTerm!.trim().isNotEmpty) 'SearchTerm': searchTerm!.trim(),
+        if (isActive != null) 'IsActive': isActive,
+      };
 }

@@ -65,7 +65,7 @@ String? _userReportError;
 Future<void> _loadUsers() async {
   final response = await _adminService.getAllUsers();
 
-  _users = response.data ?? [];
+ // _users = response.data ?? [];
 
   _users.sort(
     (a, b) => '${a.firstName} ${a.lastName}'

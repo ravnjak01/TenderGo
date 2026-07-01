@@ -11,16 +11,7 @@ class LocationEndpoints {
 
   static String deactivate(int id) => '$baseUrl/$id/deactivate';
 
-static String search({String? searchTerm, bool? isActive, int page = 1, int pageSize = 10}) {
-  var url = '$baseUrl/admin-search?page=$page&pageSize=$pageSize';
-  if (searchTerm != null && searchTerm.isNotEmpty) {
-    url += '&SearchTerm=$searchTerm';
-  }
-  if (isActive != null) {
-    url += '&IsActive=$isActive';
-  }
-  return url;
-}
+static String search() => '$baseUrl/admin-search';
   static const String insert = baseUrl;
 
   static String locationStatistics = '$baseUrl/statistics';
