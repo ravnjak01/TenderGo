@@ -1,5 +1,3 @@
-// lib/shared/models/dto/tender_bid_dto.dart (ili bid_dto.dart)
-import 'package:http/http.dart';
 import 'package:tendergo/shared/core/utils/json_parser.dart';
 import 'package:tendergo/shared/models/enums/application_status.dart';
 import 'package:tendergo/shared/models/enums/tenderstatus.dart';

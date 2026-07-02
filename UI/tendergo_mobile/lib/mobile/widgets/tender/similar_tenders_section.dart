@@ -23,7 +23,6 @@ class SimilarTendersSection extends StatefulWidget {
 }
 
 class _SimilarTendersSectionState extends State<SimilarTendersSection> {
-  static const _storage = FlutterSecureStorage();
   late final RecommendationService _service;
   late Future<List<TenderRecommendation>> _future;
 

@@ -205,7 +205,6 @@ class _BidCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    print("Ponuda od ${bid.submittedByUserName} - Status: ${bid.status}, Već ocijenjen: ${bid.alreadyRated}");
     final theme = Theme.of(context);
     final priceFormatted = '${bid.offeredPrice.toStringAsFixed(0)} KM';
     final dateFormatted = DateFormat('dd MMM yyyy, HH:mm').format(bid.submittedAt);

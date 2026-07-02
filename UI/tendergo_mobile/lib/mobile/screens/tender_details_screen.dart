@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:tendergo/mobile/widgets/tender/tender_description_card.dart';
 import 'package:tendergo/shared/core/actions/back_button.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
@@ -34,7 +33,6 @@ class MobileTenderDetailsScreen extends StatefulWidget {
 }
 
 class _MobileTenderDetailsScreenState extends State<MobileTenderDetailsScreen> {
-  static const _storage = FlutterSecureStorage();
   Future<TenderDto>? _tenderFuture;
   bool _initialized = false;
   int? _resolvedTenderId;

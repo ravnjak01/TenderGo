@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:provider/provider.dart';
 import 'package:tendergo/mobile/routes/routes.dart';
 import 'package:tendergo/shared/core/actions/back_button.dart';
@@ -20,7 +19,6 @@ class RecommendedForYouMobileScreen extends StatefulWidget {
 }
 
 class _RecommendedForYouMobileScreenState extends State<RecommendedForYouMobileScreen> {
-  static const _storage = FlutterSecureStorage();
   late final RecommendationProvider _provider;
 
   @override

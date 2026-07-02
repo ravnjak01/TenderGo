@@ -159,7 +159,6 @@ class AuthInterceptor extends Interceptor {
 
  Future<Response<dynamic>> _retry(RequestOptions original) async {
     final token = await _tokenStore.readAccessToken();
-    print("RETRY TOKEN: $token");
     final headers = Map<String, dynamic>.from(original.headers);
 
     if (token != null && token.trim().isNotEmpty && _looksLikeJwt(token)) {
