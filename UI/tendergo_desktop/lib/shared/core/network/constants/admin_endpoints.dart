@@ -12,6 +12,5 @@ class AdminEndpoints {
 
   static String unbanUser(String userId) => '/admin/users/$userId/unban';
 
-  // Dodata ruta za resetovanje lozinke od strane admina
   static String adminResetPassword(String userId) => '/admin/users/$userId/reset-password';
 }

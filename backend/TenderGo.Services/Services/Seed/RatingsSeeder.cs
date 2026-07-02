@@ -100,6 +100,13 @@ namespace TenderGo.Services.Services.Seed
 
         private static async Task UpdateUserRatingSummariesAsync(TenderGoContext context)
         {
+            var allUsers = await context.Users.ToListAsync();
+            foreach (var user in allUsers)
+            {
+                user.AverageRating = 0.0;
+                user.RatingCount = 0;
+            }
+
             var ratingGroups = await context.Ratings
                 .GroupBy(r => r.RatedUserId)
                 .Select(g => new
@@ -110,18 +117,14 @@ namespace TenderGo.Services.Services.Seed
                 })
                 .ToListAsync();
 
-
             foreach (var group in ratingGroups)
             {
-                var user = await context.Users.FindAsync(group.UserId);
-
-                if (user == null)
+                var user = allUsers.FirstOrDefault(u => u.Id == group.UserId);
+                if (user != null)
                 {
-                    continue;
+                    user.AverageRating = Math.Round(group.Average, 2);
+                    user.RatingCount = group.Count;
                 }
-
-                user.AverageRating = Math.Round(group.Average, 2);
-                user.RatingCount = group.Count;
             }
 
             await context.SaveChangesAsync();

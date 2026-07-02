@@ -137,7 +137,6 @@ namespace TenderGo.Data.Seeders
             {
                 if (existingTenders.TryGetValue(seedTender.Title, out var existingTender))
                 {
-                    // Update postojećeg
                     existingTender.Description = seedTender.Description;
                     existingTender.MaxBudget = seedTender.MaxBudget;
                     existingTender.Deadline = seedTender.Deadline;
@@ -151,7 +150,6 @@ namespace TenderGo.Data.Seeders
                 }
                 else
                 {
-                    // Add novog
                     context.Tenders.Add(seedTender);
                 }
             }

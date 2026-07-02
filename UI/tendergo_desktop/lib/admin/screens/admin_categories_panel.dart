@@ -33,7 +33,6 @@ int _currentPage = 1;
     _loadData();
   }
 
-  // 1. GLAVNA METODA ZA INICIJALNO UČITAVANJE I REFRESH
   Future<void> _loadData({String searchTerm = '', bool refreshAll = false, bool isNewSearch = false}) async {
     if (isNewSearch) {
       _currentPage = 1;
@@ -45,7 +44,6 @@ int _currentPage = 1;
     });
 
     try {
-      // Ako je prvo učitavanje ILI eksplicitan refresh, povuci i statistiku i kategorije paralelno
       if (refreshAll || _categories.isEmpty) {
         final results = await Future.wait([
           _categoryService.getCategoryStatistics(),
@@ -72,7 +70,6 @@ int _currentPage = 1;
           _isLoading = false;
         });
       } else {
-        // Ako je samo kucanje pretrage ili prelazak na stranicu, povuci SAMO paginirane kategorije
         await _fetchCategoriesOnly(searchTerm: searchTerm);
       }
     } catch (e) {
@@ -84,7 +81,6 @@ int _currentPage = 1;
     }
   }
 
-  // 2. POMOĆNA METODA KOJA RADI SAMO PRETRAGU I PAGINACIJU (BEZ STATISTIKE)
   Future<void> _fetchCategoriesOnly({String searchTerm = ''}) async {
     final request = CategorySearchRequest(
       searchTerm: searchTerm.isEmpty ? null : searchTerm,
@@ -415,7 +411,6 @@ Future<void> _refreshCategories() {
     }
   }
 
-  // Pomoćna metoda za dobijanje odgovarajuće ikone (ili emotikona) na osnovu naziva kategorije sa slike
   String _getCategoryIcon(String name) {
     final lower = name.toLowerCase();
     if (lower.contains('građevinarstvo') || lower.contains('gradevinarstvo'))
@@ -453,17 +448,15 @@ Future<void> _refreshCategories() {
 
   @override
 Widget build(BuildContext context) {
-  // Izračunavanje ukupnog broja stranica
   final int totalPages = (_totalCount / _pageSize).ceil();
 
   return Container(
-    color: const Color(0xFFF8FAFC), // Svijetlo siva pozadina panela
+    color: const Color(0xFFF8FAFC), 
     width: double.infinity,
     padding: const EdgeInsets.all(32.0),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Naslov i informacije o prijavljenom korisniku
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -521,7 +514,6 @@ Widget build(BuildContext context) {
                   border: InputBorder.none,
                 ),
                 onChanged: (value) {
-                  // Dodat isNewSearch: true kako bi resetovali na prvu stranicu pri novom kucanju
                   _loadData(searchTerm: value, isNewSearch: true);
                 },
               ),
@@ -780,7 +772,6 @@ Widget build(BuildContext context) {
                 ),
         ),
         
-        // Paginacijska traka dodana na dno panela
         if (!_isLoading && _error == null && _totalCount > 0) ...[
           const SizedBox(height: 20),
           Row(
@@ -811,7 +802,6 @@ Widget build(BuildContext context) {
                   ),
                   const SizedBox(width: 8),
                   
-                  // Prikaz broja stranica (Npr. Stranica 1 od 3)
                   Text(
                     'Stranica $_currentPage od $totalPages',
                     style: const TextStyle(

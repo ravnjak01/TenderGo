@@ -60,13 +60,12 @@ class AdminService {
   }
 
 Future<ApiResponse<PagedResult<UserDto>>> getAllUsers({
-  int page = 1, 
+  int page = 1,
   int pageSize = 20,
 }) async {
   try {
     final response = await _dio.get(
       AdminEndpoints.getAllUsers,
-      // Prosljeđivanje parametara backendu kroz URL query (?page=1&pageSize=20)
       queryParameters: {
         'page': page,
         'pageSize': pageSize,
@@ -74,16 +73,16 @@ Future<ApiResponse<PagedResult<UserDto>>> getAllUsers({
       options: await _options(),
     );
 
-    // Pretpostavka je da response.data direktno sadrži PagedResult objekat,
-    // ili koristiš svoj _extractData ako imaš omotač na bazi cijelog API-ja.
-    final dynamic responseData = response.data; 
-
-    final pagedUsers = PagedResult<UserDto>.fromJson(
-      responseData, 
-      (json) => UserDto.fromJson(json as Map<String, dynamic>),
+  
+    final apiResponse = ApiResponse<PagedResult<UserDto>>.fromJson(
+      response.data as Map<String, dynamic>,
+      dataParser: (dataJson) => PagedResult<UserDto>.fromJson(
+        dataJson as Map<String, dynamic>,
+        (userJson) => UserDto.fromJson(userJson),
+      ),
     );
 
-    return ApiResponse.success(pagedUsers, message: 'Users fetched successfully.');
+    return apiResponse;
   } on DioException catch (e) {
     return ApiHelper.handleDioError<PagedResult<UserDto>>(e);
   }

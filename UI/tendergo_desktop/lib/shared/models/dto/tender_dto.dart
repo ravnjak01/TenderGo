@@ -89,7 +89,7 @@ class TenderDto {
         'deadline': deadline.toIso8601String(),
         'createdByUserId': createdByUserId,
         'createdByFullname': createdByFullname,
-        'status': status.value, // Šalje int ili string zavisno od enuma
+        'status': status.value, 
         'totalBids': totalBids,
         'images': images.map((img) => img.toJson()).toList(),
         'location': location.toJson(),

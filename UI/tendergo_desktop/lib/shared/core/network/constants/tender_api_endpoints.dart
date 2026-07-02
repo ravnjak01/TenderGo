@@ -14,12 +14,8 @@ class TenderApiEndpoints {
   /// DELETE /api/tender/{id}
   static String delete(int id) => '$_tenderBase/$id';
 
-
-
-
   /// PATCH /api/tender/{id}/cancel
   static String cancel(int id) => '$_tenderBase/$id/cancel';
-
 
   static String search(String query) => '$_tenderBase/search?SearchTerm=${Uri.encodeComponent(query)}';
 

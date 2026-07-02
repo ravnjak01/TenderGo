@@ -14,7 +14,7 @@ class CustomBackButton extends StatelessWidget {
 
   bool _isDesktop(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
-    return width >= 800; // breakpoint (tablet/desktop)
+    return width >= 800; 
   }
 
   @override

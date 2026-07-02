@@ -6,9 +6,9 @@ class AdminUserSearchRequest extends PagedSearchRequest {
 
   AdminUserSearchRequest({
     this.searchTerm,
-    int page = 1,         // Dodano s defaultnom vrijednošću
-    int pageSize = 10,     // Dodano s defaultnom vrijednošću
-  }) : super(page: page, pageSize: pageSize); // Prosljeđivanje unesenih vrijednosti u super
+    int page = 1,         
+    int pageSize = 10,     
+  }) : super(page: page, pageSize: pageSize); 
 
 
   Map<String, dynamic> toJson() => {

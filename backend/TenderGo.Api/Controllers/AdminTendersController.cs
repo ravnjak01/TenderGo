@@ -19,10 +19,10 @@ namespace TenderGo.Api.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAllTenders()
+        public async Task<IActionResult> GetAll([FromQuery] AdminTenderSearchRequest request)
         {
-            var tenders = await _tenderAdminService.GetAllTendersAsync();
-            return Ok(tenders);
+            var result = await _tenderAdminService.GetAllTendersAsync(request);
+            return Ok(result);
         }
 
         [HttpGet("search")]

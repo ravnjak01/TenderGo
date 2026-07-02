@@ -1,6 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:tendergo/shared/core/network/constants/tender_api_endpoints.dart';
+import 'package:tendergo/shared/models/dto/admin_tender_dto.dart';
+import 'package:tendergo/shared/models/dto/paged_result.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
+import 'package:tendergo/shared/models/requests/admin_tender_search_request.dart';
 import 'package:tendergo/shared/models/requests/tender_search_request.dart';
 import 'package:tendergo/shared/services/base_service.dart';
 
@@ -8,31 +11,25 @@ class TenderService extends BaseService<TenderDto> {
   TenderService(Dio dio)
       : super(dio, TenderApiEndpoints.getAll, TenderDto.fromJson);
 
-  @override
-  Future<List<TenderDto>> getAll({
-    int page = 1,
-    int pageSize = 10,
-    Map<String, dynamic>? queryParameters,
-  }) async {
-    try {
-      final response = await dio.get(
-        TenderApiEndpoints.getAll,
-        queryParameters: {
-          'page': page,
-          'pageSize': pageSize,
-          ...?queryParameters,
-        },
-      );
+  Future<PagedResult<AdminTenderDto>> getAdminTenders(AdminTenderSearchRequest request) async {
+  try {
+    final response = await dio.get(
+      'admin/tenders',
+      queryParameters: request.toJson(), // Šalje ispravne Page i PageSize parametre
+    );
 
-      final data = extractList(response.data);
+    final envelope = response.data as Map<String, dynamic>;
+    final pagedData = envelope['data'] as Map<String, dynamic>;
 
-      return data
-          .map((x) => TenderDto.fromJson(x as Map<String, dynamic>))
-          .toList();
-    } on DioException catch (e) {
-      throw Exception(extractErrorMessage(e, 'Error fetching tenders'));
-    }
+
+    return PagedResult<AdminTenderDto>.fromJson(
+      pagedData,
+      (json) => AdminTenderDto.fromJson(json as Map<String, dynamic>),
+    );
+  } on DioException catch (e) {
+    throw Exception(extractErrorMessage(e, 'Error fetching tenders'));
   }
+}
 
   Future<TenderDto> getById(int id) async {
     try {
@@ -53,20 +50,24 @@ class TenderService extends BaseService<TenderDto> {
       throw Exception(extractErrorMessage(e, 'Error canceling tender'));
     }
   }
+Future<PagedResult<AdminTenderDto>> search(AdminTenderSearchRequest request) async {
+  try {
+    final response = await dio.get(
+      'admin/tenders/search', 
+      queryParameters: request.toJson(), 
+    );
 
-  Future<List<TenderDto>> search(TenderSearchRequest request) async {
-    try {
-      final response = await dio.get(
-        TenderApiEndpoints.search(request.searchTerm ?? ''),
-      );
+    final envelope = response.data as Map<String, dynamic>;
 
-      final data = extractList(response.data);
+    final pagedData = envelope['data'] as Map<String, dynamic>;
 
-      return data
-          .map((x) => TenderDto.fromJson(x as Map<String, dynamic>))
-          .toList();
-    } on DioException catch (e) {
-      throw Exception(extractErrorMessage(e, 'Error searching tenders'));
-    }
+    return PagedResult<AdminTenderDto>.fromJson(
+      pagedData,
+      (json) => AdminTenderDto.fromJson(json as Map<String, dynamic>),
+    );
+    
+  } on DioException catch (e) {
+    throw Exception(extractErrorMessage(e, 'Error searching tenders'));
   }
+}
 }

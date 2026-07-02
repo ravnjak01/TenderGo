@@ -20,15 +20,33 @@ namespace TenderGo.Services.Services
             _mapper = mapper;
         }
 
-        public async Task<List<AdminTenderDTO>> GetAllTendersAsync()
+        public async Task<PagedResult<AdminTenderDTO>> GetAllTendersAsync(AdminTenderSearchRequest request)
         {
-            return await _context.Tenders
-                .OrderByDescending(t => t.CreatedAt)
+            var page = Math.Max(request.Page, 1);
+            var pageSize = Math.Max(request.PageSize, 1);
+
+            var query = _context.Tenders.AsQueryable();
+
+            var totalCount = await query.CountAsync();
+
+            var results = await query
+                .OrderBy(t => t.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .ProjectTo<AdminTenderDTO>(_mapper.ConfigurationProvider)
                 .ToListAsync();
+
+            return new PagedResult<AdminTenderDTO>
+            {
+                Result = results,
+                TotalCount = totalCount,
+                Page = page,
+                PageSize = pageSize
+            };
         }
 
-        public async Task<PagedResult<TenderDTO>> AdminSearchAsync(AdminTenderSearchRequest request)
+
+        public async Task<PagedResult<AdminTenderDTO>> AdminSearchAsync(AdminTenderSearchRequest request)
         {
             var page = Math.Max(request.Page, 1);
             var pageSize = Math.Max(request.PageSize, 1);
@@ -36,13 +54,9 @@ namespace TenderGo.Services.Services
             var query = _context.Tenders.AsQueryable();
 
             if (request.Status.HasValue)
+            {
                 query = query.Where(t => t.Status == request.Status.Value);
-
-            if (request.CategoryId.HasValue)
-                query = query.Where(t => t.CategoryId == request.CategoryId.Value);
-
-            if (request.LocationId.HasValue)
-                query = query.Where(t => t.LocationId == request.LocationId.Value);
+            }
 
             if (!string.IsNullOrWhiteSpace(request.SearchTerm))
             {
@@ -52,21 +66,20 @@ namespace TenderGo.Services.Services
                 query = query.Where(t =>
                     EF.Functions.Like(t.Title.ToLower(), likeTerm) ||
                     (t.Description != null && EF.Functions.Like(t.Description.ToLower(), likeTerm)) ||
-                    EF.Functions.Like(t.Category.Name.ToLower(), likeTerm) ||
-                    EF.Functions.Like(t.Location.Name.ToLower(), likeTerm));
+                    (t.Category != null && EF.Functions.Like(t.Category.Name.ToLower(), likeTerm)) ||
+                    (t.Location != null && EF.Functions.Like(t.Location.Name.ToLower(), likeTerm)));
             }
 
             var totalCount = await query.CountAsync();
 
             var results = await query
-                .OrderByDescending(t => t.PostedAt ?? t.Deadline)
-                .ThenBy(t => t.Id)
+                .OrderBy(t => t.CreatedAt) 
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
-                .ProjectTo<TenderDTO>(_mapper.ConfigurationProvider)
+                .ProjectTo<AdminTenderDTO>(_mapper.ConfigurationProvider)
                 .ToListAsync();
 
-            return new PagedResult<TenderDTO>
+            return new PagedResult<AdminTenderDTO>
             {
                 Result = results,
                 TotalCount = totalCount,

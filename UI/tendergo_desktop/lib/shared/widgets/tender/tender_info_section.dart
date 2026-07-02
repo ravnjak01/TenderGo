@@ -6,9 +6,6 @@ import 'package:tendergo/shared/widgets/tender/tender_image_gallery.dart';
 import 'package:tendergo/shared/widgets/tender/tender_meta_item.dart';
 import 'package:tendergo/shared/widgets/tender/tender_section_label.dart';
 
-/// Displays tender category, title, meta row, optional image gallery and
-/// project description.  Pass [imageHeight] to control gallery height
-/// (e.g. 320 for admin/desktop, 220 for mobile).
 class TenderInfoSection extends StatelessWidget {
   const TenderInfoSection({
     super.key,
@@ -22,7 +19,6 @@ class TenderInfoSection extends StatelessWidget {
   final double imageHeight;
   final bool showDescription;
 
-  /// Override the title text style (e.g. headlineMedium vs headlineSmall).
   final TextStyle? titleStyle;
 
   @override

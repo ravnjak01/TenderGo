@@ -198,12 +198,11 @@ public async Task<IEnumerable<TenderDTO>> GetBookmarkedTendersAsync(string userI
                     {
                         var imgReq = request.Images[i];
 
-                        // Dodajemo sliku u bazu i povezujemo je sa tenderom
                         entity.Images.Add(new TenderImage
                         {
                             ImageUrl = imgReq.ImageUrl,
                             ImageHash = imgReq.ImageHash,
-                            IsPrimary = i == 0 // Prva slika u nizu je primarna
+                            IsPrimary = i == 0 
                         });
                     }
                 }

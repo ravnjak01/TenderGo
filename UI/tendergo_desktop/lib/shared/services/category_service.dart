@@ -82,7 +82,6 @@ class CategoryService extends BaseService<CategoryDto> {
 
     final envelope = response.data as Map<String, dynamic>;
 
-    // 2. Izvlačimo unutrašnje polje 'data' gdje se nalazi PagedResult sa kategorijama
     final pagedData = envelope['data'] as Map<String, dynamic>;
 
       return PagedResult<CategoryDto>.fromJson(

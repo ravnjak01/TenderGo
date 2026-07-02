@@ -55,14 +55,12 @@ class _AdminDashboardPanelState extends State<AdminDashboardPanel> {
       });
     }
   }
-  // Kartica sa lijevom ivicom u boji prema dizajnu sa slike
   Widget _statCard(String label, String value, Color sideColor) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(6),
-        // Lijeva ivica u boji prema dizajnu sa slike
         border: Border(
           left: BorderSide(color: sideColor, width: 4),
         ),
@@ -101,9 +99,7 @@ class _AdminDashboardPanelState extends State<AdminDashboardPanel> {
     );
   }
 
-  // Pomoćne funkcije za vađenje podataka iz ActivityDto (ID, Kategorija/Lokacija i Status)
   String _parseId(ActivityDto activity, int index) {
-    // Ako nema ID polja, generišemo privremeni opadajući niz radi vjernog prikaza sa slike
     return '#${1024 - index}';
   }
 

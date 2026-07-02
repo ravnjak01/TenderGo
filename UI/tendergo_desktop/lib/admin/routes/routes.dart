@@ -4,13 +4,10 @@ import 'package:tendergo/admin/screens/admin_categories_panel.dart';
 import 'package:tendergo/admin/screens/admin_layout.dart';
 import 'package:tendergo/admin/screens/login_screen.dart';
 
-// Screens / Ekran uvozi
 import 'package:tendergo/admin/screens/admin_report_preview_screen.dart';
 
 
-// Providers uvozi
 
-// Services uvozi
 import 'package:tendergo/shared/services/admin_service.dart';
 import 'package:tendergo/shared/services/auth_service.dart';
 import 'package:tendergo/shared/services/category_service.dart';
@@ -18,7 +15,6 @@ import 'package:tendergo/shared/services/location_service.dart';
 
 
 class AppRoutes {
-  // Navigator Key za globalni pristup bez konteksta
   static final GlobalKey<NavigatorState> navigatorKey =
       GlobalKey<NavigatorState>();
 

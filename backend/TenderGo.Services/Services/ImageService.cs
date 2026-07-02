@@ -137,11 +137,10 @@ namespace TenderGo.Services.Services
 
                 if (format == "WEBP")
                 {
-                    // bytes 8-11 must be W E B P
                     var webpMarker = new byte[] { 0x57, 0x45, 0x42, 0x50 };
                     bool isWebp = fileBytes.Skip(8).Take(4).SequenceEqual(webpMarker);
                     if (isWebp) return true;
-                    continue; // RIFF but not WEBP — keep checking other sigs
+                    continue; 
                 }
 
                 return true;
@@ -189,7 +188,7 @@ namespace TenderGo.Services.Services
                 "image/gif" => ".gif",
                 "image/webp" => ".webp",
                 "image/bmp" => ".bmp",
-                _ => ".jpg"   // safe fallback
+                _ => ".jpg"   
             };
         }
     }

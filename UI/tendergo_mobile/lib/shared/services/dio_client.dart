@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart';
 import 'package:tendergo/shared/core/network/interceptors/auth_interceptor.dart';
 
 class DioClient {
-  // 1. Privatni konstruktor i statička instanca (Singleton)
   DioClient._internal();
   static final DioClient _instance = DioClient._internal();
   factory DioClient() => _instance;
@@ -55,7 +54,6 @@ class DioClient {
     return trimmed.startsWith('/') ? '$origin$trimmed' : '$origin/$trimmed';
   }
 
-  // 2. Vrati uvijek ISTU instancu
   static Dio getDio() {
     if (_dio != null) return _dio!;
 
@@ -70,7 +68,6 @@ class DioClient {
         connectTimeout: const Duration(seconds: 10),
         receiveTimeout: const Duration(seconds: 10),
         responseType: ResponseType.json,
-        // UKLONJEN 'application/json' odavde da ne kvari Multipart preglede!
       ),
     );
 

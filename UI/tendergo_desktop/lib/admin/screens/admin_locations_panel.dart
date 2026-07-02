@@ -28,7 +28,7 @@ class _AdminLocationsPanelState extends State<AdminLocationsPanel> {
   String? _error;
   bool? _selectedActiveFilter;
 int _currentPage = 1;
-int _pageSize = 5; // Možeš staviti i 3 ako želiš manje redova kao za korisnike
+int _pageSize = 5; 
 int _totalCount = 0;
 
   @override
@@ -99,7 +99,6 @@ Future<void> _fetchLocations({String searchTerm = '', bool isNewSearch = false})
   });
 
   try {
-    // 1. Kreiramo request objekat sa trenutnom stranicom i filterima
     final request = LocationSearchRequest(
       searchTerm: searchTerm.isEmpty ? null : searchTerm,
       page: _currentPage,
@@ -107,17 +106,15 @@ Future<void> _fetchLocations({String searchTerm = '', bool isNewSearch = false})
       isActive: _selectedActiveFilter,
     );
 
-    // 2. Pozivamo servis koji sada vraća PagedResult<LocationDto>
     final pagedResult = await _locationService.search(request);
     
     if (!mounted) return;
 
-    // 3. Spasavamo podatke u State varijable
     setState(() {
-      _locations = pagedResult.result;       // Lista lokacija za tabelu
-      _totalCount = pagedResult.totalCount; // Ukupan broj za paginaciju
-      _currentPage = pagedResult.page;       // Sinhronizacija trenutne stranice
-      _pageSize = pagedResult.pageSize;     // Veličina stranice
+      _locations = pagedResult.result;       
+      _totalCount = pagedResult.totalCount; 
+      _currentPage = pagedResult.page;       
+      _pageSize = pagedResult.pageSize;     
       _isLoading = false;
     });
   } catch (e) {
@@ -336,7 +333,6 @@ Future<void> _fetchLocations({String searchTerm = '', bool isNewSearch = false})
   }
 
   Future<void> _deleteLocation(LocationDto location) async {
-    // 1. SLUČAJ: Lokacija ima aktivne tendere -> Nudimo deaktivaciju
     if (_hasActiveTenders(location)) {
       final shouldDeactivate = await AppDialogs.showConfirm(
         context: context,
@@ -345,7 +341,7 @@ Future<void> _fetchLocations({String searchTerm = '', bool isNewSearch = false})
                  'Da li želite da je deaktivirate umjesto brisanja?',
         cancelLabel: 'Otkaži',
         confirmLabel: 'Deaktiviraj',
-        isDestructive: false, // Može biti i true/false zavisno od UI dizajna
+        isDestructive: false, 
       );
 
       if (!shouldDeactivate) return;
@@ -364,10 +360,9 @@ Future<void> _fetchLocations({String searchTerm = '', bool isNewSearch = false})
           _isLoading = false;
         });
       }
-      return; // Prekidamo izvršavanje da ne ide na standardno brisanje
+      return; 
     }
 
-    // 2. SLUČAJ: Lokacija nema aktivne tendere -> Standardno brisanje
     final confirmed = await AppDialogs.showConfirm(
       context: context,
       title: 'Potvrdi brisanje',
@@ -399,7 +394,6 @@ Future<void> _fetchLocations({String searchTerm = '', bool isNewSearch = false})
   if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
   
   _debounceTimer = Timer(const Duration(milliseconds: 400), () {
-    // Svaka nova pretraga mora početi od stranice 1
     _loadData(searchTerm: value.trim(), isNewSearch: true);
   });
 }
@@ -438,7 +432,6 @@ Future<void> _fetchLocations({String searchTerm = '', bool isNewSearch = false})
 Widget build(BuildContext context) {
   final overview = _overview;
 
-  // Izračunavanje parametara za paginaciju
   final totalPages = (_totalCount / _pageSize).ceil();
   final hasPreviousPage = _currentPage > 1;
   final hasNextPage = _currentPage < totalPages;
@@ -513,7 +506,6 @@ Widget build(BuildContext context) {
                   ),
                   onChanged: (value) {
                     setState(() {});
-                    // Koristimo optimizovani debounce sa isNewSearch: true
                     if (_debounceTimer?.isActive ?? false) _debounceTimer?.cancel();
                     _debounceTimer = Timer(const Duration(milliseconds: 400), () {
                   _fetchLocations(searchTerm: value.trim(), isNewSearch: true);
@@ -737,66 +729,74 @@ Widget build(BuildContext context) {
                                   ),
                           ),
                           
-                          // 3. PODNOŽJE SA PAGINACIJOM (FOOTER ROW)
                           const Divider(height: 1, color: Color(0xFFE2E8F0)),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                            color: const Color(0xFFF8FAFC),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Ukupno rezultata: $_totalCount',
-                                  style: const TextStyle(color: Color(0xFF64748B), fontSize: 13, fontWeight: FontWeight.w500),
-                                ),
-                                Row(
-                                  children: [
-                                    OutlinedButton(
-                                      onPressed: hasPreviousPage
-                                          ? () {
-                                              _currentPage--;
-                                              _loadData(searchTerm: _searchController.text);
-                                            }
-                                          : null,
-                                      style: OutlinedButton.styleFrom(
-                                        side: const BorderSide(color: Color(0xFFE2E8F0)),
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                      ),
-                                      child: const Text('Prethodna', style: TextStyle(fontSize: 13)),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFF1F5F9),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Text(
-                                        'Stranica $_currentPage od ${totalPages == 0 ? 1 : totalPages}',
-                                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Color(0xFF1E293B)),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    OutlinedButton(
-                                      onPressed: hasNextPage
-                                          ? () {
-                                              _currentPage++;
-                                              _loadData(searchTerm: _searchController.text);
-                                            }
-                                          : null,
-                                      style: OutlinedButton.styleFrom(
-                                        side: const BorderSide(color: Color(0xFFE2E8F0)),
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                      ),
-                                      child: const Text('Sljedeća', style: TextStyle(fontSize: 13)),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
+Container(
+  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+  color: const Color(0xFFF8FAFC),
+  child: Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      Text(
+        _totalCount == 0 
+            ? 'Nema pronađenih stavki'
+            : 'Prikazano ${((_currentPage - 1) * _pageSize) + 1} - ${(_currentPage * _pageSize) > _totalCount ? _totalCount : (_currentPage * _pageSize)} od $_totalCount stavki',
+        style: const TextStyle(color: Color(0xFF64748B), fontSize: 14),
+      ),
+      Row(
+        children: [
+          // Gumb Prethodna
+          OutlinedButton(
+            onPressed: hasPreviousPage
+                ? () {
+                    setState(() => _currentPage--);
+                    _loadData(searchTerm: _searchController.text);
+                  }
+                : null,
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: Color(0xFFE2E8F0)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            ),
+           child: const Icon(Icons.arrow_back_ios, size: 14, color: Color(0xFF475569)),
+          ),
+          const SizedBox(width: 8),
+          
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              'Stranica $_currentPage od ${totalPages == 0 ? 1 : totalPages}',
+              style: const TextStyle(
+                fontWeight: FontWeight.w600, 
+                fontSize: 14, 
+                color: Color(0xFF1E293B)
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          
+          OutlinedButton(
+            onPressed: hasNextPage
+                ? () {
+                    setState(() => _currentPage++);
+                    _loadData(searchTerm: _searchController.text);
+                  }
+                : null,
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: Color(0xFFE2E8F0)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            ),
+            child: const Icon(Icons.arrow_forward_ios, size: 14, color: Color(0xFF475569)),
+          ),
+        ],
+      ),
+    ],
+  ),
+),
                         ],
                       ),
                     ),

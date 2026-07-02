@@ -20,7 +20,6 @@ extension DateTimeExtensions on DateTime {
   }
 }
 extension NumberExtensions on double {
-  /// Formatira broj u valutu: 1.500 KM
   String formatCurrency() {
     if (this >= 1000) {
       final s = toStringAsFixed(0);

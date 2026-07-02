@@ -51,7 +51,8 @@ String? _userReportError;
     });
 
     try {
-      await Future.wait([_loadOverview(), _loadLocations(),_loadUsers()]);
+      await Future.wait([ _loadLocations(),_loadOverview(),_loadUsers()]);
+    
       setState(() {
         _isLoading = false;
       });
@@ -63,19 +64,19 @@ String? _userReportError;
     }
   }
 Future<void> _loadUsers() async {
-  final response = await _adminService.getAllUsers();
+  final response = await _adminService.getAllUsers(page: 1, pageSize: 200);
 
- // _users = response.data ?? [];
+  if (!response.success || response.data == null) {
+    throw Exception(response.message);
+  }
 
-  _users.sort(
-    (a, b) => '${a.firstName} ${a.lastName}'
-        .toLowerCase()
-        .compareTo(
-          '${b.firstName} ${b.lastName}'.toLowerCase(),
-        ),
-  );
+  final users = response.data!.result;
+  users.sort((a, b) => '${a.firstName} ${a.lastName}'
+      .toLowerCase()
+      .compareTo('${b.firstName} ${b.lastName}'.toLowerCase()));
+
+  _users = users;
 }
-
   Future<void> _loadOverview() async {
     _overview = await _reportService.getOverview();
   }

@@ -70,7 +70,7 @@ namespace TenderGo.Services.Services.Seed
                 PostedAt = now.AddDays(-30),
                 CreatedByUserId = GetValueOrFallback(users, "amina@tendergo.com", "User").Id, 
                 LocationId = GetValueOrFallback(locations, "Sarajevo", "Location").Id, 
-                CategoryId = GetValueOrFallback(categories, "Transport", "Category").Id 
+                CategoryId = GetValueOrFallback(categories, "Transport i logistika", "Category").Id 
             },
             new Tender
             {

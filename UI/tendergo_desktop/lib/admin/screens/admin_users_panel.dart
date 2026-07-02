@@ -18,7 +18,6 @@ class _AdminUsersPanelState extends State<AdminUsersPanel> {
   late final AdminService _adminService;
   Timer? _debounce;
 
-  // Paginacijske varijable
   List<UserDto> _users = [];
   int _currentPage = 1;
   int _pageSize = 5;
@@ -48,10 +47,9 @@ class _AdminUsersPanelState extends State<AdminUsersPanel> {
     super.dispose();
   }
 
-  // Prepravljena metoda koja podržava promjenu stranica i reset na pretragu
   Future<void> _fetchUsers({String searchTerm = '', bool isNewSearch = false}) async {
     if (isNewSearch) {
-      _currentPage = 1; // Resetujemo na prvu stranicu ako je nova pretraga
+      _currentPage = 1; 
     }
 
     setState(() {
@@ -85,7 +83,6 @@ class _AdminUsersPanelState extends State<AdminUsersPanel> {
     }
   }
 
-  // Debounce sprečava DDOS-ovanje sopstvenog backenda dok korisnik kuca
   void _onSearchChanged(String value) {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(milliseconds: 500), () {
@@ -355,7 +352,6 @@ Widget _headerCell(String text, int flex, {TextAlign align = TextAlign.left}) {
                         ),
                         child: Column(
                           children: [
-                            // --- Header red (fiksiran, razvučen preko cijele širine) ---
                             Container(
                               height: 55,
                               padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -378,7 +374,6 @@ Widget _headerCell(String text, int flex, {TextAlign align = TextAlign.left}) {
                             ),
                             const Divider(height: 1, color: Color(0xFFE2E8F0)),
 
-                            // --- Redovi podataka, razvučeni preko cijele širine ---
                             Expanded(
                               child: _users.isEmpty
                                   ? const Center(
@@ -492,48 +487,48 @@ Widget _headerCell(String text, int flex, {TextAlign align = TextAlign.left}) {
                             ),
 
                             // --- Traka za paginaciju ---
-                            const Divider(height: 1, color: Color(0xFFE2E8F0)),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 14.0),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'Prikazano $startItem - $endItem od ukupno $_totalCount korisnika',
-                                    style: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
-                                  ),
-                                  Row(
-                                    children: [
-                                      IconButton(
-                                        icon: const Icon(Icons.chevron_left),
-                                        onPressed: _currentPage > 1 && !_isLoading
-                                            ? () {
-                                                setState(() => _currentPage--);
-                                                _fetchUsers(searchTerm: _searchController.text);
-                                              }
-                                            : null,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        'Stranica $_currentPage',
-                                        style: const TextStyle(
-                                            fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      IconButton(
-                                        icon: const Icon(Icons.chevron_right),
-                                        onPressed: (endItem < _totalCount) && !_isLoading
-                                            ? () {
-                                                setState(() => _currentPage++);
-                                                _fetchUsers(searchTerm: _searchController.text);
-                                              }
-                                            : null,
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
+                          const Divider(height: 1, color: Color(0xFFE2E8F0)),
+Padding(
+  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 14.0),
+  child: Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      Text(
+        'Prikazano $startItem - $endItem od ukupno $_totalCount korisnika',
+        style: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
+      ),
+      Row(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.chevron_left),
+            onPressed: _currentPage > 1 && !_isLoading
+                ? () {
+                    setState(() => _currentPage--);
+                    _fetchUsers(searchTerm: _searchController.text);
+                  }
+                : null,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            'Stranica $_currentPage od ${(_totalCount / _pageSize).ceil() == 0 ? 1 : (_totalCount / _pageSize).ceil()}',
+            style: const TextStyle(
+                fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+          ),
+          const SizedBox(width: 8),
+          IconButton(
+            icon: const Icon(Icons.chevron_right),
+            onPressed: (endItem < _totalCount) && !_isLoading
+                ? () {
+                    setState(() => _currentPage++);
+                    _fetchUsers(searchTerm: _searchController.text);
+                  }
+                : null,
+          ),
+        ],
+      ),
+    ],
+  ),
+),
                           ],
                         ),
                       ),

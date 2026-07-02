@@ -79,7 +79,7 @@ class AuthInterceptor extends Interceptor {
     if (statusCode != 401 ||
     _isPublicPath(path) ||
     path == ApiEndpoints.refreshToken ||
-    err.requestOptions.extra['isRetry'] == true) { // <-- DODAJ OVO
+    err.requestOptions.extra['isRetry'] == true) { 
   return handler.next(err);
 }
 

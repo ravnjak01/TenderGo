@@ -23,7 +23,6 @@ class AuthInterceptor extends Interceptor {
 
   AuthInterceptor(this._dio, [this._storage = const FlutterSecureStorage()]);
 
-  // ─────────────────────────── onRequest ───────────────────────────
 
   @override
   Future<void> onRequest(
@@ -58,7 +57,6 @@ class AuthInterceptor extends Interceptor {
     return handler.next(options);
   }
 
-  // ─────────────────────────── onError ─────────────────────────────
 
   @override
   Future<void> onError(
@@ -68,7 +66,6 @@ class AuthInterceptor extends Interceptor {
     final statusCode = err.response?.statusCode;
     final path = err.requestOptions.path;
 
-    // Only intercept 401s on protected, non-refresh routes.
     if (statusCode != 401 ||
         _isPublicPath(path) ||
         path == ApiEndpoints.refreshToken) {
@@ -108,7 +105,6 @@ class AuthInterceptor extends Interceptor {
     }
   }
 
-  // ─────────────────────────── helpers ─────────────────────────────
 
   bool _isPublicPath(String path) => _publicPaths.contains(path);
 
@@ -117,7 +113,6 @@ class AuthInterceptor extends Interceptor {
       final refreshToken = await _storage.read(key: 'refresh_token');
       if (refreshToken == null || refreshToken.isEmpty) return false;
 
-      // Use a plain Dio instance to bypass this interceptor and avoid recursion.
       final plainDio = Dio(_dio.options);
       final response = await plainDio.post(
         ApiEndpoints.refreshToken,

@@ -11,14 +11,18 @@ class PagedResult<T> {
     required this.pageSize,
   });
 
-  factory PagedResult.fromJson(Map<String, dynamic> json, T Function(dynamic) fromJsonT) {
+  factory PagedResult.fromJson(
+    Map<String, dynamic> json,
+    T Function(Map<String, dynamic>) fromJsonT,
+  ) {
     return PagedResult<T>(
-      result: json['result'] is List
-          ? (json['result'] as List).map((item) => fromJsonT(item)).toList()
-          : const [],
-      totalCount: json['totalCount'] as int,
-      page: json['page'] as int,
-      pageSize: json['pageSize'] as int,
+      result: (json['result'] as List<dynamic>? ?? [])
+          .whereType<Map<String, dynamic>>()
+          .map(fromJsonT)
+          .toList(),
+      totalCount: (json['totalCount'] as num?)?.toInt() ?? 0,
+      page: (json['page'] as num?)?.toInt() ?? 1,
+      pageSize: (json['pageSize'] as num?)?.toInt() ?? 0,
     );
   }
 }

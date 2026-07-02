@@ -68,17 +68,14 @@ class LocationService extends BaseService<LocationDto> {
 Future<PagedResult<LocationDto>> search(LocationSearchRequest request) async {
   try {
     final response = await dio.get(
-      LocationEndpoints.search(), // Koristi bazičnu putanju endpoimta (npr. '/admin/locations')
-      queryParameters: request.toJson(), // Svi parametri (page, pageSize, searchTerm, isActive) idu ovdje!
+      LocationEndpoints.search(), 
+      queryParameters: request.toJson(), 
     );
 
-    // 1. Pretvaramo kompletan odgovor u mapu (ApiSuccessEnvelope)
     final envelope = response.data as Map<String, dynamic>;
 
-    // 2. Izvlačimo unutrašnje polje 'data' gdje se nalazi PagedResult sa lokacijama
     final pagedData = envelope['data'] as Map<String, dynamic>;
 
-    // 3. Prosljeđujemo 'pagedData' u našu PagedResult fabriku koja je sada neprobojna
     return PagedResult<LocationDto>.fromJson(
       pagedData,
       (json) => LocationDto.fromJson(json as Map<String, dynamic>),
