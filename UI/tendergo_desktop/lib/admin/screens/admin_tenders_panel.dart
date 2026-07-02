@@ -65,10 +65,6 @@ class _AdminTendersPanelState extends State<AdminTendersPanel> {
      
 
 
-      for (final t in pagedResult.result) {
-        print("${t.title} -> ${t.status}");
-      }
-
       if (!mounted) return;
 
       setState(() {

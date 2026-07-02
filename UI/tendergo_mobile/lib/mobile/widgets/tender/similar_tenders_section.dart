@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:tendergo/mobile/routes/routes.dart';
 import 'package:tendergo/shared/models/dto/tenderrecommendation_dto.dart';
 import 'package:tendergo/shared/services/dio_client.dart';
