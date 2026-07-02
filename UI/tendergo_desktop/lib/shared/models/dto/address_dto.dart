@@ -4,17 +4,17 @@
 
 class AddressDto {
   final int id;
-  final String country;
-  final String city;
-  final String street;
-  final String postalCode;
+  final String? country;
+  final String? city;
+  final String? street;
+  final String? postalCode;
 
   AddressDto({
     required this.id,
-    required this.country,
-    required this.city,
-    required this.street,
-    required this.postalCode,
+    this.country,
+    this.city,
+    this.street,
+    this.postalCode,
   });
 
   factory AddressDto.fromJson(Map<String, dynamic> json) {

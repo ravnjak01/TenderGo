@@ -17,14 +17,13 @@ namespace TenderGo.Api.Controllers
         {
             _adminUserService = adminUserService;
         }
-
         [HttpGet]
-        public async Task<IActionResult> GetAllUsers()
+        public async Task<IActionResult> GetAllUsers([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
-            var users = await _adminUserService.GetAllUsersAsync();
-            return Ok(users);
-        }
+            var usersPagedResult = await _adminUserService.GetAllUsersAsync(page, pageSize);
 
+            return Ok(usersPagedResult);
+        }
         [HttpGet("search")]
         public async Task<IActionResult> SearchUsers([FromQuery] AdminUserSearchRequest request)
         {

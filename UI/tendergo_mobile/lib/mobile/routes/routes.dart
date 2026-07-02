@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:tendergo/mobile/screens/mybids_screen.dart';
 import 'package:tendergo/mobile/screens/forgot_password_screen.dart';

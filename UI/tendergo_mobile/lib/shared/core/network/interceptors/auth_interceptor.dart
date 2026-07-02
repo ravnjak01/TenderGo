@@ -79,7 +79,7 @@ class AuthInterceptor extends Interceptor {
     if (statusCode != 401 ||
     _isPublicPath(path) ||
     path == ApiEndpoints.refreshToken ||
-    err.requestOptions.extra['isRetry'] == true) { // <-- DODAJ OVO
+    err.requestOptions.extra['isRetry'] == true) { 
   return handler.next(err);
 }
 
@@ -170,30 +170,25 @@ class AuthInterceptor extends Interceptor {
 
     dynamic finalData = original.data;
 
-    // RJEŠENJE ZA RE-TRY MULTIPART PODATAKA
     if (original.data is FormData) {
       final originalFormData = original.data as FormData;
       final newFormData = FormData();
 
-      // 1. Kopiraj obična tekstualna polja
       newFormData.fields.addAll(originalFormData.fields);
 
-      // 2. Kloniraj datoteke koristeći ugrađenu .clone() metodu iz Dio paketa
       for (final filePair in originalFormData.files) {
         newFormData.files.add(
           MapEntry(
             filePair.key,
-            filePair.value.clone(), // Sprečava "already been finalized" grešku
+            filePair.value.clone(), 
           ),
         );
       }
       finalData = newFormData;
       
-      // Ukloni stari content-type da se generira novi boundary header
       headers.remove('content-type'); 
     }
 
-    // --- OVO JE LINIJA KOJA JE NEDOSTAJALA ---
     return _dio.request<dynamic>(
       original.path,
       data: finalData,

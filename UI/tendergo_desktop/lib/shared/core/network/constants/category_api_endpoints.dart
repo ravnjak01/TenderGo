@@ -11,9 +11,7 @@ class CategoryApiEndpoints {
   static String deactivate(int id) => '$baseUrl/$id/deactivate';
 
 
-// Pazi da baseUrl završava sa /api/category ili ručno dodaj putanju
-static String search(String searchTerm, {int page = 1, int pageSize = 10}) => 
-    '$baseUrl/search?searchTerm=$searchTerm&page=$page&pageSize=$pageSize';
+static String search() => 'category/admin-search'; 
 
     static const String insert = baseUrl;
 

@@ -45,16 +45,13 @@ Future<ApiResponse> login(String email, String password) async {
     return result;
   }
   
-  // Učitaj korisnika da dobiješ njegove uloge
   final userResult = await loadUser();
   
-  // Ako je učitavanje uspjelo, ali korisnik NIJE admin
   if (userResult.success && !isAdmin) {
     await _authService.logout();
     _currentUser = null;
     notifyListeners();
     
-    // Vraćamo ApiResponse sa porukom o grešci
     return ApiResponse.failure('Pristup odbijen. Nemate administratorske privilegije.', statusCode: 403);
   }
 

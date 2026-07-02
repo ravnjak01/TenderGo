@@ -181,8 +181,8 @@ class _RateUserScreenState extends State<RateUserScreen> {
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
                             icon: Icon(
-                              selected ? Icons.star_rounded : Icons.star_border_rounded,
-                              color: selected ? Colors.amber.shade700 : AppColors.outline,
+                              selected ? Icons.star_rounded :Icons.star_outline_rounded,
+                              color: selected ? Colors.amber.shade700 : AppColors.textPrimary,
                             ),
                             tooltip: '$value star${value > 1 ? 's' : ''}',
                           );

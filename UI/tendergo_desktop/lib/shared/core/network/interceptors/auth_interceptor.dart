@@ -17,15 +17,12 @@ class AuthInterceptor extends Interceptor {
   final Dio _dio;
   final FlutterSecureStorage _storage;
 
-  /// Guards against multiple simultaneous refresh calls.
   bool _isRefreshing = false;
 
-  /// Requests that arrived while a refresh was already in progress.
   final List<Completer<Response<dynamic>>> _pendingQueue = [];
 
   AuthInterceptor(this._dio, [this._storage = const FlutterSecureStorage()]);
 
-  // ─────────────────────────── onRequest ───────────────────────────
 
   @override
   Future<void> onRequest(
@@ -38,7 +35,6 @@ class AuthInterceptor extends Interceptor {
 
     final token = await _storage.read(key: 'jwt_token');
 
-    // Proactively refresh before the request leaves the device.
     if (token != null && JwtDecoder.isExpired(token)) {
       final refreshed = await _tryRefresh();
       if (!refreshed) {
@@ -61,7 +57,6 @@ class AuthInterceptor extends Interceptor {
     return handler.next(options);
   }
 
-  // ─────────────────────────── onError ─────────────────────────────
 
   @override
   Future<void> onError(
@@ -71,7 +66,6 @@ class AuthInterceptor extends Interceptor {
     final statusCode = err.response?.statusCode;
     final path = err.requestOptions.path;
 
-    // Only intercept 401s on protected, non-refresh routes.
     if (statusCode != 401 ||
         _isPublicPath(path) ||
         path == ApiEndpoints.refreshToken) {
@@ -79,7 +73,6 @@ class AuthInterceptor extends Interceptor {
     }
 
     if (_isRefreshing) {
-      // Queue this request; it will be retried once the ongoing refresh finishes.
       final completer = Completer<Response<dynamic>>();
       _pendingQueue.add(completer);
       try {
@@ -102,7 +95,6 @@ class AuthInterceptor extends Interceptor {
 
     _isRefreshing = false;
 
-    // Retry the original failed request with the new token.
     try {
       final response = await _retry(err.requestOptions);
       _resolvePending(response);
@@ -113,17 +105,14 @@ class AuthInterceptor extends Interceptor {
     }
   }
 
-  // ─────────────────────────── helpers ─────────────────────────────
 
   bool _isPublicPath(String path) => _publicPaths.contains(path);
 
-  /// Calls the refresh-token endpoint and persists new tokens on success.
   Future<bool> _tryRefresh() async {
     try {
       final refreshToken = await _storage.read(key: 'refresh_token');
       if (refreshToken == null || refreshToken.isEmpty) return false;
 
-      // Use a plain Dio instance to bypass this interceptor and avoid recursion.
       final plainDio = Dio(_dio.options);
       final response = await plainDio.post(
         ApiEndpoints.refreshToken,
@@ -148,7 +137,6 @@ class AuthInterceptor extends Interceptor {
     }
   }
 
-  /// Retries a request after a successful token refresh.
   Future<Response<dynamic>> _retry(RequestOptions original) async {
     final token = await _storage.read(key: 'jwt_token');
     return _dio.request<dynamic>(
@@ -179,7 +167,6 @@ class AuthInterceptor extends Interceptor {
     _pendingQueue.clear();
   }
 
-  /// Wipes stored tokens. Wire in your router/navigation service here.
   Future<void> _clearSession() async {
     await _storage.delete(key: 'jwt_token');
     await _storage.delete(key: 'refresh_token');

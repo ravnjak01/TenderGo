@@ -1,7 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:tendergo/shared/models/dto/admin_dto.dart';
 import 'package:tendergo/shared/models/dto/user_dto.dart';
-import 'package:tendergo/shared/models/requests/users_search_request.dart';
+import 'package:tendergo/shared/models/requests/admin_user_search_request.dart';
 import 'package:tendergo/shared/services/admin_service.dart';
 import 'package:tendergo/shared/services/dio_client.dart';
 
@@ -15,9 +16,22 @@ class AdminUsersPanel extends StatefulWidget {
 class _AdminUsersPanelState extends State<AdminUsersPanel> {
   final TextEditingController _searchController = TextEditingController();
   late final AdminService _adminService;
+  Timer? _debounce;
+
   List<UserDto> _users = [];
+  int _currentPage = 1;
+  int _pageSize = 5;
+  int _totalCount = 0;
   bool _isLoading = true;
   String? _error;
+
+    static const int _flexName = 3;
+  static const int _flexEmail = 3;
+  static const int _flexRole = 2;
+  static const int _flexStatus = 2;
+  static const int _flexActions = 2;
+
+
 
   @override
   void initState() {
@@ -29,25 +43,35 @@ class _AdminUsersPanelState extends State<AdminUsersPanel> {
   @override
   void dispose() {
     _searchController.dispose();
+    _debounce?.cancel();
     super.dispose();
   }
 
-  Future<void> _fetchUsers({String searchTerm = ''}) async {
+  Future<void> _fetchUsers({String searchTerm = '', bool isNewSearch = false}) async {
+    if (isNewSearch) {
+      _currentPage = 1; 
+    }
+
     setState(() {
       _isLoading = true;
       _error = null;
     });
 
     try {
-      final request = UsersSearchRequest(
+      final request = AdminUserSearchRequest(
         searchTerm: searchTerm.isEmpty ? null : searchTerm,
+        page: _currentPage,
+        pageSize: _pageSize,
       );
 
-      final users = await _adminService.search(request);
+      final pagedResult = await _adminService.search(request);
       if (!mounted) return;
 
       setState(() {
-        _users = users;
+        _users = pagedResult.result;
+        _totalCount = pagedResult.totalCount;
+        _currentPage = pagedResult.page;
+        _pageSize = pagedResult.pageSize;
         _isLoading = false;
       });
     } catch (e) {
@@ -59,11 +83,16 @@ class _AdminUsersPanelState extends State<AdminUsersPanel> {
     }
   }
 
+  void _onSearchChanged(String value) {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      _fetchUsers(searchTerm: value.trim(), isNewSearch: true);
+    });
+  }
+
   Future<void> _handleBanUser(UserDto user) async {
     final reason = await _showBanReasonDialog();
-    if (reason == null || reason.isEmpty) {
-      return;
-    }
+    if (reason == null || reason.isEmpty) return;
 
     setState(() {
       _isLoading = true;
@@ -181,7 +210,7 @@ class _AdminUsersPanelState extends State<AdminUsersPanel> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, null),
-            child: const Text('Otka�i'),
+            child: const Text('Otkaži'),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, controller.text.trim()),
@@ -193,20 +222,46 @@ class _AdminUsersPanelState extends State<AdminUsersPanel> {
   }
 
   String _displayRole(UserDto user) {
-    if (user.roles.isEmpty) {
-      return 'Korisnik';
-    }
+    if (user.roles.isEmpty) return 'Korisnik';
     return user.roles.join(' / ');
   }
 
   bool _isAdmin(UserDto user) {
     return user.roles.any((role) => role.toLowerCase().contains('admin'));
   }
+Widget _headerCell(String text, int flex, {TextAlign align = TextAlign.left}) {
+    return Expanded(
+      flex: flex,
+      child: Text(
+        text,
+        textAlign: align,
+        style: const TextStyle(
+          fontWeight: FontWeight.w600,
+          color: Color(0xFF64748B),
+          fontSize: 14,
+        ),
+      ),
+    );
+  }
+
+  Widget _dataCell(Widget child, int flex, {TextAlign align = TextAlign.left}) {
+    return Expanded(
+      flex: flex,
+      child: Align(
+        alignment: align == TextAlign.right ? Alignment.centerRight : Alignment.centerLeft,
+        child: child,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final int startItem = _users.isEmpty ? 0 : (_currentPage - 1) * _pageSize + 1;
+    final int endItem =
+        (_currentPage * _pageSize) > _totalCount ? _totalCount : (_currentPage * _pageSize);
+
     return Container(
-      color: const Color(0xFFF8FAFC), // Svijetla pozadina panela
+      color: const Color(0xFFF8FAFC),
       width: double.infinity,
       padding: const EdgeInsets.all(32.0),
       child: Column(
@@ -254,7 +309,7 @@ class _AdminUsersPanelState extends State<AdminUsersPanel> {
                 ),
                 child: TextField(
                   controller: _searchController,
-                  onChanged: (value) => _fetchUsers(searchTerm: value.trim()),
+                  onChanged: _onSearchChanged,
                   decoration: InputDecoration(
                     hintText: 'Pretraži korisnike po imenu ili emailu...',
                     hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
@@ -265,7 +320,7 @@ class _AdminUsersPanelState extends State<AdminUsersPanel> {
                             icon: const Icon(Icons.clear, size: 16, color: Color(0xFF94A3B8)),
                             onPressed: () {
                               _searchController.clear();
-                              _fetchUsers(searchTerm: '');
+                              _fetchUsers(searchTerm: '', isNewSearch: true);
                             },
                           )
                         : null,
@@ -277,10 +332,10 @@ class _AdminUsersPanelState extends State<AdminUsersPanel> {
           const SizedBox(height: 24),
 
           Expanded(
-            child: _isLoading
+            child: _isLoading && _users.isEmpty
                 ? const Center(child: CircularProgressIndicator())
                 : _error != null
-                    ? Center(child: Text('Gre�ka pri ucitavanju: $_error'))
+                    ? Center(child: Text('Greška pri učitavanju: $_error'))
                     : Container(
                         width: double.infinity,
                         decoration: BoxDecoration(
@@ -295,121 +350,186 @@ class _AdminUsersPanelState extends State<AdminUsersPanel> {
                           ],
                           border: Border.all(color: const Color(0xFFE2E8F0)),
                         ),
-                        child: SingleChildScrollView(
-                          child: DataTable(
-                            horizontalMargin: 24,
-                            headingRowHeight: 55,
-                            dataRowMaxHeight: 65,
-                            dataRowMinHeight: 55,
-                            headingRowColor: MaterialStateProperty.all(const Color(0xFFF8FAFC)),
-                            columns: const [
-                              DataColumn(
-                                label: Text(
-                                  'Ime i prezime',
-                                  style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF64748B), fontSize: 14),
+                        child: Column(
+                          children: [
+                            Container(
+                              height: 55,
+                              padding: const EdgeInsets.symmetric(horizontal: 24),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFF8FAFC),
+                                borderRadius: BorderRadius.only(
+                                  topLeft: Radius.circular(8),
+                                  topRight: Radius.circular(8),
                                 ),
                               ),
-                              DataColumn(
-                                label: Text(
-                                  'Email',
-                                  style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF64748B), fontSize: 14),
-                                ),
-                              ),
-                              DataColumn(
-                                label: Text(
-                                  'Uloga',
-                                  style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF64748B), fontSize: 14),
-                                ),
-                              ),
-                              DataColumn(
-                                label: Text(
-                                  'Status',
-                                  style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF64748B), fontSize: 14),
-                                ),
-                              ),
-                              DataColumn(
-                                label: Text(
-                                  'Akcije',
-                                  style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF64748B), fontSize: 14),
-                                ),
-                              ),
-                            ],
-                            rows: _users.map((user) {
-                              final isActive = !user.isBanned;
-                              return DataRow(
-                                cells: [
-                                  DataCell(
-                                    Text(
-                                      '${user.firstName} ${user.lastName}'.trim(),
-                                      style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-                                    ),
-                                  ),
-                                  DataCell(
-                                    Text(
-                                      user.email,
-                                      style: const TextStyle(color: Color(0xFF64748B)),
-                                    ),
-                                  ),
-                                  DataCell(
-                                    Text(
-                                      _displayRole(user),
-                                      style: const TextStyle(color: Color(0xFF475569)),
-                                    ),
-                                  ),
-                                  DataCell(
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                      decoration: BoxDecoration(
-                                        color: isActive ? const Color(0xFFE6FFFA) : const Color(0xFFFEE2E2),
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: Text(
-                                        isActive ? 'Aktivan' : 'Blokiran',
-                                        style: TextStyle(
-                                          color: isActive ? const Color(0xFF047857) : const Color(0xFFB91C1C),
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  DataCell(
-                                    Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        if (!_isAdmin(user))
-                                          OutlinedButton(
-                                            onPressed: () {
-                                              if (isActive) {
-                                                _handleBanUser(user);
-                                              } else {
-                                                _handleUnbanUser(user);
-                                              }
-                                            },
-                                            style: OutlinedButton.styleFrom(
-                                              minimumSize: const Size(95, 30),
-                                              padding: const EdgeInsets.symmetric(horizontal: 12),
-                                              side: BorderSide(
-                                                color: isActive ? const Color(0xFFFCA5A5) : const Color(0xFF60A5FA),
-                                              ),
-                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                                            ),
-                                            child: Text(
-                                              isActive ? 'Ban' : 'Unban',
-                                              style: TextStyle(
-                                                color: isActive ? const Color(0xFFEF4444) : const Color(0xFF2563EB),
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  ),
+                              child: Row(
+                                children: [
+                                  _headerCell('Ime i prezime', _flexName),
+                                  _headerCell('Email', _flexEmail),
+                                  _headerCell('Uloga', _flexRole),
+                                  _headerCell('Status', _flexStatus),
+                                  _headerCell('Akcije', _flexActions, align: TextAlign.right),
                                 ],
-                              );
-                            }).toList(),
-                          ),
+                              ),
+                            ),
+                            const Divider(height: 1, color: Color(0xFFE2E8F0)),
+
+                            Expanded(
+                              child: _users.isEmpty
+                                  ? const Center(
+                                      child: Text(
+                                        'Nema pronađenih korisnika.',
+                                        style: TextStyle(color: Color(0xFF64748B)),
+                                      ),
+                                    )
+                                  : ListView.separated(
+                                      itemCount: _users.length,
+                                      separatorBuilder: (_, __) =>
+                                          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                                      itemBuilder: (context, index) {
+                                        final user = _users[index];
+                                        final isActive = !user.isBanned;
+
+                                        return Container(
+                                          height: 65,
+                                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                                          child: Row(
+                                            children: [
+                                              _dataCell(
+                                                Text(
+                                                  '${user.firstName} ${user.lastName}'.trim(),
+                                                  overflow: TextOverflow.ellipsis,
+                                                  style: const TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Color(0xFF1E293B),
+                                                  ),
+                                                ),
+                                                _flexName,
+                                              ),
+                                              _dataCell(
+                                                Text(
+                                                  user.email,
+                                                  overflow: TextOverflow.ellipsis,
+                                                  style: const TextStyle(color: Color(0xFF64748B)),
+                                                ),
+                                                _flexEmail,
+                                              ),
+                                              _dataCell(
+                                                Text(
+                                                  _displayRole(user),
+                                                  overflow: TextOverflow.ellipsis,
+                                                  style: const TextStyle(color: Color(0xFF475569)),
+                                                ),
+                                                _flexRole,
+                                              ),
+                                              _dataCell(
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(
+                                                      horizontal: 10, vertical: 5),
+                                                  decoration: BoxDecoration(
+                                                    color: isActive
+                                                        ? const Color(0xFFE6FFFA)
+                                                        : const Color(0xFFFEE2E2),
+                                                    borderRadius: BorderRadius.circular(4),
+                                                  ),
+                                                  child: Text(
+                                                    isActive ? 'Aktivan' : 'Blokiran',
+                                                    style: TextStyle(
+                                                      color: isActive
+                                                          ? const Color(0xFF047857)
+                                                          : const Color(0xFFB91C1C),
+                                                      fontSize: 12,
+                                                      fontWeight: FontWeight.w600,
+                                                    ),
+                                                  ),
+                                                ),
+                                                _flexStatus,
+                                              ),
+                                              _dataCell(
+                                                !_isAdmin(user)
+                                                    ? OutlinedButton(
+                                                        onPressed: () => isActive
+                                                            ? _handleBanUser(user)
+                                                            : _handleUnbanUser(user),
+                                                        style: OutlinedButton.styleFrom(
+                                                          minimumSize: const Size(95, 30),
+                                                          padding: const EdgeInsets.symmetric(
+                                                              horizontal: 12),
+                                                          side: BorderSide(
+                                                            color: isActive
+                                                                ? const Color(0xFFFCA5A5)
+                                                                : const Color(0xFF60A5FA),
+                                                          ),
+                                                          shape: RoundedRectangleBorder(
+                                                              borderRadius:
+                                                                  BorderRadius.circular(4)),
+                                                        ),
+                                                        child: Text(
+                                                          isActive ? 'Ban' : 'Unban',
+                                                          style: TextStyle(
+                                                            color: isActive
+                                                                ? const Color(0xFFEF4444)
+                                                                : const Color(0xFF2563EB),
+                                                            fontSize: 12,
+                                                            fontWeight: FontWeight.w500,
+                                                          ),
+                                                        ),
+                                                      )
+                                                    : const SizedBox.shrink(),
+                                                _flexActions,
+                                                align: TextAlign.right,
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      },
+                                    ),
+                            ),
+
+                            // --- Traka za paginaciju ---
+                          const Divider(height: 1, color: Color(0xFFE2E8F0)),
+Padding(
+  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 14.0),
+  child: Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      Text(
+        'Prikazano $startItem - $endItem od ukupno $_totalCount korisnika',
+        style: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
+      ),
+      Row(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.chevron_left),
+            onPressed: _currentPage > 1 && !_isLoading
+                ? () {
+                    setState(() => _currentPage--);
+                    _fetchUsers(searchTerm: _searchController.text);
+                  }
+                : null,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            'Stranica $_currentPage od ${(_totalCount / _pageSize).ceil() == 0 ? 1 : (_totalCount / _pageSize).ceil()}',
+            style: const TextStyle(
+                fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+          ),
+          const SizedBox(width: 8),
+          IconButton(
+            icon: const Icon(Icons.chevron_right),
+            onPressed: (endItem < _totalCount) && !_isLoading
+                ? () {
+                    setState(() => _currentPage++);
+                    _fetchUsers(searchTerm: _searchController.text);
+                  }
+                : null,
+          ),
+        ],
+      ),
+    ],
+  ),
+),
+                          ],
                         ),
                       ),
           ),

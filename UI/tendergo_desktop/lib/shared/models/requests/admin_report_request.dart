@@ -11,10 +11,8 @@ class AdminReportRequest {
   });
 
   Map<String, dynamic> toJson() {
-    // Pomoćna funkcija za dodavanje vodeće nule (npr. 6 -> "06")
     String pad(int value) => value.toString().padLeft(2, '0');
 
-    // Formatiramo datume kao čiste "YYYY-MM-DD" stringove, ignorišući sate i UTC pomjeranja
     final fromString = "${from.year}-${pad(from.month)}-${pad(from.day)}";
     final toString = "${to.year}-${pad(to.month)}-${pad(to.day)}";
 

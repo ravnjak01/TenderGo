@@ -35,33 +35,49 @@ namespace TenderGo.Services.Services
 
  }
 
-        public async Task<IEnumerable<UserDTO>> GetAllUsersAsync()
+        public async Task<PagedResult<UserDTO>> GetAllUsersAsync(int page, int pageSize)
         {
-            var finalQuery = from user in _context.Users
-                             select new UserDTO
-                             {
-                                 Id = user.Id,
-                                 Email = user.Email,
-                                 Username = user.UserName, 
-                                 FirstName = user.FirstName,
-                                 LastName = user.LastName,
-                                 Address = user.Address != null ? new AddressDTO 
-                                 { 
-                                 } : null,
-                                 Roles = (from userRole in _context.UserRoles
-                                          join role in _context.Roles on userRole.RoleId equals role.Id
-                                          where userRole.UserId == user.Id
-                                          select role.Name).ToList(),
-                                 IsBanned = user.IsBanned,
-                             };
+            page = Math.Max(page, 1);
+            pageSize = Math.Clamp(pageSize, 1, 100);
 
-            return await finalQuery.ToListAsync();
+            var query = from user in _context.Users
+                        select new UserDTO
+                        {
+                            Id = user.Id,
+                            Email = user.Email,
+                            Username = user.UserName,
+                            FirstName = user.FirstName,
+                            LastName = user.LastName,
+                            Address = user.Address != null ? new AddressDTO { } : null,
+                            Roles = (from userRole in _context.UserRoles
+                                     join role in _context.Roles on userRole.RoleId equals role.Id
+                                     where userRole.UserId == user.Id
+                                     select role.Name).ToList(),
+                            IsBanned = user.IsBanned,
+                        };
+
+            var totalCount = await _context.Users.CountAsync();
+
+            var results = await query
+                .OrderBy(u => u.LastName) 
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return new PagedResult<UserDTO>
+            {
+                Result = results,
+                TotalCount = totalCount,
+                Page = page,
+                PageSize = pageSize
+            };
         }
+
 
         public async Task<PagedResult<UserDTO>> SearchAsync(AdminUserSearchRequest request)
         {
             var page = Math.Max(request.Page, 1);
-            var pageSize = Math.Max(request.PageSize, 1);
+            var pageSize = Math.Clamp(request.PageSize, 1, 100);
             var query = _context.Users.AsQueryable();
 
 

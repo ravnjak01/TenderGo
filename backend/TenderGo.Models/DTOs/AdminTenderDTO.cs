@@ -1,4 +1,5 @@
 using System;
+using TenderGo.Models.ENUMs;
 
 namespace TenderGo.Models.DTOs
 {
@@ -9,5 +10,6 @@ namespace TenderGo.Models.DTOs
         public string CreatedByUserFullName { get; set; } = string.Empty;
         public DateTime Deadline { get; set; }
         public decimal MaxBudget { get; set; }
+        public TenderStatus  Status { get; set; }
     }
 }

@@ -205,7 +205,6 @@ Widget build(BuildContext context) {
   final bool isDesktopWidth = MediaQuery.sizeOf(context).width >= 900;
   final int descriptionLines = isDesktopWidth ? 5 : 4;
 
-  // Jedinstven stil za sve nazive (labele) iznad polja
   const labelStyle = TextStyle(
     fontSize: 14,
     fontWeight: FontWeight.w600,

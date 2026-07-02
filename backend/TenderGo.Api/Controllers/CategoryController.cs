@@ -31,7 +31,7 @@ namespace TenderGo.Api.Controllers
         }
         [Authorize(Roles = AppRoles.Admin)]
 
-        [HttpGet("search")]
+        [HttpGet("admin-search")]
         public async Task<IActionResult> Search([FromQuery] CategorySearchRequest request) 
         {
             var result = await _categoryService.SearchAsync(request);

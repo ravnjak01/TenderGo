@@ -39,7 +39,7 @@ class TenderRecommendationCard extends StatelessWidget {
               ),
 
             Padding(
-              padding: const EdgeInsets.all(12), // Blago smanjen padding za više prostora
+              padding: const EdgeInsets.all(12), 
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -235,14 +235,14 @@ class _SignalChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: theme.colorScheme.primaryContainer.withOpacity(0.72),
-        borderRadius: BorderRadius.circular(12), // Malo blaži radijus za višelinijski tekst
+        borderRadius: BorderRadius.circular(12), 
       ),
       child: Text(
         label,
         style: theme.textTheme.labelSmall?.copyWith(
           color: theme.colorScheme.onPrimaryContainer,
           fontWeight: FontWeight.w600,
-          height: 1.2, // Bolji prored za tekst koji se prelomi
+          height: 1.2, 
         ),
       
         maxLines: isMobile ? null : 1,

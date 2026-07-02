@@ -1,11 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
 
-
-// ─────────────────────────────────────────────────────────────────
-//  AuthSubmitButton — primary action button with loading state
-// ─────────────────────────────────────────────────────────────────
-
 class AuthSubmitButton extends StatelessWidget {
   final String label;
   final bool isLoading;

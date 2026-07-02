@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:tendergo/shared/core/network/constants/category_api_endpoints.dart';
 import 'package:tendergo/shared/models/dto/category_dto.dart';
+import 'package:tendergo/shared/models/dto/paged_result.dart';
 import 'package:tendergo/shared/models/requests/category_insert_request.dart';
 import 'package:tendergo/shared/models/requests/category_search_request.dart';
 import 'package:tendergo/shared/models/requests/category_update_request.dart';
@@ -72,31 +73,21 @@ class CategoryService extends BaseService<CategoryDto> {
   }
 
 
-  Future<List<CategoryDto>> search(CategorySearchRequest request) async {
+  Future<PagedResult<CategoryDto>> search(CategorySearchRequest request) async {
     try {
       final response = await dio.get(
-        CategoryApiEndpoints.search(
-          request.searchTerm ?? '',
-          page: request.page,
-          pageSize: request.pageSize,
-        ),
-      );
-      debugPrint('CATEGORY SEARCH RESPONSE: ${response.data}');
+      CategoryApiEndpoints.search(),
+      queryParameters: request.toJson(), 
+    );
 
-      final envelope = response.data;
-      final data=envelope['data'];
-      final result=data['result'];
-      if (envelope is! Map<String, dynamic>) {
-        throw Exception('Invalid response format.');
-      }
+    final envelope = response.data as Map<String, dynamic>;
 
-      if (result is! List) {
-        throw Exception('Invalid response format: result is not a list.');
-      }
+    final pagedData = envelope['data'] as Map<String, dynamic>;
 
-      return result
-          .map((x) => CategoryDto.fromJson(Map<String, dynamic>.from(x as Map)))
-          .toList();
+      return PagedResult<CategoryDto>.fromJson(
+      pagedData,
+      (json) => CategoryDto.fromJson(json as Map<String, dynamic>),
+    );
     } on DioException catch (e) {
       throw Exception(_extractErrorMessage(e, 'Error searching categories'));
     }

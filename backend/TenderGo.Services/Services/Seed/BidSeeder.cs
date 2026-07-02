@@ -140,37 +140,30 @@ new Bid
                 }
             };
 
-            // 3. UPSERT PETLJA SA SIGURNOSNIM PROVJERAMA
             foreach (var seedBid in seedBids)
             {
-                // Ponovo dobavljamo tender iz baze (sa uključenim vlasnikom) da provjerimo pravilo sopstvenog tendera
                 var targetTender = await context.Tenders
                     .IgnoreAutoIncludes()
                     .FirstAsync(t => t.Id == seedBid.TenderId);
 
-                // SIGURNOSNA PROVJERA: Da li korisnik pokušava aplicirati na svoj tender?
                 if (targetTender.CreatedByUserId == seedBid.SubmittedByUserId)
                 {
-                    // Preskačemo ovaj zapis kako ne bismo narušili poslovno pravilo aplikacije
                     continue;
                 }
 
-                // Provjera duplikata na osnovu para (TenderId, SubmittedByUserId)
                 var existingBid = await context.Bids
                     .FirstOrDefaultAsync(b => b.TenderId == seedBid.TenderId && b.SubmittedByUserId == seedBid.SubmittedByUserId);
 
                 if (existingBid == null)
                 {
-                    // Ako ponuda ne postoji, dodaj je
                     context.Bids.Add(seedBid);
                 }
                 else
                 {
-                    // Ako ponuda već postoji, ažuriraj je (sinhronizacija podataka i reset na Pending)
                     existingBid.OfferedPrice = seedBid.OfferedPrice;
                     existingBid.DeliveryDays = seedBid.DeliveryDays;
                     existingBid.Proposal = seedBid.Proposal;
-                    existingBid.Status = seedBid.Status; // ApplicationStatus.Pending
+                    existingBid.Status = seedBid.Status; 
                     existingBid.SubmittedAt = seedBid.SubmittedAt;
                 }
             }
