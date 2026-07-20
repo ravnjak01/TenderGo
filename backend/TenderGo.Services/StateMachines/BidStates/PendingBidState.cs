@@ -22,17 +22,19 @@ namespace TenderGo.Services.StateMachines.BidStates
     {
         private readonly IPubSub _pubSub;
         private readonly ILogger<PendingBidState> _logger;
-
+        private readonly IAuthService _authService;
         public PendingBidState(
             IServiceProvider serviceProvider,
             TenderGoContext context,
             IMapper mapper,
             IPubSub pubSub,
-            ILogger<PendingBidState> logger)
+            ILogger<PendingBidState> logger,
+            IAuthService authService)
             : base(serviceProvider, context, mapper)
         {
             _pubSub = pubSub;
             _logger = logger;
+            _authService = authService;
         }
 
         public override async Task<BidDTO> Insert(BidInsertRequest request)
@@ -122,8 +124,18 @@ namespace TenderGo.Services.StateMachines.BidStates
                 .FirstOrDefaultAsync(b => b.Id == id)
                  ?? throw new NotFoundException("Bid not found", new { Bid = "Bid", Id = id });
 
-            bid.Status = ApplicationStatus.Cancelled;
+            var currentUserId = _authService.GetCurrentUserId();
+            bool isAdmin = _authService.IsInRole(AppRoles.Admin);
 
+            if (bid.SubmittedByUserId != currentUserId && !isAdmin)
+            {
+                throw new ForbiddenException();
+            }
+
+            bid.Status = ApplicationStatus.Cancelled; 
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Bid {BidId} has been cancelled by user or admin.", id);
             return _mapper.Map<BidDTO>(bid);
         }
 

@@ -26,6 +26,31 @@ namespace TenderGo.Api.Controllers
         }
 
         [Authorize(Roles = AppRoles.Admin)]
+        [HttpPost]
+        public override Task<IActionResult> Insert([FromBody] LocationInsertRequest request)
+        {
+            return base.Insert(request);
+
+
+        }
+
+         
+        [Authorize(Roles = AppRoles.Admin)]
+
+        [HttpPatch("{id}")]
+        public override Task<IActionResult> Update(int id, [FromBody] LocationUpdateRequest request)
+        {
+            return base.Update(id, request);
+        }
+        [Authorize(Roles = AppRoles.Admin)]
+
+        [HttpDelete("{id}")]
+        public override Task<IActionResult> Delete(int id)
+        {
+            return base.Delete(id);
+        }
+
+        [Authorize(Roles = AppRoles.Admin)]
         [HttpGet("admin-search")]
         public async Task<IActionResult> GetAdminSearch([FromQuery] LocationSearchRequest request)
         {

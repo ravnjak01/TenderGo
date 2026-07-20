@@ -28,7 +28,7 @@ using TenderGo.Services.StateMachines.TenderStates;
 
 namespace TenderGo.Services.Services
 {
-    public class TenderService : BaseService<TenderDTO, Tender, TenderInsertRequest, TenderDTO>, ITenderService
+    public class TenderService : BaseService<TenderDTO, Tender, TenderInsertRequest, TenderUpdateRequest>, ITenderService
     {
 
         private readonly IAuthService _authService;
@@ -44,6 +44,82 @@ namespace TenderGo.Services.Services
             _serviceProvider = serviceProvider;
             _imageService = imageService;
             _bidService = bidService;
+        }
+
+
+        public override async Task<string> Delete(int id)
+        {
+            var entity = await _context.Tenders.FirstOrDefaultAsync(t => t.Id == id)
+                ?? throw new NotFoundException("Tender not found", new { Entity = "Tender", Id = id });
+
+            var currentUserId = _authService.GetCurrentUserId();
+            bool isAdmin = _authService.IsInRole(AppRoles.Admin);
+
+            if (entity.CreatedByUserId != currentUserId && !isAdmin)
+            {
+                throw new ForbiddenException();
+            }
+
+            _context.Tenders.Remove(entity);
+            await _context.SaveChangesAsync();
+
+            return "Tender successfully deleted";
+        }
+        public override async Task<TenderDTO> Update(int id, TenderUpdateRequest request)
+        {
+            var entity = await _context.Tenders
+                .Include(t => t.Images)
+                .FirstOrDefaultAsync(t => t.Id == id)
+                ?? throw new NotFoundException("Tender not found", new { Entity = "Tender", Id = id });
+
+            var currentUserId = _authService.GetCurrentUserId();
+            bool isAdmin = _authService.IsInRole(AppRoles.Admin);
+
+            if (entity.CreatedByUserId != currentUserId && !isAdmin)
+            {
+                throw new ForbiddenException();
+            }
+
+            if (request.Deadline <= DateTime.UtcNow)
+                throw new UserException("Deadline must be in the future");
+
+            var category = await _context.Categories
+                .FirstOrDefaultAsync(c => c.Id == request.CategoryId && c.IsActive)
+                ?? throw new UserException("The selected category does not exist in our database.");
+
+            var location = await _context.Locations
+                .FirstOrDefaultAsync(l => l.Id == request.LocationId && l.IsActive)
+                ?? throw new UserException("The selected location does not exist in our database.");
+
+            _mapper.Map(request, entity);
+
+            entity.CategoryId = category.Id;
+            entity.LocationId = location.Id;
+
+            if (request.Images != null)
+            {
+                _context.TenderImages.RemoveRange(entity.Images);
+                entity.Images.Clear();
+
+                for (int i = 0; i < request.Images.Count; i++)
+                {
+                    var imgReq = request.Images[i];
+                    entity.Images.Add(new TenderImage
+                    {
+                        ImageUrl = imgReq.ImageUrl,
+                        ImageHash = imgReq.ImageHash,
+                        IsPrimary = i == 0 
+                    });
+                }
+            }
+
+            _context.Entry(entity).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
+
+            return await _context.Tenders
+                .Where(t => t.Id == entity.Id)
+                .ProjectTo<TenderDTO>(_mapper.ConfigurationProvider)
+                .FirstAsync();
         }
 
         protected override IQueryable<Tender> AddIncludes(IQueryable<Tender> query)

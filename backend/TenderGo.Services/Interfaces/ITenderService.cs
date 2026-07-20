@@ -12,7 +12,7 @@ using TenderGo.Services.StateMachines.TenderStates;
 
 namespace TenderGo.Services.Interfaces
 {
-    public interface ITenderService:IReadService<TenderDTO>,IWriteService<TenderDTO,TenderInsertRequest, TenderDTO>
+    public interface ITenderService:IReadService<TenderDTO>,IWriteService<TenderDTO,TenderInsertRequest, TenderUpdateRequest>
     {
         Task<IEnumerable<TenderDTO>> GetTendersByCategory(int id);
        Task<IEnumerable<TenderDTO>> GetClosedTenders();

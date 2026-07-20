@@ -33,7 +33,7 @@ namespace TenderGo.Services.Services
 
         protected virtual IQueryable<TDb> AddIncludes(IQueryable<TDb> query) => query;
 
-        public async Task<T?> GetById(int id)
+        public virtual async Task<T?> GetById(int id)
         {
             var query = _context.Set<TDb>().AsQueryable();
 

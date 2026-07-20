@@ -34,6 +34,33 @@ namespace TenderGo.Services.Services
             _serviceProvider = serviceProvider;
         }
 
+        public override async Task<BidDTO> GetById(int id)
+        {
+            var query = _context.Bids
+                .Include(b => b.Tender)
+                .AsQueryable();
+
+            query = AddIncludes(query);
+
+            var entity = await query.FirstOrDefaultAsync(b => b.Id == id)
+                 ?? throw new NotFoundException("Bid not found", new { Entity = "Bid", Id = id });
+
+            var currentUserId = _authService.GetCurrentUserId();
+            bool isAdmin = _authService.IsInRole(AppRoles.Admin);
+
+       
+            bool isBidAuthor = entity.CreatedByUserId == currentUserId;
+            bool isTenderOwner = entity.Tender != null && entity.Tender.CreatedByUserId == currentUserId;
+
+            if (!isAdmin && !isBidAuthor && !isTenderOwner)
+            {
+                throw new ForbiddenException();
+            }
+
+            return _mapper.Map<BidDTO>(entity);
+
+
+        }
 
         public async Task<List<BidDTO>> GetBidsByUser(string userId)
         {
