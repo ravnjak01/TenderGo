@@ -454,6 +454,10 @@ public async Task<IdentityResult> ResetPasswordAsync(ResetPasswordRequest model)
                 throw new UserException("Invalid or expired refresh token.");
 
             var user = storedToken.User;
+            if(user == null || user.IsBanned || await _userManager.IsLockedOutAsync(user))
+            {
+                throw new UnauthorizedAccessException("Korisnički nalog je banovan ili onemogućen.");
+            }
             var roles = await _userManager.GetRolesAsync(user);
 
             var claims = new List<Claim>

@@ -49,13 +49,65 @@ using TenderGo.Models.Entities;
                     HandleTenderExpired,
                     cfg => cfg.WithTopic("tender_expired"));
 
-                _subscribed = true;
+            await _pubSub.SubscribeAsync<TenderCancelledEvent>(
+                   subscriptionId,
+                   HandleTenderCancelled,
+                   cfg => cfg.WithTopic("tender_cancelled"));
+
+            _subscribed = true;
                 _logger.LogInformation(
                     "Subscribed to bid_created, tender_awarded, tender_expired with ID {SubscriptionId}",
                     subscriptionId);
             }
 
-            private async Task HandleTenderExpired(TenderExpiredEvent entity, CancellationToken cancellationToken)
+        private async Task HandleTenderCancelled(TenderCancelledEvent entity, CancellationToken cancellationToken)
+        {
+            _logger.LogInformation("Obrada TenderCancelledEvent za tender {TenderId}", entity.TenderId);
+
+            try
+            {
+                using var scope = _scopeFactory.CreateScope();
+                var context = scope.ServiceProvider.GetRequiredService<TenderGoContext>();
+
+                var notifications = new List<Notification>();
+
+                // Šaljemo obavijest svim korisnicima koji su imali ponudu na otkazanom tenderu
+                var affectedUserIds = entity.AffectedUserIds ?? new List<string>();
+                foreach (var userId in affectedUserIds.Distinct())
+                {
+                    notifications.Add(new Notification
+                    {
+                        UserId = userId,
+                        Message = $"Tender '{entity.TenderTitle}' na kojem ste učestvovali je otkazan. Razlog: {entity.Reason}",
+                        CreatedAt = DateTime.UtcNow,
+                        IsRead = false,
+                        Title = $"Tender '{entity.TenderTitle}' je otkazan"
+                    });
+                }
+
+                if (notifications.Any())
+                {
+                    context.Notifications.AddRange(notifications);
+                    await context.SaveChangesAsync(cancellationToken);
+                }
+
+                _logger.LogInformation(
+                    "Spremljeno {Count} notifikacija o otkazivanju tendera {TenderId}",
+                    notifications.Count,
+                    entity.TenderId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Greška prilikom obrade TenderCancelledEvent za Tender {TenderId}. Poruka: {Message}",
+                    entity.TenderId,
+                    ex.Message);
+                throw;
+            }
+        }
+
+        private async Task HandleTenderExpired(TenderExpiredEvent entity, CancellationToken cancellationToken)
             {
                 _logger.LogInformation("Obrada TenderExpiredEvent za tender {TenderId}", entity.TenderId);
 
@@ -94,18 +146,19 @@ using TenderGo.Models.Entities;
                     using var scope = _scopeFactory.CreateScope();
                     var context = scope.ServiceProvider.GetRequiredService<TenderGoContext>();
 
-                    var notifications = new List<Notification>();
-
-                    notifications.Add(new Notification
+                var notifications = new List<Notification>
+                {
+                    new Notification
                     {
                         UserId = entity.WinnerUserId,
                         Message = $"Čestitamo! Pobijedili ste na tenderu: {entity.TenderTitle}.",
                         CreatedAt = DateTime.UtcNow,
                         IsRead = false,
                         Title = $"Informacija o tenderu '{entity.TenderTitle}'"
-                    });
+                    }
+                };
 
-                    var otherUserIds = entity.OtherUserIds ?? new List<string>();
+                var otherUserIds = entity.OtherUserIds ?? new List<string>();
                     foreach (var userId in otherUserIds.Distinct())
                     {
                         notifications.Add(new Notification
@@ -172,5 +225,7 @@ using TenderGo.Models.Entities;
                     throw;
                 }
             }
+
+
         }
     }

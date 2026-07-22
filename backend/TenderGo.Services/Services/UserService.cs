@@ -140,6 +140,8 @@ namespace TenderGo.Services.Services
 
         public async Task<bool> RateUserAsync(string currentUserId, RateUserRequest dto)
         {
+            if (dto.Score < 1 || dto.Score > 5)
+                throw new UserException("Rating must be between 1 and 5");
             var tender = await _context.Tenders
                 .Include(t => t.Bids)
                 .FirstOrDefaultAsync(t => t.Id == dto.TenderId)
@@ -173,6 +175,8 @@ namespace TenderGo.Services.Services
 
             if (isWinningBidder && dto.RatedUserId != tender.CreatedByUserId)
                 throw new UserException("Winning bidder can only rate the tender owner.");
+
+        
 
             var ratedUser = await _context.Users
                 .FirstOrDefaultAsync(u => u.Id == dto.RatedUserId)

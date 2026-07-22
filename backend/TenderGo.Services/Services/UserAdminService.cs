@@ -142,6 +142,13 @@ namespace TenderGo.Services.Services
             user.BanReason = reason.Reason;
             user.BannedAt = DateTime.UtcNow;
 
+            var activeRefreshTokens=await _context.RefreshTokens
+                .Where(rt=>rt.UserId == userId && rt.IsActive).ToListAsync();
+
+            foreach (var token in activeRefreshTokens)
+            {
+                token.RevokedAt = DateTime.UtcNow;
+            }
             await _userManager.SetLockoutEnabledAsync(user, true);
             await _userManager.SetLockoutEndDateAsync(user, DateTimeOffset.MaxValue);
 
@@ -164,15 +171,24 @@ namespace TenderGo.Services.Services
             return result.Succeeded;
         }
 
-      
+
         public async Task AdminResetPasswordAsync(string userId, string newPassword)
         {
             if (!_authService.IsInRole(AppRoles.Admin))
                 throw new ForbiddenException();
 
-            var user = await _userManager.FindByIdAsync(userId);
+            var user = await _userManager.FindByIdAsync(userId)
+                ?? throw new NotFoundException("Korisnik nije pronađen.", new { UserId = userId });
+
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-            await _userManager.ResetPasswordAsync(user, token, newPassword);
+
+            var result = await _userManager.ResetPasswordAsync(user, token, newPassword);
+
+            if (!result.Succeeded)
+            {
+                var errorMessages = string.Join("; ", result.Errors.Select(e => e.Description));
+                throw new UserException($"Reset lozinke nije uspio: {errorMessages}");
+            }
         }
     }
 }

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace TenderGo.Models.Requests
 {
-    public class TenderSearchRequest
+    public class TenderSearchRequest:PagedSearchRequest
     {
         public string? SearchTerm { get; set; }
     }

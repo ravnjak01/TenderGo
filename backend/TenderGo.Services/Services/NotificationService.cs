@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using TenderGo.Api.Database;
 using TenderGo.Models.DTOs;
 using TenderGo.Models.Entities;
+using TenderGo.Models.Requests;
 using TenderGo.Services.Interfaces;
 using TenderGo.Services.Services.Exceptions; 
 
@@ -26,14 +27,32 @@ namespace TenderGo.Services.Services
             _httpContextAccessor = httpContextAccessor;
         }
 
-        public async Task<List<NotificationDTO>> GetMyNotificationsAsync(string userId)
+        public async Task<PagedResult<NotificationDTO>> GetMyNotificationsAsync(string userId, PagedSearchRequest request)
         {
-            var notifications = await _context.Notifications
-                .Where(n => n.UserId == userId)
+            var query = _context.Notifications
+                .AsNoTracking()
+                .Where(n => n.UserId == userId);
+
+            var totalCount = await query.CountAsync();
+
+            int page = request.Page > 0 ? request.Page : 1;
+            int pageSize = request.PageSize > 0 ? Math.Min(request.PageSize, 50) : 10;
+
+            var notifications = await query
                 .OrderByDescending(n => n.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
 
-            return _mapper.Map<List<NotificationDTO>>(notifications);
+            var dtos = _mapper.Map<List<NotificationDTO>>(notifications);
+
+            return new PagedResult<NotificationDTO>
+            {
+                Result = dtos,
+                TotalCount = totalCount,
+                Page = page,
+                PageSize = pageSize
+            };
         }
 
         public async Task<NotificationDTO> MarkAsReadAsync(int id, string userId)

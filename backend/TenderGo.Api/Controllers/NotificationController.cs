@@ -1,6 +1,7 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using TenderGo.Models.Requests;
 using TenderGo.Services.Interfaces;
 
 namespace TenderGo.Api.Controllers;
@@ -18,11 +19,11 @@ public class NotificationController : ControllerBase
     }
 
     [HttpGet("my")]
-    public async Task<IActionResult> GetMyNotifications()
+    public async Task<IActionResult> GetMyNotifications([FromQuery] PagedSearchRequest request)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
-        return Ok(await _notificationService.GetMyNotificationsAsync(userId));
+        return Ok(await _notificationService.GetMyNotificationsAsync(userId,request));
     }
 
     [HttpPatch("{id:int}/read")]

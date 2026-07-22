@@ -49,7 +49,7 @@ namespace TenderGo.Api.Controllers
         }
 
         [HttpGet("my-bids")]
-        public async Task<IActionResult> GetMyBids()
+        public async Task<IActionResult> GetMyBids([FromQuery] PagedSearchRequest request)
         {
 
             var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
@@ -57,7 +57,7 @@ namespace TenderGo.Api.Controllers
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized(); 
 
-            var bids = await _bidService.GetBidsByUser(userId);
+            var bids = await _bidService.GetBidsByUser(userId,request);
             return Ok(bids);
         }
 

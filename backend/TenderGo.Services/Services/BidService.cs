@@ -62,7 +62,7 @@ namespace TenderGo.Services.Services
 
         }
 
-        public async Task<List<BidDTO>> GetBidsByUser(string userId)
+        public async Task<PagedResult<BidDTO>> GetBidsByUser(string userId, PagedSearchRequest request)
         {
             var currentUserId = _authService.GetCurrentUserId();
             bool isAdmin = _authService.IsInRole(AppRoles.Admin);
@@ -72,32 +72,53 @@ namespace TenderGo.Services.Services
                 throw new ForbiddenException();
             }
 
-            var bids = await _context.Bids
-                .Where(x => x.SubmittedByUserId == userId  && x.Status!=ApplicationStatus.Withdrawn)
+            var query = _context.Bids
+                .AsNoTracking()
+                .Where(x => x.SubmittedByUserId == userId && x.Status != ApplicationStatus.Withdrawn);
+
+            var totalCount = await query.CountAsync();
+
+            int page = request.Page > 0 ? request.Page : 1;
+            int pageSize = request.PageSize > 0 ? Math.Min(request.PageSize, 50) : 10;
+
+            var bids = await query
+                .OrderByDescending(x => x.CreatedAt) 
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .ProjectTo<BidDTO>(_mapper.ConfigurationProvider)
                 .ToListAsync();
 
-            var tenderIds = bids.Select(b => b.TenderId).ToList();
-
-            var ratedPairs = await _context.Ratings
-                .Where(r =>
-                    r.RatedByUserId == currentUserId &&
-                    tenderIds.Contains(r.TenderId))
-                .Select(r => new
-                {
-                    r.TenderId,
-                    r.RatedUserId
-                })
-                .ToListAsync();
-
-            foreach (var bid in bids)
+            if (bids.Any())
             {
-                bid.AlreadyRated = ratedPairs.Any(r =>
-                    r.TenderId == bid.TenderId &&
-                    r.RatedUserId == bid.TenderCreatedByUserId);
+                var tenderIds = bids.Select(b => b.TenderId).Distinct().ToList();
+
+                var ratedPairs = await _context.Ratings
+                    .AsNoTracking()
+                    .Where(r =>
+                        r.RatedByUserId == currentUserId &&
+                        tenderIds.Contains(r.TenderId))
+                    .Select(r => new
+                    {
+                        r.TenderId,
+                        r.RatedUserId
+                    })
+                    .ToListAsync();
+
+                foreach (var bid in bids)
+                {
+                    bid.AlreadyRated = ratedPairs.Any(r =>
+                        r.TenderId == bid.TenderId &&
+                        r.RatedUserId == bid.TenderCreatedByUserId);
+                }
             }
 
-            return bids;
+            return new PagedResult<BidDTO>
+            {
+                Result = bids,
+                TotalCount = totalCount,
+                Page = page,
+                PageSize = pageSize
+            };
         }
 
         public override async Task<BidDTO> Insert(BidInsertRequest request)
@@ -120,11 +141,7 @@ namespace TenderGo.Services.Services
             throw new UserException("Delivery days must be greater than 0");
         }
 
-        var existingPendingBid = await _context.Bids
-            .FirstOrDefaultAsync(b => b.TenderId == request.TenderId 
-                                   && b.SubmittedByUserId == currentUserId 
-                                   && b.Status == ApplicationStatus.Pending);
-
+   
         var totalAttempts = await _context.Bids
             .CountAsync(b => b.TenderId == request.TenderId 
                           && b.SubmittedByUserId == currentUserId);
@@ -132,15 +149,6 @@ namespace TenderGo.Services.Services
         if (totalAttempts >= 3)
         {
             throw new UserException("MAX_BID_ATTEMPTS_EXCEEDED");
-        }
-
-        if (existingPendingBid != null)
-        {
-            existingPendingBid.Status = ApplicationStatus.Cancelled;
-            
-            _context.Bids.Update(existingPendingBid);
-            
-            _logger.LogInformation("Cancelling previous pending bid {BidId} for tender {TenderId} by user {UserId}", existingPendingBid.Id, request.TenderId, currentUserId);
         }
 
         var state = CreateState(ApplicationStatus.Pending, tender.Status);

@@ -40,6 +40,11 @@ public class Tender : BaseEntity
     public int LocationId { get; set; }
 
     public virtual Location Location { get; set; } = null!;
+    public DateTime? CancelledAt { get; set; }
+    public string? CancelledByUserId { get; set; }
+    public string? CancellationReason { get; set; }
+
+    public virtual ApplicationUser? CancelledByUser { get; set; }
 
     public virtual ICollection<Bid> Bids { get; set; } = new List<Bid>();
 

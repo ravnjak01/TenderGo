@@ -14,14 +14,13 @@ namespace TenderGo.Services.Interfaces
 {
     public interface ITenderService:IReadService<TenderDTO>,IWriteService<TenderDTO,TenderInsertRequest, TenderUpdateRequest>
     {
-        Task<IEnumerable<TenderDTO>> GetTendersByCategory(int id);
-       Task<IEnumerable<TenderDTO>> GetClosedTenders();
-        Task<IEnumerable<TenderDTO>> GetActiveTenders();
-        Task<IEnumerable<TenderDTO>> GetCancelledTenders();
+        Task<PagedResult<TenderDTO>> GetTendersByCategory(int id, PagedSearchRequest request);
+        Task<PagedResult<TenderDTO>> GetClosedTenders(PagedSearchRequest request);
+        Task<PagedResult<TenderDTO>> GetActiveTenders(PagedSearchRequest request);
+        Task<PagedResult<TenderDTO>> GetCancelledTenders(PagedSearchRequest request);
+        Task<PagedResult<TenderDTO>> GetTendersByUser(string userId, PagedSearchRequest request);
 
-        Task<List<TenderDTO>> GetTendersByUser(string userId);
-
-        Task<TenderDTO> Cancel(int tenderId);
+        Task<TenderDTO> Cancel(int tenderId,TenderCancelRequest request);
         Task<TenderDTO> Award(int id, int bidId);
         Task<List<string>> AllowedActions(int id);
         BaseState CreateState(TenderStatus status);

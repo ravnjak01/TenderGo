@@ -297,7 +297,7 @@ public async Task<IEnumerable<TenderDTO>> GetBookmarkedTendersAsync(string userI
             }
         }
 
-        public async Task<TenderDTO> Cancel(int id)
+        public async Task<TenderDTO> Cancel(int id,TenderCancelRequest request)
         {
             var entity = await AddIncludes(_context.Tenders)
                 .Include(t => t.Bids) 
@@ -313,7 +313,7 @@ public async Task<IEnumerable<TenderDTO>> GetBookmarkedTendersAsync(string userI
             }
 
             var state = CreateState(entity.Status);
-            var result = await state.Cancel(id);
+            var result = await state.Cancel(id,request);
 
             if (entity.Bids != null && entity.Bids.Any())
             {
@@ -338,20 +338,15 @@ public async Task<IEnumerable<TenderDTO>> GetBookmarkedTendersAsync(string userI
                 ?? throw new NotFoundException("Tender not found", new { Entity = "Tender", Id = id });
 
             var currentUserId = _authService.GetCurrentUserId();
-            bool isAdmin = _authService.IsInRole(AppRoles.Admin);
 
-            if (tender.CreatedByUserId != currentUserId && !isAdmin)
+            if (tender.CreatedByUserId != currentUserId )
             {
                 throw new ForbiddenException();
             }
 
             var state = CreateState(tender.Status);
 
-            var resultDto = await state.Award(tender, bidId);
-
-            await _context.SaveChangesAsync();
-
-            return resultDto;
+            return await state.Award(tender, bidId);
         }
 
 
@@ -371,9 +366,9 @@ public async Task<IEnumerable<TenderDTO>> GetBookmarkedTendersAsync(string userI
         public async Task<PagedResult<TenderDTO>> SearchAsync(TenderSearchRequest request)
         {
             var query = _context.Tenders
-                .AsQueryable();
+               .AsNoTracking() 
+                 .Where(t => t.Status == TenderStatus.Open);
 
-            query = query.Where(t => t.Status == TenderStatus.Open);
 
             if (!string.IsNullOrWhiteSpace(request.SearchTerm))
             {
@@ -386,15 +381,22 @@ public async Task<IEnumerable<TenderDTO>> GetBookmarkedTendersAsync(string userI
             }
 
             var totalCount = await query.CountAsync();
+            int page = request.Page > 0 ? request.Page : 1;
+            int pageSize = request.PageSize > 0 ? request.PageSize : 10;
 
             var results = await query
-                .ProjectTo<TenderDTO>(_mapper.ConfigurationProvider)
-                .ToListAsync();
+                 .OrderByDescending(t => t.CreatedAt) 
+                 .Skip((page - 1) * pageSize)
+                 .Take(pageSize)
+                 .ProjectTo<TenderDTO>(_mapper.ConfigurationProvider)
+                 .ToListAsync();
 
             return new PagedResult<TenderDTO>
             {
                 Result = results,
-                TotalCount = totalCount 
+                TotalCount = totalCount ,
+                Page= page,
+                PageSize= pageSize
             };
         }
 

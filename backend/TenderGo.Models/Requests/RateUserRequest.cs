@@ -12,6 +12,8 @@ namespace TenderGo.Models.Requests
         [Required]
         public string RatedUserId { get; set; } = null!;
         public int TenderId { get; set; }
+        [Range(1, 5)]
+
         public int Score { get; set; }
         public string? Comment { get; set; }
       

@@ -42,6 +42,11 @@ namespace TenderGo.Services.StateMachines.TenderStates
             var winningBid = tender.Bids.FirstOrDefault(b => b.Id == bidId)
                 ?? throw new UserException("Bid not found or does not belong to this tender");
 
+            if(winningBid.Status!=ApplicationStatus.Pending)
+            {
+                throw new UserException("Only pending bids can be awarded. This bid is already withdrawn, cancelled, or rejected.");
+            }
+
             _logger.LogInformation("Awarding tender {Id} to bid {BidId}", tender.Id, bidId);
 
             tender.Status = TenderStatus.Awarded;
@@ -89,9 +94,10 @@ namespace TenderGo.Services.StateMachines.TenderStates
             var list = await base.AllowedActions(entity);
 
             var authService = _serviceProvider.GetRequiredService<IAuthService>();
-            bool isAdmin = authService.IsInRole(AppRoles.Admin);
+            var currentUserId = authService.GetCurrentUserId();
 
-            if (entity.Bids != null && entity.Bids.Any(b => b.Status == ApplicationStatus.Pending))
+            bool isOwner = entity.CreatedByUserId == currentUserId;
+            if (entity.Bids != null && entity.Bids.Any(b => b.Status == ApplicationStatus.Pending ) && isOwner)
             {
                 list.Add("Award"); 
             }

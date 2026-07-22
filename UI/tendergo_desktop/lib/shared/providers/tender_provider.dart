@@ -1,5 +1,6 @@
 import 'package:tendergo/shared/models/dto/category_dto.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
+import 'package:tendergo/shared/models/requests/tender_cancel_request.dart';
 import 'package:tendergo/shared/models/ui/location_filter_selection.dart';
 import 'package:tendergo/shared/providers/base_provider.dart';
 import 'package:tendergo/shared/services/category_service.dart';
@@ -60,9 +61,10 @@ class TenderProvider extends BaseProvider {
     });
   }
 
-  Future<bool> cancelTender(int id) async {
+  Future<bool> cancelTender(int id,String reason) async {
     final result = await handleAsync(() async {
-      await _tenderService.cancel(id);
+      final request = TenderCancelRequest(reason: reason);
+      await _tenderService.cancel(id,request);
 
       _tenders.removeWhere((t) => t.id == id);
 

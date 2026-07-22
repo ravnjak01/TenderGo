@@ -10,7 +10,7 @@ using TenderGo.Services.Interfaces;
 [Route("api/tender")]
 [Authorize]
 public class TenderController
-   : BaseController<TenderDTO, Tender, TenderInsertRequest, TenderDTO>
+   : BaseController<TenderDTO, Tender, TenderInsertRequest, TenderUpdateRequest>
 {
     private readonly ITenderService _tenderService;
     private readonly IAuthService _authService;
@@ -56,32 +56,32 @@ public class TenderController
     }
 
     [HttpGet("active")]
-    public async Task<IActionResult> GetActive()
-        => Ok(await _tenderService.GetActiveTenders());
+    public async Task<IActionResult> GetActive(PagedSearchRequest request)
+        => Ok(await _tenderService.GetActiveTenders(request));
 
     [HttpGet("closed")]
-    public async Task<IActionResult> GetClosed()
-        => Ok(await _tenderService.GetClosedTenders());
+    public async Task<IActionResult> GetClosed(PagedSearchRequest request)
+        => Ok(await _tenderService.GetClosedTenders(request));
 
     [HttpGet("cancelled")]
-    public async Task<IActionResult> GetCancelled()
-        => Ok(await _tenderService.GetCancelledTenders());
+    public async Task<IActionResult> GetCancelled(PagedSearchRequest request)
+        => Ok(await _tenderService.GetCancelledTenders(request));
 
     [HttpGet("category/{id}")]
-    public async Task<IActionResult> GetByCategory(int id)
-        => Ok(await _tenderService.GetTendersByCategory(id));
+    public async Task<IActionResult> GetByCategory(int id,PagedSearchRequest request)
+        => Ok(await _tenderService.GetTendersByCategory(id,request));
 
     [HttpGet("user/{userId}")]
-    public async Task<IActionResult> GetByUser(string userId)
+    public async Task<IActionResult> GetByUser(string userId,PagedSearchRequest request)
     {
-        var tenders = await _tenderService.GetTendersByUser(userId);
+        var tenders = await _tenderService.GetTendersByUser(userId,request);
         return Ok(tenders);
     }
 
     [HttpPatch("{id}/cancel")]
-    public async Task<IActionResult> Cancel(int id)
+    public async Task<IActionResult> Cancel(int id, [FromBody] TenderCancelRequest request)
     {
-        var result = await _tenderService.Cancel(id);
+        var result = await _tenderService.Cancel(id,request);
         return Ok(result);
     }
 

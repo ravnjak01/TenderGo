@@ -23,7 +23,9 @@ namespace TenderGo.Models.DTOs
         public int CategoryId { get; set; }
         public string CategoryName { get; set; } = string.Empty;
 
-
+        public DateTime? CancelledAt { get; set; }
+        public int? CancelledByUserId { get; set; }
+        public string? CancellationReason { get; set; }
         public DateTime PostedAt { get; set; }
 
     }

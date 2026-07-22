@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security;
 using System.Threading.Tasks;
 using TenderGo.Models.DTOs;
 using TenderGo.Services.Interfaces;
@@ -13,6 +14,7 @@ namespace TenderGo.Services.Services
     public class ImageService : IImageService
     {
         private readonly IWebHostEnvironment _environment;
+        private const long MaxFileSizeInBytes= 5*    1024 * 1024;
 
         private static readonly HashSet<string> AllowedMimeTypes = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -43,6 +45,9 @@ namespace TenderGo.Services.Services
         {
             if (imageBytes == null || imageBytes.Length == 0)
                 throw new ArgumentException("Niz bajtova je prazan.");
+
+            if (imageBytes.Length > MaxFileSizeInBytes)
+                throw new ArgumentException($"Sadržaj prekoračuje maksimalnu dozvoljenu veličinu od {MaxFileSizeInBytes / (1024 * 1024)} MB.");
 
             if (!IsValidImage(imageBytes))
                 throw new ArgumentException("Fajl nije validna slika (nevažeći magic bytes).");
@@ -78,6 +83,9 @@ namespace TenderGo.Services.Services
         public async Task<TenderImageDTO> UploadImageAsync(
             IFormFile file, string subFolder, bool isPrimary = false)
         {
+            if (file.Length > MaxFileSizeInBytes)
+                throw new ArgumentException($"Fajl prekoračuje maksimalnu dozvoljenu veličinu od {MaxFileSizeInBytes / (1024 * 1024)} MB.");
+
             if (!AllowedMimeTypes.Contains(file.ContentType))
                 throw new ArgumentException(
                     $"Nedozvoljeni tip fajla: {file.ContentType}. " +
@@ -91,6 +99,7 @@ namespace TenderGo.Services.Services
                 throw new ArgumentException(
                     "Sadržaj fajla ne odgovara deklarisanom tipu (magic bytes provjera nije prošla).");
 
+        
             string detectedMime = DetectMimeType(bytes);
             if (!string.IsNullOrEmpty(detectedMime) &&
                 !detectedMime.Equals(file.ContentType, StringComparison.OrdinalIgnoreCase))
@@ -112,14 +121,37 @@ namespace TenderGo.Services.Services
 
         public void DeleteImage(string relativePath)
         {
-            if (string.IsNullOrEmpty(relativePath)) return;
-            var fullPath = Path.Combine(
-                _environment.WebRootPath, relativePath.TrimStart('/'));
+            if (string.IsNullOrWhiteSpace(relativePath)) return;
+
+            var webRoot = _environment.WebRootPath;
+            if (string.IsNullOrWhiteSpace(webRoot))
+            {
+                webRoot = Path.Combine(_environment.ContentRootPath, "wwwroot");
+            }
+
+            // 1. Definišemo bazni dozvoljeni folder i dobijamo njegovu punu, kanonsku putanju
+            // OS-agnostička priprema baznog foldera sa završnim separatorom ('\' ili '/')
+            string uploadsBaseFolder = Path.GetFullPath(Path.Combine(webRoot, "uploads"))
+                .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                + Path.DirectorySeparatorChar;
+
+            string cleanRelativePath = relativePath.TrimStart('/', '\\');
+            string fullPath = Path.GetFullPath(Path.Combine(webRoot, cleanRelativePath));
+
+            // Provjera da li putanja zaista počinje sa ".../uploads/"
+            if (!fullPath.StartsWith(uploadsBaseFolder, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new SecurityException("Pokušaj pristupa fajlu van dozvoljenog uploads foldera.");
+            }
+
+            // 4. Ako prolazi sigurnosnu provjeru i fajl postoji, brišemo ga
             if (File.Exists(fullPath))
+            {
                 File.Delete(fullPath);
+            }
         }
 
-      
+
         public bool IsValidImage(byte[] fileBytes)
         {
             if (fileBytes == null || fileBytes.Length < 12) return false;

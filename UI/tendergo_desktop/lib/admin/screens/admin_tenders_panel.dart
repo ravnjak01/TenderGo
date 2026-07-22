@@ -7,6 +7,7 @@ import 'package:tendergo/shared/models/dto/paged_result.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
 import 'package:tendergo/shared/models/enums/tenderstatus.dart';
 import 'package:tendergo/shared/models/requests/admin_tender_search_request.dart';
+import 'package:tendergo/shared/providers/tender_provider.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
 import 'package:tendergo/shared/widgets/common/app_dialogs.dart';
 
@@ -104,26 +105,80 @@ class _AdminTendersPanelState extends State<AdminTendersPanel> {
   }
 
 
-  Future<void> _showCancelDialog(BuildContext context, AdminTenderDto tender) async {
-  final bool confirm = await AppDialogs.showConfirm(
+ Future<void> _showCancelDialog(BuildContext context, AdminTenderDto tender) async {
+  final TextEditingController reasonController = TextEditingController();
+  final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+
+  // Dijalog vraća uneseni razlog (String) ili null ako je korisnik odustao
+  final String? reason = await showDialog<String>(
     context: context,
-    title: 'Potvrda otkazivanja',
-    content:
-        'Da li ste sigurni da želite otkazati tender pod nazivom "${tender.title}" (ID #${tender.id}) i označiti ga kao spam?',
-    cancelLabel: 'Odustani',
-    confirmLabel: 'Otkaži tender',
-    isDestructive: true,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text('Potvrda otkazivanja'),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Da li ste sigurni da želite otkazati tender "${tender.title}" ?',
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: reasonController,
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  labelText: 'Razlog otkazivanja *',
+                  hintText: 'Unesite detaljan razlog zašto se tender otkazuje...',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Razlog otkazivanja je obavezan.';
+                  }
+                  if (value.trim().length < 5) {
+                    return 'Razlog mora imati najmanje 5 karaktera.';
+                  }
+                  return null;
+                },
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(null), // Odustani
+            child: const Text('Odustani'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                Navigator.of(context).pop(reasonController.text.trim());
+              }
+            },
+            child: const Text('Otkaži tender'),
+          ),
+        ],
+      );
+    },
   );
 
-  if (confirm && mounted) {
+  // Ako je korisnik unio razlog i potvrdio
+  if (reason != null && reason.isNotEmpty && mounted) {
     setState(() => _loading = true);
 
     try {
-      final tenderService = context.read<TenderService>();
+      final tenderProvider = context.read<TenderProvider>(); 
+      
+      // Pozivamo provider koji šalje id i uneti razlog
+      final success = await tenderProvider.cancelTender(tender.id, reason);
 
-      final updatedTender = await tenderService.cancel(tender.id);
-
-      if (updatedTender.status == TenderStatus.cancelled && mounted) {
+      if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Tender uspješno otkazan.')),
         );
@@ -135,13 +190,15 @@ class _AdminTendersPanelState extends State<AdminTendersPanel> {
             content: Text('Greška prilikom otkazivanja tendera.'),
           ),
         );
-        setState(() => _loading = false);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Greška: ${e.toString()}')),
         );
+      }
+    } finally {
+      if (mounted) {
         setState(() => _loading = false);
       }
     }

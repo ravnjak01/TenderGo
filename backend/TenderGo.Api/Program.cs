@@ -98,8 +98,26 @@ builder.Services.AddAuthentication(options =>
             var db = context.HttpContext.RequestServices
                 .GetRequiredService<TenderGoContext>();
 
+            // 1. DOHVATANJE USERMANAGER-A IZ DI KONTEJNERA
+            var userManager = context.HttpContext.RequestServices
+                .GetRequiredService<UserManager<ApplicationUser>>();
+
             var jti = context.Principal?
                 .FindFirstValue(JwtRegisteredClaimNames.Jti);
+
+            // 2. KORIŠTENJE FindFirstValue UMJESTO FindFirst DA DOBIJEŠ STRING VALUE
+            var userId = context.Principal?.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (!string.IsNullOrEmpty(userId))
+            {
+                var user = await userManager.FindByIdAsync(userId);
+                if (user == null || user.IsBanned)
+                {
+                    // Odbij token odmah ako korisnik ne postoji ili je banovan
+                    context.Fail("Korisnički nalog je banovan.");
+                    return;
+                }
+            }
 
             if (string.IsNullOrWhiteSpace(jti))
             {

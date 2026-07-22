@@ -18,11 +18,9 @@ class AuthInterceptor extends Interceptor {
   final FlutterSecureStorage _storage;
 
   bool _isRefreshing = false;
-
   final List<Completer<Response<dynamic>>> _pendingQueue = [];
 
   AuthInterceptor(this._dio, [this._storage = const FlutterSecureStorage()]);
-
 
   @override
   Future<void> onRequest(
@@ -50,13 +48,17 @@ class AuthInterceptor extends Interceptor {
     }
 
     final freshToken = await _storage.read(key: 'jwt_token');
-    if (freshToken != null && freshToken.isNotEmpty) {
+
+    if (freshToken != null &&
+        freshToken.trim().isNotEmpty &&
+        _looksLikeJwt(freshToken)) {
       options.headers['Authorization'] = 'Bearer $freshToken';
+    } else {
+      options.headers.remove('Authorization');
     }
 
     return handler.next(options);
   }
-
 
   @override
   Future<void> onError(
@@ -65,6 +67,10 @@ class AuthInterceptor extends Interceptor {
   ) async {
     final statusCode = err.response?.statusCode;
     final path = err.requestOptions.path;
+
+    if (err.requestOptions.extra['isRetry'] == true) {
+      return handler.next(err);
+    }
 
     if (statusCode != 401 ||
         _isPublicPath(path) ||
@@ -105,8 +111,9 @@ class AuthInterceptor extends Interceptor {
     }
   }
 
-
   bool _isPublicPath(String path) => _publicPaths.contains(path);
+
+  bool _looksLikeJwt(String token) => token.split('.').length == 3;
 
   Future<bool> _tryRefresh() async {
     try {
@@ -120,10 +127,17 @@ class AuthInterceptor extends Interceptor {
       );
 
       if (response.statusCode == 200) {
-        final newAccessToken = response.data['token']?.toString();
-        final newRefreshToken = response.data['refreshToken']?.toString();
+        final envelope = response.data as Map<String, dynamic>?;
+        final innerData = envelope?['data'] as Map<String, dynamic>?;
 
-        if (newAccessToken == null || newAccessToken.isEmpty) return false;
+        final newAccessToken = innerData?['token']?.toString();
+        final newRefreshToken = innerData?['refreshToken']?.toString();
+
+        if (newAccessToken == null ||
+            newAccessToken.isEmpty ||
+            !_looksLikeJwt(newAccessToken)) {
+          return false;
+        }
 
         await _storage.write(key: 'jwt_token', value: newAccessToken);
         if (newRefreshToken != null && newRefreshToken.isNotEmpty) {
@@ -131,6 +145,7 @@ class AuthInterceptor extends Interceptor {
         }
         return true;
       }
+
       return false;
     } catch (_) {
       return false;
@@ -139,16 +154,42 @@ class AuthInterceptor extends Interceptor {
 
   Future<Response<dynamic>> _retry(RequestOptions original) async {
     final token = await _storage.read(key: 'jwt_token');
+    final headers = Map<String, dynamic>.from(original.headers);
+
+    if (token != null && token.trim().isNotEmpty && _looksLikeJwt(token)) {
+      headers['Authorization'] = 'Bearer $token';
+    } else {
+      headers.remove('Authorization');
+    }
+
+    dynamic finalData = original.data;
+
+    if (original.data is FormData) {
+      final originalFormData = original.data as FormData;
+      final newFormData = FormData();
+
+      newFormData.fields.addAll(originalFormData.fields);
+
+      for (final filePair in originalFormData.files) {
+        newFormData.files.add(
+          MapEntry(
+            filePair.key,
+            filePair.value.clone(),
+          ),
+        );
+      }
+      finalData = newFormData;
+      headers.remove('content-type');
+    }
+
     return _dio.request<dynamic>(
       original.path,
-      data: original.data,
+      data: finalData,
       queryParameters: original.queryParameters,
       options: Options(
         method: original.method,
-        headers: {
-          ...original.headers,
-          'Authorization': 'Bearer $token',
-        },
+        headers: headers,
+        extra: {'isRetry': true},
       ),
     );
   }
@@ -171,9 +212,9 @@ class AuthInterceptor extends Interceptor {
     await _storage.delete(key: 'jwt_token');
     await _storage.delete(key: 'refresh_token');
 
-     AppRoutes.navigatorKey.currentState?.pushNamedAndRemoveUntil(
-    '/login',
-    (route) => false,
-  );
+    AppRoutes.navigatorKey.currentState?.pushNamedAndRemoveUntil(
+      '/login',
+      (route) => false,
+    );
   }
 }

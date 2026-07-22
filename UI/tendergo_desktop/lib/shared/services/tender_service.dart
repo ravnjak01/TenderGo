@@ -4,6 +4,7 @@ import 'package:tendergo/shared/models/dto/admin_tender_dto.dart';
 import 'package:tendergo/shared/models/dto/paged_result.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
 import 'package:tendergo/shared/models/requests/admin_tender_search_request.dart';
+import 'package:tendergo/shared/models/requests/tender_cancel_request.dart';
 import 'package:tendergo/shared/models/requests/tender_search_request.dart';
 import 'package:tendergo/shared/services/base_service.dart';
 
@@ -41,9 +42,10 @@ class TenderService extends BaseService<TenderDto> {
     }
   }
 
-  Future<TenderDto> cancel(int id) async {
+  Future<TenderDto> cancel(int id,TenderCancelRequest request) async {
     try {
-      final response = await dio.patch(TenderApiEndpoints.cancel(id));
+      final response = await dio.patch(TenderApiEndpoints.cancel(id),
+      data: request.toJson());
 
       return TenderDto.fromJson(extractObject(response.data));
     } on DioException catch (e) {
