@@ -10,6 +10,7 @@ import 'package:tendergo/shared/models/requests/admin_tender_search_request.dart
 import 'package:tendergo/shared/providers/tender_provider.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
 import 'package:tendergo/shared/widgets/common/app_dialogs.dart';
+import 'package:tendergo/shared/core/utils/error_extension.dart';
 
 class AdminTendersPanel extends StatefulWidget {
   const AdminTendersPanel({super.key});
@@ -79,7 +80,7 @@ class _AdminTendersPanelState extends State<AdminTendersPanel> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.toString();
+        _error = e.toUserMessage();();
         _loading = false;
       });
     }
@@ -194,7 +195,7 @@ class _AdminTendersPanelState extends State<AdminTendersPanel> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Greška: ${e.toString()}')),
+          SnackBar(content: Text('Greška: ${e.toUserMessage()}')),
         );
       }
     } finally {

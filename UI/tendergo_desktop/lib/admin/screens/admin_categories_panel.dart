@@ -7,6 +7,7 @@ import 'package:tendergo/shared/widgets/common/app_dialogs.dart';
 import 'package:tendergo/shared/models/dto/category_dto.dart';
 import 'package:tendergo/shared/models/requests/category_insert_request.dart';
 import 'package:tendergo/shared/models/requests/category_update_request.dart';
+import 'package:tendergo/shared/core/utils/error_extension.dart';
 
 class AdminCategoriesPanel extends StatefulWidget {
   const AdminCategoriesPanel({super.key});
@@ -74,10 +75,18 @@ int _currentPage = 1;
       }
     } catch (e) {
       if (!mounted) return;
+      final errorMessage = e.toUserMessage();
       setState(() {
-        _error = e.toString();
+        _error = errorMessage;
         _isLoading = false;
       });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMessage), 
+          backgroundColor: Colors.redAccent,
+        ),
+      );
     }
   }
 
@@ -210,7 +219,7 @@ Future<void> _refreshCategories() {
       await _refreshCategories();
     } catch (e) {
       setState(() {
-        _error = e.toString();
+        _error = e.toUserMessage();
         _isLoading = false;
       });
     }
@@ -313,7 +322,7 @@ Future<void> _refreshCategories() {
       await _refreshCategories();
     } catch (e) {
       setState(() {
-        _error = e.toString();
+        _error = e.toUserMessage();
         _isLoading = false;
       });
     } finally {
@@ -345,7 +354,7 @@ Future<void> _refreshCategories() {
       await _refreshCategories();
     } catch (e) {
       setState(() {
-        _error = e.toString();
+        _error = e.toUserMessage();
         _isLoading = false;
       });
     }
@@ -376,7 +385,7 @@ Future<void> _refreshCategories() {
         await _refreshCategories();
       } catch (e) {
         setState(() {
-          _error = e.toString();
+          _error = e.toUserMessage();
           _isLoading = false;
         });
       }
@@ -405,7 +414,7 @@ Future<void> _refreshCategories() {
       await _refreshCategories();
     } catch (e) {
       setState(() {
-        _error = e.toString();
+        _error = e.toUserMessage();
         _isLoading = false;
       });
     }

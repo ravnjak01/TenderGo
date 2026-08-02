@@ -8,7 +8,7 @@ import 'package:tendergo/shared/models/requests/location_update_request.dart';
 import 'package:tendergo/shared/services/dio_client.dart';
 import 'package:tendergo/shared/services/location_service.dart';
 import 'package:tendergo/shared/widgets/common/app_dialogs.dart';
-
+import 'package:tendergo/shared/core/utils/error_extension.dart';
 class AdminLocationsPanel extends StatefulWidget {
   const AdminLocationsPanel({super.key});
 
@@ -73,7 +73,7 @@ int _totalCount = 0;
     }
   } catch (e) {
     setState(() {
-      _error = e.toString();
+      _error = e.toUserMessage();
       _isLoading = false;
     });
   }
@@ -120,7 +120,7 @@ Future<void> _fetchLocations({String searchTerm = '', bool isNewSearch = false})
   } catch (e) {
     if (!mounted) return;
     setState(() {
-      _error = e.toString();
+      _error = e.toUserMessage();
       _isLoading = false;
     });
   }
@@ -226,7 +226,7 @@ Future<void> _fetchLocations({String searchTerm = '', bool isNewSearch = false})
       await _refreshData();
     } catch (e) {
       setState(() {
-        _error = e.toString();
+        _error = e.toUserMessage();
         _isLoading = false;
       });
     }
@@ -298,7 +298,7 @@ Future<void> _fetchLocations({String searchTerm = '', bool isNewSearch = false})
       await _refreshData();
     } catch (e) {
       setState(() {
-        _error = e.toString();
+        _error = e.toUserMessage();
         _isLoading = false;
       });
     }
@@ -326,7 +326,7 @@ Future<void> _fetchLocations({String searchTerm = '', bool isNewSearch = false})
       await _refreshData();
     } catch (e) {
       setState(() {
-        _error = e.toString();
+        _error = e.toUserMessage();
         _isLoading = false;
       });
     }
@@ -356,7 +356,7 @@ Future<void> _fetchLocations({String searchTerm = '', bool isNewSearch = false})
         await _refreshData();
       } catch (e) {
         setState(() {
-          _error = e.toString();
+          _error = e.toUserMessage();
           _isLoading = false;
         });
       }
@@ -384,7 +384,7 @@ Future<void> _fetchLocations({String searchTerm = '', bool isNewSearch = false})
       await _refreshData();
     } catch (e) {
       setState(() {
-        _error = e.toString();
+        _error = e.toUserMessage();
         _isLoading = false;
       });
     }

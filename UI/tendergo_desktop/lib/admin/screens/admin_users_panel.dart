@@ -5,6 +5,7 @@ import 'package:tendergo/shared/models/dto/user_dto.dart';
 import 'package:tendergo/shared/models/requests/admin_user_search_request.dart';
 import 'package:tendergo/shared/services/admin_service.dart';
 import 'package:tendergo/shared/services/dio_client.dart';
+import 'package:tendergo/shared/core/utils/error_extension.dart';
 
 class AdminUsersPanel extends StatefulWidget {
   const AdminUsersPanel({super.key});
@@ -77,7 +78,7 @@ class _AdminUsersPanelState extends State<AdminUsersPanel> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.toString();
+        _error = e.toUserMessage();();
         _isLoading = false;
       });
     }
@@ -138,7 +139,7 @@ class _AdminUsersPanelState extends State<AdminUsersPanel> {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
-        _error = e.toString();
+        _error = e.toUserMessage();();
       });
     }
   }
@@ -188,7 +189,7 @@ class _AdminUsersPanelState extends State<AdminUsersPanel> {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
-        _error = e.toString();
+        _error = e.toUserMessage();();
       });
     }
   }

@@ -27,8 +27,10 @@ namespace TenderGo.Services.StateMachines.TenderStates
 
         public override async Task<TenderDTO> Cancel(int id,TenderCancelRequest request)
         {
-            var tender = await _context.Tenders.FindAsync(id)
-                            ?? throw new NotFoundException("Tender not found", new { Entity = "Tender", Id = id });
+            var tender = await _context.Tenders
+                .Include(t => t.Bids)
+                .FirstOrDefaultAsync(t => t.Id == id)
+                ?? throw new NotFoundException("Tender not found", new { Entity = "Tender", Id = id });
 
             var authService = _serviceProvider.GetRequiredService<IAuthService>();
             var currentUserId = authService.GetCurrentUserId();
@@ -40,14 +42,25 @@ namespace TenderGo.Services.StateMachines.TenderStates
             tender.CancellationReason = request.Reason;
             tender.CancelledAt=DateTime.UtcNow;
             tender.CancelledByUserId = currentUserId;
-            await _context.SaveChangesAsync();
 
             _logger.LogInformation("Tender with ID {TenderId} has been cancelled while in Open state", id);
 
+            if (tender.Bids != null && tender.Bids.Any())
+            {
+                foreach (var bid in tender.Bids)
+                {
+                    bid.Status = ApplicationStatus.Cancelled;
+                }
+            }
+
+
             var affectedUserIds = tender.Bids
+                .Where(b => !string.IsNullOrEmpty(b.SubmittedByUserId))
                 .Select(b => b.SubmittedByUserId)
                 .Distinct()
                 .ToList();
+            await _context.SaveChangesAsync();
+
 
             try
             {

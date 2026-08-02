@@ -65,26 +65,23 @@ class LocationService extends BaseService<LocationDto> {
     }
   }
 
-Future<PagedResult<LocationDto>> search(LocationSearchRequest request) async {
-  try {
-    final response = await dio.get(
-      LocationEndpoints.search(), 
-      queryParameters: request.toJson(), 
-    );
+  Future<PagedResult<LocationDto>> search(LocationSearchRequest request) async {
+    try {
+      final response = await dio.get(
+        LocationEndpoints.search(),
+        queryParameters: request.toJson(),
+      );
 
-    final envelope = response.data as Map<String, dynamic>;
+      final pagedData = extractObject(response.data);
 
-    final pagedData = envelope['data'] as Map<String, dynamic>;
-
-    return PagedResult<LocationDto>.fromJson(
-      pagedData,
-      (json) => LocationDto.fromJson(json as Map<String, dynamic>),
-    );
-    
-  } on DioException catch (e) {
-    throw Exception(extractErrorMessage(e, 'Error searching locations'));
+      return PagedResult<LocationDto>.fromJson(
+        pagedData,
+        (json) => LocationDto.fromJson(json as Map<String, dynamic>),
+      );
+    } on DioException catch (e) {
+      throw Exception(extractErrorMessage(e, 'Error searching locations'));
+    }
   }
-}
 
   Future<List<LocationStatsDto>> getLocationStatistics() async {
     try {

@@ -55,38 +55,42 @@ class AdminService {
 
       return AdminDashboardDto.fromJson(_extractObject(response.data));
     } on DioException catch (e) {
-      throw Exception(e.response?.data ?? 'Error fetching dashboard');
+      throw Exception(
+        ApiHelper.handleDioError(
+          e,
+          fallbackMessage: 'Error fetching dashboard',
+        ).message,
+      );
     }
   }
 
-Future<ApiResponse<PagedResult<UserDto>>> getAllUsers({
-  int page = 1,
-  int pageSize = 20,
-}) async {
-  try {
-    final response = await _dio.get(
-      AdminEndpoints.getAllUsers,
-      queryParameters: {
-        'page': page,
-        'pageSize': pageSize,
-      },
-      options: await _options(),
-    );
+  Future<ApiResponse<PagedResult<UserDto>>> getAllUsers({
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    try {
+      final response = await _dio.get(
+        AdminEndpoints.getAllUsers,
+        queryParameters: {
+          'page': page,
+          'pageSize': pageSize,
+        },
+        options: await _options(),
+      );
 
-  
-    final apiResponse = ApiResponse<PagedResult<UserDto>>.fromJson(
-      response.data as Map<String, dynamic>,
-      dataParser: (dataJson) => PagedResult<UserDto>.fromJson(
-        dataJson as Map<String, dynamic>,
-        (userJson) => UserDto.fromJson(userJson),
-      ),
-    );
+      final apiResponse = ApiResponse<PagedResult<UserDto>>.fromJson(
+        response.data as Map<String, dynamic>,
+        dataParser: (dataJson) => PagedResult<UserDto>.fromJson(
+          dataJson as Map<String, dynamic>,
+          (userJson) => UserDto.fromJson(userJson),
+        ),
+      );
 
-    return apiResponse;
-  } on DioException catch (e) {
-    return ApiHelper.handleDioError<PagedResult<UserDto>>(e);
+      return apiResponse;
+    } on DioException catch (e) {
+      return ApiHelper.handleDioError<PagedResult<UserDto>>(e);
+    }
   }
-}
 
   Future<ApiResponse<List<TenderDto>>> getAllTenders() async {
     try {
@@ -165,12 +169,17 @@ Future<ApiResponse<PagedResult<UserDto>>> getAllUsers({
       final envelope = response.data as Map<String, dynamic>;
       final pagedData = envelope['data'] as Map<String, dynamic>;
 
-     return PagedResult<UserDto>.fromJson(
-      pagedData,
-      (json) => UserDto.fromJson(json as Map<String, dynamic>),
-    );
+      return PagedResult<UserDto>.fromJson(
+        pagedData,
+        (json) => UserDto.fromJson(json as Map<String, dynamic>),
+      );
     } on DioException catch (e) {
-      throw Exception(e.response?.data ?? 'Error searching users');
+      throw Exception(
+        ApiHelper.handleDioError(
+          e,
+          fallbackMessage: 'Error searching users',
+        ).message,
+      );
     }
   }
 

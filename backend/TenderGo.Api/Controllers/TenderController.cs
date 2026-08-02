@@ -47,32 +47,32 @@ public class TenderController
     }
 
     [HttpGet("bookmarked")]
-    public async Task<IActionResult> GetMyBookmarkedTenders()
+    public async Task<IActionResult> GetMyBookmarkedTenders([FromQuery] PagedSearchRequest request)
     {
         string userId = _authService.GetCurrentUserId();
 
-        var tenders = await _tenderService.GetBookmarkedTendersAsync(userId);
+        var tenders = await _tenderService.GetBookmarkedTendersAsync(userId,request);
         return Ok(tenders);
     }
 
     [HttpGet("active")]
-    public async Task<IActionResult> GetActive(PagedSearchRequest request)
+    public async Task<IActionResult> GetActive([FromQuery]  PagedSearchRequest request)
         => Ok(await _tenderService.GetActiveTenders(request));
 
     [HttpGet("closed")]
-    public async Task<IActionResult> GetClosed(PagedSearchRequest request)
+    public async Task<IActionResult> GetClosed([FromQuery] PagedSearchRequest request)
         => Ok(await _tenderService.GetClosedTenders(request));
 
     [HttpGet("cancelled")]
-    public async Task<IActionResult> GetCancelled(PagedSearchRequest request)
+    public async Task<IActionResult> GetCancelled([FromQuery] PagedSearchRequest request)
         => Ok(await _tenderService.GetCancelledTenders(request));
 
     [HttpGet("category/{id}")]
-    public async Task<IActionResult> GetByCategory(int id,PagedSearchRequest request)
+    public async Task<IActionResult> GetByCategory(int id, [FromQuery] PagedSearchRequest request)
         => Ok(await _tenderService.GetTendersByCategory(id,request));
 
     [HttpGet("user/{userId}")]
-    public async Task<IActionResult> GetByUser(string userId,PagedSearchRequest request)
+    public async Task<IActionResult> GetByUser(string userId,[FromQuery] PagedSearchRequest request)
     {
         var tenders = await _tenderService.GetTendersByUser(userId,request);
         return Ok(tenders);

@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:tendergo/shared/core/network/constants/tender_api_endpoints.dart';
+import 'package:tendergo/shared/models/dto/paged_result.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
 import 'package:tendergo/shared/models/requests/tender_insert_request.dart';
 import 'package:tendergo/shared/models/requests/tender_search_request.dart';
@@ -24,18 +25,21 @@ class TenderService {
   }
 
 
-  Future<List<TenderDto>> getAll({int page = 1, int pageSize = 10}) async {
-    try {
-      final response = await _dio.get(
-        TenderApiEndpoints.getAll,
-        queryParameters: {'page': page, 'pageSize': pageSize},
-      );
+Future<PagedResult<TenderDto>> getAll({int page = 1, int pageSize = 10}) async {
+  try {
+    final response = await _dio.get(
+      TenderApiEndpoints.getAll,
+      queryParameters: {'page': page, 'pageSize': pageSize},
+    );
 
-      return ResponseParser.dtoList(response.data, TenderDto.fromJson);
-    } on DioException catch (e) {
-      throw _handleError(e, 'Greška pri učitavanju tendera');
-    }
+    return _unwrapEnvelope(
+      response,
+      (data) => PagedResult.fromJson(data as Map<String, dynamic>, TenderDto.fromJson),
+    );
+  } on DioException catch (e) {
+    throw _handleError(e, 'Greška pri učitavanju tendera');
   }
+}
 
   Future<TenderDto> getById(int id) async {
     try {
@@ -46,15 +50,21 @@ class TenderService {
     }
   }
 
-  Future<List<TenderDto>> getActive() async {
-    try {
-      final response = await _dio.get(TenderApiEndpoints.getActive);
+ Future<PagedResult<TenderDto>> getActive({int page = 1, int pageSize = 10}) async {
+  try {
+    final response = await _dio.get(
+      TenderApiEndpoints.getActive,
+      queryParameters: {'page': page, 'pageSize': pageSize},
+    );
 
-      return ResponseParser.dtoList(response.data, TenderDto.fromJson);
-    } on DioException catch (e) {
-      throw _handleError(e, 'Greška pri učitavanju aktivnih tendera');
-    }
+    return _unwrapEnvelope(
+      response,
+      (data) => PagedResult.fromJson(data as Map<String, dynamic>, TenderDto.fromJson),
+    );
+  } on DioException catch (e) {
+    throw _handleError(e, 'Greška pri učitavanju aktivnih tendera');
   }
+}
 
   Future<TenderDto> create(
     TenderInsertRequest data, {
@@ -105,39 +115,71 @@ class TenderService {
     }
   }
 
-  Future<List<dynamic>> getByCategory(int id) async {
-    try {
-      final response = await _dio.get(TenderApiEndpoints.getByCategory(id));
-      return List<dynamic>.from(ResponseParser.list(response.data));
-    } on DioException catch (e) {
-      throw _handleError(e, 'Greška pri učitavanju kategorije');
-    }
-  }
+Future<PagedResult<TenderDto>> getByCategory(int id, {int page = 1, int pageSize = 10}) async {
+  try {
+    final response = await _dio.get(
+      TenderApiEndpoints.getByCategory(id),
+      queryParameters: {'page': page, 'pageSize': pageSize},
+    );
 
-  Future<List<dynamic>> getByUser(String userId) async {
-    try {
-      final response = await _dio.get(TenderApiEndpoints.getByUser(userId));
-      return List<dynamic>.from(ResponseParser.list(response.data));
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 404 || e.response?.statusCode == 405) {
-        return const [];
-      }
-      throw _handleError(e, 'Greška pri dohvaćanju korisničkih tendera');
-    }
+    return _unwrapEnvelope(
+      response,
+      (data) => PagedResult.fromJson(data as Map<String, dynamic>, TenderDto.fromJson),
+    );
+  } on DioException catch (e) {
+    throw _handleError(e, 'Greška pri učitavanju kategorije');
   }
+}
 
-  Future<List<TenderDto>> search(TenderSearchRequest request) async {
-    try {
-      final response = await _dio.get(
-        TenderApiEndpoints.search(request.searchTerm ?? ''),
+Future<PagedResult<TenderDto>> getByUser(
+  String userId, {
+  int page = 1,
+  int pageSize = 10,
+}) async {
+  try {
+    final response = await _dio.get(
+      TenderApiEndpoints.getByUser(userId),
+      queryParameters: {
+        'page': page,
+        'pageSize': pageSize,
+      },
+    );
+
+    return _unwrapEnvelope(
+      response,
+      (data) => PagedResult.fromJson(
+        data as Map<String, dynamic>,
+        TenderDto.fromJson,
+      ),
+    );
+  } on DioException catch (e) {
+    if (e.response?.statusCode == 404 || e.response?.statusCode == 405) {
+      return PagedResult(
+        result: const [],
+        totalCount: 0,
+        page: 1,
+        pageSize: 10,
       );
-
-      return ResponseParser.dtoList(response.data, TenderDto.fromJson);
-    } on DioException catch (e) {
-      throw _handleError(e, 'Greška pri pretrazi tendera');
     }
-  }
 
+    throw _handleError(e, 'Greška pri dohvaćanju korisničkih tendera');
+  }
+}
+Future<PagedResult<TenderDto>> search(TenderSearchRequest request) async {
+  try {
+    final response = await _dio.get(
+      TenderApiEndpoints.search, 
+      queryParameters: request.toQueryParams(),
+    );
+
+    return _unwrapEnvelope(
+      response,
+      (data) => PagedResult.fromJson(data as Map<String, dynamic>, TenderDto.fromJson),
+    );
+  } on DioException catch (e) {
+    throw _handleError(e, 'Greška pri pretrazi tendera');
+  }
+}
 
 
   Future<bool> toggleBookmark(int tenderId) async {
@@ -150,13 +192,28 @@ class TenderService {
     }
   }
 
-  Future<List<TenderDto>> getBookmarked() async {
-    try {
-      final response = await _dio.get(TenderApiEndpoints.getBookmarks);
+Future<PagedResult<TenderDto>> getBookmarked({
+  int page = 1,
+  int pageSize = 10,
+}) async {
+  try {
+    final response = await _dio.get(
+      TenderApiEndpoints.getBookmarks,
+      queryParameters: {
+        'page': page,
+        'pageSize': pageSize,
+      },
+    );
 
-      return ResponseParser.dtoList(response.data, TenderDto.fromJson);
-    } on DioException catch (e) {
-      throw _handleError(e, 'Greška pri učitavanju bookmark-ovanih tendera');
-    }
+    return _unwrapEnvelope(
+      response,
+      (data) => PagedResult.fromJson(
+        data as Map<String, dynamic>,
+        TenderDto.fromJson,
+      ),
+    );
+  } on DioException catch (e) {
+    throw _handleError(e, 'Greška pri učitavanju bookmark-ovanih tendera');
   }
+}
 }

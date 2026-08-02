@@ -4,6 +4,8 @@ import 'package:tendergo/mobile/routes/routes.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
 import 'package:tendergo/shared/models/dto/notification_dto.dart';
 import 'package:tendergo/shared/providers/notification_provider.dart';
+import 'package:tendergo/mobile/widgets/common/app_dialogs.dart';
+
 
 class NotificationScreen extends StatelessWidget {
   const NotificationScreen({super.key});
@@ -100,6 +102,7 @@ class NotificationScreen extends StatelessWidget {
                 return Dismissible(
                   key: ValueKey(notification.id),
                   direction: DismissDirection.endToStart,
+                  confirmDismiss: (_) => _confirmDelete(context),
                   background: Container(
                     alignment: Alignment.centerRight,
                     padding: const EdgeInsets.only(right: 20),
@@ -114,8 +117,12 @@ class NotificationScreen extends StatelessWidget {
                   child: _NotificationTile(
                     notification: notification,
                     onTap: () => _handleTap(context, provider, notification),
-                    onDismiss: () =>
-                        provider.deleteNotification(notification.id),
+                    onDismiss: () async {
+                      final confirmed = await _confirmDelete(context);
+                      if (confirmed) {
+                        provider.deleteNotification(notification.id);
+                      }
+                    },
                   ),
                 );
               },
@@ -123,6 +130,16 @@ class NotificationScreen extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+
+  Future<bool> _confirmDelete(BuildContext context) {
+    return AppDialogs.showConfirm(
+      context: context,
+      title: 'Delete Notification',
+      content: 'Are you sure you want to delete this notification?',
+      confirmLabel: 'Delete',
+      isDestructive: true,
     );
   }
 
@@ -229,7 +246,6 @@ class _NotificationIcon extends StatelessWidget {
       child: Icon(icon, size: 18, color: color),
     );
   }
-
 
   (IconData, Color) _resolve(String type) {
     return switch (type) {

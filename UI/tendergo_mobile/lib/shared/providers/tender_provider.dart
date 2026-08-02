@@ -24,7 +24,7 @@ class TenderProvider extends BaseProvider {
     this._categoryService, {
     RecommendationService? recommendationService,
   }) : _recommendationService =
-           recommendationService ?? RecommendationService(DioClient.getDio());
+            recommendationService ?? RecommendationService(DioClient.getDio());
 
   List<TenderDto> _tenders = [];
   List<CategoryDto> _categories = [];
@@ -49,10 +49,12 @@ class TenderProvider extends BaseProvider {
     if (!await _tokenStore.hasValidAccessToken()) return;
 
     try {
-      final bookmarkedTenders = await service.getBookmarked();
-      _savedIds = bookmarkedTenders.map((t) => t.id).toSet();
+      // 1. Pristupamo .result polju iz PagedResult objekta
+      final bookmarkedPaged = await service.getBookmarked();
+      _savedIds = bookmarkedPaged.result.map((t) => t.id).toSet();
       notifyListeners();
     } catch (e) {
+      // Handle error
     }
   }
 
@@ -136,25 +138,30 @@ class TenderProvider extends BaseProvider {
 
     await handleAsync(
       () async {
-        _tenders = await _service.getActive();
+        // 2. Dodato .result
+        final activePaged = await _service.getActive();
+        _tenders = activePaged.result;
       },
       silent: silent,
     );
   }
 
   Future<void> fetchAllTenders() => handleAsync(() async {
-    _tenders = await _service.getAll();
-  });
+        // 3. Dodato .result
+        final allPaged = await _service.getAll();
+        _tenders = allPaged.result;
+      });
 
   Future<TenderDto?> createTender(
     TenderInsertRequest request, {
     List<PlatformFile>? imageFiles,
-  }) => handleAsync(() async {
-    final created = await _service.create(request, imageFiles: imageFiles);
-    _tenders.removeWhere((t) => t.id == created.id);
-    _tenders.insert(0, created);
-    return created;
-  }, silent: true);
+  }) =>
+      handleAsync(() async {
+        final created = await _service.create(request, imageFiles: imageFiles);
+        _tenders.removeWhere((t) => t.id == created.id);
+        _tenders.insert(0, created);
+        return created;
+      }, silent: true);
 
   Future<void> searchTenders(String query) async {
     _searchQuery = query.trim();
@@ -166,9 +173,11 @@ class TenderProvider extends BaseProvider {
       return;
     }
     await handleAsync(() async {
-      _searchResults = await _service.search(
+      // 4. Dodato .result za search poziv
+      final searchPaged = await _service.search(
         TenderSearchRequest(searchTerm: _searchQuery),
       );
+      _searchResults = searchPaged.result;
     });
   }
 
@@ -182,6 +191,7 @@ class TenderProvider extends BaseProvider {
         query: normalized,
       );
     } catch (e) {
+      // Handle error
     }
   }
 
@@ -255,7 +265,7 @@ class TenderProvider extends BaseProvider {
         'tenderId': bid.tenderId.toString(),
         'ratedUserId': ratedUserId,
         'ratedUserName': ratedUserName.isEmpty ? null : ratedUserName,
-        'tenderTitle':bid.tenderTitle
+        'tenderTitle': bid.tenderTitle
       };
     } catch (_) {
       return null;

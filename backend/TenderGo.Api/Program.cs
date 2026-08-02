@@ -49,20 +49,20 @@ static string BuildRabbitMqConnectionString(IConfiguration config)
     return $"host={host};username={username};password={password};timeout=30";
 }
 
-// 1. Konfiguracija baze podataka
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<TenderGoContext>(options => options.UseSqlServer(connectionString, b =>
 {
     b.MigrationsAssembly("TenderGo.Services");
 }));
 
-// 2. Identity postavke
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
     options.Password.RequiredLength = 8;
     options.Password.RequireDigit = true;
+    options.Password.RequireLowercase = true;
     options.Password.RequireUppercase = true;
-    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequireNonAlphanumeric = true;
+
     options.User.RequireUniqueEmail = true;
     options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
     options.Lockout.MaxFailedAccessAttempts = 5;
@@ -98,14 +98,12 @@ builder.Services.AddAuthentication(options =>
             var db = context.HttpContext.RequestServices
                 .GetRequiredService<TenderGoContext>();
 
-            // 1. DOHVATANJE USERMANAGER-A IZ DI KONTEJNERA
             var userManager = context.HttpContext.RequestServices
                 .GetRequiredService<UserManager<ApplicationUser>>();
 
             var jti = context.Principal?
                 .FindFirstValue(JwtRegisteredClaimNames.Jti);
 
-            // 2. KORIŠTENJE FindFirstValue UMJESTO FindFirst DA DOBIJEŠ STRING VALUE
             var userId = context.Principal?.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (!string.IsNullOrEmpty(userId))
@@ -113,7 +111,6 @@ builder.Services.AddAuthentication(options =>
                 var user = await userManager.FindByIdAsync(userId);
                 if (user == null || user.IsBanned)
                 {
-                    // Odbij token odmah ako korisnik ne postoji ili je banovan
                     context.Fail("Korisnički nalog je banovan.");
                     return;
                 }
@@ -163,17 +160,6 @@ builder.Services.AddSwaggerGen(opt =>
     });
 });
 
-
-builder.Services.Configure<IdentityOptions>(options =>
-{
-    options.Password.RequireDigit = true;
-    options.Password.RequireLowercase = true;
-    options.Password.RequireUppercase = true;
-    options.Password.RequireNonAlphanumeric = true;
-    options.Password.RequiredLength = 8;
-});
-
-
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddMemoryCache();
 
@@ -191,12 +177,11 @@ builder.Services.AddScoped<IImageService, ImageService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<ILocationService, LocationService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
-builder.Services.AddScoped<IAdminReportService,AdminReportService>();
-
+builder.Services.AddScoped<IAdminReportService, AdminReportService>();
 
 // Email i Background poslovi
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
-builder.Services.AddScoped<IEmailService,EmailService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddHostedService<TenderExpiryJob>();
 
 // Recommender i Pametni moduli
@@ -223,7 +208,7 @@ var allowedOriginsRaw = builder.Configuration["ALLOWED_ORIGINS"]
 
 var allowedOrigins = allowedOriginsRaw?
     .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-    ?? new[] { "http://localhost:3000" }; 
+    ?? new[] { "http://localhost:3000" };
 
 builder.Services.AddCors(options =>
 {
@@ -268,7 +253,8 @@ using (var scope = app.Services.CreateScope())
         try
         {
             var context = services.GetRequiredService<TenderGoContext>();
-            context.Database.Migrate();
+
+            await context.Database.MigrateAsync();
 
             var seeders = new IDataSeeder[]
             {
@@ -290,7 +276,6 @@ using (var scope = app.Services.CreateScope())
                 await seeder.SeedAsync(context, services);
             }
 
-
             logger.LogInformation("Database migrated and seeded successfully.");
             break;
         }
@@ -302,7 +287,8 @@ using (var scope = app.Services.CreateScope())
                 logger.LogError(ex, "Database migration failed after 10 attempts.");
                 throw;
             }
-            Thread.Sleep(5000);
+
+            await Task.Delay(5000);
         }
     }
 }

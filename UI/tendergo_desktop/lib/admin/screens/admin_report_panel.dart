@@ -8,6 +8,7 @@ import 'package:tendergo/shared/services/admin_report_service.dart';
 import 'package:tendergo/shared/services/admin_service.dart';
 import 'package:tendergo/shared/services/dio_client.dart';
 import 'package:tendergo/shared/services/location_service.dart';
+import 'package:tendergo/shared/core/utils/error_extension.dart';
 
 class AdminReportsPanel extends StatefulWidget {
   const AdminReportsPanel({super.key});
@@ -58,7 +59,7 @@ String? _userReportError;
       });
     } catch (e) {
       setState(() {
-        _error = e.toString();
+        _error = e.toUserMessage();();
         _isLoading = false;
       });
     }
@@ -169,7 +170,7 @@ Future<void> _loadUsers() async {
       if (!mounted) return;
       setState(() {
         _isGenerating = false;
-        _generatorError = e.toString();
+        _generatorError = e.toUserMessage();();
       });
     }
   }
@@ -223,7 +224,7 @@ Future<void> _loadUsers() async {
       if (!mounted) return;
       setState(() {
         _isGeneratingUserReport = false;
-        _userReportError = e.toString();
+        _userReportError = e.toUserMessage();();
       });
     }
   }

@@ -3,31 +3,26 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using TenderGo.Api.Database;
 using TenderGo.Contracts;
 using TenderGo.Models.ENUMs;
 
 namespace TenderGo.Services.Services
 {
-    public class TenderExpiryJob:BackgroundService
+    public class TenderExpiryJob : BackgroundService
     {
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<TenderExpiryJob> _logger;
         private readonly TimeSpan _interval = TimeSpan.FromHours(3);
         private readonly IPubSub _pubSub;
 
-        public TenderExpiryJob(IServiceScopeFactory scopeFactory, ILogger<TenderExpiryJob> logger,IPubSub pubSub)
+        public TenderExpiryJob(IServiceScopeFactory scopeFactory, ILogger<TenderExpiryJob> logger, IPubSub pubSub)
         {
             _scopeFactory = scopeFactory;
             _logger = logger;
             _pubSub = pubSub;
-
         }
+
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             _logger.LogInformation("TenderExpiryJob started.");
@@ -87,6 +82,7 @@ namespace TenderGo.Services.Services
             }
 
             await db.SaveChangesAsync(ct);
+
             foreach (var tender in expiredTenders)
             {
                 try
@@ -110,7 +106,7 @@ namespace TenderGo.Services.Services
                 }
             }
 
-            _logger.LogInformation("Auto-cancelled {Count} tenders.", expiredTenders.Count);
+            _logger.LogInformation("Auto-closed {Count} tenders.", expiredTenders.Count);
         }
     }
 }

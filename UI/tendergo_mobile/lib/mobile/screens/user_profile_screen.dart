@@ -12,6 +12,7 @@ import 'package:tendergo/shared/core/actions/back_button.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
 import 'package:tendergo/shared/core/utils/extensions/string_extensions.dart';
 import 'package:tendergo/shared/models/dto/bid_dto.dart';
+import 'package:tendergo/shared/models/dto/paged_result.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
 import 'package:tendergo/shared/models/dto/user_dto.dart';
 import 'package:tendergo/shared/models/requests/change_password_request.dart';
@@ -97,7 +98,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
     });
   }
 
-  Future<void> _load() async {
+Future<void> _load() async {
     if (mounted) {
       setState(() {
         _loading = true;
@@ -120,25 +121,23 @@ class _UserProfileScreenState extends State<UserProfileScreen>
       final user = userResult.data!;
       final currentUserId = await AuthService.getCurrentUserId();
 
-      List<BidDto> bids = const [];
-      List<TenderDto> tenders = const [];
-
+      // Prilagođeno da prihvati PagedResult tipove
       final bidsFuture = _bidService.getMyBids(page: 1, pageSize: 100);
       final tendersFuture = (currentUserId != null && currentUserId.isNotEmpty)
           ? _tenderService.getByUser(currentUserId)
-          : Future.value(const <dynamic>[]);
+          : Future.value(PagedResult<TenderDto>(result: const [], totalCount: 0, page: 1, pageSize: 10));
 
-      final results = await Future.wait<dynamic>([
+      final results = await Future.wait([
         bidsFuture,
         tendersFuture,
       ]);
 
-      bids = results[0] as List<BidDto>;
+      // Izvlačimo .result iz PagedResult objekata
+      final bidsPaged = results[0] as PagedResult<BidDto>;
+      final tendersPaged = results[1] as PagedResult<TenderDto>;
 
-      tenders = (results[1] as List<dynamic>)
-          .whereType<Map<String, dynamic>>()
-          .map(TenderDto.fromJson)
-          .toList(growable: false);
+      final List<BidDto> bids = bidsPaged.result;
+      final List<TenderDto> tenders = tendersPaged.result;
 
       if (!mounted) return;
 
@@ -150,15 +149,18 @@ class _UserProfileScreenState extends State<UserProfileScreen>
         _errorMessage = null;
       });
       _animCtrl.forward(from: 0);
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
+      // Korisno za debug: ispišite tačnu grešku u konzolu ako se desi nešto nepredviđeno
+      debugPrint('Error loading profile: $e'); 
+
       setState(() {
         _loading = false;
         _errorMessage = 'Failed to load profile data.';
       });
     }
   }
-
+  
   @override
   void dispose() {
     _animCtrl.dispose();

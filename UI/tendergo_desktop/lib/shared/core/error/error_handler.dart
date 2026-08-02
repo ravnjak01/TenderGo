@@ -76,4 +76,5 @@ class ErrorHandler {
       SnackBar(content: Text('$msg$details')),
     );
   }
+  
 }

@@ -6,7 +6,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
 import 'package:tendergo/shared/widgets/feedback/snackbar_helper.dart';
-
+import 'package:printing/printing.dart';
+import 'package:pdf/pdf.dart';
 class AdminReportPreviewScreen extends StatefulWidget {
   final Uint8List pdfBytes;
   final String title;
@@ -30,6 +31,30 @@ class _AdminReportPreviewScreenState extends State<AdminReportPreviewScreen> {
 
 
 
+Future<void> _printPdf() async {
+    try {
+      if (widget.pdfBytes.isEmpty) {
+        SnackbarHelper.show(
+          context,
+          'Nema podataka za printanje.',
+          isError: true,
+        );
+        return;
+      }
+
+      await Printing.layoutPdf(
+        onLayout: (PdfPageFormat format) async => widget.pdfBytes,
+        name: widget.title.isEmpty ? 'Izvjestaj' : widget.title,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      SnackbarHelper.show(
+        context,
+        'Greska prilikom printanja: $e',
+        isError: true,
+      );
+    }
+  }
 
 
   Future<void> _savePdfToDevice() async {
@@ -115,6 +140,11 @@ class _AdminReportPreviewScreenState extends State<AdminReportPreviewScreen> {
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.print_rounded),
+            tooltip: 'Isprintaj izvjestaj',
+            onPressed: widget.pdfBytes.isEmpty ? null : _printPdf,
+          ),
           _isSaving
               ? const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 16),

@@ -1,8 +1,10 @@
+import 'dart:convert';
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:tendergo/shared/core/network/constants/admin_report_endpoints.dart';
 import 'package:tendergo/shared/models/dto/admin_report_overview_dto.dart';
 import 'package:tendergo/shared/models/requests/admin_report_request.dart';
+import 'package:tendergo/shared/services/api_helper.dart';
 
 class AdminReportService {
   final Dio _dio;
@@ -22,7 +24,10 @@ class AdminReportService {
       return AdminReportOverviewDto.fromJson(payload);
     } on DioException catch (e) {
       throw Exception(
-        e.response?.data ?? 'Error fetching admin report overview',
+        ApiHelper.handleDioError(
+          e,
+          fallbackMessage: 'Error fetching admin report overview',
+        ).message,
       );
     }
   }
@@ -43,7 +48,12 @@ class AdminReportService {
           .map((item) => Map<String, dynamic>.from(item))
           .toList();
     } on DioException catch (e) {
-      throw Exception(e.response?.data ?? 'Error fetching tenders by location');
+      throw Exception(
+        ApiHelper.handleDioError(
+          e,
+          fallbackMessage: 'Error fetching tenders by location',
+        ).message,
+      );
     }
   }
 
@@ -60,7 +70,12 @@ class AdminReportService {
 
       return null;
     } on DioException catch (e) {
-      throw Exception(e.response?.data ?? 'Error generating user report PDF');
+      throw Exception(
+        ApiHelper.handleDioError(
+          _normalizeBytesDioException(e),
+          fallbackMessage: 'Error generating user report PDF',
+        ).message,
+      );
     }
   }
 
@@ -87,9 +102,34 @@ class AdminReportService {
       return null;
     } on DioException catch (e) {
       throw Exception(
-        e.response?.data ?? 'Error generating location report PDF',
+        ApiHelper.handleDioError(
+          _normalizeBytesDioException(e),
+          fallbackMessage: 'Error generating location report PDF',
+        ).message,
       );
     }
+  }
+
+  DioException _normalizeBytesDioException(DioException e) {
+    if (e.response?.data is List<int>) {
+      try {
+        final jsonString = utf8.decode(e.response!.data as List<int>);
+        final decoded = jsonDecode(jsonString);
+        if (decoded is Map<String, dynamic>) {
+          return DioException(
+            requestOptions: e.requestOptions,
+            response: Response(
+              requestOptions: e.requestOptions,
+              statusCode: e.response?.statusCode,
+              data: decoded,
+            ),
+            type: e.type,
+            error: e.error,
+          );
+        }
+      } catch (_) {}
+    }
+    return e;
   }
 
   List<dynamic> _extractList(dynamic responseData) {

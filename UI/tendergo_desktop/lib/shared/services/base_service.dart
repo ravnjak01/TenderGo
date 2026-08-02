@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:tendergo/shared/services/api_helper.dart';
 
 abstract class BaseService<T> {
   final Dio _dio;
@@ -57,21 +58,7 @@ abstract class BaseService<T> {
 
   @protected
   String extractErrorMessage(DioException e, String fallback) {
-    final data = e.response?.data;
-
-    if (data is Map<String, dynamic>) {
-      final errors = data['errors'];
-      if (errors is List && errors.isNotEmpty) {
-        return errors.join('\n');
-      }
-
-      final message = data['message'];
-      if (message is String && message.trim().isNotEmpty) {
-        return message;
-      }
-    }
-
-    return fallback;
+    return ApiHelper.handleDioError(e, fallbackMessage: fallback).message;
   }
 
   Future<List<T>> getAll({

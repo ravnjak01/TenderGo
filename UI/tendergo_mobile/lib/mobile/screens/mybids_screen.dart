@@ -55,7 +55,7 @@ class _MyBidsScreenState extends State<MyBidsScreen> {
     }
   }
 
-  Future<void> _fetchInitial() async {
+Future<void> _fetchInitial() async {
     if (mounted) {
       setState(() {
         _isLoading = true;
@@ -66,12 +66,13 @@ class _MyBidsScreenState extends State<MyBidsScreen> {
     }
 
     try {
-      final res = await widget._bidService.getMyBids(page: _page, pageSize: _pageSize);
+      final pagedResult = await widget._bidService.getMyBids(page: _page, pageSize: _pageSize);
       if (mounted) {
         setState(() {
-          _items = res;
+          _items = pagedResult.result; // Extract List<BidDto> iz .result
           _isLoading = false;
-          _hasMore = res.length == _pageSize;
+          // Možete provjeriti ima li još stranica preko .result.length ili pagedResult.items.length
+          _hasMore = pagedResult.result.length == _pageSize; 
         });
       }
     } catch (e) {
@@ -85,7 +86,7 @@ class _MyBidsScreenState extends State<MyBidsScreen> {
     }
   }
 
-  Future<void> _fetchMore() async {
+ Future<void> _fetchMore() async {
     if (_isLoading || !_hasMore) return;
 
     setState(() {
@@ -94,14 +95,14 @@ class _MyBidsScreenState extends State<MyBidsScreen> {
 
     try {
       final nextPage = _page + 1;
-      final res = await widget._bidService.getMyBids(page: nextPage, pageSize: _pageSize);
+      final pagedResult = await widget._bidService.getMyBids(page: nextPage, pageSize: _pageSize);
 
       if (mounted) {
         setState(() {
           _page = nextPage;
-          _items.addAll(res);
+          _items.addAll(pagedResult.result); // Dodajemo novu listu iz .result
           _isLoading = false;
-          _hasMore = res.length == _pageSize;
+          _hasMore = pagedResult.result.length == _pageSize;
         });
       }
     } catch (_) {
@@ -112,7 +113,6 @@ class _MyBidsScreenState extends State<MyBidsScreen> {
       }
     }
   }
-
   Future<void> _refresh() async {
     await _fetchInitial();
   }

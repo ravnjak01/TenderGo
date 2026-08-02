@@ -6,11 +6,10 @@ import 'package:tendergo/shared/models/requests/category_insert_request.dart';
 import 'package:tendergo/shared/models/requests/category_search_request.dart';
 import 'package:tendergo/shared/models/requests/category_update_request.dart';
 import 'package:tendergo/shared/services/base_service.dart';
-import 'package:flutter/foundation.dart';
+
 class CategoryService extends BaseService<CategoryDto> {
   CategoryService(Dio dio)
       : super(dio, CategoryApiEndpoints.baseUrl, CategoryDto.fromJson);
-
 
   Future<CategoryDto> insertCategory(CategoryInsertRequest request) {
     return insert(request);
@@ -26,89 +25,55 @@ class CategoryService extends BaseService<CategoryDto> {
       final statusCode = response.statusCode ?? 0;
       return statusCode >= 200 && statusCode < 300;
     } on DioException catch (e) {
-      throw Exception(_extractErrorMessage(e, 'Error updating category'));
+      throw Exception(extractErrorMessage(e, 'Error updating category'));
     }
   }
 
   Future<CategoryDto> activateCategory(int id) async {
     try {
       final response = await dio.patch(CategoryApiEndpoints.activate(id));
-      final envelope = response.data;
-
-      if (envelope is! Map<String, dynamic>) {
-        throw Exception('Invalid response format.');
-      }
-
-      final data = envelope['data'];
-
-      if (data is! Map<String, dynamic>) {
-        throw Exception('Invalid response format: data is not an object.');
-      }
-
+      final data = extractObject(response.data);
       return parseJson(data);
     } on DioException catch (e) {
-      throw Exception(_extractErrorMessage(e, 'Error activating category'));
+      throw Exception(extractErrorMessage(e, 'Error activating category'));
     }
   }
 
   Future<CategoryDto> deactivateCategory(int id) async {
     try {
       final response = await dio.patch(CategoryApiEndpoints.deactivate(id));
-      final envelope = response.data;
-
-      if (envelope is! Map<String, dynamic>) {
-        throw Exception('Invalid response format.');
-      }
-
-      final data = envelope['data'];
-
-      if (data is! Map<String, dynamic>) {
-        throw Exception('Invalid response format: data is not an object.');
-      }
-
+      final data = extractObject(response.data);
       return parseJson(data);
     } on DioException catch (e) {
-      throw Exception(_extractErrorMessage(e, 'Error deactivating category'));
+      throw Exception(extractErrorMessage(e, 'Error deactivating category'));
     }
   }
-
 
   Future<PagedResult<CategoryDto>> search(CategorySearchRequest request) async {
     try {
       final response = await dio.get(
-      CategoryApiEndpoints.search(),
-      queryParameters: request.toJson(), 
-    );
+        CategoryApiEndpoints.search(),
+        queryParameters: request.toJson(),
+      );
 
-    final envelope = response.data as Map<String, dynamic>;
-
-    final pagedData = envelope['data'] as Map<String, dynamic>;
+      final envelope = response.data as Map<String, dynamic>;
+      final pagedData = envelope['data'] as Map<String, dynamic>;
 
       return PagedResult<CategoryDto>.fromJson(
-      pagedData,
-      (json) => CategoryDto.fromJson(json as Map<String, dynamic>),
-    );
+        pagedData,
+        (json) => CategoryDto.fromJson(json as Map<String, dynamic>),
+      );
     } on DioException catch (e) {
-      throw Exception(_extractErrorMessage(e, 'Error searching categories'));
+      throw Exception(extractErrorMessage(e, 'Error searching categories'));
     }
   }
 
   Future<List<CategoryStatisticsDto>> getCategoryStatistics() async {
     try {
       final response = await dio.get(CategoryApiEndpoints.categoryStatistics);
-      final envelope = response.data;
+      final listData = extractList(response.data);
 
-      if (envelope is! Map<String, dynamic>) {
-        throw Exception('Invalid response format.');
-      }
-
-      final data = envelope['data'];
-
-      if (data is! List) {
-        throw Exception('Invalid response format: data is not a list.');
-      }
-
-      return data
+      return listData
           .map(
             (x) => CategoryStatisticsDto.fromJson(
               Map<String, dynamic>.from(x as Map),
@@ -117,26 +82,8 @@ class CategoryService extends BaseService<CategoryDto> {
           .toList();
     } on DioException catch (e) {
       throw Exception(
-        _extractErrorMessage(e, 'Error fetching category statistics'),
+        extractErrorMessage(e, 'Error fetching category statistics'),
       );
     }
-  }
-
-  String _extractErrorMessage(DioException e, String fallback) {
-    final data = e.response?.data;
-
-    if (data is Map<String, dynamic>) {
-      final errors = data['errors'];
-      if (errors is List && errors.isNotEmpty) {
-        return errors.join('\n');
-      }
-
-      final message = data['message'];
-      if (message is String && message.trim().isNotEmpty) {
-        return message;
-      }
-    }
-
-    return fallback;
   }
 }

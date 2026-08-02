@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:tendergo/shared/core/actions/back_button.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
+import 'package:tendergo/shared/models/dto/paged_result.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
 import 'package:tendergo/shared/models/enums/tenderstatus.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
@@ -25,7 +26,8 @@ class UserTendersScreen extends StatelessWidget {
         title: Text('Tenders by $userName'),
         leading: const CustomBackButton(),
       ),
-      body: FutureBuilder<List<dynamic>>(
+      // 1. Promenjen generički tip u PagedResult<TenderDto>
+      body: FutureBuilder<PagedResult<TenderDto>>(
         future: tenderService.getByUser(userId),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -44,12 +46,9 @@ class UserTendersScreen extends StatelessWidget {
             );
           }
 
-          final rawList = snapshot.data ?? [];
-
-          final List<TenderDto> tenders = rawList
-              .whereType<Map<String, dynamic>>()
-              .map((json) => TenderDto.fromJson(json))
-              .toList();
+          // 2. Direktno preuzimamo listu iz PagedResult objekta
+          final pagedResult = snapshot.data;
+          final List<TenderDto> tenders = pagedResult?.result ?? [];
 
           if (tenders.isEmpty) {
             return Center(
@@ -103,130 +102,130 @@ class UserTendersScreen extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 90,
-                    height: 90,
-                    padding: const EdgeInsets.all(8),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: cardModel.imageUrl != null && cardModel.imageUrl!.isNotEmpty
-                          ? Image.network(
-                              cardModel.imageUrl!,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, _, _) => _buildPlaceholderImage(),
-                            )
-                          : _buildPlaceholderImage(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 90,
+                  height: 90,
+                  padding: const EdgeInsets.all(8),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: cardModel.imageUrl != null && cardModel.imageUrl!.isNotEmpty
+                        ? Image.network(
+                            cardModel.imageUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) => _buildPlaceholderImage(),
+                          )
+                        : _buildPlaceholderImage(),
+                  ),
+                ),
+                
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(4, 10, 12, 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                cardModel.category,
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            _buildStatusBadge(context, cardModel.status),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          cardModel.title,
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15, 
+                              ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          '${cardModel.valueKM.toStringAsFixed(2)} KM',
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                color: AppColors.textPrimary,
+                                fontWeight: FontWeight.w800,
+                              ),
+                        ),
+                      ],
                     ),
                   ),
-                  
+                ),
+              ],
+            ),
+            
+            const Divider(height: 1, color: AppColors.outline),
+            
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Lokacija
                   Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(4, 10, 12, 10),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Flexible(
-                                child: Text(
-                                  cardModel.category,
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                        color: AppColors.primary,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                    child: Row(
+                      children: [
+                        const Icon(Icons.location_on_outlined, size: 16, color: AppColors.textSecondary),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            cardModel.locationName,
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: AppColors.textSecondary,
                                 ),
-                              ),
-                              const SizedBox(width: 6),
-                              _buildStatusBadge(context, cardModel.status),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            cardModel.title,
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 15, 
-                                ),
-                            maxLines: 2,
+                            maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 6),
-                          Text(
-                            '${cardModel.valueKM.toStringAsFixed(2)} KM',
-                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                  color: AppColors.textPrimary,
-                                  fontWeight: FontWeight.w800,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Rok za prijavu
+                  Flexible(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.calendar_today_outlined, size: 14, color: AppColors.textSecondary),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            'Deadline: $formattedDeadline',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: AppColors.textSecondary,
+                                  fontWeight: FontWeight.w500,
                                 ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
-              
-              const Divider(height: 1, color: AppColors.outline),
-              
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Lokacija
-                    Expanded(
-                      child: Row(
-                        children: [
-                          const Icon(Icons.location_on_outlined, size: 16, color: AppColors.textSecondary),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              cardModel.locationName,
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: AppColors.textSecondary,
-                                  ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    // Rok za prijavu
-                    Flexible(
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.calendar_today_outlined, size: 14, color: AppColors.textSecondary),
-                          const SizedBox(width: 4),
-                          Flexible(
-                            child: Text(
-                              'Deadline: $formattedDeadline',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: AppColors.textSecondary,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
+        ),
       ),
     );
   }

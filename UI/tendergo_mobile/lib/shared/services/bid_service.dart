@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:tendergo/shared/core/error/bid_error_handler.dart';
 import 'package:tendergo/shared/core/network/constants/bid_api_endpoints.dart';
 import 'package:tendergo/shared/models/dto/bid_dto.dart';
+import 'package:tendergo/shared/models/dto/paged_result.dart';
 import 'package:tendergo/shared/models/requests/bid_insert_request.dart';
 import 'package:tendergo/shared/services/response_parser.dart';
 
@@ -10,24 +11,31 @@ class BidService {
 
   BidService(this._dio);
 
-  Future<List<BidDto>> getMyBids({int page = 1, int pageSize = 10}) async {
-    try {
-      final response = await _dio.get(
-        BidApiEndpoints.getMyBids,
-        queryParameters: {'page': page, 'pageSize': pageSize},
-      );
-
-      return ResponseParser.dtoList(response.data, BidDto.fromJson);
-    } on DioException catch (e) {
-      throw _handleError(e, 'Error fetching current user bids');
-    }
+  T _unwrapEnvelope<T>(Response response, T Function(dynamic data) mapper) {
+    return mapper(ResponseParser.data(response.data));
   }
 
+
+Future<PagedResult<BidDto>> getMyBids({int page = 1, int pageSize = 10}) async {
+  try {
+    final response = await _dio.get(
+      BidApiEndpoints.getMyBids,
+      queryParameters: {'page': page, 'pageSize': pageSize},
+    );
+
+    return _unwrapEnvelope(
+      response,
+      (data) => PagedResult.fromJson(data as Map<String, dynamic>, BidDto.fromJson),
+    );
+  } on DioException catch (e) {
+    throw _handleError(e, 'Greška pri učitavanju ponuda korisnika');
+  }
+}
   Future<BidDto> getById(int id) async {
     try {
       final response = await _dio.get(BidApiEndpoints.getById(id));
 
-      return BidDto.fromJson(ResponseParser.object(response.data));
+      return _unwrapEnvelope(response, (data) => BidDto.fromJson(data as Map<String, dynamic>));
     } on DioException catch (e) {
       throw _handleError(e, 'Error fetching bid');
     }

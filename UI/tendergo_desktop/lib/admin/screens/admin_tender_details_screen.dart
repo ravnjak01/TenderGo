@@ -6,6 +6,7 @@ import 'package:tendergo/shared/services/tender_service.dart';
 import 'package:tendergo/shared/widgets/tender/tender_details_meta_card.dart';
 import 'package:tendergo/shared/widgets/tender/tender_info_section.dart';
 import 'package:intl/intl.dart';
+import 'package:tendergo/shared/core/utils/error_extension.dart';
 
 class AdminTenderDetailsScreen extends StatefulWidget {
 final int tenderId;
@@ -39,7 +40,7 @@ class _AdminTenderDetailsScreenState extends State<AdminTenderDetailsScreen> {
       });
     } catch (e) {
       setState(() {
-        _error = e.toString();
+        _error = e.toUserMessage();();
         _isLoading = false;
       });
     }

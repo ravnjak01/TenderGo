@@ -65,17 +65,26 @@ class MyTendersController with ChangeNotifier {
         );
       }
 
-      final fetchedRaw = await _tenderService.getByUser(currentUserId);
-      final fetchedDtos = fetchedRaw
-          .whereType<Map<String, dynamic>>()
-          .map(TenderDto.fromJson)
-          .toList();
+      // 1. Pozivamo getByUser sa trenutnom stranicom i pageSize-om
+      final pagedResult = await _tenderService.getByUser(
+        currentUserId,
+        page: currentPage,
+        pageSize: pageSize,
+      );
 
-      items
-        ..clear()
-        ..addAll(fetchedDtos);
-      hasMore = false;
-      currentPage = 2;
+      // 2. pagedResult.result je već List<TenderDto>
+      final fetchedDtos = pagedResult.result;
+
+      if (refresh) {
+        items.clear();
+      }
+      items.addAll(fetchedDtos);
+
+      // 3. Proveravamo da li ima još stranica za učitavanje
+      hasMore = items.length < pagedResult.totalCount;
+      if (hasMore) {
+        currentPage++;
+      }
     } catch (e) {
       hasError = true;
       errorMessage = e.toString().replaceFirst('Exception: ', '');

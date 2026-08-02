@@ -41,7 +41,7 @@ class AuthProvider extends BaseProvider {
     }
 
     return result ??
-        ApiResponse.failure(error ?? 'Failed to load user', statusCode: 400);
+        ApiResponse.failure(error ?? 'user', statusCode: 400);
   }
 
   Future<ApiResponse> login(String email, String password) async {

@@ -166,65 +166,179 @@ namespace TenderGo.Services.Services
     }
 }
 
-public async Task<IEnumerable<TenderDTO>> GetBookmarkedTendersAsync(string userId)
-{
-    _logger.LogInformation("Fetching bookmarked tenders for user {UserId}", userId);
-
-    return await _context.TenderBookmarks
-        .Where(tb => tb.UserId == userId)
-        .OrderByDescending(tb => tb.BookmarkedAt) 
-        .Select(tb => tb.Tender)                 
-        .ProjectTo<TenderDTO>(_mapper.ConfigurationProvider) 
-        .ToListAsync();
-}
-
-        public async Task<IEnumerable<TenderDTO>> GetActiveTenders()
+        public async Task<PagedResult<TenderDTO>> GetBookmarkedTendersAsync(string userId, PagedSearchRequest search)
         {
-           return await _context.Tenders
-                .Where(t => t.Status == TenderStatus.Open)
-                  .OrderByDescending(t => t.CreatedAt)
-                .ProjectTo<TenderDTO>(_mapper.ConfigurationProvider) 
+            _logger.LogInformation("Fetching bookmarked tenders for user {UserId}", userId);
+
+            var query = _context.TenderBookmarks
+                .AsNoTracking()
+                .Where(tb => tb.UserId == userId && !tb.Tender.IsDeleted);
+
+            var totalCount = await query.CountAsync();
+
+            int page = search.Page > 0 ? search.Page : 1;
+            int pageSize = search.PageSize > 0 ? search.PageSize : 10;
+
+            var results = await query
+                .OrderByDescending(tb => tb.BookmarkedAt)
+                .Select(tb => tb.Tender)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ProjectTo<TenderDTO>(_mapper.ConfigurationProvider)
                 .ToListAsync();
+
+            return new PagedResult<TenderDTO>
+            {
+                Result = results,
+                TotalCount = totalCount,
+                Page = page,
+                PageSize = pageSize
+            };
         }
-        public async Task<IEnumerable<TenderDTO>> GetClosedTenders()
+        public async Task<PagedResult<TenderDTO>> GetActiveTenders(PagedSearchRequest search)
         {
-            return await _context.Tenders
-                .Where(t => t.Status == TenderStatus.Closed)
-                .ProjectTo<TenderDTO>(_mapper.ConfigurationProvider) 
+            var query = _context.Tenders
+                .AsNoTracking()
+                .Where(t => t.Status == TenderStatus.Open && !t.IsDeleted);
+
+            var totalCount = await query.CountAsync();
+
+            int page = search.Page > 0 ? search.Page : 1;
+            int pageSize = search.PageSize > 0 ? search.PageSize : 10;
+
+            var results = await query
+                .OrderByDescending(t => t.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ProjectTo<TenderDTO>(_mapper.ConfigurationProvider)
                 .ToListAsync();
+
+            return new PagedResult<TenderDTO>
+            {
+                Result = results,
+                TotalCount = totalCount,
+                Page = page,
+                PageSize = pageSize
+            };
         }
 
-      
-        public async Task<IEnumerable<TenderDTO>> GetCancelledTenders()
+        public async Task<PagedResult<TenderDTO>> GetClosedTenders(PagedSearchRequest search)
         {
-            return await _context.Tenders
-                .Where(t => t.Status == TenderStatus.Cancelled)
-                .ProjectTo<TenderDTO>(_mapper.ConfigurationProvider) 
+            var query = _context.Tenders
+                .AsNoTracking()
+                .Where(t => t.Status == TenderStatus.Closed && !t.IsDeleted);
+
+            var totalCount = await query.CountAsync();
+
+            int page = search.Page > 0 ? search.Page : 1;
+            int pageSize = search.PageSize > 0 ? search.PageSize : 10;
+
+            var results = await query
+                .OrderByDescending(t => t.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ProjectTo<TenderDTO>(_mapper.ConfigurationProvider)
                 .ToListAsync();
+
+            return new PagedResult<TenderDTO>
+            {
+                Result = results,
+                TotalCount = totalCount,
+                Page = page,
+                PageSize = pageSize
+            };
         }
 
-        public async Task<IEnumerable<TenderDTO>> GetTendersByCategory(int id)
+        public async Task<PagedResult<TenderDTO>> GetCancelledTenders(PagedSearchRequest search)
+        {
+            var query = _context.Tenders
+                .AsNoTracking()
+                .Where(t => t.Status == TenderStatus.Cancelled && !t.IsDeleted);
+
+            var totalCount = await query.CountAsync();
+
+            int page = search.Page > 0 ? search.Page : 1;
+            int pageSize = search.PageSize > 0 ? search.PageSize : 10;
+
+            var results = await query
+                .OrderByDescending(t => t.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ProjectTo<TenderDTO>(_mapper.ConfigurationProvider)
+                .ToListAsync();
+
+            return new PagedResult<TenderDTO>
+            {
+                Result = results,
+                TotalCount = totalCount,
+                Page = page,
+                PageSize = pageSize
+            };
+        }
+
+        public async Task<PagedResult<TenderDTO>> GetTendersByCategory(int id, PagedSearchRequest search)
         {
             var categoryExists = await _context.Categories.AnyAsync(c => c.Id == id);
             if (!categoryExists)
                 throw new NotFoundException("Category not found", new { CategoryId = id });
 
-            return await _context.Tenders
-                .Where(t => t.CategoryId == id)
-                .ProjectTo<TenderDTO>(_mapper.ConfigurationProvider)
-                .ToListAsync();
-        }
+            var query = _context.Tenders
+                .AsNoTracking()
+                .Where(t => t.CategoryId == id && !t.IsDeleted);
 
-        public async Task<List<TenderDTO>> GetTendersByUser(string userId)
-        {
-    
-            return await _context.Tenders
-                .Where(t => t.CreatedByUserId == userId)
+            var totalCount = await query.CountAsync();
+
+            int page = search.Page > 0 ? search.Page : 1;
+            int pageSize = search.PageSize > 0 ? search.PageSize : 10;
+
+            var results = await query
                 .OrderByDescending(t => t.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .ProjectTo<TenderDTO>(_mapper.ConfigurationProvider)
                 .ToListAsync();
+
+            return new PagedResult<TenderDTO>
+            {
+                Result = results,
+                TotalCount = totalCount,
+                Page = page,
+                PageSize = pageSize
+            };
         }
 
+        public async Task<PagedResult<TenderDTO>> GetTendersByUser(string userId, PagedSearchRequest search)
+        {
+            var userExists = await _context.Users.AnyAsync(u => u.Id == userId);
+            if (!userExists)
+                throw new NotFoundException("User not found", new { UserId = userId });
+
+            var query = _context.Tenders
+                .AsNoTracking()
+                .Where(t => t.CreatedByUserId == userId && !t.IsDeleted);
+
+            var totalCount = await query.CountAsync();
+
+            int page = search.Page > 0 ? search.Page : 1;
+            int pageSize = search.PageSize > 0 ? search.PageSize : 10;
+
+            var results = await query
+                .OrderByDescending(t => t.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ProjectTo<TenderDTO>(_mapper.ConfigurationProvider)
+                .ToListAsync();
+
+            return new PagedResult<TenderDTO>
+            {
+                Result = results,
+                TotalCount = totalCount,
+                Page = page,
+                PageSize = pageSize
+            };
+        }
+
+     
 
         public override async Task<TenderDTO> Insert(TenderInsertRequest request)
         {
@@ -367,7 +481,7 @@ public async Task<IEnumerable<TenderDTO>> GetBookmarkedTendersAsync(string userI
         {
             var query = _context.Tenders
                .AsNoTracking() 
-                 .Where(t => t.Status == TenderStatus.Open);
+                 .Where(t => t.Status == TenderStatus.Open && !t.IsDeleted);
 
 
             if (!string.IsNullOrWhiteSpace(request.SearchTerm))

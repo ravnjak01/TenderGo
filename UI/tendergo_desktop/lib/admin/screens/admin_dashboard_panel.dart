@@ -3,6 +3,7 @@ import 'package:tendergo/shared/models/dto/activity_dto.dart';
 import 'package:intl/intl.dart';
 import 'package:tendergo/shared/services/admin_service.dart';
 import 'package:tendergo/shared/services/dio_client.dart';
+import 'package:tendergo/shared/core/utils/error_extension.dart';
 
 class AdminDashboardPanel extends StatefulWidget {
   const AdminDashboardPanel({super.key});
@@ -50,7 +51,7 @@ class _AdminDashboardPanelState extends State<AdminDashboardPanel> {
       });
     } catch (e) {
       setState(() {
-        _error = e.toString();
+        _error = e.toUserMessage();();
         _loading = false;
       });
     }

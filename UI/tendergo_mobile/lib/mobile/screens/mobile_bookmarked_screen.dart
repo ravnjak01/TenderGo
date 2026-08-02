@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:tendergo/mobile/widgets/tender/tender_widget.dart';
 import 'package:tendergo/shared/core/auth/auth_token_store.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';
+import 'package:tendergo/shared/models/dto/paged_result.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
 import 'package:tendergo/shared/models/ui/tendercardmodel.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
@@ -23,7 +24,7 @@ class MobileBookmarkedTendersScreen extends StatefulWidget {
 class _MobileBookmarkedTendersScreenState extends State<MobileBookmarkedTendersScreen> {
   static const AuthTokenStore _tokenStore = AuthTokenStore();
 
-  List<TenderDto> _bookmarkedTenders = [];
+  PagedResult<TenderDto> _bookmarkedTenders = PagedResult(result: [], totalCount: 0, page: 1, pageSize: 10);
   bool _isLoading = true;
   String? _errorMessage;
 
@@ -43,7 +44,7 @@ class _MobileBookmarkedTendersScreenState extends State<MobileBookmarkedTendersS
       if (!await _tokenStore.hasValidAccessToken()) {
         if (!mounted) return;
         setState(() {
-          _bookmarkedTenders = [];
+          _bookmarkedTenders = PagedResult(result: [], totalCount: 0, page: 1, pageSize: 10);
           _isLoading = false;
         });
         return;
@@ -69,7 +70,7 @@ class _MobileBookmarkedTendersScreenState extends State<MobileBookmarkedTendersS
       
       
       setState(() {
-        _bookmarkedTenders.removeWhere((t) => t.id == dto.id);
+        _bookmarkedTenders = _bookmarkedTenders..result.removeWhere((t) => t.id == dto.id);
       });
 
       if (mounted) {
@@ -112,7 +113,7 @@ class _MobileBookmarkedTendersScreenState extends State<MobileBookmarkedTendersS
       return Center(child: Text(_errorMessage!, style: const TextStyle(color: Colors.red)));
     }
 
-    if (_bookmarkedTenders.isEmpty) {
+    if (_bookmarkedTenders.result.isEmpty) {
       return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -133,9 +134,9 @@ class _MobileBookmarkedTendersScreenState extends State<MobileBookmarkedTendersS
       color: AppColors.primary,
       child: ListView.builder(
         padding: const EdgeInsets.all(12),
-        itemCount: _bookmarkedTenders.length,
+        itemCount: _bookmarkedTenders.result.length,
         itemBuilder: (context, index) {
-          final dto = _bookmarkedTenders[index];
+          final dto = _bookmarkedTenders.result[index];
           
           final cardModel = TenderCardModel.fromDTO(dto);
 
