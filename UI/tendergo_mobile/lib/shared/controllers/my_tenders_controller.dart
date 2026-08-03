@@ -17,7 +17,7 @@ class MyTendersController with ChangeNotifier {
   bool hasMore = true;
   int currentPage = 1;
 
-  static const int pageSize = 10;
+  static const int pageSize = 3;
   static const double _scrollThreshold = 200;
 
   bool _isFetching = false;
@@ -65,25 +65,26 @@ class MyTendersController with ChangeNotifier {
         );
       }
 
-      // 1. Pozivamo getByUser sa trenutnom stranicom i pageSize-om
       final pagedResult = await _tenderService.getByUser(
         currentUserId,
         page: currentPage,
         pageSize: pageSize,
       );
 
-      // 2. pagedResult.result je već List<TenderDto>
       final fetchedDtos = pagedResult.result;
 
       if (refresh) {
         items.clear();
       }
+
       items.addAll(fetchedDtos);
 
-      // 3. Proveravamo da li ima još stranica za učitavanje
-      hasMore = items.length < pagedResult.totalCount;
+      final serverPage = pagedResult.page > 0 ? pagedResult.page : currentPage;
+      currentPage = serverPage;
+      hasMore = pagedResult.hasNextPage;
+
       if (hasMore) {
-        currentPage++;
+        currentPage = serverPage + 1;
       }
     } catch (e) {
       hasError = true;

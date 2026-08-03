@@ -26,13 +26,15 @@ class MyBidsScreen extends StatefulWidget {
 class _MyBidsScreenState extends State<MyBidsScreen> {
   final ScrollController _scrollController = ScrollController();
 
+  static const int _pageSize = 3;
+  static const double _scrollThreshold = 200;
+
   List<BidDto> _items = [];
   bool _isLoading = false;
   bool _hasError = false;
   String _errorMessage = '';
 
   int _page = 1;
-  int _pageSize = 10;
   bool _hasMore = true;
   bool _hasChanges = false;
 
@@ -45,48 +47,56 @@ class _MyBidsScreenState extends State<MyBidsScreen> {
 
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
-      _fetchMore();
-    }
+    if (!mounted || _scrollController.position.outOfRange) return;
+    if (_scrollController.position.extentAfter > _scrollThreshold) return;
+    if (_isLoading || !_hasMore) return;
+
+    _fetchMore();
   }
 
-Future<void> _fetchInitial() async {
-    if (mounted) {
-      setState(() {
-        _isLoading = true;
-        _hasError = false;
-        _page = 1;
-        _hasMore = true;
-      });
-    }
+  Future<void> _fetchInitial() async {
+    if (!mounted) return;
+
+    setState(() {
+      _isLoading = true;
+      _hasError = false;
+      _page = 1;
+      _hasMore = true;
+      _errorMessage = '';
+    });
 
     try {
-      final pagedResult = await widget._bidService.getMyBids(page: _page, pageSize: _pageSize);
-      if (mounted) {
-        setState(() {
-          _items = pagedResult.result; // Extract List<BidDto> iz .result
-          _isLoading = false;
-          // Možete provjeriti ima li još stranica preko .result.length ili pagedResult.items.length
-          _hasMore = pagedResult.result.length == _pageSize; 
-        });
-      }
+      final pagedResult = await widget._bidService.getMyBids(
+        page: _page,
+        pageSize: _pageSize,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _items = pagedResult.result;
+        _page = pagedResult.page;
+        _hasMore = pagedResult.hasNextPage;
+        _isLoading = false;
+      });
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _hasError = true;
-          _errorMessage = e.toString().replaceFirst('Exception: ', '');
-        });
-      }
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+        _hasError = true;
+        _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      });
     }
   }
 
- Future<void> _fetchMore() async {
+  Future<void> _fetchMore() async {
     if (_isLoading || !_hasMore) return;
 
     setState(() {
@@ -95,24 +105,28 @@ Future<void> _fetchInitial() async {
 
     try {
       final nextPage = _page + 1;
-      final pagedResult = await widget._bidService.getMyBids(page: nextPage, pageSize: _pageSize);
+      final pagedResult = await widget._bidService.getMyBids(
+        page: nextPage,
+        pageSize: _pageSize,
+      );
 
-      if (mounted) {
-        setState(() {
-          _page = nextPage;
-          _items.addAll(pagedResult.result); // Dodajemo novu listu iz .result
-          _isLoading = false;
-          _hasMore = pagedResult.result.length == _pageSize;
-        });
-      }
+      if (!mounted) return;
+
+      setState(() {
+        _items.addAll(pagedResult.result);
+        _page = pagedResult.page;
+        _hasMore = pagedResult.hasNextPage;
+        _isLoading = false;
+      });
     } catch (_) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
+
   Future<void> _refresh() async {
     await _fetchInitial();
   }
@@ -134,6 +148,7 @@ Future<void> _fetchInitial() async {
 
       _hasChanges = true;
       await _refresh();
+      if (!mounted) return;
 
       SnackbarHelper.show(context, 'Bid withdrawn successfully.');
     } catch (e) {
@@ -169,10 +184,12 @@ Future<void> _fetchInitial() async {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return WillPopScope(
-      onWillPop: () async {
-        Navigator.of(context).pop(_hasChanges);
-        return false;
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          Navigator.of(context).pop(_hasChanges);
+        }
       },
       child: Scaffold(
         backgroundColor: colorScheme.surface,
