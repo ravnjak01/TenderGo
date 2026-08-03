@@ -40,6 +40,14 @@ class TenderProvider extends BaseProvider {
   bool get isSearchActive => _searchQuery.isNotEmpty;
   LocationFilterSelection? get locationFilter => _locationFilter;
 
+  // --- Paginacijska polja ---
+  int _currentPage = 1;
+  final int _pageSize = 3;
+  bool _hasMore = true;
+  bool _isLoadingMore = false;
+
+  bool get hasMore => _hasMore;
+  bool get isLoadingMore => _isLoadingMore;
   TenderService get tenderService => _service;
 
   Set<int> _savedIds = {};
@@ -49,10 +57,9 @@ class TenderProvider extends BaseProvider {
     if (!await _tokenStore.hasValidAccessToken()) return;
 
     try {
-      // 1. Pristupamo .result polju iz PagedResult objekta
       final bookmarkedPaged = await service.getBookmarked();
       _savedIds = bookmarkedPaged.result.map((t) => t.id).toSet();
-      notifyListeners();
+      safeNotify();
     } catch (e) {
       // Handle error
     }
@@ -64,7 +71,7 @@ class TenderProvider extends BaseProvider {
     } else {
       _savedIds.remove(id);
     }
-    notifyListeners();
+    safeNotify();
   }
 
   List<TenderDto> get filteredTenders {
@@ -133,17 +140,57 @@ class TenderProvider extends BaseProvider {
     safeNotify();
   }
 
+  // --- 1. Inicijalno dohvatanje (Prva stranica) ---
   Future<void> fetchActiveTenders({bool silent = false}) async {
+    _currentPage = 1;
+    _hasMore = true;
+    _isLoadingMore = false;
+    
     if (!await _tokenStore.hasValidAccessToken()) return;
 
     await handleAsync(
       () async {
-        // 2. Dodato .result
-        final activePaged = await _service.getActive();
+        final activePaged = await _service.getActive(
+          page: _currentPage,
+          pageSize: _pageSize,
+        );
         _tenders = activePaged.result;
+        
+        // Ako je vraćeno manje od _pageSize stavki, nema više stranica za učitavanje
+        _hasMore = activePaged.result.length >= _pageSize;
       },
       silent: silent,
     );
+  }
+
+  // --- 2. Beskonačno skrolovanje (Sljedeća stranica) ---
+  Future<void> fetchNextPage() async {
+    // Ne učitavaj ako se već učitava nova stranica, ako nema više podataka ili ako je u toku primarno učitavanje
+    if (_isLoadingMore || !_hasMore || isLoading) return;
+
+    _isLoadingMore = true;
+    safeNotify();
+
+    try {
+      final nextPage = _currentPage + 1;
+      final activePaged = await _service.getActive(
+        page: nextPage,
+        pageSize: _pageSize,
+      );
+
+      if (activePaged.result.isNotEmpty) {
+        _tenders.addAll(activePaged.result); // Dodajemo nove na postojeću listu
+        _currentPage = nextPage;
+      }
+
+      // Ako je vraćeno manje elemenata od veličine stranice, došli smo do kraja
+      _hasMore = activePaged.result.length >= _pageSize;
+    } catch (e) {
+      // Ovdje po potrebi zabilježite grešku
+    } finally {
+      _isLoadingMore = false;
+      safeNotify();
+    }
   }
 
   Future<void> fetchAllTenders() => handleAsync(() async {

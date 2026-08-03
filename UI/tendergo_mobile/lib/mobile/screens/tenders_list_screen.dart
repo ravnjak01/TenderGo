@@ -30,22 +30,41 @@ class MobileTenderListScreen extends StatefulWidget {
   State<MobileTenderListScreen> createState() => _MobileTenderListScreenState();
 }
 
-class _MobileTenderListScreenState extends State<MobileTenderListScreen>   with RouteAware {
+class _MobileTenderListScreenState extends State<MobileTenderListScreen> with RouteAware {
   final TenderListController _controller = TenderListController();
+  final ScrollController _scrollController = ScrollController();
   bool _initialLoadDone = false;
 
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _initialLoad());
+  }
 
   @override
- void didChangeDependencies() {
+  void didChangeDependencies() {
     super.didChangeDependencies();
     routeObserver.subscribe(this, ModalRoute.of(context)!);
   }
 
-
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
     routeObserver.unsubscribe(this);
     super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.extentAfter > 300) return;
+
+    final provider = context.read<TenderProvider>();
+    if (provider.isSearchActive || provider.isLoadingMore || provider.isLoading || !provider.hasMore) {
+      return;
+    }
+
+    provider.fetchNextPage();
   }
 
   @override
@@ -64,12 +83,6 @@ Future<void> _refreshBookmarks() async {
     });
   }
 }
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _initialLoad());
-  }
-
 Future<void> _initialLoad() async {
   if (!mounted) return;
   final p = Provider.of<TenderProvider>(context, listen: false);
@@ -201,11 +214,14 @@ Future<void> _initialLoad() async {
         final filtered = provider.filteredTenders;
         final isSearching = _controller.searchController.text.isNotEmpty;
 
+        final hasMoreItems = !isSearching && provider.hasMore;
+
         return Container(
           color: const Color(0xFFF4F2EB),
           child: RefreshIndicator(
             onRefresh: _loadTenders,
             child: CustomScrollView(
+              controller: _scrollController,
               physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
                 SliverToBoxAdapter(
@@ -262,6 +278,13 @@ Future<void> _initialLoad() async {
                     padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
                     sliver: SliverList.separated(
                       itemBuilder: (context, index) {
+                        if (index >= filtered.length) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 20),
+                            child: Center(child: CircularProgressIndicator()),
+                          );
+                        }
+
                         final dto = filtered[index];
                         final model = dto.toCardModel();
 
@@ -277,7 +300,7 @@ Future<void> _initialLoad() async {
                         );
                       },
                       separatorBuilder: (_, _) => const SizedBox(height: 12),
-                      itemCount: filtered.length,
+                      itemCount: filtered.length + (hasMoreItems ? 1 : 0),
                     ),
                   ),
               ],
