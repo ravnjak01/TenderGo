@@ -23,16 +23,9 @@ public class TenderController
     }
 
     [HttpGet("search")]
-    public async Task<IActionResult> Search([FromQuery] TenderSearchRequest request)
+    public async Task<IActionResult> SearchAsync([FromQuery] TenderSearchRequest request)
     {
         var result = await _tenderService.SearchAsync(request);
-        return Ok(result);
-    }
-
-    [HttpGet("{id:int}")]
-    public override async Task<IActionResult> GetById(int id)
-    {
-        var result = await _tenderService.GetById(id);
         return Ok(result);
     }
 
@@ -55,26 +48,12 @@ public class TenderController
         return Ok(tenders);
     }
 
-    [HttpGet("active")]
-    public async Task<IActionResult> GetActive([FromQuery]  PagedSearchRequest request)
-        => Ok(await _tenderService.GetActiveTenders(request));
 
-    [HttpGet("closed")]
-    public async Task<IActionResult> GetClosed([FromQuery] PagedSearchRequest request)
-        => Ok(await _tenderService.GetClosedTenders(request));
-
-    [HttpGet("cancelled")]
-    public async Task<IActionResult> GetCancelled([FromQuery] PagedSearchRequest request)
-        => Ok(await _tenderService.GetCancelledTenders(request));
-
-    [HttpGet("category/{id}")]
-    public async Task<IActionResult> GetByCategory(int id, [FromQuery] PagedSearchRequest request)
-        => Ok(await _tenderService.GetTendersByCategory(id,request));
 
     [HttpGet("user/{userId}")]
-    public async Task<IActionResult> GetByUser(string userId,[FromQuery] PagedSearchRequest request)
+    public async Task<IActionResult> GetMyTenders(string userId,[FromQuery] PagedSearchRequest request)
     {
-        var tenders = await _tenderService.GetTendersByUser(userId,request);
+        var tenders = await _tenderService.GetMyTenders(userId,request);
         return Ok(tenders);
     }
 

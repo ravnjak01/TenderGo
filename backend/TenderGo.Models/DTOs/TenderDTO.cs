@@ -3,19 +3,10 @@ using TenderGo.Models.Entities;
 using TenderGo.Models.ENUMs;
 namespace TenderGo.Models.DTOs
 {
-    public class TenderDTO: IHasId
+    public class TenderDTO : AdminTenderDTO
     {
-        public int Id { get; set; }
-        public string Title { get; set; } = string.Empty;
         public string? Description { get; set; } = string.Empty;
-        public decimal MaxBudget { get; set; }
-        public DateTime Deadline { get; set; }
-
-        public string CreatedByUserId { get; set; }
-
-        public string CreatedByFullname { get; set; }
-        public TenderStatus Status {get; set;} 
-
+        public string CreatedByUserId { get; set; } = string.Empty;
         public int TotalBids { get; set; }
         public virtual ICollection<TenderImageDTO> Images { get; set; } = new List<TenderImageDTO>();
 
@@ -27,6 +18,5 @@ namespace TenderGo.Models.DTOs
         public string? CancelledByUserId { get; set; }
         public string? CancellationReason { get; set; }
         public DateTime PostedAt { get; set; }
-
     }
 }

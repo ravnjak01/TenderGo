@@ -195,119 +195,11 @@ namespace TenderGo.Services.Services
                 PageSize = pageSize
             };
         }
-        public async Task<PagedResult<TenderDTO>> GetActiveTenders(PagedSearchRequest search)
-        {
-            var query = _context.Tenders
-                .AsNoTracking()
-                .Where(t => t.Status == TenderStatus.Open && !t.IsDeleted);
+       
 
-            var totalCount = await query.CountAsync();
+     
 
-            int page = search.Page > 0 ? search.Page : 1;
-            int pageSize = search.PageSize > 0 ? search.PageSize : 10;
-
-            var results = await query
-                .OrderByDescending(t => t.CreatedAt)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ProjectTo<TenderDTO>(_mapper.ConfigurationProvider)
-                .ToListAsync();
-
-            return new PagedResult<TenderDTO>
-            {
-                Result = results,
-                TotalCount = totalCount,
-                Page = page,
-                PageSize = pageSize
-            };
-        }
-
-        public async Task<PagedResult<TenderDTO>> GetClosedTenders(PagedSearchRequest search)
-        {
-            var query = _context.Tenders
-                .AsNoTracking()
-                .Where(t => t.Status == TenderStatus.Closed && !t.IsDeleted);
-
-            var totalCount = await query.CountAsync();
-
-            int page = search.Page > 0 ? search.Page : 1;
-            int pageSize = search.PageSize > 0 ? search.PageSize : 10;
-
-            var results = await query
-                .OrderByDescending(t => t.CreatedAt)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ProjectTo<TenderDTO>(_mapper.ConfigurationProvider)
-                .ToListAsync();
-
-            return new PagedResult<TenderDTO>
-            {
-                Result = results,
-                TotalCount = totalCount,
-                Page = page,
-                PageSize = pageSize
-            };
-        }
-
-        public async Task<PagedResult<TenderDTO>> GetCancelledTenders(PagedSearchRequest search)
-        {
-            var query = _context.Tenders
-                .AsNoTracking()
-                .Where(t => t.Status == TenderStatus.Cancelled && !t.IsDeleted);
-
-            var totalCount = await query.CountAsync();
-
-            int page = search.Page > 0 ? search.Page : 1;
-            int pageSize = search.PageSize > 0 ? search.PageSize : 10;
-
-            var results = await query
-                .OrderByDescending(t => t.CreatedAt)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ProjectTo<TenderDTO>(_mapper.ConfigurationProvider)
-                .ToListAsync();
-
-            return new PagedResult<TenderDTO>
-            {
-                Result = results,
-                TotalCount = totalCount,
-                Page = page,
-                PageSize = pageSize
-            };
-        }
-
-        public async Task<PagedResult<TenderDTO>> GetTendersByCategory(int id, PagedSearchRequest search)
-        {
-            var categoryExists = await _context.Categories.AnyAsync(c => c.Id == id);
-            if (!categoryExists)
-                throw new NotFoundException("Category not found", new { CategoryId = id });
-
-            var query = _context.Tenders
-                .AsNoTracking()
-                .Where(t => t.CategoryId == id && !t.IsDeleted);
-
-            var totalCount = await query.CountAsync();
-
-            int page = search.Page > 0 ? search.Page : 1;
-            int pageSize = search.PageSize > 0 ? search.PageSize : 10;
-
-            var results = await query
-                .OrderByDescending(t => t.CreatedAt)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ProjectTo<TenderDTO>(_mapper.ConfigurationProvider)
-                .ToListAsync();
-
-            return new PagedResult<TenderDTO>
-            {
-                Result = results,
-                TotalCount = totalCount,
-                Page = page,
-                PageSize = pageSize
-            };
-        }
-
-        public async Task<PagedResult<TenderDTO>> GetTendersByUser(string userId, PagedSearchRequest search)
+        public async Task<PagedResult<TenderDTO>> GetMyTenders(string userId, PagedSearchRequest search)
         {
             var userExists = await _context.Users.AnyAsync(u => u.Id == userId);
             if (!userExists)
@@ -477,40 +369,81 @@ namespace TenderGo.Services.Services
             return await state.AllowedActions(entity);
         }
 
-        public async Task<PagedResult<TenderDTO>> SearchAsync(TenderSearchRequest request)
+        public async Task<PagedResult<AdminTenderDTO>> SearchAsync(TenderSearchRequest request)
         {
             var query = _context.Tenders
-               .AsNoTracking() 
-                 .Where(t => t.Status == TenderStatus.Open && !t.IsDeleted);
+                .AsNoTracking()
+                .Where(t => !t.IsDeleted);
 
+            var isAdmin = _authService.IsInRole(AppRoles.Admin);
+
+            if (!isAdmin)
+            {
+                query = query.Where(t => t.Status == TenderStatus.Open);
+            }
 
             if (!string.IsNullOrWhiteSpace(request.SearchTerm))
             {
                 var term = $"%{request.SearchTerm.ToLower()}%";
-
                 query = query.Where(t =>
                     EF.Functions.Like(t.Title.ToLower(), term) ||
-                     EF.Functions.Like(t.Description.ToLower(), term)
+                    (t.Description != null && EF.Functions.Like(t.Description.ToLower(), term))
                 );
+            }
+
+            if (request.CategoryId.HasValue)
+            {
+                query = query.Where(t => t.CategoryId == request.CategoryId.Value);
+            }
+
+            if (request.LocationId.HasValue)
+            {
+                query = query.Where(t => t.LocationId == request.LocationId.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.Country))
+            {
+                query = query.Where(t => t.Location.Country.ToLower() == request.Country.ToLower());
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.Region))
+            {
+                query = query.Where(t => t.Location.Region != null &&
+                                          t.Location.Region.ToLower() == request.Region.ToLower());
             }
 
             var totalCount = await query.CountAsync();
             int page = request.Page > 0 ? request.Page : 1;
             int pageSize = request.PageSize > 0 ? request.PageSize : 10;
 
-            var results = await query
-                 .OrderByDescending(t => t.CreatedAt) 
-                 .Skip((page - 1) * pageSize)
-                 .Take(pageSize)
-                 .ProjectTo<TenderDTO>(_mapper.ConfigurationProvider)
-                 .ToListAsync();
+            var orderedQuery = query
+                .OrderByDescending(t => t.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize);
 
-            return new PagedResult<TenderDTO>
+            List<AdminTenderDTO> results;
+
+            if (isAdmin)
+            {
+                results = await orderedQuery
+                    .ProjectTo<AdminTenderDTO>(_mapper.ConfigurationProvider)
+                    .ToListAsync();
+            }
+            else
+            {
+                results = (await orderedQuery
+                    .ProjectTo<TenderDTO>(_mapper.ConfigurationProvider)
+                    .ToListAsync())
+                    .Cast<AdminTenderDTO>()
+                    .ToList();
+            }
+
+            return new PagedResult<AdminTenderDTO>
             {
                 Result = results,
-                TotalCount = totalCount ,
-                Page= page,
-                PageSize= pageSize
+                TotalCount = totalCount,
+                Page = page,
+                PageSize = pageSize
             };
         }
 

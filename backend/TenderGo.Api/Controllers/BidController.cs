@@ -20,12 +20,7 @@ namespace TenderGo.Api.Controllers
             _bidService = bidService;
         }
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(int id)
-        {
-            var result = await _bidService.GetById(id);
-            return Ok(result);
-        }
+  
 
         [HttpPost]
         public async Task<IActionResult> Insert([FromBody] BidInsertRequest request)

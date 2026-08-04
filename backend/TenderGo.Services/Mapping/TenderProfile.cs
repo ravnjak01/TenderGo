@@ -16,22 +16,17 @@ namespace TenderGo.Services.Mapping
         public TenderProfile()
         {
             CreateMap<Tender, TenderDTO>()
-            .ForMember(dest => dest.CreatedByFullname, opt => opt.MapFrom(src =>
-                src.CreatedByUser != null
-                ? $"{src.CreatedByUser.FirstName} {src.CreatedByUser.LastName}"
-                : "Unknown author"))
-            .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src =>
-                  src.Category != null ? src.Category.Name : string.Empty))
-            .ForMember(dest => dest.TotalBids, opt => opt.MapFrom(src =>
-                    src.Bids.Count))
-            .ForMember(dest => dest.Images, opt => opt.MapFrom(src =>
-                 src.Images));
+                    .IncludeBase<Tender, AdminTenderDTO>()
+                    .ForMember(dest => dest.CategoryName,
+                               opt => opt.MapFrom(src => src.Category != null ? src.Category.Name : string.Empty))
+                    .ForMember(dest => dest.TotalBids,
+                               opt => opt.MapFrom(src => src.Bids != null ? src.Bids.Count : 0));
 
             CreateMap<Tender, AdminTenderDTO>()
-                .ForMember(dest => dest.CreatedByUserFullName, opt => opt.MapFrom(src =>
-                    src.CreatedByUser != null
-                        ? $"{src.CreatedByUser.FirstName} {src.CreatedByUser.LastName}"
-                        : "Unknown author"));
+              .ForMember(dest => dest.CreatedByUserFullName,
+                         opt => opt.MapFrom(src => src.CreatedByUser != null
+                             ? $"{src.CreatedByUser.FirstName} {src.CreatedByUser.LastName}"
+                             : string.Empty));
 
             CreateMap<TenderInsertRequest, Tender>()
                 .ForMember(dest => dest.Images, opt => opt.Ignore());

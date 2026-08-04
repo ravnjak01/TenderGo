@@ -3,7 +3,7 @@ using TenderGo.Models.ENUMs;
 
 namespace TenderGo.Models.DTOs
 {
-    public class AdminTenderDTO
+    public class AdminTenderDTO:IHasId
     {
         public int Id { get; set; }
         public string Title { get; set; } = string.Empty;
