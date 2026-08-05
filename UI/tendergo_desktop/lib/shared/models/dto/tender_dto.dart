@@ -1,66 +1,68 @@
 import 'package:tendergo/shared/core/utils/json_parser.dart';
+import 'package:tendergo/shared/models/dto/admin_tender_dto.dart';
 import 'package:tendergo/shared/models/dto/location_dto.dart';
 import 'package:tendergo/shared/models/dto/tender_image_dto.dart';
 import 'package:tendergo/shared/models/enums/tenderstatus.dart';
-import 'package:tendergo/shared/models/ui/tendercardmodel.dart';
-import 'package:tendergo/shared/services/dio_client.dart';
 
-class TenderDto {
-  final int id;
-  final String title;
+class TenderDto extends AdminTenderDto {
   final String? description;
-  final double maxBudget;
-  final DateTime deadline;
   final String createdByUserId;
-  final String createdByFullname;
-  final TenderStatus status;
   final int totalBids;
   final List<TenderImageDto> images;
-  final LocationDto location;
+  final LocationDto? location;
   final int categoryId;
   final String categoryName;
   final DateTime postedAt;
 
   const TenderDto({
-    required this.id,
-    required this.title,
+    // Polja iz AdminTenderDto (bazna polja)
+    required super.id,
+    required super.title,
+    required super.createdByUserFullname,
+    required super.deadline,
+    required super.maxBudget,
+    required super.status,
+    // Dodatna detaljna polja za TenderDto
     this.description,
-    required this.maxBudget,
-    required this.deadline,
     required this.createdByUserId,
-    required this.createdByFullname,
-    required this.status,
     required this.totalBids,
     required this.images,
-    required this.location,
+    this.location,
     required this.categoryId,
     required this.categoryName,
     required this.postedAt,
   });
 
-
-
+  /// Getter za primarnu sliku
   TenderImageDto? get primaryImage {
     if (images.isEmpty) return null;
     return images.firstWhere(
       (img) => img.isPrimary && img.imageUrl.trim().isNotEmpty,
-      orElse: () => images.firstWhere((img) => img.imageUrl.trim().isNotEmpty, orElse: () => images.first),
+      orElse: () => images.firstWhere(
+        (img) => img.imageUrl.trim().isNotEmpty,
+        orElse: () => images.first,
+      ),
     );
   }
 
   factory TenderDto.fromJson(Map<String, dynamic> json) {
+    // Prvo izvučemo bazna polja preko AdminTenderDto parsere
+    final adminDto = AdminTenderDto.fromJson(json);
+
     return TenderDto(
-      id: JsonParser.readInt(json['id']),
-      title: JsonParser.readString(json['title']),
+      id: adminDto.id,
+      title: adminDto.title,
+      createdByUserFullname: adminDto.createdByUserFullname,
+      deadline: adminDto.deadline,
+      maxBudget: adminDto.maxBudget,
+      status: adminDto.status,
       description: JsonParser.readNullableString(json['description']),
-      maxBudget: JsonParser.readDouble(json['maxBudget']),
-      deadline: JsonParser.readDateTime(json['deadline']),
       createdByUserId: JsonParser.readString(json['createdByUserId']),
-      createdByFullname: JsonParser.readString(json['createdByFullname'], fallback: 'Unknown'),
-      status: TenderStatus.fromValue(json['status']),
       totalBids: JsonParser.readInt(json['totalBids']),
       images: _parseImages(json['images']),
-      location: _parseLocation(json['location']),
+      location: json['location'] != null && json['location'] is Map<String, dynamic>
+          ? LocationDto.fromJson(json['location'] as Map<String, dynamic>)
+          : null,
       categoryId: JsonParser.readInt(json['categoryId']),
       categoryName: JsonParser.readString(json['categoryName'], fallback: 'No category'),
       postedAt: JsonParser.readDateTime(json['postedAt']),
@@ -81,33 +83,19 @@ class TenderDto {
     return const [];
   }
 
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'title': title,
-        'description': description,
-        'maxBudget': maxBudget,
-        'deadline': deadline.toIso8601String(),
-        'createdByUserId': createdByUserId,
-        'createdByFullname': createdByFullname,
-        'status': status.value, 
-        'totalBids': totalBids,
-        'images': images.map((img) => img.toJson()).toList(),
-        'location': location.toJson(),
-        'categoryId': categoryId,
-        'categoryName': categoryName,
-        'postedAt': postedAt.toIso8601String(),
-      };
-
-
-
-  static LocationDto _parseLocation(dynamic value) {
-    if (value == null) {
-      return LocationDto(id: 0, name: 'Unknown', country: 'Unknown');
-    }
-    if (value is Map<String, dynamic>) {
-      return LocationDto.fromJson(value);
-    }
-    return LocationDto(id: 0, name: 'Unknown', country: 'Unknown');
+  @override
+  Map<String, dynamic> toJson() {
+    final map = super.toJson();
+    map.addAll({
+      'description': description,
+      'createdByUserId': createdByUserId,
+      'totalBids': totalBids,
+      'images': images.map((img) => img.toJson()).toList(),
+      'location': location?.toJson(),
+      'categoryId': categoryId,
+      'categoryName': categoryName,
+      'postedAt': postedAt.toIso8601String(),
+    });
+    return map;
   }
 }
-

@@ -10,5 +10,6 @@ namespace TenderGo.Models.Requests
     {
         public int Page { get; set; } = 1;
         public int PageSize { get; set; } = 3;
+        public string? SearchTerm { get; set; }
     }
 }

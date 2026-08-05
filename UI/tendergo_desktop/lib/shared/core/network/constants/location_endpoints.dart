@@ -1,20 +1,31 @@
 class LocationEndpoints {
   static const String baseUrl = 'location';
 
-  static const String getAll = '$baseUrl/all';
+  /// GET /api/location (Paginirana lista za BaseService)
+  static const String getPaged = baseUrl;
 
-  static String delete(int id) => '$baseUrl/$id';
+  /// GET /api/location/all (Samo ako backend ima nepaginiranu listu za dropdown)
+  static const String getAllFlat = '$baseUrl/all';
 
-  static String update(int id) => '$baseUrl/$id';
+  /// GET /api/location/{id}
+  static String getById(int id) => '$baseUrl/$id';
 
-  static String activate(int id) => '$baseUrl/$id/activate';
-
-  static String deactivate(int id) => '$baseUrl/$id/deactivate';
-
-static String search() => '$baseUrl/admin-search';
+  /// POST /api/location
   static const String insert = baseUrl;
 
-  static String locationStatistics = '$baseUrl/statistics';
-  static String locationOverview = '$baseUrl/overview';
+  /// PATCH /api/location/{id}
+  static String update(int id) => '$baseUrl/$id';
 
+  /// DELETE /api/location/{id}
+  static String delete(int id) => '$baseUrl/$id';
+
+  /// PATCH  /api/location/{id}/activate
+  static String activate(int id) => '$baseUrl/$id/activate';
+
+  /// PATCH  /api/location/{id}/deactivate
+  static String deactivate(int id) => '$baseUrl/$id/deactivate';
+
+  /// Custom statistike / pregledi
+  static const String statistics = '$baseUrl/statistics';
+  static const String overview = '$baseUrl/overview';
 }

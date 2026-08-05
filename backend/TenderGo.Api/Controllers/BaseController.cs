@@ -2,19 +2,23 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using TenderGo.Models.DTOs;
+using TenderGo.Models.Requests;
 using TenderGo.Services.DTOs;
 using TenderGo.Services.Interfaces;
 
-public abstract class BaseController<T, TDb, TInsert, TUpdate>
+public abstract class BaseController<TModel,TSearch,TInsert, TUpdate>
     : ControllerBase
-    where T : class
-    where TDb : class
+    where TModel : class
+   where TSearch : PagedSearchRequest
 {
-    protected readonly IReadService<T> _readService;
-    protected readonly IWriteService<T, TInsert, TUpdate> _writeService;
-    private readonly ILogger<BaseController<T, TDb, TInsert, TUpdate>> _logger;
+    protected readonly IReadService<TModel, TSearch> _readService;
+    protected readonly IWriteService<TModel ,TInsert, TUpdate> _writeService;
+    private readonly ILogger<BaseController<TModel, TSearch, TInsert, TUpdate>> _logger;
 
-    protected BaseController(IWriteService<T, TInsert, TUpdate> writeService, IReadService<T> readService, ILogger<BaseController<T, TDb, TInsert, TUpdate>> logger)
+    protected BaseController(
+              IReadService<TModel, TSearch> readService,
+              IWriteService<TModel, TInsert, TUpdate> writeService,
+              ILogger<BaseController<TModel, TSearch, TInsert, TUpdate>> logger)
     {
         _readService = readService;
         _writeService = writeService;
@@ -22,8 +26,8 @@ public abstract class BaseController<T, TDb, TInsert, TUpdate>
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery] PagedResult<T> pagedResult) 
-        => Ok(await _readService.Get(pagedResult));
+    public async Task<IActionResult> GetAll([FromQuery] TSearch request) 
+        => Ok(await _readService.Get(request));
 
     [HttpGet("{id:int}")]
     public virtual async Task<IActionResult> GetById(int id) 

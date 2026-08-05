@@ -8,7 +8,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using QuestPDF.Helpers;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.NetworkInformation;
@@ -28,7 +30,7 @@ using TenderGo.Services.StateMachines.TenderStates;
 
 namespace TenderGo.Services.Services
 {
-    public class TenderService : BaseService<TenderDTO, Tender, TenderInsertRequest, TenderUpdateRequest>, ITenderService
+    public class TenderService : BaseService<TenderDTO, Tender, TenderSearchRequest,TenderInsertRequest, TenderUpdateRequest>, ITenderService
     {
 
         private readonly IAuthService _authService;
@@ -196,8 +198,6 @@ namespace TenderGo.Services.Services
             };
         }
        
-
-     
 
         public async Task<PagedResult<TenderDTO>> GetMyTenders(string userId, PagedSearchRequest search)
         {
@@ -369,14 +369,11 @@ namespace TenderGo.Services.Services
             return await state.AllowedActions(entity);
         }
 
-        public async Task<PagedResult<AdminTenderDTO>> SearchAsync(TenderSearchRequest request)
+        protected override IQueryable<Tender> ApplyFilter(IQueryable<Tender> query, TenderSearchRequest request)
         {
-            var query = _context.Tenders
-                .AsNoTracking()
-                .Where(t => !t.IsDeleted);
+            query = query.Where(t => !t.IsDeleted);
 
             var isAdmin = _authService.IsInRole(AppRoles.Admin);
-
             if (!isAdmin)
             {
                 query = query.Where(t => t.Status == TenderStatus.Open);
@@ -392,61 +389,45 @@ namespace TenderGo.Services.Services
             }
 
             if (request.CategoryId.HasValue)
-            {
                 query = query.Where(t => t.CategoryId == request.CategoryId.Value);
-            }
 
             if (request.LocationId.HasValue)
-            {
                 query = query.Where(t => t.LocationId == request.LocationId.Value);
-            }
 
             if (!string.IsNullOrWhiteSpace(request.Country))
-            {
                 query = query.Where(t => t.Location.Country.ToLower() == request.Country.ToLower());
-            }
 
             if (!string.IsNullOrWhiteSpace(request.Region))
-            {
-                query = query.Where(t => t.Location.Region != null &&
-                                          t.Location.Region.ToLower() == request.Region.ToLower());
-            }
+                query = query.Where(t => t.Location.Region != null && t.Location.Region.ToLower() == request.Region.ToLower());
+
+            query = query.OrderByDescending(t => t.CreatedAt);
+
+            return query;
+        }
+        public async Task<PagedResult<AdminTenderDTO>> GetAdminTendersAsync(TenderSearchRequest request)
+        {
+            var query = _context.Tenders.AsQueryable();
+
+            query = ApplyFilter(query, request);
 
             var totalCount = await query.CountAsync();
-            int page = request.Page > 0 ? request.Page : 1;
-            int pageSize = request.PageSize > 0 ? request.PageSize : 10;
 
-            var orderedQuery = query
-                .OrderByDescending(t => t.CreatedAt)
+            var page = request.Page > 0 ? request.Page : 1;
+            var pageSize = request.PageSize > 0 ? request.PageSize : 10;
+
+            var list = await query
                 .Skip((page - 1) * pageSize)
-                .Take(pageSize);
-
-            List<AdminTenderDTO> results;
-
-            if (isAdmin)
-            {
-                results = await orderedQuery
-                    .ProjectTo<AdminTenderDTO>(_mapper.ConfigurationProvider)
-                    .ToListAsync();
-            }
-            else
-            {
-                results = (await orderedQuery
-                    .ProjectTo<TenderDTO>(_mapper.ConfigurationProvider)
-                    .ToListAsync())
-                    .Cast<AdminTenderDTO>()
-                    .ToList();
-            }
+                .Take(pageSize)
+                .ToListAsync();
 
             return new PagedResult<AdminTenderDTO>
             {
-                Result = results,
+                Result = _mapper.Map<List<AdminTenderDTO>>(list),
                 TotalCount = totalCount,
                 Page = page,
                 PageSize = pageSize
             };
         }
-
         public async Task<bool> LogUserActivityAsync(string activityType, int? tenderId, string? searchQuery, int? durationSeconds = null)
         {
             var normalizedType = activityType?.Trim();

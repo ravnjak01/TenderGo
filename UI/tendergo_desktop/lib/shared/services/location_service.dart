@@ -3,119 +3,121 @@ import 'package:tendergo/shared/core/network/constants/location_endpoints.dart';
 import 'package:tendergo/shared/models/dto/location_dto.dart';
 import 'package:tendergo/shared/models/dto/paged_result.dart';
 import 'package:tendergo/shared/models/requests/location_filter_request.dart';
-import 'package:tendergo/shared/models/requests/location_insert_request.dart';
 import 'package:tendergo/shared/models/requests/location_search_request.dart';
-import 'package:tendergo/shared/models/requests/location_update_request.dart';
 import 'package:tendergo/shared/services/base_service.dart';
 
 class LocationService extends BaseService<LocationDto> {
   LocationService(Dio dio)
       : super(dio, LocationEndpoints.baseUrl, LocationDto.fromJson);
 
-  Future<List<LocationDto>> getLocations(
-    LocationFilterRequest filter, {
+  // Napomena: insert(), update(), delete() i getById() su već naslijeđeni iz BaseService-a!
+
+  /// GET: api/location (Paginacija i opća pretraga preko LocationSearchRequest)
+  Future<PagedResult<LocationDto>> getLocationsPaged(
+    LocationSearchRequest request,
+  ) {
+    return get(
+      page: request.page ?? 1,
+      pageSize: request.pageSize ?? 10,
+      queryParameters: request.toJson(),
+    );
+  }
+
+  /// GET: api/location/all (Nepaginirana lista za Dropdown / Filter izbore)
+  Future<List<LocationDto>> getAllForDropdown({
+    LocationFilterRequest? filter,
     bool includeInactive = false,
   }) async {
     try {
-      final queryParameters = filter.toQueryParams();
+      final queryParameters = filter?.toQueryParams() ?? {};
       if (includeInactive) {
         queryParameters['includeInactive'] = true;
       }
 
       final response = await dio.get(
-        LocationEndpoints.getAll,
+        LocationEndpoints.getAllFlat, // 'location/all'
         queryParameters: queryParameters,
       );
 
-      final data = extractList(response.data);
+      final data = extractData(response.data);
 
-      return data
-          .map((x) => parseJson(Map<String, dynamic>.from(x as Map)))
-          .toList();
+      if (data is List) {
+        return data
+            .map((x) => parseJson(Map<String, dynamic>.from(x as Map)))
+            .toList();
+      }
+
+      return [];
     } on DioException catch (e) {
-      throw Exception(extractErrorMessage(e, 'Error fetching locations'));
+      throw Exception(
+        extractErrorMessage(e, 'Greška pri dohvaćanju svih lokacija'),
+      );
     }
   }
 
-  Future<LocationDto> insertLocation(LocationInsertRequest request) {
-    return insert(request);
-  }
-
-  Future<bool> updateLocation(int id, LocationUpdateRequest request) {
-    return update(id, request);
-  }
-
-  Future<String> deleteLocation(int id) => delete(id);
-
+  /// PATCH: api/location/{id}/activate
   Future<LocationDto> activateLocation(int id) async {
     try {
       final response = await dio.patch(LocationEndpoints.activate(id));
-      return _parseSingleLocation(response.data);
+      final data = extractData(response.data);
+      return parseJson(Map<String, dynamic>.from(data as Map));
     } on DioException catch (e) {
-      throw Exception(extractErrorMessage(e, 'Error activating location'));
+      throw Exception(
+        extractErrorMessage(e, 'Greška pri aktivaciji lokacije'),
+      );
     }
   }
 
+  /// PATCH: api/location/{id}/deactivate
   Future<LocationDto> deactivateLocation(int id) async {
     try {
       final response = await dio.patch(LocationEndpoints.deactivate(id));
-      return _parseSingleLocation(response.data);
+      final data = extractData(response.data);
+      return parseJson(Map<String, dynamic>.from(data as Map));
     } on DioException catch (e) {
-      throw Exception(extractErrorMessage(e, 'Error deactivating location'));
+      throw Exception(
+        extractErrorMessage(e, 'Greška pri deaktivaciji lokacije'),
+      );
     }
   }
 
-  Future<PagedResult<LocationDto>> search(LocationSearchRequest request) async {
-    try {
-      final response = await dio.get(
-        LocationEndpoints.search(),
-        queryParameters: request.toJson(),
-      );
-
-      final pagedData = extractObject(response.data);
-
-      return PagedResult<LocationDto>.fromJson(
-        pagedData,
-        (json) => LocationDto.fromJson(json as Map<String, dynamic>),
-      );
-    } on DioException catch (e) {
-      throw Exception(extractErrorMessage(e, 'Error searching locations'));
-    }
-  }
-
+  /// GET: api/location/statistics
   Future<List<LocationStatsDto>> getLocationStatistics() async {
     try {
-      final response = await dio.get(LocationEndpoints.locationStatistics);
+      final response = await dio.get(LocationEndpoints.statistics);
+      final data = extractData(response.data);
 
-      final data = extractList(response.data);
+      if (data is List) {
+        return data
+            .map(
+              (x) => LocationStatsDto.fromJson(
+                Map<String, dynamic>.from(x as Map),
+              ),
+            )
+            .toList();
+      }
 
-      return data
-          .map(
-            (x) => LocationStatsDto.fromJson(
-              Map<String, dynamic>.from(x as Map),
-            ),
-          )
-          .toList();
+      return [];
     } on DioException catch (e) {
       throw Exception(
-        extractErrorMessage(e, 'Error fetching location statistics'),
+        extractErrorMessage(e, 'Greška pri dohvaćanju statistike lokacija'),
       );
     }
   }
 
+  /// GET: api/location/overview
   Future<LocationOverviewDto> getLocationOverview() async {
     try {
-      final response = await dio.get(LocationEndpoints.locationOverview);
+      final response = await dio.get(LocationEndpoints.overview);
+      final data = extractData(response.data);
 
-      return LocationOverviewDto.fromJson(extractObject(response.data));
+      return LocationOverviewDto.fromJson(
+        Map<String, dynamic>.from(data as Map),
+      );
     } on DioException catch (e) {
       throw Exception(
-        extractErrorMessage(e, 'Error fetching location overview'),
+        extractErrorMessage(e, 'Greška pri dohvaćanju pregleda lokacija'),
       );
     }
-  }
-
-  LocationDto _parseSingleLocation(dynamic envelope) {
-    return parseJson(extractObject(envelope));
   }
 }

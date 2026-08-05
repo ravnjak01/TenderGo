@@ -10,7 +10,7 @@ using TenderGo.Services.Interfaces;
 [Route("api/tender")]
 [Authorize]
 public class TenderController
-   : BaseController<TenderDTO, Tender, TenderInsertRequest, TenderUpdateRequest>
+   : BaseController<TenderDTO, TenderSearchRequest, TenderInsertRequest, TenderUpdateRequest>
 {
     private readonly ITenderService _tenderService;
     private readonly IAuthService _authService;
@@ -22,14 +22,15 @@ public class TenderController
         _authService = authservice;
     }
 
-    [HttpGet("search")]
-    public async Task<IActionResult> SearchAsync([FromQuery] TenderSearchRequest request)
+    [HttpGet("admin")]
+    [Authorize(Roles = AppRoles.Admin)] 
+    public async Task<ActionResult<PagedResult<AdminTenderDTO>>> GetAdminTenders([FromQuery] TenderSearchRequest request)
     {
-        var result = await _tenderService.SearchAsync(request);
+        var result = await _tenderService.GetAdminTendersAsync(request);
         return Ok(result);
     }
 
-    [HttpPost("toggle/{tenderId}")]
+    [HttpPost("toggle/{tenderId:int}")]
     public async Task<IActionResult> ToggleBookmark(int tenderId)
     {
         string userId = _authService.GetCurrentUserId();
@@ -57,21 +58,21 @@ public class TenderController
         return Ok(tenders);
     }
 
-    [HttpPatch("{id}/cancel")]
+    [HttpPatch("{id:int}/cancel")]
     public async Task<IActionResult> Cancel(int id, [FromBody] TenderCancelRequest request)
     {
         var result = await _tenderService.Cancel(id,request);
         return Ok(result);
     }
 
-    [HttpPatch("{id}/award/{bidId}")]
+    [HttpPatch("{id:int}/award/{bidId}")]
     public async Task<IActionResult> Award(int id, int bidId)
     {
         var result = await _tenderService.Award(id, bidId);
         return Ok(result);
     }
 
-    [HttpGet("{id}/allowedActions")]
+    [HttpGet("{id:int}/allowedActions")]
     public async Task<IActionResult> AllowedActions(int id)
     {
         var actions = await _tenderService.AllowedActions(id);

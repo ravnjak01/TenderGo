@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using System.Threading.Tasks;
 using TenderGo.Models.DTOs;
 using TenderGo.Models.Entities;
 using TenderGo.Models.Requests;
@@ -11,7 +12,7 @@ namespace TenderGo.Api.Controllers
     [ApiController]
     [Authorize]
     [Route("api/[controller]")]
-    public class CategoryController : BaseController<CategoryDTO, Category, CategoryInsertRequest, CategoryUpdateRequest>
+    public class CategoryController : BaseController<CategoryDTO, CategorySearchRequest, CategoryInsertRequest, CategoryUpdateRequest>
     {
         private readonly ICategoryService _categoryService;
 
@@ -23,60 +24,52 @@ namespace TenderGo.Api.Controllers
             _categoryService = categoryService;
         }
 
-        [Authorize(Roles =AppRoles.Admin)]
+        // POST api/category (Samo Admin može dodavati)
+        [Authorize(Roles = AppRoles.Admin)]
         [HttpPost]
-        public override Task<IActionResult> Insert([FromBody] CategoryInsertRequest request) 
+        public override Task<IActionResult> Insert([FromBody] CategoryInsertRequest request)
         {
             return base.Insert(request);
         }
-        [Authorize(Roles = AppRoles.Admin)]
 
-        [HttpGet("admin-search")]
-        public async Task<IActionResult> Search([FromQuery] CategorySearchRequest request) 
-        {
-            var result = await _categoryService.SearchAsync(request);
-            return Ok(result);
-        }
+        // PATCH api/category/{id} (Samo Admin može azurirati)
         [Authorize(Roles = AppRoles.Admin)]
-
-        [HttpPatch("{id}")]
+        [HttpPatch("{id:int}")]
         public override Task<IActionResult> Update(int id, [FromBody] CategoryUpdateRequest request)
         {
             return base.Update(id, request);
         }
-        [Authorize(Roles = AppRoles.Admin)]
 
-        [HttpDelete("{id}")]
+        // DELETE api/category/{id} (Samo Admin može brisati)
+        [Authorize(Roles = AppRoles.Admin)]
+        [HttpDelete("{id:int}")]
         public override Task<IActionResult> Delete(int id)
         {
             return base.Delete(id);
         }
 
+        // PATCH api/category/{id}/activate
         [Authorize(Roles = AppRoles.Admin)]
-        [HttpPatch("{id}/activate")]
-
-        public async Task<IActionResult> Activate(int id) 
+        [HttpPatch("{id:int}/activate")]
+        public async Task<IActionResult> Activate(int id)
         {
             var category = await _categoryService.Activate(id);
-
             return Ok(category);
         }
 
+        // PATCH api/category/{id}/deactivate
         [Authorize(Roles = AppRoles.Admin)]
-
-        [HttpPatch("{id}/deactivate")]
+        [HttpPatch("{id:int}/deactivate")]
         public async Task<IActionResult> Deactivate(int id)
         {
             var category = await _categoryService.Deactivate(id);
-
             return Ok(category);
-
-
         }
-        [Authorize(Roles = AppRoles.Admin)]
 
+        // GET api/category/statistics
+        [Authorize(Roles = AppRoles.Admin)]
         [HttpGet("statistics")]
-        public async Task<IActionResult> GetStatistics() 
+        public async Task<IActionResult> GetStatistics()
         {
             var stats = await _categoryService.GetCategoryStatisticsAsync();
             return Ok(stats);

@@ -80,7 +80,12 @@ namespace TenderGo.Services.Services
 
             int page = request.Page > 0 ? request.Page : 1;
             int pageSize = request.PageSize > 0 ? Math.Min(request.PageSize, 50) : 10;
+            int maxPageSize = 100;
 
+            if(pageSize > maxPageSize)
+            {
+                pageSize = maxPageSize;
+            }
             var bids = await query
                 .OrderByDescending(x => x.CreatedAt) 
                 .Skip((page - 1) * pageSize)
@@ -187,7 +192,7 @@ namespace TenderGo.Services.Services
             return await state.Withdraw(id);
         }
 
-        public async Task<List<BidDTO>> GetBidsForTender(int tenderId)
+        public async Task<PagedResult<BidDTO>> GetBidsForTender(int tenderId, PagedSearchRequest request)
         {
             var tender = await _context.Tenders.FindAsync(tenderId)
                       ?? throw new NotFoundException("Tender", tenderId);
@@ -200,15 +205,34 @@ namespace TenderGo.Services.Services
                 throw new ForbiddenException();
             }
 
-            var bids = await _context.Bids
-                .Where(b => b.TenderId == tenderId)
+            var query = _context.Bids
+                .AsNoTracking()
+                .Where(b => b.TenderId == tenderId);
+
+            const int maxPageSize = 100;
+            int page = request.Page > 0 ? request.Page : 1;
+            int pageSize = request.PageSize > 0 ? request.PageSize : 10;
+
+            if (pageSize > maxPageSize)
+            {
+                pageSize = maxPageSize;
+            }
+
+            var totalCount = await query.CountAsync();
+
+            var bids = await query
                 .OrderByDescending(b => b.SubmittedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .ProjectTo<BidDTO>(_mapper.ConfigurationProvider)
                 .ToListAsync();
 
-        
+            var currentPageUserIds = bids.Select(b => b.SubmittedByUserId).Distinct().ToList();
+
             var ratedUserIds = await _context.Ratings
-                .Where(r => r.RatedByUserId == currentUserId && r.TenderId == tenderId)
+                .Where(r => r.RatedByUserId == currentUserId
+                         && r.TenderId == tenderId
+                         && currentPageUserIds.Contains(r.RatedUserId))
                 .Select(r => r.RatedUserId)
                 .ToListAsync();
 
@@ -217,7 +241,13 @@ namespace TenderGo.Services.Services
                 bid.AlreadyRated = ratedUserIds.Contains(bid.SubmittedByUserId);
             }
 
-            return bids;
+            return new PagedResult<BidDTO>
+            {
+                Result = bids,
+                TotalCount = totalCount,
+                Page = page,
+                PageSize = pageSize
+            };
         }
 
         public async Task<List<string>> AllowedActions(int id)

@@ -4,7 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:tendergo/admin/routes/routes.dart';
-import 'package:tendergo/shared/core/network/constants/api_endpoints.dart';
+import 'package:tendergo/shared/core/network/constants/auth_endpoints.dart';
 
 const _publicPaths = <String>[
   ApiEndpoints.login,

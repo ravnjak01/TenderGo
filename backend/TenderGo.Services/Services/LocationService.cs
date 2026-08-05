@@ -13,70 +13,56 @@ using TenderGo.Services.Services.Exceptions;
 
 namespace TenderGo.Services.Services
 {
-    public class LocationService : BaseService<LocationDTO, Location, LocationInsertRequest, LocationUpdateRequest>, ILocationService
+    public class LocationService : BaseService<LocationDTO, Location,LocationSearchRequest, LocationInsertRequest, LocationUpdateRequest>, ILocationService
     {
         private readonly IAuthService _authService;
-        protected readonly ILogger<CategoryService> _logger;
+        protected readonly ILogger<LocationService> _logger;
         protected readonly IServiceProvider _serviceProvider;
 
-        public LocationService(TenderGoContext context, IMapper mapper, IHttpContextAccessor httpContextAccessor, IAuthService authService, ILogger<CategoryService> logger, IServiceProvider serviceProvider) : base(context, mapper, httpContextAccessor)
+        public LocationService(TenderGoContext context, IMapper mapper, IHttpContextAccessor httpContextAccessor, IAuthService authService, ILogger<LocationService> logger, IServiceProvider serviceProvider) : base(context, mapper, httpContextAccessor)
         {
             _logger = logger;
             _authService = authService;
             _serviceProvider = serviceProvider;
         }
 
-        protected override IQueryable<Location> ApplyFilter(IQueryable<Location> query)
+        protected override IQueryable<Location> ApplyFilter(IQueryable<Location> query, LocationSearchRequest request)
         {
-            if (!_authService.IsInRole(AppRoles.Admin))
-                return query.Where(l => l.IsActive);
-
-            var includeInactiveQuery =
-                _httpContextAccessor.HttpContext?.Request.Query["includeInactive"];
-
-            var includeInactive =
-                bool.TryParse(includeInactiveQuery, out var parsed)
-                && parsed;
-
-            if (includeInactive)
-                return query;
-
-            return query.Where(l => l.IsActive);
-        }
-
-        public async Task<PagedResult<LocationDTO>> GetAdminLocationsPagedAsync(LocationSearchRequest request)
-        {
-            var page = Math.Max(request.Page, 1);
-            var pageSize = Math.Clamp(request.PageSize, 1, 100);
-
-            var query = _context.Locations.AsQueryable();
-
-            if (request.IsActive.HasValue)
-            {
-                query = query.Where(l => l.IsActive == request.IsActive.Value);
-            }
-
+            // 1. Pretraga po nazivu, državi ili regiji (koristeći SearchTerm iz PagedSearchRequest)
             if (!string.IsNullOrWhiteSpace(request.SearchTerm))
             {
-                var term = request.SearchTerm.Trim().ToLower();
-                var likeTerm = $"%{term}%";
-
+                var term = $"%{request.SearchTerm.ToLower()}%";
                 query = query.Where(l =>
-                    EF.Functions.Like(l.Name.ToLower(), likeTerm) ||
-                    EF.Functions.Like(l.Country.ToLower(), likeTerm));
+                    EF.Functions.Like(l.Name.ToLower(), term) ||
+                    EF.Functions.Like(l.Country.ToLower(), term) ||
+                    (l.Region != null && EF.Functions.Like(l.Region.ToLower(), term))
+                );
             }
 
-            var totalCount = await query.CountAsync();
 
-            var results = await query
-                .OrderByDescending(l => l.Id) 
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ProjectTo<LocationDTO>(_mapper.ConfigurationProvider)
-                .ToListAsync();
+            // 2. Filtriranje po IsActive statusu i rolama
+            var isAdmin = _authService.IsInRole(AppRoles.Admin);
 
-            return new PagedResult<LocationDTO> { Result = results, TotalCount = totalCount, Page = page, PageSize = pageSize };
+            if (!isAdmin)
+            {
+                // Običan korisnik UVIJEK vidi samo aktivne lokacije
+                query = query.Where(l => l.IsActive);
+            }
+            else
+            {
+                // Ako je Admin poslao eksplicitan filter (?isActive=true ili ?isActive=false)
+                if (request.IsActive.HasValue)
+                {
+                    query = query.Where(l => l.IsActive == request.IsActive.Value);
+                }
+                // Ako Admin nije poslao nikakav status (null), vraćaju se sve lokacije (i aktivne i neaktivne)
+            }
+
+            // 3. Sortiranje po državi pa po nazivu (obavezno za stabilnu paginaciju)
+            return query.OrderBy(l => l.Country).ThenBy(l => l.Name);
         }
+
+ 
 
         public async Task<List<LocationDTO>> GetFilteredLocationsAsync(string? country, string? region, bool includeInactive = false)
         {

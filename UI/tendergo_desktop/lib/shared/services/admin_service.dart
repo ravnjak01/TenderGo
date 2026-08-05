@@ -1,7 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:tendergo/shared/core/network/constants/api_endpoints.dart';
-import 'package:tendergo/shared/core/network/constants/admin_endpoints.dart';
+import 'package:tendergo/shared/core/network/constants/admin_dashboard_endpoints.dart';
+import 'package:tendergo/shared/core/network/constants/admin_users_endpoints.dart';
+import 'package:tendergo/shared/core/network/constants/auth_endpoints.dart';
 import 'package:tendergo/shared/models/dto/activity_dto.dart';
 import 'package:tendergo/shared/models/dto/admin_dto.dart';
 import 'package:tendergo/shared/models/dto/paged_result.dart';
@@ -49,7 +50,7 @@ class AdminService {
   Future<AdminDashboardDto> getDashboard() async {
     try {
       final response = await _dio.get(
-        AdminEndpoints.dashboard,
+        AdminDashboardEndpoints.getDashboard,
         options: await _options(),
       );
 
@@ -70,7 +71,7 @@ class AdminService {
   }) async {
     try {
       final response = await _dio.get(
-        AdminEndpoints.getAllUsers,
+        AdminUserEndpoints.getAllUsers,
         queryParameters: {
           'page': page,
           'pageSize': pageSize,
@@ -92,29 +93,11 @@ class AdminService {
     }
   }
 
-  Future<ApiResponse<List<TenderDto>>> getAllTenders() async {
-    try {
-      final response = await _dio.get(
-        AdminEndpoints.getAllTenders,
-        options: await _options(),
-      );
-
-      final data = _extractList(response.data);
-      final tenders = data.map((json) => TenderDto.fromJson(json)).toList();
-
-      return ApiResponse.success(
-        tenders,
-        message: 'Tenders fetched successfully.',
-      );
-    } on DioException catch (e) {
-      return ApiHelper.handleDioError<List<TenderDto>>(e);
-    }
-  }
 
   Future<ApiResponse<void>> banUser(String userId, BanRequest reason) async {
     try {
       await _dio.post(
-        AdminEndpoints.banUser(userId),
+        AdminUserEndpoints.banUser(userId),
         data: reason.toJson(),
         options: await _options(),
       );
@@ -128,7 +111,7 @@ class AdminService {
   Future<ApiResponse<void>> unbanUser(String userId) async {
     try {
       await _dio.post(
-        AdminEndpoints.unbanUser(userId),
+        AdminUserEndpoints.unbanUser(userId),
         options: await _options(),
       );
 
@@ -141,7 +124,7 @@ class AdminService {
   Future<ApiResponse<List<ActivityDto>>> getRecentActivities() async {
     try {
       final response = await _dio.get(
-        AdminEndpoints.recentActivity,
+        AdminDashboardEndpoints.getActivities,
         options: await _options(),
       );
 
@@ -162,7 +145,7 @@ class AdminService {
   Future<PagedResult<UserDto>> search(AdminUserSearchRequest request) async {
     try {
       final response = await _dio.get(
-        AdminEndpoints.searchUsers,
+        AdminUserEndpoints.searchUsers,
         options: await _options(),
         queryParameters: request.toJson(),
       );

@@ -40,29 +40,46 @@ namespace TenderGo.Services.Services
             page = Math.Max(page, 1);
             pageSize = Math.Clamp(pageSize, 1, 100);
 
-            var query = from user in _context.Users
-                        select new UserDTO
-                        {
-                            Id = user.Id,
-                            Email = user.Email,
-                            Username = user.UserName,
-                            FirstName = user.FirstName,
-                            LastName = user.LastName,
-                            Address = user.Address != null ? new AddressDTO { } : null,
-                            Roles = (from userRole in _context.UserRoles
-                                     join role in _context.Roles on userRole.RoleId equals role.Id
-                                     where userRole.UserId == user.Id
-                                     select role.Name).ToList(),
-                            IsBanned = user.IsBanned,
-                        };
-
+            // 1. Ukupan broj svih korisnika
             var totalCount = await _context.Users.CountAsync();
 
-            var results = await query
-                .OrderBy(u => u.LastName) 
+            // 2. Primijeni OrderBy, Skip i Take nad entitetom (prije projekcije!)
+            var users = await _context.Users
+                .Include(u => u.Address)
+                .OrderBy(u => u.LastName)
+                .ThenBy(u => u.FirstName)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
+
+            // 3. Izvlačenje uloga za učitane korisnike u JEDNOM SQL upitu
+            var userIds = users.Select(u => u.Id).ToList();
+            var userRolesMap = await (from ur in _context.UserRoles
+                                      join r in _context.Roles on ur.RoleId equals r.Id
+                                      where userIds.Contains(ur.UserId)
+                                      select new { ur.UserId, RoleName = r.Name })
+                                     .GroupBy(x => x.UserId)
+                                     .ToDictionaryAsync(g => g.Key, g => g.Select(x => x.RoleName).ToList());
+
+            // 4. Mapiranje u UserDTO u memoriji
+            var results = users.Select(user => new UserDTO
+            {
+                Id = user.Id,
+                Email = user.Email ?? string.Empty,
+                Username = user.UserName ?? string.Empty,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                ProfileImageUrl = user.ProfileImageUrl,
+                Address = user.Address != null ? new AddressDTO
+                {
+                    Country = user.Address.Country,
+                    City = user.Address.City,
+                    Street = user.Address.Street,
+                    PostalCode = user.Address.PostalCode
+                } : null,
+                Roles = userRolesMap.ContainsKey(user.Id) ? userRolesMap[user.Id] : new List<string>(),
+                IsBanned = user.IsBanned
+            }).ToList();
 
             return new PagedResult<UserDTO>
             {
@@ -78,9 +95,10 @@ namespace TenderGo.Services.Services
         {
             var page = Math.Max(request.Page, 1);
             var pageSize = Math.Clamp(request.PageSize, 1, 100);
+
             var query = _context.Users.AsQueryable();
 
-
+            // 1. Primijeni pretragu
             if (!string.IsNullOrWhiteSpace(request.SearchTerm))
             {
                 var term = request.SearchTerm.Trim().ToLower();
@@ -93,36 +111,47 @@ namespace TenderGo.Services.Services
                     EF.Functions.Like(u.LastName.ToLower(), likeTerm));
             }
 
+            // 2. Izračunaj ukupan broj filtriranih zapisa
             var totalCount = await query.CountAsync();
 
-            var results = await query
+            // 3. Paginacija i dohvaćanje korisnika iz baze
+            var users = await query
+                .Include(u => u.Address)
                 .OrderBy(u => u.LastName)
                 .ThenBy(u => u.FirstName)
                 .ThenBy(u => u.Email)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
-                .Select(user => new UserDTO
-                {
-                    Id = user.Id,
-                    Email = user.Email!,
-                    Username = user.UserName!,
-                    FirstName = user.FirstName,
-                    LastName = user.LastName,
-                    ProfileImageUrl = user.ProfileImageUrl,
-                    Address = user.Address != null ? new AddressDTO
-                    {
-                        Country = user.Address.Country,
-                        City = user.Address.City,
-                        Street = user.Address.Street,
-                        PostalCode = user.Address.PostalCode
-                    } : null,
-                    Roles = (from userRole in _context.UserRoles
-                             join role in _context.Roles on userRole.RoleId equals role.Id
-                             where userRole.UserId == user.Id
-                             select role.Name!).ToList(),
-                    IsBanned = user.IsBanned
-                })
                 .ToListAsync();
+
+            // 4. Dohvaćanje uloga samo za paginirane korisnike (1 brzi upit umjesto N upita)
+            var userIds = users.Select(u => u.Id).ToList();
+            var userRolesMap = await (from ur in _context.UserRoles
+                                      join r in _context.Roles on ur.RoleId equals r.Id
+                                      where userIds.Contains(ur.UserId)
+                                      select new { ur.UserId, RoleName = r.Name })
+                                     .GroupBy(x => x.UserId)
+                                     .ToDictionaryAsync(g => g.Key, g => g.Select(x => x.RoleName).ToList());
+
+            // 5. Mapiranje u UserDTO
+            var results = users.Select(user => new UserDTO
+            {
+                Id = user.Id,
+                Email = user.Email ?? string.Empty,
+                Username = user.UserName ?? string.Empty,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                ProfileImageUrl = user.ProfileImageUrl,
+                Address = user.Address != null ? new AddressDTO
+                {
+                    Country = user.Address.Country,
+                    City = user.Address.City,
+                    Street = user.Address.Street,
+                    PostalCode = user.Address.PostalCode
+                } : null,
+                Roles = userRolesMap.ContainsKey(user.Id) ? userRolesMap[user.Id] : new List<string>(),
+                IsBanned = user.IsBanned
+            }).ToList();
 
             return new PagedResult<UserDTO>
             {
@@ -132,7 +161,6 @@ namespace TenderGo.Services.Services
                 PageSize = pageSize
             };
         }
-
         public async Task<bool> BanUserAsync(string userId, BanRequest reason)
         {
             var user = await _userManager.FindByIdAsync(userId);

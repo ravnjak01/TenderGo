@@ -12,7 +12,7 @@ using TenderGo.Services.StateMachines.TenderStates;
 
 namespace TenderGo.Services.Interfaces
 {
-    public interface ITenderService:IReadService<TenderDTO>,IWriteService<TenderDTO,TenderInsertRequest, TenderUpdateRequest>
+    public interface ITenderService:IReadService<TenderDTO,TenderSearchRequest>,IWriteService<TenderDTO,TenderInsertRequest, TenderUpdateRequest>
     {
         Task<PagedResult<TenderDTO>> GetMyTenders(string userId, PagedSearchRequest request);
 
@@ -20,11 +20,11 @@ namespace TenderGo.Services.Interfaces
         Task<TenderDTO> Award(int id, int bidId);
         Task<List<string>> AllowedActions(int id);
         BaseState CreateState(TenderStatus status);
-        Task<PagedResult<AdminTenderDTO>>SearchAsync(TenderSearchRequest request);
         Task<bool> LogUserActivityAsync(string activityType, int? tenderId, string? searchQuery, int? durationSeconds = null);
 
         Task<bool> ToggleBookmarkAsync(string userId, int tenderId);
         Task<PagedResult<TenderDTO>> GetBookmarkedTendersAsync(string userId, PagedSearchRequest request);
+        Task<PagedResult<AdminTenderDTO>> GetAdminTendersAsync(TenderSearchRequest request);
 
     }
 }

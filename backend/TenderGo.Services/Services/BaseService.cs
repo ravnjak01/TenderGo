@@ -15,9 +15,11 @@ using TenderGo.Services.Services.Exceptions;
 
 namespace TenderGo.Services.Services
 {
-    public class BaseService<T,TDb,TInsert,TUpdate> : IWriteService<T,TInsert,TUpdate> ,IReadService<T>
-            where TDb : class
-            where T : class
+    public class BaseService<TModel, TDb, TSearch, TInsert, TUpdate>
+        : IReadService<TModel, TSearch>, IWriteService<TModel, TInsert, TUpdate>
+           where TModel : class
+        where TDb : class
+        where TSearch : PagedSearchRequest
     {
 
        protected readonly TenderGoContext _context;
@@ -31,9 +33,15 @@ namespace TenderGo.Services.Services
             _httpContextAccessor = httpContextAccessor;
         }
 
+      
+        protected virtual IQueryable<TDb> ApplyFilter(IQueryable<TDb> query, TSearch request)
+        {
+            return query;
+
+        }
         protected virtual IQueryable<TDb> AddIncludes(IQueryable<TDb> query) => query;
 
-        public virtual async Task<T?> GetById(int id)
+        public virtual async Task<TModel> GetById(int id)
         {
             var query = _context.Set<TDb>().AsQueryable();
 
@@ -42,50 +50,59 @@ namespace TenderGo.Services.Services
             var entity = await query.FirstOrDefaultAsync(e => EF.Property<int>(e, "Id") == id)
                  ?? throw new UserException($"{typeof(TDb).Name} not found");
 
-            return _mapper.Map<T>(entity);
+            return _mapper.Map<TModel>(entity);
         }
 
-        public async Task<PagedResult<T>> Get(PagedResult<T> pagedResult)
+        public async Task<PagedResult<TModel>> Get(TSearch request)
         {
             var query = _context.Set<TDb>().AsQueryable();
 
-            query = AddIncludes(query); 
-            query = ApplyFilter(query);
+            query = AddIncludes(query);
+            query = ApplyFilter(query,request);
+
+            const int maxPageSize = 100;
+
+            int page = request.Page <= 0 ? 1 : request.Page;
+            int pageSize = request.PageSize <= 0 ? 10 : request.PageSize;
+
+            if (pageSize > maxPageSize)
+            {
+                pageSize = maxPageSize; 
+            }
 
             var totalCount = await query.CountAsync();
-
             var list = await query
-                .Skip((pagedResult.Page - 1) * pagedResult.PageSize)
-                .Take(pagedResult.PageSize)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
 
-            return new PagedResult<T>
+            return new PagedResult<TModel>
             {
-                Result = _mapper.Map<List<T>>(list),
+                Result = _mapper.Map<List<TModel>>(list),
                 TotalCount = totalCount,
-                Page = pagedResult.Page,
-                PageSize = pagedResult.PageSize
+                Page = page,
+                PageSize = pageSize
             };
         }
 
-        protected virtual IQueryable<TDb> ApplyFilter(IQueryable<TDb> query) => query;
 
         
         
-        public virtual async Task<T> Insert(TInsert request)
+        public virtual async Task<TModel> Insert(TInsert request)
         {
             var entity = _mapper.Map<TDb>(request);
             _context.Set<TDb>().Add(entity);
             await _context.SaveChangesAsync();
-            return _mapper.Map<T>(entity);
+            return _mapper.Map<TModel>(entity);
         }
-        public virtual async Task Update(int id, TUpdate request)
+        public virtual async Task<TModel> Update(int id, TUpdate request)
         {
             var entity = await _context.Set<TDb>().FindAsync(id)
                  ?? throw new UserException($"{typeof(TDb).Name} not found");
 
             _mapper.Map(request, entity);
             await _context.SaveChangesAsync();
+            return _mapper.Map<TModel>(entity);
         }
 
         public virtual async Task<string> Delete(int id)

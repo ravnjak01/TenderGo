@@ -8,12 +8,11 @@ using TenderGo.Models.Requests;
 
 namespace TenderGo.Services.Interfaces
 {
-    public interface ILocationService : IReadService<LocationDTO>, IWriteService<LocationDTO, LocationInsertRequest, LocationUpdateRequest>
+    public interface ILocationService : IReadService<LocationDTO,LocationSearchRequest>, IWriteService<LocationDTO, LocationInsertRequest, LocationUpdateRequest>
     {
         Task<List<LocationDTO>> GetFilteredLocationsAsync(string? country, string? region, bool includeInactive = false);
         Task<LocationDTO> Activate(int id);
         Task<LocationDTO> Deactivate(int id);
-        Task<PagedResult<LocationDTO>> GetAdminLocationsPagedAsync(LocationSearchRequest request);
         Task<List<LocationStatsDTO>> GetLocationStatisticsAsync();
         Task<LocationOverviewDTO> GetOverviewAsync();
     }

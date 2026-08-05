@@ -14,7 +14,7 @@ namespace TenderGo.Services.Interfaces
     {
 
         Task<BidDTO>Withdraw(int bidId);
-        Task<List<BidDTO>> GetBidsForTender(int tenderId);
+        Task<PagedResult<BidDTO>> GetBidsForTender(int tenderId,PagedSearchRequest request);
         Task<List<string>> AllowedActions(int bidId);
         Task<PagedResult<BidDTO>> GetBidsByUser(string userId, PagedSearchRequest request);
         Task<BidDTO> Cancel(int bidId);

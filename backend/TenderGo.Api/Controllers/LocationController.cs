@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using System.Threading.Tasks;
 using TenderGo.Models.DTOs;
 using TenderGo.Models.Entities;
 using TenderGo.Models.Requests;
@@ -11,53 +12,46 @@ namespace TenderGo.Api.Controllers
     [ApiController]
     [Authorize]
     [Route("api/[controller]")]
-    public class LocationController : BaseController<LocationDTO, Location, LocationInsertRequest, LocationUpdateRequest>
+    public class LocationController : BaseController<LocationDTO, LocationSearchRequest, LocationInsertRequest, LocationUpdateRequest>
     {
         private readonly ILocationService _locationService;
-        private readonly ILogger<LocationController> _logger;
 
         public LocationController(
             ILocationService locationService,
             ILogger<LocationController> logger)
+            // locationService se prosljeđuje i kao IReadService i kao IWriteService
             : base(locationService, locationService, logger)
         {
             _locationService = locationService;
-            _logger = logger;
         }
 
+        // POST api/location (Samo Admin može dodavati)
         [Authorize(Roles = AppRoles.Admin)]
         [HttpPost]
         public override Task<IActionResult> Insert([FromBody] LocationInsertRequest request)
         {
             return base.Insert(request);
-
-
         }
 
-         
+        // PUT api/location/{id} (Samo Admin može mijenjati)
         [Authorize(Roles = AppRoles.Admin)]
-
-        [HttpPatch("{id}")]
+        [HttpPatch("{id:int}")]
         public override Task<IActionResult> Update(int id, [FromBody] LocationUpdateRequest request)
         {
             return base.Update(id, request);
         }
-        [Authorize(Roles = AppRoles.Admin)]
 
-        [HttpDelete("{id}")]
-        public override Task<IActionResult> Delete(int id)
+        // DELETE api/location/{id} (Samo Admin može brisati)
+        [Authorize(Roles = AppRoles.Admin)]
+        [HttpDelete("{id:int}")]
+        public override async Task<IActionResult> Delete(int id)
         {
-            return base.Delete(id);
+            // Pozivamo custom Delete iz LocationService koji vraća poruku o obrisanoj/deaktiviranoj lokaciji
+            var message = await _locationService.Delete(id);
+            return Ok(new { message });
         }
 
-        [Authorize(Roles = AppRoles.Admin)]
-        [HttpGet("admin-search")]
-        public async Task<IActionResult> GetAdminSearch([FromQuery] LocationSearchRequest request)
-        {
-            var result = await _locationService.GetAdminLocationsPagedAsync(request);
-            return Ok(result);
-        }
-
+        // GET api/location/all - Pomoćni endpoint bez paginacije (za dropdown opcije i sl.)
         [HttpGet("all")]
         public async Task<IActionResult> GetAll([FromQuery] LocationFilterRequest request)
         {
@@ -74,32 +68,36 @@ namespace TenderGo.Api.Controllers
 
             return Ok(locations);
         }
-        [Authorize(Roles = AppRoles.Admin)]
 
-        [HttpPatch("{id}/activate")]
+        // PATCH api/location/{id}/activate
+        [Authorize(Roles = AppRoles.Admin)]
+        [HttpPatch("{id:int}/activate")]
         public async Task<IActionResult> Activate(int id)
         {
             var location = await _locationService.Activate(id);
             return Ok(location);
         }
-        [Authorize(Roles = AppRoles.Admin)]
 
-        [HttpPatch("{id}/deactivate")]
+        // PATCH api/location/{id}/deactivate
+        [Authorize(Roles = AppRoles.Admin)]
+        [HttpPatch("{id:int}/deactivate")]
         public async Task<IActionResult> Deactivate(int id)
         {
             var location = await _locationService.Deactivate(id);
             return Ok(location);
         }
-        [Authorize(Roles = AppRoles.Admin)]
 
+        // GET api/location/statistics
+        [Authorize(Roles = AppRoles.Admin)]
         [HttpGet("statistics")]
         public async Task<IActionResult> GetStatistics()
         {
             var statistics = await _locationService.GetLocationStatisticsAsync();
             return Ok(statistics);
         }
-        [Authorize(Roles = AppRoles.Admin)]
 
+        // GET api/location/overview
+        [Authorize(Roles = AppRoles.Admin)]
         [HttpGet("overview")]
         public async Task<IActionResult> GetOverview()
         {

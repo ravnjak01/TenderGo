@@ -14,12 +14,6 @@ class TenderApiEndpoints {
 
   static String delete(int id) => '$_tenderBase/$id';
 
-
-  static const String getActive = '$_tenderBase/active';
-
-
-  static String getByCategory(int id) => '$_tenderBase/category/$id';
-
   static String getByUser(String userId) => '$_tenderBase/user/$userId';
 
 
