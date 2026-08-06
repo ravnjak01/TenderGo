@@ -20,7 +20,7 @@ using TenderGo.Services.StateMachines.BidStates;
 
 namespace TenderGo.Services.Services
 {
-   public class BidService : BaseService<BidDTO, Bid, BidInsertRequest, BidDTO>, IBidService
+   public class BidService : BaseService<BidDTO, Bid,PagedSearchRequest, BidInsertRequest, BidDTO>, IBidService
     {
 
         private readonly IAuthService _authService;
@@ -34,6 +34,11 @@ namespace TenderGo.Services.Services
             _serviceProvider = serviceProvider;
         }
 
+
+        protected override IQueryable<Bid> ApplySorting(IQueryable<Bid> query)
+        {
+            return query.OrderByDescending(b => b.SubmittedAt);
+        }
         public override async Task<BidDTO> GetById(int id)
         {
             var query = _context.Bids

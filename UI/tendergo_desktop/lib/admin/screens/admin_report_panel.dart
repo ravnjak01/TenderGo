@@ -82,15 +82,37 @@ Future<void> _loadUsers() async {
     _overview = await _reportService.getOverview();
   }
 
-  Future<void> _loadLocations() async {
-    final result = await _locationService.getLocations(
-      const LocationFilterRequest(),
+Future<void> _loadLocations() async {
+  setState(() {
+    _isLoading = true; // ili opći _isLoading
+    _error = null;
+  });
+
+  try {
+    // 1. Poziv servisa bez nepotrebnog 'const LocationFilterRequest()' ako nije obavezno,
+    // ili sa njim ako servisu striktno treba filter objekat.
+    final result = await _locationService.getAllForDropdown(
+      filter: const LocationFilterRequest(),
+      includeInactive: true,
     );
 
-    _locations = result
-      ..sort((a, b) => a.displayLabel.toLowerCase().compareTo(b.displayLabel.toLowerCase()));
-  }
+    if (!mounted) return;
 
+    // 2. Sortiranje po nazivu (ili displayLabel ako imate taj getter na DTO-u)
+    result.sort((a, b) => (a.name ?? '').toLowerCase().compareTo((b.name ?? '').toLowerCase()));
+
+    setState(() {
+      _locations = result;
+      _isLoading = false;
+    });
+  } catch (e) {
+    if (!mounted) return;
+    setState(() {
+      _error = e.toUserMessage();
+      _isLoading = false;
+    });
+  }
+}
   Future<void> _pickDate({required bool isFrom}) async {
     final now = DateTime.now();
     final picked = await showDatePicker(

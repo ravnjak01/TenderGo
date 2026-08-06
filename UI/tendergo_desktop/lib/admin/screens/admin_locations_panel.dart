@@ -106,7 +106,7 @@ Future<void> _fetchLocations({String searchTerm = '', bool isNewSearch = false})
       isActive: _selectedActiveFilter,
     );
 
-    final pagedResult = await _locationService.search(request);
+    final pagedResult = await _locationService.getLocationsPaged(request);
     
     if (!mounted) return;
 
@@ -216,7 +216,7 @@ Future<void> _fetchLocations({String searchTerm = '', bool isNewSearch = false})
     });
 
     try {
-      await _locationService.insertLocation(
+      await _locationService.insert(
         LocationInsertRequest(
           name: name,
           country: country,
@@ -287,7 +287,7 @@ Future<void> _fetchLocations({String searchTerm = '', bool isNewSearch = false})
     });
 
     try {
-      await _locationService.updateLocation(
+      await _locationService.update(
         location.id,
         LocationUpdateRequest(
           name: name,
@@ -380,7 +380,7 @@ Future<void> _fetchLocations({String searchTerm = '', bool isNewSearch = false})
     });
 
     try {
-      await _locationService.deleteLocation(location.id);
+      await _locationService.delete(location.id);
       await _refreshData();
     } catch (e) {
       setState(() {
@@ -432,7 +432,10 @@ Future<void> _fetchLocations({String searchTerm = '', bool isNewSearch = false})
 Widget build(BuildContext context) {
   final overview = _overview;
 
-  final totalPages = (_totalCount / _pageSize).ceil();
+ final effectivePageSize = _pageSize <= 0 ? 10 : _pageSize;
+final int totalPages = _totalCount <= 0 
+      ? 1 
+      : (_totalCount / effectivePageSize).ceil();
   final hasPreviousPage = _currentPage > 1;
   final hasNextPage = _currentPage < totalPages;
 

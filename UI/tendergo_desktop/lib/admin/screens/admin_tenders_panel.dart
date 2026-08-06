@@ -6,7 +6,7 @@ import 'package:tendergo/shared/models/dto/admin_tender_dto.dart';
 import 'package:tendergo/shared/models/dto/paged_result.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
 import 'package:tendergo/shared/models/enums/tenderstatus.dart';
-import 'package:tendergo/shared/models/requests/admin_tender_search_request.dart';
+import 'package:tendergo/shared/models/requests/tender_search_request.dart';
 import 'package:tendergo/shared/providers/tender_provider.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
 import 'package:tendergo/shared/widgets/common/app_dialogs.dart';
@@ -43,49 +43,46 @@ class _AdminTendersPanelState extends State<AdminTendersPanel> {
     super.dispose();
   }
 
-  Future<void> _loadData({String searchTerm = '', bool isNewSearch = false}) async {
-    if (isNewSearch) {
-      _currentPage = 1;
-    }
+ Future<void> _loadData({String searchTerm = '', bool isNewSearch = false}) async {
+  if (isNewSearch) {
+    _currentPage = 1;
+  }
+
+  setState(() {
+    _loading = true;
+    _error = null;
+  });
+
+  try {
+    final adminTenderService = context.read<TenderService>();
+
+    final request = TenderSearchRequest(
+      searchTerm: searchTerm.isEmpty ? null : searchTerm,
+      page: _currentPage,
+      pageSize: _pageSize,
+    );
+
+    PagedResult<AdminTenderDto> pagedResult = 
+        await adminTenderService.searchAdminTenders(request);
+
+    if (!mounted) return;
 
     setState(() {
-      _loading = true;
-      _error = null;
+      _tenders = pagedResult.result;
+      _totalCount = pagedResult.totalCount; 
+      _currentPage = pagedResult.page;
+      _pageSize = pagedResult.pageSize;
+      _loading = false;
     });
 
-    try {
-      final adminTenderService = context.read<TenderService>();
-
-      final request = AdminTenderSearchRequest(
-        searchTerm: searchTerm.isEmpty ? null : searchTerm,
-        page: _currentPage,
-        pageSize: _pageSize,
-      );
-
-      PagedResult<AdminTenderDto> pagedResult = await adminTenderService.search(request);
-
-     
-
-
-      if (!mounted) return;
-
-      setState(() {
-        _tenders = pagedResult.result;
-        _totalCount = pagedResult.totalCount; 
-        _currentPage = pagedResult.page;
-        _pageSize = pagedResult.pageSize;
-        _loading = false;
-      });
-
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = e.toUserMessage();();
-        _loading = false;
-      });
-    }
-  } // Kraj _loadData metode
-
+  } catch (e) {
+    if (!mounted) return;
+    setState(() {
+      _error = e.toUserMessage(); // ✅ Uklonjen višak zagrada ;();
+      _loading = false;
+    });
+  }
+}
   void _onSearchChanged(String value) {
     _loadData(searchTerm: value, isNewSearch: true);
   }
@@ -487,7 +484,7 @@ Widget build(BuildContext context) {
                                         // Raspisivač
                                         DataCell(
                                           Text(
-                                            tender.createdByUserFullName,
+                                            tender.createdByUserFullname,
                                             style: const TextStyle(color: Color(0xFF475569)),
                                           ),
                                         ),

@@ -37,7 +37,7 @@ class TenderCardModel {
       postedAt: dto.postedAt,
       tags: [], 
       imageUrl: dto.primaryImage?.imageUrl, 
-      locationName: dto.location.displayLabel,
+      locationName: dto.location?.displayLabel ?? '',
     );
   }
 }

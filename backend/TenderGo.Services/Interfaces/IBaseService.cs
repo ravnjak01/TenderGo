@@ -9,10 +9,10 @@ using TenderGo.Models.Requests;
 
 namespace TenderGo.Services.Interfaces
     {
-        public interface IBaseService<T,TDb,TInsert,TUpdate>:IWriteService<T, TInsert, TUpdate> where TDb : class where T : class
+    public interface IBaseService<TModel, TSearch, TInsert, TUpdate>
+      : IReadService<TModel, TSearch>, IWriteService<TModel, TInsert, TUpdate>
+      where TModel : class
+      where TSearch:PagedSearchRequest
     {
-   
-
-
     }
 }

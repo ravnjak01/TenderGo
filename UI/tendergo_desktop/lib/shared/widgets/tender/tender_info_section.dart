@@ -65,12 +65,12 @@ class TenderInfoSection extends StatelessWidget {
           children: [
             TenderMetaItem(
               icon: Icons.person_outline,
-              label: 'Raspisivač: ${tender.createdByFullname}',
+              label: 'Raspisivač: ${tender.createdByUserFullname}',
             ),
             
             TenderMetaItem(
               icon: Icons.location_on_outlined,
-              label: tender.location.name,
+             label: tender.location?.name ?? 'Nepoznata lokacija',
             ),
           
           ],

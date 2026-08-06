@@ -48,7 +48,7 @@ int _currentPage = 1;
       if (refreshAll || _categories.isEmpty) {
         final results = await Future.wait([
           _categoryService.getCategoryStatistics(),
-          _categoryService.search(CategorySearchRequest(
+          _categoryService.getCategories(CategorySearchRequest(
             searchTerm: searchTerm.isEmpty ? null : searchTerm,
             page: _currentPage,
             pageSize: _pageSize,
@@ -97,7 +97,7 @@ int _currentPage = 1;
       pageSize: _pageSize,
     );
 
-    final pagedResult = await _categoryService.search(request);
+    final pagedResult = await _categoryService.getCategories(request);
 
     if (!mounted) return;
 
@@ -207,14 +207,7 @@ Future<void> _refreshCategories() {
     });
 
     try {
-      final success = await _categoryService.updateCategory(
-        category.id,
-        request,
-      );
-
-      if (!success) {
-        throw Exception('Nije moguće ažurirati kategoriju.');
-      }
+      final success = await _categoryService.update(category.id, request);
 
       await _refreshCategories();
     } catch (e) {
@@ -318,7 +311,7 @@ Future<void> _refreshCategories() {
     });
 
     try {
-      await _categoryService.insertCategory(request);
+      await _categoryService.insert(request);
       await _refreshCategories();
     } catch (e) {
       setState(() {
@@ -457,7 +450,10 @@ Future<void> _refreshCategories() {
 
   @override
 Widget build(BuildContext context) {
-  final int totalPages = (_totalCount / _pageSize).ceil();
+final effectivePageSize = _pageSize <= 0 ? 10 : _pageSize;
+final int totalPages = _totalCount <= 0 
+      ? 1 
+      : (_totalCount / effectivePageSize).ceil();
 
   return Container(
     color: const Color(0xFFF8FAFC), 
@@ -571,16 +567,26 @@ Widget build(BuildContext context) {
                     ],
                     border: Border.all(color: const Color(0xFFE2E8F0)),
                   ),
-                  child: SingleChildScrollView(
-                    child: DataTable(
-                      horizontalMargin: 24,
-                      headingRowHeight: 55,
-                      dataRowMaxHeight: 75,
-                      dataRowMinHeight: 65,
-                      headingRowColor: MaterialStateProperty.all(
-                        const Color(0xFFF8FAFC),
-                      ),
-                      columns: const [
+                  child: _categories.isEmpty
+                      ? const Center(
+                          child: Text(
+                            'Nema pronađenih lokacija.',
+                            style: TextStyle(
+                              color: Color(0xFF64748B),
+                              fontSize: 15,
+                            ),
+                          ),
+                        )
+                      : SingleChildScrollView(
+                          child: DataTable(
+                            horizontalMargin: 24,
+                            headingRowHeight: 55,
+                            dataRowMaxHeight: 75,
+                            dataRowMinHeight: 65,
+                            headingRowColor: MaterialStateProperty.all(
+                              const Color(0xFFF8FAFC),
+                            ),
+                            columns: const [
                         DataColumn(
                           label: Text(
                             'Naziv kategorije',
@@ -627,12 +633,12 @@ Widget build(BuildContext context) {
                           ),
                         ),
                       ],
-                      rows: List.generate(_categories.length, (index) {
-                        final category = _categories[index];
-                        final tenderCount = _categoryTenderCount(category);
+                            rows: List.generate(_categories.length, (index) {
+                              final category = _categories[index];
+                              final tenderCount = _categoryTenderCount(category);
 
-                        return DataRow(
-                          cells: [
+                              return DataRow(
+                                cells: [
                             DataCell(
                               Row(
                                 children: [

@@ -19,7 +19,6 @@ abstract class BaseService<T> {
   @protected
   T parseJson(Map<String, dynamic> json) => _fromJson(json);
 
-  /// Sigurno izvlači podatak bez obzira da li backend koristi 'data' wrapper ili ne
   @protected
   dynamic extractData(dynamic responseData) {
     if (responseData is Map<String, dynamic> && responseData.containsKey('data')) {
@@ -51,8 +50,14 @@ abstract class BaseService<T> {
         queryParameters: params,
       );
 
+      final payload = extractData(response.data);
+
+      if (payload is! Map) {
+        throw Exception('Neispravan format odgovora za paginaciju.');
+      }
+
       return PagedResult.fromJson(
-        Map<String, dynamic>.from(response.data as Map),
+        Map<String, dynamic>.from(payload),
         _fromJson,
       );
     } on DioException catch (e) {

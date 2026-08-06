@@ -46,7 +46,7 @@ class TenderDetailsMetaCard extends StatelessWidget {
       _DetailItem(
         icon: Icons.location_on_outlined,
         label: 'Location',
-        value: tender.location.name,
+        value: tender.location?.name ?? 'Nepoznata lokacija',
       ),
       _DetailItem(
         icon: Icons.work_outline,

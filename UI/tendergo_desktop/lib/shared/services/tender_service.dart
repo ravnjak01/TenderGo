@@ -32,7 +32,7 @@ class TenderService extends BaseService<TenderDto> {
   ) async {
     try {
       final response = await dio.get(
-        TenderApiEndpoints.baseUrl,
+        TenderApiEndpoints.adminSearch,
         queryParameters: request.toJson(),
       );
 

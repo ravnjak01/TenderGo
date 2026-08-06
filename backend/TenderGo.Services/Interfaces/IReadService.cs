@@ -9,11 +9,11 @@ using TenderGo.Models.Requests;
 
 namespace TenderGo.Services.Interfaces
 {
-    public interface IReadService<T, TSearch>
-      where T : class
+    public interface IReadService<TModel, TSearch>
+      where TModel : class
       where TSearch : PagedSearchRequest
     {
-        Task<PagedResult<T>> Get(TSearch request);
-        Task<T> GetById(int id);
+        Task<PagedResult<TModel>> Get(TSearch request);
+        Task<TModel> GetById(int id);
     }
 }

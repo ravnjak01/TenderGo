@@ -48,7 +48,10 @@ namespace TenderGo.Services.Services
             _bidService = bidService;
         }
 
-
+        protected override IQueryable<Tender> ApplySorting(IQueryable<Tender> query)
+        {
+            return query.OrderByDescending(t => t.CreatedAt); 
+        }
         public override async Task<string> Delete(int id)
         {
             var entity = await _context.Tenders.FirstOrDefaultAsync(t => t.Id == id)

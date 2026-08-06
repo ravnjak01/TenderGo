@@ -10,7 +10,7 @@ using TenderGo.Services.Services;
 
 namespace TenderGo.Services.Interfaces
 {
-    public interface IBidService:IReadService<BidDTO>
+    public interface IBidService:IReadService<BidDTO,PagedSearchRequest>
     {
 
         Task<BidDTO>Withdraw(int bidId);

@@ -39,6 +39,10 @@ namespace TenderGo.Services.Services
             return query;
 
         }
+        protected virtual IQueryable<TDb> ApplySorting(IQueryable<TDb> query)
+        {
+            return query.OrderByDescending(e => EF.Property<int>(e, "Id"));
+        }
         protected virtual IQueryable<TDb> AddIncludes(IQueryable<TDb> query) => query;
 
         public virtual async Task<TModel> GetById(int id)
@@ -59,7 +63,7 @@ namespace TenderGo.Services.Services
 
             query = AddIncludes(query);
             query = ApplyFilter(query,request);
-
+            query=ApplySorting(query);
             const int maxPageSize = 100;
 
             int page = request.Page <= 0 ? 1 : request.Page;

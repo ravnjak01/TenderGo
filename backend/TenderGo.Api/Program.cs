@@ -165,10 +165,8 @@ builder.Services.AddMemoryCache();
 
 // 5. Registracija Custom Servisa i Infrastrukture
 builder.Services.AddAutoMapper(typeof(MappingProfile));
-builder.Services.AddScoped(typeof(IBaseService<,,,>), typeof(BaseService<,,,>));
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITenderService, TenderService>();
-builder.Services.AddScoped<ITenderAdminService, TenderAdminService>();
 builder.Services.AddScoped<IBidService, BidService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IUserAdminService, UserAdminService>();
