@@ -49,7 +49,7 @@ class _TenderBidsScreenState extends State<TenderBidsScreen> {
       tenderService: widget.tenderService,
       bidService: BidService(DioClient.getDio()),
     );
-    _controller.load();
+    _controller.initialize();
   }
 
   @override
@@ -140,10 +140,26 @@ class _TenderBidsScreenState extends State<TenderBidsScreen> {
           child: RefreshIndicator(
             onRefresh: _controller.refresh,
             child: ListView.separated(
+              controller: _controller.scrollController,
               padding: const EdgeInsets.all(16),
-              itemCount: _controller.bids.length,
+              itemCount: _controller.bids.length + (_controller.hasMore ? 1 : 0),
               separatorBuilder: (_, _) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
+                if (index >= _controller.bids.length) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Center(
+                      child: _controller.isLoadingMore
+                          ? const CircularProgressIndicator()
+                          : FilledButton.tonalIcon(
+                              onPressed: _controller.loadMore,
+                              icon: const Icon(Icons.expand_more_rounded),
+                              label: const Text('Load more'),
+                            ),
+                    ),
+                  );
+                }
+
                 final bid = _controller.bids[index];
                 return _BidCard(
                   bid: bid,

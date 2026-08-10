@@ -171,7 +171,9 @@ namespace TenderGo.Services.Services
             user.BannedAt = DateTime.UtcNow;
 
             var activeRefreshTokens=await _context.RefreshTokens
-                .Where(rt=>rt.UserId == userId && rt.IsActive).ToListAsync();
+                .Where(rt=>rt.UserId == userId 
+                && rt.IsRevoked == false
+             && rt.Expires > DateTime.UtcNow).ToListAsync();
 
             foreach (var token in activeRefreshTokens)
             {

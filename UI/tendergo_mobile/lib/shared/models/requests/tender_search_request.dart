@@ -1,15 +1,42 @@
 import 'package:tendergo/shared/models/requests/paged_search_request.dart';
 
 class TenderSearchRequest extends PagedSearchRequest {
-  final String? searchTerm;
- 
-  TenderSearchRequest({
-    this.searchTerm,
-    int page = 1,
-    int pageSize = 10,
-  }) : super(page: page, pageSize: pageSize);
+  final int? categoryId;
+  final int? locationId;
+  final String? country;
+  final String? region;
 
-  Map<String, dynamic> toJson() => {
-        if (searchTerm != null) 'searchTerm': searchTerm,
-      };
+  TenderSearchRequest({
+    this.categoryId,
+    this.locationId,
+    this.country,
+    this.region,
+    String? searchTerm,
+    int page = 1,
+    int pageSize = 3,
+  }) : super(
+          page: page,
+          pageSize: pageSize,
+          searchTerm: searchTerm,
+        );
+
+  @override
+  Map<String, dynamic> toQueryParams() {
+    final params = super.toQueryParams();
+
+    if (categoryId != null) {
+      params['CategoryId'] = categoryId;
+    }
+    if (locationId != null) {
+      params['LocationId'] = locationId;
+    }
+    if (country != null && country!.isNotEmpty) {
+      params['Country'] = country;
+    }
+    if (region != null && region!.isNotEmpty) {
+      params['Region'] = region;
+    }
+
+    return params;
+  }
 }

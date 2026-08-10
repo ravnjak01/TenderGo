@@ -57,7 +57,7 @@ namespace TenderGo.Api.Controllers
         }
 
         [HttpGet("tender/{tenderId}")]
-        public async Task<IActionResult> GetBidsForTender(int tenderId,PagedSearchRequest request)
+        public async Task<IActionResult> GetBidsForTender(int tenderId, [FromQuery]  PagedSearchRequest request)
         {
             var bids = await _bidService.GetBidsForTender(tenderId,request);
             return Ok(bids);

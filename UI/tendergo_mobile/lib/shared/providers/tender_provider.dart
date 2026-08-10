@@ -29,7 +29,6 @@ class TenderProvider extends BaseProvider {
   List<TenderDto> _tenders = [];
   List<CategoryDto> _categories = [];
   final Set<String> _selectedCategories = {'All'};
-  List<TenderDto>? _searchResults;
   String _searchQuery = '';
   LocationFilterSelection? _locationFilter;
   String? _lastLoggedSearchQuery;
@@ -53,6 +52,33 @@ class TenderProvider extends BaseProvider {
   Set<int> _savedIds = {};
   Set<int> get savedIds => _savedIds;
 
+  // --- Kreiranje Request objekta sa backend filterima ---
+  TenderSearchRequest _buildSearchRequest({int page = 1}) {
+    int? categoryId;
+
+    // Ako je odabrana tačno jedna kategorija i nije 'All', pronađi njen ID
+    if (!_selectedCategories.contains('All') && _selectedCategories.length == 1) {
+      final selectedName = _selectedCategories.first;
+      final matchedCategory = _categories.firstWhere(
+        (c) => c.name.toLowerCase() == selectedName.toLowerCase(),
+        orElse: () => CategoryDto(id: 0, name: ''),
+      );
+      if (matchedCategory.id != 0) {
+        categoryId = matchedCategory.id;
+      }
+    }
+
+    return TenderSearchRequest(
+      page: page,
+      pageSize: _pageSize,
+      searchTerm: _searchQuery.isNotEmpty ? _searchQuery : null,
+      categoryId: categoryId,
+      locationId: _locationFilter?.locationId,
+      country: _locationFilter?.country,
+      region: _locationFilter?.region,
+    );
+  }
+
   Future<void> loadBookmarks(TenderService service) async {
     if (!await _tokenStore.hasValidAccessToken()) return;
 
@@ -74,53 +100,18 @@ class TenderProvider extends BaseProvider {
     safeNotify();
   }
 
-  List<TenderDto> get filteredTenders {
-    var list = List<TenderDto>.from(_searchResults ?? _tenders);
-
-    if (!_selectedCategories.contains('All') &&
-        _selectedCategories.isNotEmpty) {
-      list = list
-          .where((t) => _selectedCategories.contains(t.categoryName))
-          .toList();
-    }
-
-    final filter = _locationFilter;
-    if (filter != null) {
-      if (filter.locationId != null) {
-        list = list.where((t) => t.location.id == filter.locationId).toList();
-      } else if (filter.region != null) {
-        list = list
-            .where(
-              (t) =>
-                  t.location.country.toLowerCase() ==
-                      filter.country.toLowerCase() &&
-                  (t.location.region ?? '').toLowerCase() ==
-                      filter.region!.toLowerCase(),
-            )
-            .toList();
-      } else {
-        list = list
-            .where(
-              (t) =>
-                  t.location.country.toLowerCase() ==
-                  filter.country.toLowerCase(),
-            )
-            .toList();
-      }
-    }
-
-    return list;
-  }
+  // GETTER za kompatibilnost sa UI-em
+  List<TenderDto> get filteredTenders => _tenders;
 
   void setLocationFilter(LocationFilterSelection? filter) {
     _locationFilter = filter;
-    safeNotify();
+    fetchActiveTenders();
   }
 
   void clearLocationFilter() {
     if (_locationFilter == null) return;
     _locationFilter = null;
-    safeNotify();
+    fetchActiveTenders();
   }
 
   void toggleCategory(String category) {
@@ -137,35 +128,38 @@ class TenderProvider extends BaseProvider {
       }
       if (_selectedCategories.isEmpty) _selectedCategories.add('All');
     }
-    safeNotify();
+    fetchActiveTenders();
   }
 
-  // --- 1. Inicijalno dohvatanje (Prva stranica) ---
+  void setSelectedCategories(Set<String> categories) {
+    _selectedCategories
+      ..clear()
+      ..addAll(categories);
+    fetchActiveTenders();
+  }
+
+  // --- 1. Inicijalno dohvatanje / Prva stranica ---
   Future<void> fetchActiveTenders({bool silent = false}) async {
     _currentPage = 1;
     _hasMore = true;
     _isLoadingMore = false;
-    
+
     if (!await _tokenStore.hasValidAccessToken()) return;
 
     await handleAsync(
       () async {
-        final activePaged = await _service.getActive(
-          page: _currentPage,
-          pageSize: _pageSize,
-        );
+        final request = _buildSearchRequest(page: _currentPage);
+        final activePaged = await _service.get(request: request);
+
         _tenders = activePaged.result;
-        
-        // Ako je vraćeno manje od _pageSize stavki, nema više stranica za učitavanje
         _hasMore = activePaged.result.length >= _pageSize;
       },
       silent: silent,
     );
   }
 
-  // --- 2. Beskonačno skrolovanje (Sljedeća stranica) ---
+  // --- 2. Beskonačno skrolovanje / Sljedeća stranica ---
   Future<void> fetchNextPage() async {
-    // Ne učitavaj ako se već učitava nova stranica, ako nema više podataka ili ako je u toku primarno učitavanje
     if (_isLoadingMore || !_hasMore || isLoading) return;
 
     _isLoadingMore = true;
@@ -173,31 +167,22 @@ class TenderProvider extends BaseProvider {
 
     try {
       final nextPage = _currentPage + 1;
-      final activePaged = await _service.getActive(
-        page: nextPage,
-        pageSize: _pageSize,
-      );
+      final request = _buildSearchRequest(page: nextPage);
+      final activePaged = await _service.get(request:request);
 
       if (activePaged.result.isNotEmpty) {
-        _tenders.addAll(activePaged.result); // Dodajemo nove na postojeću listu
+        _tenders.addAll(activePaged.result);
         _currentPage = nextPage;
       }
 
-      // Ako je vraćeno manje elemenata od veličine stranice, došli smo do kraja
       _hasMore = activePaged.result.length >= _pageSize;
     } catch (e) {
-      // Ovdje po potrebi zabilježite grešku
+      // Handle error
     } finally {
       _isLoadingMore = false;
       safeNotify();
     }
   }
-
-  Future<void> fetchAllTenders() => handleAsync(() async {
-        // 3. Dodato .result
-        final allPaged = await _service.getAll();
-        _tenders = allPaged.result;
-      });
 
   Future<TenderDto?> createTender(
     TenderInsertRequest request, {
@@ -210,22 +195,10 @@ class TenderProvider extends BaseProvider {
         return created;
       }, silent: true);
 
+  // --- 3. Pretraga ---
   Future<void> searchTenders(String query) async {
     _searchQuery = query.trim();
-    if (_searchQuery.isEmpty) {
-      _searchResults = null;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!isDisposed) safeNotify();
-      });
-      return;
-    }
-    await handleAsync(() async {
-      // 4. Dodato .result za search poziv
-      final searchPaged = await _service.search(
-        TenderSearchRequest(searchTerm: _searchQuery),
-      );
-      _searchResults = searchPaged.result;
-    });
+    await fetchActiveTenders();
   }
 
   Future<void> logSearchActivity(String query) async {
@@ -244,18 +217,13 @@ class TenderProvider extends BaseProvider {
 
   void clearSearch() {
     _searchQuery = '';
-    _searchResults = null;
-    notifyListeners();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      safeNotify();
-    });
+    fetchActiveTenders();
   }
 
   Future<bool> cancelTender(int id) async {
     final result = await handleAsync(() async {
       await _service.cancel(id);
       _tenders.removeWhere((t) => t.id == id);
-      _searchResults?.removeWhere((t) => t.id == id);
       return true;
     });
     return result ?? false;
@@ -319,20 +287,12 @@ class TenderProvider extends BaseProvider {
     }
   }
 
-  void setSelectedCategories(Set<String> categories) {
-    _selectedCategories
-      ..clear()
-      ..addAll(categories);
-    safeNotify();
-  }
-
   void resetSessionState() {
     _tenders = [];
     _categories = [];
     _selectedCategories
       ..clear()
       ..add('All');
-    _searchResults = null;
     _searchQuery = '';
     _locationFilter = null;
     _lastLoggedSearchQuery = null;

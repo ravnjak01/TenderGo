@@ -130,9 +130,17 @@ class _MobileMyTendersScreenState extends State<MobileMyTendersScreen> {
         separatorBuilder: (context, index) => const SizedBox(height: 12),
         itemBuilder: (context, index) {
           if (index >= _controller.items.length) {
-            return const Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
-              child: Center(child: CircularProgressIndicator()),
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: _controller.isLoadingMore
+                    ? const CircularProgressIndicator()
+                    : FilledButton.tonalIcon(
+                        onPressed: _controller.loadMore,
+                        icon: const Icon(Icons.expand_more_rounded),
+                        label: const Text('Load more'),
+                      ),
+              ),
             );
           }
 

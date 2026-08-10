@@ -54,7 +54,7 @@ namespace TenderGo.Services.Services
             bool isAdmin = _authService.IsInRole(AppRoles.Admin);
 
        
-            bool isBidAuthor = entity.CreatedByUserId == currentUserId;
+            bool isBidAuthor = entity.SubmittedByUserId == currentUserId;
             bool isTenderOwner = entity.Tender != null && entity.Tender.CreatedByUserId == currentUserId;
 
             if (!isAdmin && !isBidAuthor && !isTenderOwner)

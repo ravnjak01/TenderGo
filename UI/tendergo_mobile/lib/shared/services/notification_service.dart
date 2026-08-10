@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:tendergo/shared/core/network/constants/notification_api_endpoints.dart';
 import 'package:tendergo/shared/models/dto/notification_dto.dart';
+import 'package:tendergo/shared/models/dto/paged_result.dart';
 import 'package:tendergo/shared/services/response_parser.dart';
 
 class NotificationService {
@@ -8,15 +9,28 @@ class NotificationService {
 
   NotificationService(this._dio);
 
-  Future<List<NotificationDto>> getMyNotifications() async {
-    try {
-      final response = await _dio.get(NotificationApiEndpoints.getMy);
-      return ResponseParser.dtoList(response.data, NotificationDto.fromJson);
-    } on DioException catch (e) {
-      throw _handleError(e, 'Error fetching notifications');
-    }
-  }
+Future<PagedResult<NotificationDto>> getMyNotifications({
+  int page = 1,
+  int pageSize = 10,
+}) async {
+  try {
+    final response = await _dio.get(
+      NotificationApiEndpoints.getMy,
+      queryParameters: {
+        'page': page,
+        'pageSize': pageSize,
+      },
+    );
 
+    // Pretvaramo sirovi odgovor preko ResponseParser-a u Map<String, dynamic>
+    final rawData = ResponseParser.data(response.data) as Map<String, dynamic>;
+
+    // Direktno instanciramo PagedResult sa podacima
+    return PagedResult.fromJson(rawData, NotificationDto.fromJson);
+  } on DioException catch (e) {
+    throw _handleError(e, 'Error fetching notifications');
+  }
+}
   Future<void> markAsRead(int id) async {
     try {
       await _dio.patch(NotificationApiEndpoints.markAsRead(id));

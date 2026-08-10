@@ -16,14 +16,21 @@ class NotificationProvider extends BaseProvider {
   List<NotificationDto> _notifications = [];
   Timer? _pollingTimer;
   bool _isFetching = false;
+  int _currentPage = 1;
+  bool _hasMore = true;
+  bool _isLoadingMore = false;
 
   static const _pollingInterval = Duration(seconds: 30);
+  static const int _pageSize = 10;
 
   NotificationLoadState get state => _state;
   List<NotificationDto> get notifications => _notifications;
 
   @override
   bool get isLoading => _state == NotificationLoadState.loading;
+
+  bool get hasMore => _hasMore;
+  bool get isLoadingMore => _isLoadingMore;
 
   int get unreadCount => _notifications.where((n) => !n.isRead).length;
 
@@ -53,24 +60,50 @@ class NotificationProvider extends BaseProvider {
     safeNotify();
   }
 
-  Future<void> loadNotifications({bool silent = false}) async {
+  Future<void> loadNotifications({bool silent = false, int page = 1}) async {
     if (_isFetching) return;
     if (!await _tokenStore.hasValidAccessToken()) return;
 
     _isFetching = true;
 
-    if (!silent) _state = NotificationLoadState.loading;
+    if (!silent) {
+      _state = NotificationLoadState.loading;
+    } else if (page > 1) {
+      _isLoadingMore = true;
+    }
 
-    await handleAsync(
-      () async {
-        _notifications = await _service.getMyNotifications();
-        _state = NotificationLoadState.loaded;
-      },
-      silent: silent,
-      onError: (_) => _state = NotificationLoadState.error,
-    );
+    try {
+      await handleAsync(
+        () async {
+          final pagedResult = await _service.getMyNotifications(
+            page: page,
+            pageSize: _pageSize,
+          );
 
-    _isFetching = false;
+          if (page == 1) {
+            _notifications = pagedResult.result;
+            _currentPage = 1;
+          } else {
+            _notifications.addAll(pagedResult.result);
+          }
+
+          _currentPage = page;
+          _hasMore = pagedResult.hasNextPage;
+          _state = NotificationLoadState.loaded;
+        },
+        silent: silent,
+        onError: (_) => _state = NotificationLoadState.error,
+      );
+    } finally {
+      _isFetching = false;
+      _isLoadingMore = false;
+      safeNotify();
+    }
+  }
+
+  Future<void> loadNextPage() async {
+    if (_isFetching || !_hasMore || _isLoadingMore) return;
+    await loadNotifications(page: _currentPage + 1, silent: true);
   }
 
   Future<void> markAsRead(int id) async {

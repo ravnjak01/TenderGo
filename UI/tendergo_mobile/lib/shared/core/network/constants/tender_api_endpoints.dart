@@ -3,9 +3,7 @@ import 'package:tendergo/shared/models/dto/tender_dto.dart';
 class TenderApiEndpoints {
   static const String _tenderBase = 'tender';
 
-
-
-  static const String getAll = _tenderBase;
+  static const String get = _tenderBase;
 
   static String getById(int id) => '$_tenderBase/$id';
 
@@ -21,9 +19,6 @@ class TenderApiEndpoints {
 
   static String award(TenderDto tender, int bidId) =>
       '$_tenderBase/${tender.id}/award/$bidId';
-
-  static const String search = '/api/tender/search';
-
 
       static String toggleBookmark(int tenderId) => '$_tenderBase/toggle/$tenderId';
 

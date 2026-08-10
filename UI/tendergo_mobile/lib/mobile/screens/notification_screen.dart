@@ -7,8 +7,38 @@ import 'package:tendergo/shared/providers/notification_provider.dart';
 import 'package:tendergo/mobile/widgets/common/app_dialogs.dart';
 
 
-class NotificationScreen extends StatelessWidget {
+class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
+
+  @override
+  State<NotificationScreen> createState() => _NotificationScreenState();
+}
+
+class _NotificationScreenState extends State<NotificationScreen> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<NotificationProvider>().loadNotifications();
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.extentAfter <= 300) {
+      context.read<NotificationProvider>().loadNextPage();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -92,12 +122,28 @@ class NotificationScreen extends StatelessWidget {
           return RefreshIndicator(
             onRefresh: () => provider.loadNotifications(),
             child: ListView.separated(
+              controller: _scrollController,
               physics: const BouncingScrollPhysics(),
               padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: provider.notifications.length,
+              itemCount: provider.notifications.length + (provider.hasMore ? 1 : 0),
               separatorBuilder: (_, _) =>
                   const Divider(height: 1, color: AppColors.outline),
               itemBuilder: (context, index) {
+                if (index >= provider.notifications.length) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Center(
+                      child: provider.isLoadingMore
+                          ? const CircularProgressIndicator()
+                          : FilledButton.tonalIcon(
+                              onPressed: () => provider.loadNextPage(),
+                              icon: const Icon(Icons.expand_more_rounded),
+                              label: const Text('Load more'),
+                            ),
+                    ),
+                  );
+                }
+
                 final notification = provider.notifications[index];
                 return Dismissible(
                   key: ValueKey(notification.id),

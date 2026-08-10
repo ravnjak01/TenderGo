@@ -598,8 +598,8 @@ Padding(
     children: [
       Text(
         _totalCount == 0 
-            ? 'Nema pronađenih stavki'
-            : 'Prikazano ${((_currentPage - 1) * _pageSize) + 1} - ${(_currentPage * _pageSize) > _totalCount ? _totalCount : (_currentPage * _pageSize)} od $_totalCount stavki',
+            ? 'Nema pronađenih tendera'
+            : 'Prikazano ${((_currentPage - 1) * _pageSize) + 1} - ${(_currentPage * _pageSize) > _totalCount ? _totalCount : (_currentPage * _pageSize)} od $_totalCount tendera',
         style: const TextStyle(color: Color(0xFF64748B), fontSize: 14),
       ),
       Row(

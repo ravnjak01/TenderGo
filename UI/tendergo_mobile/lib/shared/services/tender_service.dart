@@ -25,19 +25,26 @@ class TenderService {
   }
 
 
-Future<PagedResult<TenderDto>> getAll({int page = 1, int pageSize = 10}) async {
+Future<PagedResult<TenderDto>> get({
+  TenderSearchRequest? request,
+}) async {
   try {
+    final searchParams = request ?? TenderSearchRequest(page: 1, pageSize: 10);
+
     final response = await _dio.get(
-      TenderApiEndpoints.getAll,
-      queryParameters: {'page': page, 'pageSize': pageSize},
+      TenderApiEndpoints.get, 
+      queryParameters: searchParams.toQueryParams(),
     );
 
     return _unwrapEnvelope(
       response,
-      (data) => PagedResult.fromJson(data as Map<String, dynamic>, TenderDto.fromJson),
+      (data) => PagedResult.fromJson(
+        data as Map<String, dynamic>, 
+        TenderDto.fromJson,
+      ),
     );
   } on DioException catch (e) {
-    throw _handleError(e, 'Greška pri učitavanju tendera');
+    throw _handleError(e, 'Greška pri dohvaćanju tendera');
   }
 }
 
@@ -50,21 +57,7 @@ Future<PagedResult<TenderDto>> getAll({int page = 1, int pageSize = 10}) async {
     }
   }
 
- Future<PagedResult<TenderDto>> getActive({int page = 1, int pageSize = 10}) async {
-  try {
-    final response = await _dio.get(
-      TenderApiEndpoints.getActive,
-      queryParameters: {'page': page, 'pageSize': pageSize},
-    );
 
-    return _unwrapEnvelope(
-      response,
-      (data) => PagedResult.fromJson(data as Map<String, dynamic>, TenderDto.fromJson),
-    );
-  } on DioException catch (e) {
-    throw _handleError(e, 'Greška pri učitavanju aktivnih tendera');
-  }
-}
 
   Future<TenderDto> create(
     TenderInsertRequest data, {
@@ -115,21 +108,7 @@ Future<PagedResult<TenderDto>> getAll({int page = 1, int pageSize = 10}) async {
     }
   }
 
-Future<PagedResult<TenderDto>> getByCategory(int id, {int page = 1, int pageSize = 10}) async {
-  try {
-    final response = await _dio.get(
-      TenderApiEndpoints.getByCategory(id),
-      queryParameters: {'page': page, 'pageSize': pageSize},
-    );
 
-    return _unwrapEnvelope(
-      response,
-      (data) => PagedResult.fromJson(data as Map<String, dynamic>, TenderDto.fromJson),
-    );
-  } on DioException catch (e) {
-    throw _handleError(e, 'Greška pri učitavanju kategorije');
-  }
-}
 
 Future<PagedResult<TenderDto>> getByUser(
   String userId, {
@@ -163,21 +142,6 @@ Future<PagedResult<TenderDto>> getByUser(
     }
 
     throw _handleError(e, 'Greška pri dohvaćanju korisničkih tendera');
-  }
-}
-Future<PagedResult<TenderDto>> search(TenderSearchRequest request) async {
-  try {
-    final response = await _dio.get(
-      TenderApiEndpoints.search, 
-      queryParameters: request.toQueryParams(),
-    );
-
-    return _unwrapEnvelope(
-      response,
-      (data) => PagedResult.fromJson(data as Map<String, dynamic>, TenderDto.fromJson),
-    );
-  } on DioException catch (e) {
-    throw _handleError(e, 'Greška pri pretrazi tendera');
   }
 }
 

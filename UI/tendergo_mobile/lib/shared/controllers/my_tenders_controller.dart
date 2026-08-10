@@ -16,6 +16,7 @@ class MyTendersController with ChangeNotifier {
   String errorMessage = '';
   bool hasMore = true;
   int currentPage = 1;
+  bool isLoadingMore = false;
 
   static const int pageSize = 3;
   static const double _scrollThreshold = 200;
@@ -40,7 +41,7 @@ class MyTendersController with ChangeNotifier {
   }
 
   Future<void> _fetchTenders({bool refresh = false}) async {
-    if (_isFetching || isLoading) return;
+    if (_isFetching || isLoading || (isLoadingMore && !refresh)) return;
     if (!refresh && !hasMore) return;
 
     if (refresh) {
@@ -52,7 +53,11 @@ class MyTendersController with ChangeNotifier {
     }
 
     _isFetching = true;
-    isLoading = true;
+    if (refresh) {
+      isLoading = true;
+    } else {
+      isLoadingMore = true;
+    }
     hasError = false;
     errorMessage = '';
     notifyListeners();
@@ -91,6 +96,7 @@ class MyTendersController with ChangeNotifier {
       errorMessage = e.toString().replaceFirst('Exception: ', '');
     } finally {
       isLoading = false;
+      isLoadingMore = false;
       _isFetching = false;
       notifyListeners();
     }

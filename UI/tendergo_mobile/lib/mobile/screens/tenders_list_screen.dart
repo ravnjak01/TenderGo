@@ -279,9 +279,17 @@ Future<void> _initialLoad() async {
                     sliver: SliverList.separated(
                       itemBuilder: (context, index) {
                         if (index >= filtered.length) {
-                          return const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 20),
-                            child: Center(child: CircularProgressIndicator()),
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 20),
+                            child: Center(
+                              child: provider.isLoadingMore
+                                  ? const CircularProgressIndicator()
+                                  : FilledButton.tonalIcon(
+                                      onPressed: provider.fetchNextPage,
+                                      icon: const Icon(Icons.expand_more_rounded),
+                                      label: const Text('Load more'),
+                                    ),
+                            ),
                           );
                         }
 

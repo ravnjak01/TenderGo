@@ -22,11 +22,13 @@ class CategoryService extends BaseService<CategoryDto> {
   }
 
   /// PATCH: api/category/{id} (Ažuriranje kategorije - vraća ažurirani CategoryDto)
-  Future<CategoryDto> updateCategory(int id, CategoryUpdateRequest request) async {
+  @override
+  Future<CategoryDto> update(int id, dynamic requestData) async {
     try {
+      final body = requestData is Map ? requestData : requestData.toJson();
       final response = await dio.patch(
         CategoryApiEndpoints.update(id),
-        data: request.toJson(),
+        data: body,
       );
 
       final data = extractData(response.data);
@@ -34,6 +36,10 @@ class CategoryService extends BaseService<CategoryDto> {
     } on DioException catch (e) {
       throw Exception(extractErrorMessage(e, 'Greška pri ažuriranju kategorije'));
     }
+  }
+
+  Future<CategoryDto> updateCategory(int id, CategoryUpdateRequest request) {
+    return update(id, request);
   }
 
   /// PATCH: api/category/{id}/activate

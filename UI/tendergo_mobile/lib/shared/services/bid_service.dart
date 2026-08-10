@@ -16,7 +16,7 @@ class BidService {
   }
 
 
-Future<PagedResult<BidDto>> getMyBids({int page = 1, int pageSize = 10}) async {
+Future<PagedResult<BidDto>> getMyBids({int page = 1, int pageSize = 3}) async {
   try {
     final response = await _dio.get(
       BidApiEndpoints.getMyBids,
@@ -64,20 +64,39 @@ Future<PagedResult<BidDto>> getMyBids({int page = 1, int pageSize = 10}) async {
     }
   }
 
-  Future<List<BidDto>> getByTender(int tenderId) async {
-    try {
-      final response = await _dio.get(BidApiEndpoints.getByTender(tenderId));
+ Future<PagedResult<BidDto>> getByTender(
+  int tenderId, {
+  int page = 1,
+  int pageSize = 3,
+}) async {
+  try {
+    final response = await _dio.get(
+      BidApiEndpoints.getByTender(tenderId),
+      queryParameters: {'page': page, 'pageSize': pageSize},
+    );
 
-      return ResponseParser.dtoList(response.data, BidDto.fromJson);
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 404) return [];
-      if (e.response?.statusCode == 403) {
-        throw Exception('You are not allowed to view bids for this tender.');
-      }
-      throw _handleError(e, 'Error fetching bids by tender');
+    return _unwrapEnvelope(
+      response,
+      (data) => PagedResult.fromJson(
+        data as Map<String, dynamic>,
+        BidDto.fromJson,
+      ),
+    );
+  } on DioException catch (e) {
+    if (e.response?.statusCode == 404) {
+      return PagedResult<BidDto>(
+        result: [],
+        totalCount: 0,
+        page: page,
+        pageSize: pageSize,
+      );
     }
+    if (e.response?.statusCode == 403) {
+      throw Exception('You are not allowed to view bids for this tender.');
+    }
+    throw _handleError(e, 'Error fetching bids by tender');
   }
-
+}
   Future<BidDto> cancel(int id) async {
     try {
       final response = await _dio.put(BidApiEndpoints.cancel(id));
@@ -88,17 +107,7 @@ Future<PagedResult<BidDto>> getMyBids({int page = 1, int pageSize = 10}) async {
     }
   }
 
-  Future<List<dynamic>> getAllowedActions(int id) async {
-    try {
-      final response = await _dio.get(
-        BidApiEndpoints.getAllowedActions(id),
-      );
-
-      return List<dynamic>.from(ResponseParser.list(response.data));
-    } on DioException catch (e) {
-      throw _handleError(e, 'Error fetching bid actions');
-    }
-  }
+  
 
   Exception _handleError(DioException e, String defaultMessage) {
     final message = ResponseParser.errorMessage(e, defaultMessage);
