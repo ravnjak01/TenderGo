@@ -24,7 +24,7 @@ namespace TenderGo.Services.Services.Seed
             T GetValueOrFallback<T>(Dictionary<string, T> dict, string key, string entityName) where T : class
             {
                 if (dict.TryGetValue(key, out var val)) return val;
-                throw new Exception($"Bid Seeding failed: Required {entityName} '{key}' was not found in the database.");
+                throw new InvalidOperationException($"Bid Seeding failed: Required {entityName} '{key}' was not found in the database.");
             }
 
 

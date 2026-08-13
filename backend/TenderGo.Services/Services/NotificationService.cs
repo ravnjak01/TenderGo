@@ -59,7 +59,7 @@ namespace TenderGo.Services.Services
         {
             var notification = await _context.Notifications
                 .FirstOrDefaultAsync(n => n.Id == id && n.UserId == userId)
-                ?? throw new UserException("Notifikacija nije pronađena.");
+                ?? throw new NotFoundException("Notfication",id);
 
             notification.IsRead = true;
             await _context.SaveChangesAsync();
@@ -87,7 +87,7 @@ namespace TenderGo.Services.Services
         {
             var notification = await _context.Notifications
                 .FirstOrDefaultAsync(n => n.Id == id && n.UserId == userId)
-                ?? throw new UserException("Notifikacija nije pronađena.");
+                          ?? throw new NotFoundException("Notfication", id);
 
             _context.Notifications.Remove(notification);
             await _context.SaveChangesAsync();

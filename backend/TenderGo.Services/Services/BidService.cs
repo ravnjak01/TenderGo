@@ -48,7 +48,7 @@ namespace TenderGo.Services.Services
             query = AddIncludes(query);
 
             var entity = await query.FirstOrDefaultAsync(b => b.Id == id)
-                 ?? throw new NotFoundException("Bid not found", new { Entity = "Bid", Id = id });
+                 ?? throw new NotFoundException("Bid", id);
 
             var currentUserId = _authService.GetCurrentUserId();
             bool isAdmin = _authService.IsInRole(AppRoles.Admin);
@@ -79,7 +79,7 @@ namespace TenderGo.Services.Services
 
             var query = _context.Bids
                 .AsNoTracking()
-                .Where(x => x.SubmittedByUserId == userId && x.Status != ApplicationStatus.Withdrawn);
+                .Where(x => x.SubmittedByUserId == userId );
 
             var totalCount = await query.CountAsync();
 
@@ -133,16 +133,15 @@ namespace TenderGo.Services.Services
 
         public override async Task<BidDTO> Insert(BidInsertRequest request)
 {
-    try
-    {
+ 
         var currentUserId = _authService.GetCurrentUserId();
         var tender = await _context.Tenders.FindAsync(request.TenderId)
-              ?? throw new UserException("Tender not found");
+              ?? throw new NotFoundException("Tender", request.TenderId);
 
         if (currentUserId == tender.CreatedByUserId)
         {
-            throw new UserException("OWNER_CANNOT_BID");
-        }
+                throw new ForbiddenException("Vlasnik tendera ne može slati ponude na sopstveni tender.");
+            }
 
         _logger.LogInformation("Attempting to create a new bid for tender {TenderId} by user {UserId}", request.TenderId, currentUserId);
 
@@ -158,7 +157,7 @@ namespace TenderGo.Services.Services
 
         if (totalAttempts >= 3)
         {
-            throw new UserException("MAX_BID_ATTEMPTS_EXCEEDED");
+            throw new UserException("You reached maximum number of bids for this tender");
         }
 
         var state = CreateState(ApplicationStatus.Pending, tender.Status);
@@ -166,37 +165,7 @@ namespace TenderGo.Services.Services
   
         return await state.Insert(request);
     }
-    catch (UserException ex)
-    {
-        _logger.LogWarning(ex, "User error while creating bid for tender {TenderId}: {Message}", request.TenderId, ex.Message);
-        throw;
-    }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, "Unexpected error while creating bid for tender {TenderId}", request.TenderId);
-        throw new UserException("An unexpected error occurred while creating the bid.");
-    }
-}
    
-        public async Task<BidDTO> Withdraw(int id)
-        {
-            var bid = await _context.Bids.Include(b => b.Tender).FirstOrDefaultAsync(b => b.Id == id)
-                ?? throw new UserException("Bid not found");
-
-            var currentUserId = _authService.GetCurrentUserId();
-            if (bid.SubmittedByUserId != currentUserId)
-            {
-                throw new ForbiddenException();
-            }
-
-
-            _logger.LogInformation("Attempting to withdraw bid {BidId}", id);
-
-            var state = CreateState(bid.Status, bid.Tender.Status);
-
-            return await state.Withdraw(id);
-        }
-
         public async Task<PagedResult<BidDTO>> GetBidsForTender(int tenderId, PagedSearchRequest request)
         {
             var tender = await _context.Tenders.FindAsync(tenderId)
@@ -258,26 +227,32 @@ namespace TenderGo.Services.Services
         public async Task<List<string>> AllowedActions(int id)
         {
             var entity= await _context.Bids.Include(b => b.Tender).FirstOrDefaultAsync(b => b.Id == id)
-                ?? throw new UserException("Bid not found");
+                ?? throw new NotFoundException("Bid",id);
 
             var state = CreateState(entity.Status, entity.Tender.Status);
 
             return await state.AllowedActions(entity);
         }
-
-        public async Task<BidDTO> Cancel(int id)
+        public async Task<BidDTO> Withdraw(int id)
         {
-            var entity = await _context.Bids.Include(b => b.Tender).FirstOrDefaultAsync(b => b.Id == id)
-                 ?? throw new NotFoundException("Bid not found", new { Entity = "Bid", Id = id });
+            var bid = await _context.Bids.Include(b => b.Tender).FirstOrDefaultAsync(b => b.Id == id)
+                ?? throw new NotFoundException("Bid",id);
 
-            var state = CreateState(entity.Status,entity.Tender.Status);
-            var result = await state.Cancel(id);
+            var currentUserId = _authService.GetCurrentUserId();
+            if (bid.SubmittedByUserId != currentUserId)
+            {
+                throw new ForbiddenException();
+            }
 
-            await _context.SaveChangesAsync();
 
-            return result;
+            _logger.LogInformation("Attempting to withdraw bid {BidId}", id);
+
+            var state = CreateState(bid.Status, bid.Tender.Status);
+
+            return await state.Withdraw(id);
         }
 
+     
 
         public BaseBidState CreateState(ApplicationStatus bidStatus, TenderStatus tenderStatus)
         {
@@ -289,12 +264,12 @@ namespace TenderGo.Services.Services
             return bidStatus switch
             {
                 ApplicationStatus.Pending => _serviceProvider.GetRequiredService<PendingBidState>(),
+
                 ApplicationStatus.Withdrawn => _serviceProvider.GetRequiredService<FinalBidState>(),
                 ApplicationStatus.Accepted => _serviceProvider.GetRequiredService<FinalBidState>(),
                 ApplicationStatus.Rejected => _serviceProvider.GetRequiredService<FinalBidState>(),
                 ApplicationStatus.Cancelled => _serviceProvider.GetRequiredService<FinalBidState>(),
-
-                _ => _serviceProvider.GetRequiredService<PendingBidState>()
+                _ => _serviceProvider.GetRequiredService<FinalBidState>()
             };
         }
 

@@ -55,7 +55,7 @@ namespace TenderGo.Data.Seeders
                 else
                 {
                     var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                    throw new Exception($"Seed Admin failed: {errors}");
+                    throw new InvalidOperationException($"Seed Admin failed: {errors}");
                 }
             }
         }

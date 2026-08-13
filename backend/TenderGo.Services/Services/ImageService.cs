@@ -8,6 +8,7 @@ using System.Security;
 using System.Threading.Tasks;
 using TenderGo.Models.DTOs;
 using TenderGo.Services.Interfaces;
+using TenderGo.Services.Services.Exceptions;
 
 namespace TenderGo.Services.Services
 {
@@ -44,13 +45,13 @@ namespace TenderGo.Services.Services
             byte[] imageBytes, string subFolder, bool isPrimary = false)
         {
             if (imageBytes == null || imageBytes.Length == 0)
-                throw new ArgumentException("Niz bajtova je prazan.");
+                throw new UserException("Slika nije priložena ili je prazna.");
 
             if (imageBytes.Length > MaxFileSizeInBytes)
-                throw new ArgumentException($"Sadržaj prekoračuje maksimalnu dozvoljenu veličinu od {MaxFileSizeInBytes / (1024 * 1024)} MB.");
+                throw new UserException($"Sadržaj prekoračuje maksimalnu dozvoljenu veličinu od {MaxFileSizeInBytes / (1024 * 1024)} MB.");
 
             if (!IsValidImage(imageBytes))
-                throw new ArgumentException("Fajl nije validna slika (nevažeći magic bytes).");
+                throw new UserException("Fajl nije validna slika (nepodržan format).");
 
             var hash = await CalculateHash(imageBytes);
             var extension = DetectExtension(imageBytes);
@@ -84,10 +85,11 @@ namespace TenderGo.Services.Services
             IFormFile file, string subFolder, bool isPrimary = false)
         {
             if (file.Length > MaxFileSizeInBytes)
-                throw new ArgumentException($"Fajl prekoračuje maksimalnu dozvoljenu veličinu od {MaxFileSizeInBytes / (1024 * 1024)} MB.");
+                throw new UserException($"Sadržaj prekoračuje maksimalnu dozvoljenu veličinu od {MaxFileSizeInBytes / (1024 * 1024)} MB.");
+
 
             if (!AllowedMimeTypes.Contains(file.ContentType))
-                throw new ArgumentException(
+                throw new UserException(
                     $"Nedozvoljeni tip fajla: {file.ContentType}. " +
                     $"Dozvoljeni tipovi: {string.Join(", ", AllowedMimeTypes)}");
 
@@ -96,14 +98,14 @@ namespace TenderGo.Services.Services
             byte[] bytes = ms.ToArray();
 
             if (!IsValidImage(bytes))
-                throw new ArgumentException(
+                throw new UserException(
                     "Sadržaj fajla ne odgovara deklarisanom tipu (magic bytes provjera nije prošla).");
 
         
             string detectedMime = DetectMimeType(bytes);
             if (!string.IsNullOrEmpty(detectedMime) &&
                 !detectedMime.Equals(file.ContentType, StringComparison.OrdinalIgnoreCase))
-                throw new ArgumentException(
+                throw new UserException(
                     $"MIME tip '{file.ContentType}' ne odgovara stvarnom formatu fajla '{detectedMime}'.");
 
             return await UploadImageAsync(bytes, subFolder, isPrimary);
@@ -129,8 +131,7 @@ namespace TenderGo.Services.Services
                 webRoot = Path.Combine(_environment.ContentRootPath, "wwwroot");
             }
 
-            // 1. Definišemo bazni dozvoljeni folder i dobijamo njegovu punu, kanonsku putanju
-            // OS-agnostička priprema baznog foldera sa završnim separatorom ('\' ili '/')
+           
             string uploadsBaseFolder = Path.GetFullPath(Path.Combine(webRoot, "uploads"))
                 .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
                 + Path.DirectorySeparatorChar;
@@ -138,13 +139,11 @@ namespace TenderGo.Services.Services
             string cleanRelativePath = relativePath.TrimStart('/', '\\');
             string fullPath = Path.GetFullPath(Path.Combine(webRoot, cleanRelativePath));
 
-            // Provjera da li putanja zaista počinje sa ".../uploads/"
             if (!fullPath.StartsWith(uploadsBaseFolder, StringComparison.OrdinalIgnoreCase))
             {
                 throw new SecurityException("Pokušaj pristupa fajlu van dozvoljenog uploads foldera.");
             }
 
-            // 4. Ako prolazi sigurnosnu provjeru i fajl postoji, brišemo ga
             if (File.Exists(fullPath))
             {
                 File.Delete(fullPath);

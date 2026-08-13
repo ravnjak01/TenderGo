@@ -39,6 +39,7 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
 
         base.OnModelCreating(modelBuilder);
 
+        //revoked token
         modelBuilder.Entity<RevokedToken>(entity =>
         {
             entity.HasKey(x => x.Id);
@@ -88,6 +89,7 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
                   .OnDelete(DeleteBehavior.Restrict);
 
         });
+        //category
 
         modelBuilder.Entity<Category>(entity =>
         {
@@ -95,7 +97,9 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
                 .HasDefaultValue(true);
         });
 
-        modelBuilder.Entity<Tender>().Navigation(b => b.CreatedByUser).AutoInclude();//da se uvijek ucitava korisnik koji je kreirao tender
+        //tender
+
+        modelBuilder.Entity<Tender>().Navigation(b => b.CreatedByUser).AutoInclude();
 
         modelBuilder.Entity<Tender>()
         .HasOne(t => t.Location)
@@ -104,7 +108,8 @@ public partial class TenderGoContext : IdentityDbContext<ApplicationUser>
         .OnDelete(DeleteBehavior.Restrict);
 
 
-modelBuilder.Entity<ApplicationUser>(entity =>
+        //application user
+        modelBuilder.Entity<ApplicationUser>(entity =>
     {
         entity.OwnsOne(u => u.Address, a =>
         {
@@ -143,25 +148,22 @@ modelBuilder.Entity<ApplicationUser>(entity =>
         });
 
         OnModelCreatingPartial(modelBuilder);
-    
+
 
 
         //bid
-        modelBuilder.Entity<Bid>().Navigation(b => b.SubmittedByUser).AutoInclude();//da se uvijek ucitava korisnik koji je poslao bid
+        modelBuilder.Entity<Bid>().Navigation(b => b.SubmittedByUser).AutoInclude();
         modelBuilder.Entity<Bid>(entity =>
         {
-            // Primarni ključ
             entity.HasKey(e => e.Id);
 
-            // Konfiguracija veze 1:N (Jedan Tender -> Više Bids)
             entity.HasOne(b => b.Tender)       
-                  .WithMany(t => t.Bids)           // Tender ima mnogo Bids
-                  .HasForeignKey(b => b.TenderId)  // Strani ključ je TenderId
+                  .WithMany(t => t.Bids)           
+                  .HasForeignKey(b => b.TenderId)  
                   .OnDelete(DeleteBehavior.Cascade); 
 
             entity.Property(b => b.OfferedPrice).HasPrecision(18, 2);
 
-            // 1 korisnik može poslati samo jedan bid po tenderu
             entity.HasIndex(b => new { b.TenderId, b.SubmittedByUserId })
             .HasFilter("[Status] IN ('Pending', 'Accepted')")
                  .IsUnique();
@@ -185,6 +187,7 @@ modelBuilder.Entity<ApplicationUser>(entity =>
                   .OnDelete(DeleteBehavior.Cascade); 
         });
 
+        //notification
         modelBuilder.Entity<Notification>(entity =>
         {
                         entity.HasOne(n => n.User) 
@@ -194,6 +197,7 @@ modelBuilder.Entity<ApplicationUser>(entity =>
         });
 
 
+        //refresh token
         modelBuilder.Entity<RefreshToken>(entity =>
         {
             entity.HasKey(e => e.Id);
@@ -203,6 +207,7 @@ modelBuilder.Entity<ApplicationUser>(entity =>
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
+        //location
         modelBuilder.Entity<Location>(entity =>
         {
             entity.ToTable("Locations");
@@ -224,7 +229,7 @@ modelBuilder.Entity<ApplicationUser>(entity =>
                 .HasDefaultValue(true);
         });
 
-        modelBuilder.Entity<TenderBookmark>().HasKey(tb => new { tb.UserId, tb.TenderId });
+        // tender bookmark
         modelBuilder.Entity<TenderBookmark>(entity =>
         {
             entity.HasKey(tb => new { tb.UserId, tb.TenderId });
@@ -240,6 +245,7 @@ modelBuilder.Entity<ApplicationUser>(entity =>
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
+        // user activity
         modelBuilder.Entity<UserActivity>(entity =>
         {
             entity.ToTable("UserActivities");
@@ -256,6 +262,23 @@ modelBuilder.Entity<ApplicationUser>(entity =>
                 .HasForeignKey(ua => ua.TenderId)
                 .OnDelete(DeleteBehavior.SetNull);
 
+        });
+
+        // password reset code
+        modelBuilder.Entity<PasswordResetCode>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Code)
+                .IsRequired();
+
+            entity.Property(x => x.Salt)
+                .IsRequired();
+
+            entity.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
     }

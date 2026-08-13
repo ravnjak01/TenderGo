@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using TenderGo.Api.Database;
 using TenderGo.Models.Entities;
 using TenderGo.Services.Interfaces;
@@ -12,7 +13,6 @@ namespace TenderGo.Data.Seeders
         public async Task SeedAsync(TenderGoContext context, IServiceProvider serviceProvider)
         {
             var userManager = serviceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-
             var testUsers = new List<ApplicationUser>
             {
                 new ApplicationUser
@@ -93,7 +93,7 @@ namespace TenderGo.Data.Seeders
                     else
                     {
                         var userErrors = string.Join(", ", result.Errors.Select(e => e.Description));
-                        throw new Exception($"Failed to seed user {user.Email}: {userErrors}");
+                        throw new InvalidOperationException($"Failed to seed user {user.Email}: {userErrors}");
                     }
                 }
 
@@ -104,7 +104,7 @@ namespace TenderGo.Data.Seeders
                     if (!roleResult.Succeeded)
                     {
                         var roleErrors = string.Join(", ", roleResult.Errors.Select(e => e.Description));
-                        throw new Exception($"Failed to assign User role to {existingUser.Email}: {roleErrors}");
+                        throw new InvalidOperationException($"Failed to assign User role to {existingUser.Email}: {roleErrors}");
                     }
                 }
             }

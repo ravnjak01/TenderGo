@@ -16,6 +16,8 @@ public class Notification
     [Required]
     public string Message { get; set; } = string.Empty;
 
+    [Required]
+
     public DateTime CreatedAt { get; set; }
 
     public bool IsRead { get; set; }

@@ -28,7 +28,6 @@ namespace TenderGo.Services.Services
 
         protected override IQueryable<Location> ApplyFilter(IQueryable<Location> query, LocationSearchRequest request)
         {
-            // 1. Pretraga po nazivu, državi ili regiji (koristeći SearchTerm iz PagedSearchRequest)
             if (!string.IsNullOrWhiteSpace(request.SearchTerm))
             {
                 var term = $"%{request.SearchTerm.ToLower()}%";
@@ -40,25 +39,20 @@ namespace TenderGo.Services.Services
             }
 
 
-            // 2. Filtriranje po IsActive statusu i rolama
             var isAdmin = _authService.IsInRole(AppRoles.Admin);
 
             if (!isAdmin)
             {
-                // Običan korisnik UVIJEK vidi samo aktivne lokacije
                 query = query.Where(l => l.IsActive);
             }
             else
             {
-                // Ako je Admin poslao eksplicitan filter (?isActive=true ili ?isActive=false)
                 if (request.IsActive.HasValue)
                 {
                     query = query.Where(l => l.IsActive == request.IsActive.Value);
                 }
-                // Ako Admin nije poslao nikakav status (null), vraćaju se sve lokacije (i aktivne i neaktivne)
             }
 
-            // 3. Sortiranje po državi pa po nazivu (obavezno za stabilnu paginaciju)
             return query.OrderBy(l => l.Country).ThenBy(l => l.Name);
         }
 
@@ -91,7 +85,7 @@ namespace TenderGo.Services.Services
         public override async Task<string> Delete(int id)
         {
             var location = await _context.Locations.FindAsync(id)
-                ?? throw new UserException("Location not found");
+                ?? throw new NotFoundException("Location",id);
 
             var isUsedByTender = await _context.Tenders.AnyAsync(t => t.LocationId == id);
             if (!isUsedByTender)
@@ -109,7 +103,7 @@ namespace TenderGo.Services.Services
         public async Task<LocationDTO> Activate(int id)
         {
             var location = await _context.Locations.FindAsync(id)
-                ?? throw new UserException("Location not found");
+                         ?? throw new NotFoundException("Location", id);
 
             location.IsActive = true;
             await _context.SaveChangesAsync();
@@ -120,7 +114,7 @@ namespace TenderGo.Services.Services
         public async Task<LocationDTO> Deactivate(int id)
         {
             var location = await _context.Locations.FindAsync(id)
-                ?? throw new UserException("Location not found");
+                           ?? throw new NotFoundException("Location", id);
 
             location.IsActive = false;
             await _context.SaveChangesAsync();

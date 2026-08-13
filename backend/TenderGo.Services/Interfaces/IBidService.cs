@@ -17,7 +17,6 @@ namespace TenderGo.Services.Interfaces
         Task<PagedResult<BidDTO>> GetBidsForTender(int tenderId,PagedSearchRequest request);
         Task<List<string>> AllowedActions(int bidId);
         Task<PagedResult<BidDTO>> GetBidsByUser(string userId, PagedSearchRequest request);
-        Task<BidDTO> Cancel(int bidId);
         Task<BidDTO> Insert(BidInsertRequest request);
 
     }

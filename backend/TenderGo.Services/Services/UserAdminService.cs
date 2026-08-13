@@ -40,10 +40,8 @@ namespace TenderGo.Services.Services
             page = Math.Max(page, 1);
             pageSize = Math.Clamp(pageSize, 1, 100);
 
-            // 1. Ukupan broj svih korisnika
             var totalCount = await _context.Users.CountAsync();
 
-            // 2. Primijeni OrderBy, Skip i Take nad entitetom (prije projekcije!)
             var users = await _context.Users
                 .Include(u => u.Address)
                 .OrderBy(u => u.LastName)
@@ -52,7 +50,6 @@ namespace TenderGo.Services.Services
                 .Take(pageSize)
                 .ToListAsync();
 
-            // 3. Izvlačenje uloga za učitane korisnike u JEDNOM SQL upitu
             var userIds = users.Select(u => u.Id).ToList();
             var userRolesMap = await (from ur in _context.UserRoles
                                       join r in _context.Roles on ur.RoleId equals r.Id
@@ -61,7 +58,6 @@ namespace TenderGo.Services.Services
                                      .GroupBy(x => x.UserId)
                                      .ToDictionaryAsync(g => g.Key, g => g.Select(x => x.RoleName).ToList());
 
-            // 4. Mapiranje u UserDTO u memoriji
             var results = users.Select(user => new UserDTO
             {
                 Id = user.Id,
@@ -98,7 +94,6 @@ namespace TenderGo.Services.Services
 
             var query = _context.Users.AsQueryable();
 
-            // 1. Primijeni pretragu
             if (!string.IsNullOrWhiteSpace(request.SearchTerm))
             {
                 var term = request.SearchTerm.Trim().ToLower();
@@ -111,10 +106,8 @@ namespace TenderGo.Services.Services
                     EF.Functions.Like(u.LastName.ToLower(), likeTerm));
             }
 
-            // 2. Izračunaj ukupan broj filtriranih zapisa
             var totalCount = await query.CountAsync();
 
-            // 3. Paginacija i dohvaćanje korisnika iz baze
             var users = await query
                 .Include(u => u.Address)
                 .OrderBy(u => u.LastName)
@@ -124,7 +117,6 @@ namespace TenderGo.Services.Services
                 .Take(pageSize)
                 .ToListAsync();
 
-            // 4. Dohvaćanje uloga samo za paginirane korisnike (1 brzi upit umjesto N upita)
             var userIds = users.Select(u => u.Id).ToList();
             var userRolesMap = await (from ur in _context.UserRoles
                                       join r in _context.Roles on ur.RoleId equals r.Id
@@ -133,7 +125,6 @@ namespace TenderGo.Services.Services
                                      .GroupBy(x => x.UserId)
                                      .ToDictionaryAsync(g => g.Key, g => g.Select(x => x.RoleName).ToList());
 
-            // 5. Mapiranje u UserDTO
             var results = users.Select(user => new UserDTO
             {
                 Id = user.Id,

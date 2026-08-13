@@ -30,7 +30,7 @@ namespace TenderGo.Services.Services
 
             if (user == null)
             {
-                throw new NotFoundException("Korisnik ne postoji.", new { UserId = userId });
+                throw new NotFoundException("User",userId);
             }
 
             var tendersData = await _context.Tenders
@@ -74,6 +74,11 @@ namespace TenderGo.Services.Services
 
         public async Task<byte[]> GenerateReportAsync(AdminReportRequest request)
         {
+            if (request.From > request.To)
+            {
+                throw new UserException("Početni datum ne može biti poslije završnog datuma.");
+            }
+
             DateTime prikazniFrom = request.From;
             DateTime prikazniTo = request.To;
 
@@ -83,11 +88,7 @@ namespace TenderGo.Services.Services
             DateTime utcFrom = lokalniFrom.ToUniversalTime();
             DateTime utcTo = lokalniTo.ToUniversalTime();
 
-            if (lokalniFrom > lokalniTo)
-            {
-                throw new UserException("Početni datum ne može biti poslije završnog datuma.");
-            }
-
+           
       
             var tenders = await _context.Tenders
                 .Include(t => t.Location)

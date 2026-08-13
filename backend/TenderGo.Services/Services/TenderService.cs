@@ -52,30 +52,13 @@ namespace TenderGo.Services.Services
         {
             return query.OrderByDescending(t => t.CreatedAt); 
         }
-        public override async Task<string> Delete(int id)
-        {
-            var entity = await _context.Tenders.FirstOrDefaultAsync(t => t.Id == id)
-                ?? throw new NotFoundException("Tender not found", new { Entity = "Tender", Id = id });
-
-            var currentUserId = _authService.GetCurrentUserId();
-            bool isAdmin = _authService.IsInRole(AppRoles.Admin);
-
-            if (entity.CreatedByUserId != currentUserId && !isAdmin)
-            {
-                throw new ForbiddenException();
-            }
-
-            _context.Tenders.Remove(entity);
-            await _context.SaveChangesAsync();
-
-            return "Tender successfully deleted";
-        }
+      
         public override async Task<TenderDTO> Update(int id, TenderUpdateRequest request)
         {
             var entity = await _context.Tenders
                 .Include(t => t.Images)
                 .FirstOrDefaultAsync(t => t.Id == id)
-                ?? throw new NotFoundException("Tender not found", new { Entity = "Tender", Id = id });
+                ?? throw new NotFoundException("Tender",id);
 
             var currentUserId = _authService.GetCurrentUserId();
             bool isAdmin = _authService.IsInRole(AppRoles.Admin);
@@ -90,11 +73,11 @@ namespace TenderGo.Services.Services
 
             var category = await _context.Categories
                 .FirstOrDefaultAsync(c => c.Id == request.CategoryId && c.IsActive)
-                ?? throw new UserException("The selected category does not exist in our database.");
+               ?? throw new NotFoundException("Category", request.LocationId);
 
             var location = await _context.Locations
                 .FirstOrDefaultAsync(l => l.Id == request.LocationId && l.IsActive)
-                ?? throw new UserException("The selected location does not exist in our database.");
+                ?? throw new NotFoundException("Location", request.LocationId);
 
             _mapper.Map(request, entity);
 
@@ -142,7 +125,7 @@ namespace TenderGo.Services.Services
     var tenderExists = await _context.Tenders.AnyAsync(t => t.Id == tenderId);
     if (!tenderExists)
     {
-        throw new NotFoundException("Tender not found", new { TenderId = tenderId });
+        throw new NotFoundException("Tender",tenderId);
     }
 
     var existingBookmark = await _context.TenderBookmarks
@@ -206,7 +189,7 @@ namespace TenderGo.Services.Services
         {
             var userExists = await _context.Users.AnyAsync(u => u.Id == userId);
             if (!userExists)
-                throw new NotFoundException("User not found", new { UserId = userId });
+                throw new NotFoundException("User",userId);
 
             var query = _context.Tenders
                 .AsNoTracking()
@@ -242,28 +225,12 @@ namespace TenderGo.Services.Services
             if (request.Deadline <= DateTime.UtcNow)
                 throw new UserException("Deadline must be in the future");
 
-            try  
-            {
-               
-
-                if(request.LocationId <= 0)
-{
-                    throw new UserException("Location is required.");
-                }
-
                 var category = await _context.Categories
                     .FirstOrDefaultAsync(c => c.Id == request.CategoryId && c.IsActive);
-                if (category == null)
-                {
-                    throw new UserException("The selected category does not exist in our database.");
-                }
-
+            
                 var location = await _context.Locations
                     .FirstOrDefaultAsync(l => l.Id == request.LocationId && l.IsActive);
-                if (location == null)
-                {
-                    throw new UserException("The selected location does not exist in our database.");
-                }
+              
 
                 var entity = _mapper.Map<Tender>(request);
 
@@ -298,12 +265,6 @@ namespace TenderGo.Services.Services
                 .Where(t => t.Id == entity.Id)
                 .ProjectTo<TenderDTO>(_mapper.ConfigurationProvider)
                 .FirstAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error inserting tender: {Message}", ex.Message);
-                throw; 
-            }
         }
 
         public async Task<TenderDTO> Cancel(int id,TenderCancelRequest request)
@@ -311,7 +272,7 @@ namespace TenderGo.Services.Services
             var entity = await AddIncludes(_context.Tenders)
                 .Include(t => t.Bids) 
                 .FirstOrDefaultAsync(t => t.Id == id)
-                ?? throw new NotFoundException("Tender not found", new { Entity = "Tender", Id = id });
+                ?? throw new NotFoundException("Tender", id);
 
             var currentUserId = _authService.GetCurrentUserId();
             bool isAdmin = _authService.IsInRole(AppRoles.Admin);
@@ -344,7 +305,7 @@ namespace TenderGo.Services.Services
         {
             var tender = await AddIncludes(_context.Tenders)
                 .FirstOrDefaultAsync(t => t.Id == id)
-                ?? throw new NotFoundException("Tender not found", new { Entity = "Tender", Id = id });
+                ?? throw new NotFoundException("Tender", id);
 
             var currentUserId = _authService.GetCurrentUserId();
 
@@ -363,7 +324,7 @@ namespace TenderGo.Services.Services
         {
             var entity = await AddIncludes(_context.Tenders)
                 .FirstOrDefaultAsync(t => t.Id == id)
-                ?? throw new NotFoundException("Tender not found", new { Entity = "Tender", Id = id });
+                ?? throw new NotFoundException("Tender", id);
 
 
 
@@ -510,7 +471,7 @@ namespace TenderGo.Services.Services
                 TenderStatus.Closed => _serviceProvider.GetRequiredService<ClosedTenderState>(),
                 TenderStatus.Awarded => _serviceProvider.GetRequiredService<AwardedTenderState>(),
                 TenderStatus.Cancelled => _serviceProvider.GetRequiredService<CancelledTenderState>(),
-                _ => throw new UserException("Invalid tender status")
+                _ => throw new ArgumentOutOfRangeException("Invalid tender status")
             };
         }
 

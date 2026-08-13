@@ -27,14 +27,12 @@ namespace TenderGo.Services.Services
 
         protected override IQueryable<Category> ApplyFilter(IQueryable<Category> query, CategorySearchRequest request)
         {
-            // 1. Filtriranje po nazivu (SearchTerm iz PagedSearchRequest-a)
             if (!string.IsNullOrWhiteSpace(request.SearchTerm))
             {
                 var term = $"%{request.SearchTerm.ToLower()}%";
                 query = query.Where(c => EF.Functions.Like(c.Name.ToLower(), term));
             }
 
-            // 2. Logika za aktivne/neaktivne kategorije
             var isAdmin = _authService.IsInRole(AppRoles.Admin);
             if (!isAdmin)
             {
@@ -51,7 +49,6 @@ namespace TenderGo.Services.Services
                 }
             }
 
-            // 3. Obavezno sortiranje za stabilnu paginaciju
             return query.OrderBy(c => c.Name);
         }
 
@@ -59,7 +56,7 @@ namespace TenderGo.Services.Services
         public override async Task<CategoryDTO> Update(int id, CategoryUpdateRequest request)
         {
             var entity = await _context.Categories.FindAsync(id)
-                ?? throw new UserException("Category not found.");
+                ?? throw new NotFoundException("Category",id);
 
             if (request.Name == null && request.Description == null)
             {
@@ -90,7 +87,8 @@ namespace TenderGo.Services.Services
         public override async Task<string> Delete(int id)
         {
             var category = await _context.Categories.FindAsync(id)
-                ?? throw new UserException("Category not found");
+                         ?? throw new NotFoundException("Category", id);
+
 
             var isUsedByTender = await _context.Tenders.AnyAsync(t => t.CategoryId == id);
             if (!isUsedByTender)
@@ -108,7 +106,8 @@ namespace TenderGo.Services.Services
         public async Task<CategoryDTO> Activate(int id)
         {
             var category = await _context.Categories.FindAsync(id)
-                ?? throw new UserException("Category not found");
+                      ?? throw new NotFoundException("Category", id);
+
 
             category.IsActive = true;
             await _context.SaveChangesAsync();
@@ -119,7 +118,8 @@ namespace TenderGo.Services.Services
         public async Task<CategoryDTO> Deactivate(int id)
         {
             var category = await _context.Categories.FindAsync(id)
-                ?? throw new UserException("Category not found");
+                 ?? throw new NotFoundException("Category", id);
+
 
             category.IsActive = false;
             await _context.SaveChangesAsync();

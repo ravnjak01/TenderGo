@@ -20,7 +20,10 @@ public class EmailService: IEmailService
         _logger = logger;
 
         if (string.IsNullOrEmpty(_emailSettings.From))
-            throw new Exception("KONFIGURACIJA NIJE UCITANA!");
+        {
+            _logger.LogCritical("Email settings are missing or improperly configured!");
+            throw new InvalidOperationException("Email service configuration error: 'From' address is missing.");
+        }
     }
 
 

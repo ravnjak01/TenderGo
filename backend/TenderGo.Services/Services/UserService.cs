@@ -43,7 +43,7 @@ namespace TenderGo.Services.Services
             var userId = _authService.GetCurrentUserId();
 
             var user = await _userManager.FindByIdAsync(userId)
-                ?? throw new NotFoundException("User not found", new { User = "User", Id = userId });
+                ?? throw new NotFoundException("User",userId);
 
             var result = await _userManager.ChangePasswordAsync(
                 user,
@@ -53,6 +53,7 @@ namespace TenderGo.Services.Services
 
             if (!result.Succeeded)
             {
+
                 var errorMessage = string.Join(" ", result.Errors.Select(e => e.Description));
                 throw new UserException(errorMessage);
             }
@@ -81,7 +82,7 @@ namespace TenderGo.Services.Services
                     BidsCount = _context.Bids.Count(b => b.SubmittedByUserId == u.Id)
                 })
                 .FirstOrDefaultAsync()
-                ?? throw new NotFoundException("User not found", new { User = "User", Id = id });
+                ?? throw new NotFoundException("User", id);
 
             return response;
         }
@@ -96,7 +97,7 @@ namespace TenderGo.Services.Services
 
             var user = await _context.Users
                       .FirstOrDefaultAsync(u => u.Id == userId)
-                  ?? throw new NotFoundException("User not found", new { User = "User", Id = userId });
+                  ?? throw new NotFoundException("User", userId);
 
 
             if (!string.IsNullOrWhiteSpace(request.FirstName))
@@ -142,45 +143,39 @@ namespace TenderGo.Services.Services
         {
             if (dto.Score < 1 || dto.Score > 5)
                 throw new UserException("Rating must be between 1 and 5");
-            var tender = await _context.Tenders
-                .Include(t => t.Bids)
-                .FirstOrDefaultAsync(t => t.Id == dto.TenderId)
-                ?? throw new NotFoundException("Tender not found", new { dto.TenderId });
-
-            var state = _tenderService.CreateState(tender.Status);
-
-            if (!state.CanRate())
-                throw new UserException("Rating not allowed in current tender state.");
-
-            var winningBid = tender.Bids
-                .FirstOrDefault(b => b.Id == tender.WinningBidId) ??
-                tender.Bids.FirstOrDefault(b => b.Status == ApplicationStatus.Accepted)
-                ?? throw new UserException("Winning bid not found.");
-
-            if (tender.Status != TenderStatus.Awarded &&
-                winningBid.Status != ApplicationStatus.Accepted)
-                throw new UserException("Tender is not completed yet.");
 
             if (dto.RatedUserId == currentUserId)
                 throw new UserException("You cannot rate yourself.");
+
+            var tender = await _context.Tenders
+                .AsNoTracking()
+                .FirstOrDefaultAsync(t => t.Id == dto.TenderId)
+                ?? throw new NotFoundException("Tender", dto.TenderId);
+
+            var state = _tenderService.CreateState(tender.Status);
+            if (!state.CanRate())
+                throw new UserException("Rating not allowed in current tender state.");
+
+            var winningBid = await _context.Bids
+                .AsNoTracking()
+                .FirstOrDefaultAsync(b => b.TenderId == dto.TenderId &&
+                    (b.Id == tender.WinningBidId || b.Status == ApplicationStatus.Accepted))
+                ?? throw new UserException("Winning bid not found.");
+
+            if (tender.Status != TenderStatus.Awarded && winningBid.Status != ApplicationStatus.Accepted)
+                throw new UserException("Tender is not completed yet.");
 
             var isTenderOwner = tender.CreatedByUserId == currentUserId;
             var isWinningBidder = winningBid.SubmittedByUserId == currentUserId;
 
             if (!isTenderOwner && !isWinningBidder)
-                throw new UserException("Only tender participants can rate user.");
+                throw new ForbiddenException("Only tender participants can rate user.");
 
             if (isTenderOwner && dto.RatedUserId != winningBid.SubmittedByUserId)
                 throw new UserException("Tender owner can only rate the winning bidder.");
 
             if (isWinningBidder && dto.RatedUserId != tender.CreatedByUserId)
                 throw new UserException("Winning bidder can only rate the tender owner.");
-
-        
-
-            var ratedUser = await _context.Users
-                .FirstOrDefaultAsync(u => u.Id == dto.RatedUserId)
-                ?? throw new NotFoundException("User not found", new { dto.RatedUserId });
 
             var alreadyRated = await _context.Ratings.AnyAsync(r =>
                 r.TenderId == dto.TenderId &&
@@ -189,6 +184,10 @@ namespace TenderGo.Services.Services
 
             if (alreadyRated)
                 throw new UserException("You already rated this user for this tender.");
+
+            var ratedUser = await _context.Users
+                .FirstOrDefaultAsync(u => u.Id == dto.RatedUserId)
+                ?? throw new NotFoundException("User", dto.RatedUserId);
 
             var rating = new Rating
             {
@@ -203,11 +202,8 @@ namespace TenderGo.Services.Services
             _context.Ratings.Add(rating);
 
             var totalScore = ratedUser.AverageRating * ratedUser.RatingCount;
-
             ratedUser.RatingCount++;
-
-            ratedUser.AverageRating =
-                (totalScore + dto.Score) / ratedUser.RatingCount;
+            ratedUser.AverageRating = (totalScore + dto.Score) / ratedUser.RatingCount;
 
             await _context.SaveChangesAsync();
 
@@ -219,32 +215,25 @@ namespace TenderGo.Services.Services
     var userExists = await _context.Users.AnyAsync(u => u.Id == userId);
     if (!userExists)
     {
-        throw new NotFoundException("User not found", new { User = "User", Id = userId });
+        throw new NotFoundException("User", userId);
     }
+            var reviews = await _context.Ratings
+                .Where(r => r.RatedUserId == userId)
+                .OrderByDescending(r => r.CreatedAt)
+                .Select(r => new ReviewDTO
+                {
+                    Rating = r.Score,
+                    Comment = r.Comment,
+                    CreatedAt = r.CreatedAt,
+                    TenderId = r.TenderId,
+                    ReviewerName = r.RatedByUser != null
+                        ? r.RatedByUser.FirstName + " " + r.RatedByUser.LastName
+                        : "Anonimni korisnik",
+                    TenderTitle = r.Tender != null ? r.Tender.Title : "Nepoznat tender"
+                })
+                .ToListAsync();
 
-    var reviews = await _context.Ratings
-        .Where(r => r.RatedUserId == userId)
-        .OrderByDescending(r => r.CreatedAt) 
-        .Select(r => new ReviewDTO
-        {
-            Rating = r.Score,
-            Comment = r.Comment,
-            CreatedAt = r.CreatedAt,
-            TenderId = r.TenderId,
-            
-            ReviewerName = _context.Users
-                .Where(u => u.Id == r.RatedByUserId)
-                .Select(u => u.FirstName + " " + u.LastName)
-                .FirstOrDefault() ?? "Anonimni korisnik",
-
-            TenderTitle = _context.Tenders
-                .Where(t => t.Id == r.TenderId)
-                .Select(t => t.Title)
-                .FirstOrDefault() ?? "Nepoznat tender"
-        })
-        .ToListAsync();
-
-    return reviews;
+            return reviews;
 }
 
     }

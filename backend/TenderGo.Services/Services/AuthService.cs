@@ -70,8 +70,13 @@ namespace TenderGo.Services.Services
 
             if (!result.Succeeded)
             {
-                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                throw new UserException(errors);
+                var errors = result.Errors
+                    .GroupBy(e => e.Code.Contains("Password") ? "Password" : "Email")
+                    .ToDictionary(
+                        g => g.Key,
+                        g => g.Select(e => e.Description).ToArray()
+                    );
+                throw new ValidationException(errors);
             }
 
             await _userManager.AddToRoleAsync(user, AppRoles.User);
@@ -95,7 +100,8 @@ namespace TenderGo.Services.Services
             }
             if (user.IsBanned)
             {
-                throw new UserException("ACCOUNT_BANNED");  
+                _logger.LogWarning("Login blocked: User {Email} is banned.", dto.Email);
+                throw new ForbiddenException("Your account is banned");
             }
 
 
@@ -187,11 +193,11 @@ namespace TenderGo.Services.Services
             var refreshToken = _httpContextAccessor.HttpContext?.Request.Cookies["refreshToken"];
 
             if (string.IsNullOrEmpty(refreshToken))
-                throw new UserException("Not found refresh token.");
+                throw new UnauthorizedException("Refresh token is missing.");
 
             var userId = _httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
-                throw new UserException("User is not defined.");
+                throw new UnauthorizedException("User is not authenticated.");
 
             var storedToken = await _context.RefreshTokens
                 .FirstOrDefaultAsync(rt => rt.Token == refreshToken
@@ -250,21 +256,21 @@ namespace TenderGo.Services.Services
             if (string.IsNullOrEmpty(jwtKey))
             {
                 _logger.LogCritical("JWT Key is missing in configuration!");
-                throw new Exception("Server configuration error: Security key is missing.");
+                throw new InvalidOperationException("Server configuration error: Security key is missing.");
             }
 
 
             if (jwtKey.Length < 32)
             {
                 _logger.LogCritical("JWT Key is too short. Minimum 32 characters required.");
-                throw new Exception("Server configuration error: Security key is invalid.");
+                throw new InvalidOperationException("Server configuration error: Security key is invalid.");
             }
 
 
             if (!int.TryParse(_config["Jwt:ExpiresInMinutes"], out var expires))
             {
                 _logger.LogError("Jwt:ExpiresInMinutes is not a valid number in appsettings.json");
-                throw new Exception("Server configuration error: Invalid token expiration settings.");
+                throw new InvalidOperationException("Server configuration error: Invalid token expiration settings.");
             }
 
 
@@ -299,9 +305,6 @@ namespace TenderGo.Services.Services
         {
 
             var userId = GetCurrentUserId();
-
-             if (string.IsNullOrEmpty(userId))
-                 throw new UnauthorizedException();
 
             var user = await _context.Users
                 .Include(u => u.Address) 

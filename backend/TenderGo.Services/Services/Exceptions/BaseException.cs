@@ -13,5 +13,10 @@ namespace TenderGo.Services.Services.Exceptions
         {
             StatusCode = statusCode;
         }
+        public BaseException(string message, Exception innerException, int statusCode = 500)
+        : base(message, innerException)
+        {
+            StatusCode = statusCode;
+        }
     }
 }

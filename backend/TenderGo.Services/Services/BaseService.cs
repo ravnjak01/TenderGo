@@ -52,7 +52,7 @@ namespace TenderGo.Services.Services
             query = AddIncludes(query);
 
             var entity = await query.FirstOrDefaultAsync(e => EF.Property<int>(e, "Id") == id)
-                 ?? throw new UserException($"{typeof(TDb).Name} not found");
+               ?? throw new NotFoundException(typeof(TDb).Name, id);
 
             return _mapper.Map<TModel>(entity);
         }
@@ -102,7 +102,7 @@ namespace TenderGo.Services.Services
         public virtual async Task<TModel> Update(int id, TUpdate request)
         {
             var entity = await _context.Set<TDb>().FindAsync(id)
-                 ?? throw new UserException($"{typeof(TDb).Name} not found");
+                 ?? throw new NotFoundException(typeof(TDb).Name, id);
 
             _mapper.Map(request, entity);
             await _context.SaveChangesAsync();
@@ -112,8 +112,8 @@ namespace TenderGo.Services.Services
         public virtual async Task<string> Delete(int id)
         {
             var entity = await _context.Set<TDb>().FindAsync(id)
-     ?? throw new UserException($"{typeof(TDb).Name} not found");
-
+                 ?? throw new NotFoundException(typeof(TDb).Name, id);
+    
             _context.Set<TDb>().Remove(entity);
             await _context.SaveChangesAsync();
             return $"{typeof(TDb).Name} deleted successfully.";

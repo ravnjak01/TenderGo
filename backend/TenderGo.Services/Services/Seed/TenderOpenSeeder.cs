@@ -21,7 +21,7 @@ namespace TenderGo.Data.Seeders
             T GetValueOrFallback<T>(Dictionary<string, T> dict, string key, string entityName) where T : class
             {
                 if (dict.TryGetValue(key, out var val)) return val;
-                throw new Exception($"Seeding failed: Required {entityName} '{key}' was not found in the database. Run previous seeders first.");
+                throw new InvalidOperationException($"Seeding failed: Required {entityName} '{key}' was not found in the database. Run previous seeders first.");
             }
 
             var seedTenders = new[]
