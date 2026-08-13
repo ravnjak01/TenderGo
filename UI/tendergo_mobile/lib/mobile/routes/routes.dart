@@ -73,12 +73,8 @@ class MobileRoutes {
             bidService: bidService,
           ),
       AppRoutes.userPublicProfile: (context) {
-        final args = ModalRoute.of(context)?.settings.arguments;
-        final userId = switch (args) {
-          String value => value,
-          Map value => (value['userId'] ?? value['id'] ?? '').toString(),
-          _ => '',
-        };
+        final userId =
+      ModalRoute.of(context)!.settings.arguments as String;
 
         return UserProfilePublicScreen(
           userId: userId,
@@ -86,36 +82,22 @@ class MobileRoutes {
           tenderService: tenderService,
         );
       },
-      AppRoutes.rateUser: (context) {
-        final args = ModalRoute.of(context)?.settings.arguments;
-        final rawTenderId = args is Map ? args['tenderId'] : null;
-        final int tenderId = rawTenderId is int
-            ? rawTenderId
-            : int.tryParse(rawTenderId?.toString() ?? '') ?? 0;
-        final ratedUserId = args is Map
-            ? (args['ratedUserId'] ?? args['userId'] ?? '').toString()
-            : '';
-        final ratedUserName = args is Map
-            ? (args['ratedUserName'] ?? args['username'])?.toString()
-            : null;
-        final tenderTitle = args is Map ? args['tenderTitle']?.toString() : null;
+ AppRoutes.rateUser: (context) {
+  final args =
+      ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
 
-        return RateUserScreen(
-          userService: userService,
-          authService: authService,
-          tenderId: tenderId,
-          tenderTitle: tenderTitle,
-          ratedUserId: ratedUserId,
-          ratedUserName: ratedUserName,
-        );
-      },
-      AppRoutes.recommendations: (context) {
-        final args = ModalRoute.of(context)?.settings.arguments;
-        final onTap = args is Map
-            ? args['onTenderTapped'] as void Function(int)?
-            : null;
-        return RecommendedForYouMobileScreen(onTenderTapped: onTap);
-      },
+  return RateUserScreen(
+    userService: userService,
+    authService: authService,
+    tenderId: args['tenderId'] as int,
+    tenderTitle: args['tenderTitle'] as String?,
+    ratedUserId: args['ratedUserId'] as String,
+    ratedUserName: args['ratedUserName'] as String?,
+  );
+},
+      AppRoutes.recommendations: (context) =>
+    const RecommendedForYouMobileScreen(),
+
       AppRoutes.notifications: (context) => const NotificationScreen(),
       AppRoutes.bookmarkedTenders: (context) {
         return MobileBookmarkedTendersScreen(
@@ -130,4 +112,18 @@ class MobileRoutes {
       },
     };
   }
+}
+
+class RateUserArguments {
+  final int tenderId;
+  final String? tenderTitle;
+  final String ratedUserId;
+  final String? ratedUserName;
+
+  const RateUserArguments({
+    required this.tenderId,
+    this.tenderTitle,
+    required this.ratedUserId,
+    this.ratedUserName,
+  });
 }

@@ -1,5 +1,5 @@
 class ActivityLogRequest {
-  final String activityType; // "Search" ili "View"
+  final String activityType; 
   final int? tenderId;
   final String? searchQuery;
   final int? durationSeconds;

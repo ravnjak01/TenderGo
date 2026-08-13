@@ -5,7 +5,8 @@ import 'package:tendergo/shared/core/theme/app_theme.dart';
 import 'package:tendergo/shared/models/dto/address_dto.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
 import 'package:tendergo/shared/models/dto/user_dto.dart'; 
-import 'package:tendergo/shared/models/dto/user_public_dto.dart'; 
+import 'package:tendergo/shared/models/dto/user_public_dto.dart';
+import 'package:tendergo/shared/services/dio_client.dart'; 
 import 'package:tendergo/shared/services/user_service.dart'; 
 import 'package:tendergo/mobile/widgets/common/user_avatar_widget.dart';
 import 'package:tendergo/mobile/widgets/tender/tender_section_label.dart';
@@ -30,7 +31,7 @@ class _TenderPosterCardState extends State<TenderPosterCard> {
   void initState() {
     super.initState();
    
-    _userService = UserService(Dio()); 
+     _userService = UserService(DioClient.getDio());
 
     final userId = widget.tender.createdByUserId.trim();
     if (userId.isNotEmpty) {
@@ -42,7 +43,7 @@ class _TenderPosterCardState extends State<TenderPosterCard> {
   Widget build(BuildContext context) {
     final userId = widget.tender.createdByUserId.trim();
 
-    final nameParts = widget.tender.createdByFullname.trim().split(' ');
+    final nameParts = widget.tender.createdByUserFullName.trim().split(' ');
     final firstName = nameParts.isNotEmpty ? nameParts.first : '';
     final lastName = nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
 
@@ -96,7 +97,7 @@ class _TenderPosterCardState extends State<TenderPosterCard> {
                             lastName: publicUser.lastName ,
                             email: '',
                             username: '',
-                            profileImageUrl: publicUser.profileImageUrl, // Ovdje je tvoja slika sa backenda!
+                            profileImageUrl: publicUser.profileImageUrl, 
                             roles: const [],
                             isBanned: false,
                             address:  AddressDto(id: 0, city: '', country: '', street: '', postalCode: ''),
@@ -122,7 +123,7 @@ class _TenderPosterCardState extends State<TenderPosterCard> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            widget.tender.createdByFullname,
+                            widget.tender.createdByUserFullName,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: Theme.of(context).textTheme.bodySmall?.copyWith(

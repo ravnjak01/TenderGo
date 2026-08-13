@@ -12,7 +12,7 @@ class TenderDto {
   final double maxBudget;
   final DateTime deadline;
   final String createdByUserId;
-  final String createdByFullname;
+  final String createdByUserFullName;
   final TenderStatus status;
   final int totalBids;
   final List<TenderImageDto> images;
@@ -28,7 +28,7 @@ class TenderDto {
     required this.maxBudget,
     required this.deadline,
     required this.createdByUserId,
-    required this.createdByFullname,
+    required this.createdByUserFullName,
     required this.status,
     required this.totalBids,
     required this.images,
@@ -49,6 +49,7 @@ class TenderDto {
   }
 
   factory TenderDto.fromJson(Map<String, dynamic> json) {
+
     return TenderDto(
       id: JsonParser.readInt(json['id']),
       title: JsonParser.readString(json['title']),
@@ -56,7 +57,7 @@ class TenderDto {
       maxBudget: JsonParser.readDouble(json['maxBudget']),
       deadline: JsonParser.readDateTime(json['deadline']),
       createdByUserId: JsonParser.readString(json['createdByUserId']),
-      createdByFullname: JsonParser.readString(json['createdByFullname'], fallback: 'Unknown'),
+      createdByUserFullName: JsonParser.readString(json['createdByUserFullName'], fallback: 'Unknown'),
       status: TenderStatus.fromValue(json['status']),
       totalBids: JsonParser.readInt(json['totalBids']),
       images: _parseImages(json['images']),
@@ -88,7 +89,7 @@ class TenderDto {
         'maxBudget': maxBudget,
         'deadline': deadline.toIso8601String(),
         'createdByUserId': createdByUserId,
-        'createdByFullname': createdByFullname,
+        'createdByUserFullName': createdByUserFullName,
         'status': status.value, 
         'totalBids': totalBids,
         'images': images.map((img) => img.toJson()).toList(),

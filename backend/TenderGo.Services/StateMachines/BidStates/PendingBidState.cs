@@ -70,26 +70,26 @@ namespace TenderGo.Services.StateMachines.BidStates
                 .FirstAsync(b => b.Id == entity.Id);
 
 
-            try
-            {
-                await _pubSub.PublishAsync(
-                    new BidCreatedEvent
-                    {
-                        TenderId = entity.TenderId,
-                        OwnerUserId = tender.CreatedByUserId,
-                        OfferedPrice = entity.OfferedPrice,
-                        TenderTitle = tender.Title
-                    },
-                    cfg => cfg.WithTopic("bid_created"));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(
-                    ex,
-                    "Bid saved but BidCreatedEvent was not published for tender {TenderId}",
-                    entity.TenderId);
+            //try
+            //{
+            //    await _pubSub.PublishAsync(
+            //        new BidCreatedEvent
+            //        {
+            //            TenderId = entity.TenderId,
+            //            OwnerUserId = tender.CreatedByUserId,
+            //            OfferedPrice = entity.OfferedPrice,
+            //            TenderTitle = tender.Title
+            //        },
+            //        cfg => cfg.WithTopic("bid_created"));
+            //}
+            //catch (Exception ex)
+            //{
+            //    _logger.LogWarning(
+            //        ex,
+            //        "Bid saved but BidCreatedEvent was not published for tender {TenderId}",
+            //        entity.TenderId);
 
-            }
+            //}
 
             return _mapper.Map<BidDTO>(savedBid);
         }
@@ -118,26 +118,7 @@ namespace TenderGo.Services.StateMachines.BidStates
             return _mapper.Map<BidDTO>(bid);
         }
 
-        public override async Task<BidDTO> Cancel(int id)
-        {
-            var bid = await _context.Bids
-                .FirstOrDefaultAsync(b => b.Id == id)
-                 ?? throw new NotFoundException("Bid not found", new { Bid = "Bid", Id = id });
-
-            var currentUserId = _authService.GetCurrentUserId();
-            bool isAdmin = _authService.IsInRole(AppRoles.Admin);
-
-            if (bid.SubmittedByUserId != currentUserId && !isAdmin)
-            {
-                throw new ForbiddenException();
-            }
-
-            bid.Status = ApplicationStatus.Cancelled; 
-            await _context.SaveChangesAsync();
-
-            _logger.LogInformation("Bid {BidId} has been cancelled by user or admin.", id);
-            return _mapper.Map<BidDTO>(bid);
-        }
+      
 
         public override async Task<List<string>> AllowedActions(Bid entity)
         {

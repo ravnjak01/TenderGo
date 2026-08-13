@@ -102,21 +102,51 @@ public sealed class ErrorFilter : Attribute, IAsyncExceptionFilter, IAsyncResult
     private (int statusCode, string message, IReadOnlyList<string>? errors) MapException(ExceptionContext context)
     {
         var ex = context.Exception;
-        if (ex is ForbiddenException forbidden) return ((int)HttpStatusCode.Forbidden, ToUserMessage(forbidden.Message, fallback: "Forbidden."), new[] { forbidden.Message });
-        if (ex is NotFoundException notFound) return ((int)HttpStatusCode.NotFound, ToUserMessage(notFound.Message, fallback: "Resource not found."), new[] { notFound.Message });
-        if (ex is UserException userException) return ((int)HttpStatusCode.BadRequest, ToUserMessage(userException.Message, fallback: "Bad request."), new[] { userException.Message });
-        if (TryExtractValidationErrors(ex, out var validationErrors)) return ((int)HttpStatusCode.BadRequest, "Validation failed.", validationErrors);
-        if (ex is UnauthorizedAccessException) return ((int)HttpStatusCode.Unauthorized, "Unauthorized.", null);
 
-        if (ex is DbUpdateException dbEx)
+        // 1. Tvoji Custom Domenski Izuzeci (Bezbijedni za klijenta jer ih ti svesno bacaš sa porukom za korisnika)
+        if (ex is BaseException baseEx)
         {
-            var sqlException = dbEx.InnerException as SqlException;
-            if (sqlException != null && sqlException.Number == 547)
-                return ((int)HttpStatusCode.BadRequest, "Record cant be deleted because other records are using it in the system.", new[] { "Referential integrity violation." });
+            // Ako je u pitanju ValidationException sa kolekcijom grešaka
+            if (ex is ValidationException valEx && valEx.Errors.Any())
+            {
+                var formattedErrors = valEx.Errors.SelectMany(kv => kv.Value.Select(msg => $"{kv.Key}: {msg}")).ToList();
+                return (baseEx.StatusCode, baseEx.Message, formattedErrors);
+            }
+
+            return (baseEx.StatusCode, baseEx.Message, new[] { baseEx.Message });
         }
 
-        _logger.LogError(ex, "Unhandled exception occurred. TraceId={TraceId}", GetTraceId(context.HttpContext));
-        return ((int)HttpStatusCode.InternalServerError, "Internal Server Error.", null);
+        // 2. Standardne FluentValidation greške
+        if (TryExtractValidationErrors(ex, out var validationErrors))
+            return ((int)HttpStatusCode.BadRequest, "Validation failed.", validationErrors);
+
+        // 3. Pristup odbijen
+        if (ex is UnauthorizedAccessException)
+            return ((int)HttpStatusCode.Unauthorized, "Unauthorized access.", null);
+
+        // 4. Baza podataka / FK Violated (Infrastrukturne greške)
+        if (ex is DbUpdateException dbEx)
+        {
+            // Logujemo tačnu bazičnu grešku sa svim detaljima na serveru!
+            _logger.LogError(dbEx, "Database update error occurred. TraceId={TraceId}", GetTraceId(context.HttpContext));
+
+            var sqlException = dbEx.InnerException as SqlException;
+            if (sqlException != null && sqlException.Number == 547)
+            {
+                // Klijentu vraćamo samo poslovno razumljivu poruku, BEZ izraza "Referential integrity violation"
+                return ((int)HttpStatusCode.BadRequest, "Stavka se ne može obrisati jer se koristi u drugim dijelovima sistema.", null);
+            }
+
+            // Sve ostale greške nad bazom tretiramo kao Internal Server Error za klijenta
+            return ((int)HttpStatusCode.InternalServerError, "Došlo je do greške prilikom rada sa bazom podataka.", null);
+        }
+
+        // 5. SVE OSTALE NEOČEKIVANE GREŠKE (NullReferenceException, System Exception...)
+        // Logujemo PUNI StackTrace na serveru!
+        _logger.LogError(ex, "Unhandled exception occurred: {Message}. TraceId={TraceId}", ex.Message, GetTraceId(context.HttpContext));
+
+        // Klijentu vraćamo strog, generički odgovor BEZ detalja izuzetka
+        return ((int)HttpStatusCode.InternalServerError, "Došlo je do neočekivane greške na serveru.", null);
     }
 
     private (string message, IReadOnlyList<string>? errors) MapErrorResult(IActionResult result, int statusCode)

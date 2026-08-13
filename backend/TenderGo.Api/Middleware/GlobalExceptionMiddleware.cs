@@ -38,8 +38,8 @@ namespace TenderGo.Api.Middleware
             var envelope = new ApiErrorEnvelope
             {
                 success = false,
-                message = "Internal Server Error from global middleware.",
-                errors = new[] { exception.Message }, 
+                message = "An unexpected internal server error occurred. Please try again later.",
+                errors = null,
                 statusCode = context.Response.StatusCode,
                 traceId = context.TraceIdentifier
             };

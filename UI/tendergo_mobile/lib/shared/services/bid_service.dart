@@ -97,17 +97,6 @@ Future<PagedResult<BidDto>> getMyBids({int page = 1, int pageSize = 3}) async {
     throw _handleError(e, 'Error fetching bids by tender');
   }
 }
-  Future<BidDto> cancel(int id) async {
-    try {
-      final response = await _dio.put(BidApiEndpoints.cancel(id));
-
-      return BidDto.fromJson(ResponseParser.object(response.data));
-    } on DioException catch (e) {
-      throw _handleError(e, 'Error canceling tender');
-    }
-  }
-
-  
 
   Exception _handleError(DioException e, String defaultMessage) {
     final message = ResponseParser.errorMessage(e, defaultMessage);

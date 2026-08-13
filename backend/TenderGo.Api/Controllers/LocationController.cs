@@ -19,7 +19,6 @@ namespace TenderGo.Api.Controllers
         public LocationController(
             ILocationService locationService,
             ILogger<LocationController> logger)
-            // locationService se prosljeđuje i kao IReadService i kao IWriteService
             : base(locationService, locationService, logger)
         {
             _locationService = locationService;

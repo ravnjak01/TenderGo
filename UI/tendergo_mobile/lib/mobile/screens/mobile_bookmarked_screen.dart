@@ -24,9 +24,13 @@ class MobileBookmarkedTendersScreen extends StatefulWidget {
 class _MobileBookmarkedTendersScreenState extends State<MobileBookmarkedTendersScreen> {
   static const AuthTokenStore _tokenStore = AuthTokenStore();
 
-  PagedResult<TenderDto> _bookmarkedTenders = PagedResult(result: [], totalCount: 0, page: 1, pageSize: 10);
+  static const int _pageSize = 2;
+  PagedResult<TenderDto> _bookmarkedTenders = PagedResult(result: [], totalCount: 0, page: 1, pageSize: _pageSize);
   bool _isLoading = true;
   String? _errorMessage;
+  int _currentPage = 1;
+  bool _hasMore = true;
+  bool _isLoadingMore = false;
 
   @override
   void initState() {
@@ -34,6 +38,34 @@ class _MobileBookmarkedTendersScreenState extends State<MobileBookmarkedTendersS
     _loadBookmarks();
   }
 
+  Future<void> _loadMoreBookmarks() async {
+    if (_isLoadingMore || !_hasMore) return;
+
+    setState(() => _isLoadingMore = true);
+
+    try {
+      final nextPage = _currentPage + 1;
+      final response = await widget.tenderService.getBookmarked(page: nextPage, pageSize: _pageSize);
+
+      if (!mounted) return;
+
+      setState(() {
+        _currentPage = nextPage;
+        _bookmarkedTenders.result.addAll(response.result);
+        _hasMore = _bookmarkedTenders.result.length < response.totalCount;
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('An error occurred: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingMore = false);
+      }
+    }
+  }
   Future<void> _loadBookmarks() async {
     try {
       setState(() {
@@ -44,16 +76,18 @@ class _MobileBookmarkedTendersScreenState extends State<MobileBookmarkedTendersS
       if (!await _tokenStore.hasValidAccessToken()) {
         if (!mounted) return;
         setState(() {
-          _bookmarkedTenders = PagedResult(result: [], totalCount: 0, page: 1, pageSize: 10);
+          _bookmarkedTenders = PagedResult(result: [], totalCount: 0, page: 1, pageSize: _pageSize  );
           _isLoading = false;
         });
         return;
       }
 
-      final tenders = await widget.tenderService.getBookmarked();
+      final tenders = await widget.tenderService.getBookmarked(page: 1, pageSize: _pageSize);
 
       setState(() {
         _bookmarkedTenders = tenders;
+        _currentPage = tenders.page;
+        _hasMore = tenders.result.isNotEmpty && tenders.result.length < tenders.totalCount;
         _isLoading = false;
       });
     } catch (e) {
@@ -86,6 +120,7 @@ class _MobileBookmarkedTendersScreenState extends State<MobileBookmarkedTendersS
       }
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -130,23 +165,59 @@ class _MobileBookmarkedTendersScreenState extends State<MobileBookmarkedTendersS
     }
 
     return RefreshIndicator(
-      onRefresh: _loadBookmarks,
+      onRefresh: () async {
+        _currentPage = 1;
+        _hasMore = true;
+        await _loadBookmarks();
+      },
       color: AppColors.primary,
       child: ListView.builder(
         padding: const EdgeInsets.all(12),
-        itemCount: _bookmarkedTenders.result.length,
+        itemCount: _bookmarkedTenders.result.length + (_hasMore ? 1 : 0),
         itemBuilder: (context, index) {
+          if (index == _bookmarkedTenders.result.length) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16.0),
+              child: _isLoadingMore
+                  ? const Center(
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    )
+                  : SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: _loadMoreBookmarks,
+                        icon: const Icon(Icons.expand_circle_down_rounded, size: 18),
+                        label: const Text('Load more'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      ),
+                    ),
+            );
+          }
+
           final dto = _bookmarkedTenders.result[index];
-          
           final cardModel = TenderCardModel.fromDTO(dto);
 
           return Padding(
-            padding: const EdgeInsets.only(bottom:12),
+            padding: const EdgeInsets.only(bottom: 12),
             child: MobileTenderCardWidget(
               tender: cardModel,
-              isSaved: true, 
+              isSaved: true,
               onTap: () => widget.onTenderSelected(dto.id),
-              onSave: () => _removeBookmark(dto), 
+              onSave: () => _removeBookmark(dto),
             ),
           );
         },

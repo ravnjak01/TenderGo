@@ -121,7 +121,6 @@ Future<void> _load() async {
       final user = userResult.data!;
       final currentUserId = await AuthService.getCurrentUserId();
 
-      // Prilagođeno da prihvati PagedResult tipove
       final bidsFuture = _bidService.getMyBids(page: 1, pageSize: 100);
       final tendersFuture = (currentUserId != null && currentUserId.isNotEmpty)
           ? _tenderService.getByUser(currentUserId)
@@ -132,7 +131,6 @@ Future<void> _load() async {
         tendersFuture,
       ]);
 
-      // Izvlačimo .result iz PagedResult objekata
       final bidsPaged = results[0] as PagedResult<BidDto>;
       final tendersPaged = results[1] as PagedResult<TenderDto>;
 
@@ -151,8 +149,6 @@ Future<void> _load() async {
       _animCtrl.forward(from: 0);
     } catch (e) {
       if (!mounted) return;
-      // Korisno za debug: ispišite tačnu grešku u konzolu ako se desi nešto nepredviđeno
-      debugPrint('Error loading profile: $e'); 
 
       setState(() {
         _loading = false;

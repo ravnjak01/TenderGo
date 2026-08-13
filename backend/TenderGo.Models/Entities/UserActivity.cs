@@ -20,3 +20,13 @@ public class UserActivity
 
     public Tender? Tender { get; set; }
 }
+
+public enum ActivityType
+{
+    TenderViewed,
+    TenderCreated,
+    BidSubmitted,
+    BidWithdrawn,
+    SearchPerformed,
+    TenderBookmarked
+}

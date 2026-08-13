@@ -21,9 +21,8 @@ class UserAvatarWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasImage = user != null && 
-                     user!.profileImageUrl != null && 
-                     user!.profileImageUrl!.trim().isNotEmpty;
+    final imageUrl = user?.profileImageUrl?.trim();
+    final hasImage = imageUrl != null && imageUrl.isNotEmpty;
 
     return InkWell(
       onTap: onTap,
@@ -35,25 +34,30 @@ class UserAvatarWidget extends StatelessWidget {
         decoration: BoxDecoration(
           color: backgroundColor,
           shape: BoxShape.circle,
-          image: hasImage
-              ? DecorationImage(
-                  image: NetworkImage(user!.profileImageUrl!),
-                  fit: BoxFit.cover,
-                )
-              : null,
         ),
-        child: hasImage 
-         ? const SizedBox.shrink()
-       : Center(
-                child: Text(
-                  user != null ? user!.initials : '',
-                  style: TextStyle(
-                    color: textColor,
-                    fontWeight: FontWeight.bold,
-                    fontSize: size * 0.37,
-                  ),
-                ),
+        clipBehavior: Clip.antiAlias,
+        child: hasImage
+            ? Image.network(
+                imageUrl,
+                width: size,
+                height: size,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => _buildFallback(),
+              )
+            : _buildFallback(),
       ),
+    );
+  }
+
+  Widget _buildFallback() {
+    return Center(
+      child: Text(
+        user != null ? user!.initials : '',
+        style: TextStyle(
+          color: textColor,
+          fontWeight: FontWeight.bold,
+          fontSize: size * 0.37,
+        ),
       ),
     );
   }

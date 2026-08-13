@@ -287,8 +287,8 @@ class _BidCard extends StatelessWidget {
         status != 'accepted' &&
         status != 'rejected' &&
         status != 'withdrawn' &&
-        status != 'cancelled' &&
-        status != 'canceled';
+        status != 'cancelled' ;
+
 
     final tenderOpen = bid.tenderStatus == TenderStatus.open;
 
@@ -473,7 +473,7 @@ class _BidCard extends StatelessWidget {
                             size: 16,
                           ),
                           label: const Text(
-                            'Cancel',
+                            'Withdraw Bid',
                             style: TextStyle(fontSize: 12),
                           ),
                         ),

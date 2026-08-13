@@ -270,7 +270,7 @@ class TenderProvider extends BaseProvider {
       final tender = await _service.getById(bid.tenderId);
 
       final ratedUserId = tender.createdByUserId.trim();
-      final ratedUserName = tender.createdByFullname.trim();
+      final ratedUserName = tender.createdByUserFullName.trim();
 
       if (ratedUserId.isEmpty || ratedUserId == bidderId) {
         return null;
