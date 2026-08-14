@@ -23,7 +23,7 @@ class TenderCardModel {
   final DateTime deadline;
   final DateTime postedAt;
   final List<String> tags;
-  final String? imageUrl; // null → show placeholder
+  final String? imageUrl; 
   final String locationName; 
 
   factory TenderCardModel.fromDTO(TenderDto dto) {

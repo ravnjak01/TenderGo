@@ -27,7 +27,7 @@ class TenderDetailsMetaCard extends StatelessWidget {
         children: [
           const TenderSectionLabel(
             icon: Icons.info_outline,
-            label: 'Tender Details',
+            label: 'Detalji o tenderu',
           ),
           const SizedBox(height: 14),
           ..._buildDetailItems(context),
@@ -40,27 +40,27 @@ class TenderDetailsMetaCard extends StatelessWidget {
     final items = [
       _DetailItem(
         icon: Icons.account_balance_wallet_outlined,
-        label: 'Budget',
+        label: 'Maksimalni budžet',
         value: formatTenderBudget(tender.maxBudget),
       ),
       _DetailItem(
         icon: Icons.location_on_outlined,
-        label: 'Location',
+        label: 'Lokacija',
         value: tender.location?.name ?? 'Nepoznata lokacija',
       ),
       _DetailItem(
         icon: Icons.work_outline,
-        label: 'Category',
+        label: 'Kategorija',
         value: tender.categoryName,
       ),
       _DetailItem(
         icon: Icons.access_time,
-        label: 'Posted',
+        label: 'Objavljeno',
         value: formatTenderDate(tender.postedAt),
       ),
       _DetailItem(
         icon: Icons.calendar_today_outlined,
-        label: 'Deadline',
+        label: 'Rok za prijavu',
         value: formatTenderDate(tender.deadline),
       ),
     ];

@@ -1,10 +1,10 @@
 class LocationEndpoints {
   static const String baseUrl = 'location';
 
-  /// GET /api/location (Paginirana lista za BaseService)
+  /// GET /api/location 
   static const String getPaged = baseUrl;
 
-  /// GET /api/location/all (Samo ako backend ima nepaginiranu listu za dropdown)
+  /// GET /api/location/all 
   static const String getAllFlat = '$baseUrl/all';
 
   /// GET /api/location/{id}
@@ -25,7 +25,7 @@ class LocationEndpoints {
   /// PATCH  /api/location/{id}/deactivate
   static String deactivate(int id) => '$baseUrl/$id/deactivate';
 
-  /// Custom statistike / pregledi
+  /// Custom statistike 
   static const String statistics = '$baseUrl/statistics';
   static const String overview = '$baseUrl/overview';
 }

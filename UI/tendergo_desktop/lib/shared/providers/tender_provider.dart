@@ -19,17 +19,14 @@ class TenderProvider extends BaseProvider {
   List<TenderDto> _tenders = [];
   List<CategoryDto> _categories = [];
   
-  // Paginacija i stanja
   int _currentPage = 1;
   int _totalCount = 0;
   bool _hasMore = true;
 
-  // Filteri
   int? _selectedCategoryId;
   String _searchQuery = '';
   LocationFilterSelection? _locationFilter;
 
-  // Getteri
   List<TenderDto> get tenders => _tenders;
   List<CategoryDto> get categories => _categories;
   bool get isSearchActive => _searchQuery.isNotEmpty;
@@ -40,7 +37,6 @@ class TenderProvider extends BaseProvider {
 
   TenderService get tenderService => _tenderService;
 
-  /// 1. Fetching tendera sa filtriranjem i paginacijom sa BE
   Future<void> fetchTenders({bool refresh = true}) async {
     if (refresh) {
       _currentPage = 1;
@@ -48,7 +44,6 @@ class TenderProvider extends BaseProvider {
     }
 
     await handleAsync(() async {
-      // Izvođenje categoryId ako je izabrana konkretna kategorija
       final request = TenderSearchRequest(
         page: _currentPage,
         pageSize: 10,
@@ -59,7 +54,6 @@ class TenderProvider extends BaseProvider {
         region: _locationFilter?.region,
       );
 
-      // Koristimo paginiranu pretragu sa servisa
       final pagedResult = await _tenderService.getTendersPaged(request);
 
       if (refresh) {
@@ -73,17 +67,14 @@ class TenderProvider extends BaseProvider {
     });
   }
 
-  /// Učitavanje sljedeće stranice za "Infinite Scroll"
   Future<void> loadNextPage() async {
     if (isLoading || !_hasMore) return;
     _currentPage++;
     await fetchTenders(refresh: false);
   }
 
-  /// 2. Fetching kategorija sa BE
   Future<void> fetchCategories() async {
     await handleAsync(() async {
-      // Šaljemo PagedRequest za kategorije sa većim pageSize da povučemo sve
       final pagedResult = await _categoryService.get(
         page: 1,
         pageSize: 100,
@@ -93,19 +84,15 @@ class TenderProvider extends BaseProvider {
     });
   }
 
-  /// Postavljanje pretrage po pojmu
   void setSearchQuery(String query) {
     _searchQuery = query.trim();
     fetchTenders(refresh: true);
   }
 
-  /// Postavljanje izabrane kategorije
   void setSelectedCategory(int? categoryId) {
     _selectedCategoryId = categoryId;
     fetchTenders(refresh: true);
   }
-
-  /// Filter po lokaciji
   void setLocationFilter(LocationFilterSelection? filter) {
     _locationFilter = filter;
     fetchTenders(refresh: true);
@@ -117,7 +104,6 @@ class TenderProvider extends BaseProvider {
     fetchTenders(refresh: true);
   }
 
-  /// Otkazivanje tendera
   Future<bool> cancelTender(int id, String reason) async {
     final result = await handleAsync(() async {
       final request = TenderCancelRequest(reason: reason);

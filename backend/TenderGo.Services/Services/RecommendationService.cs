@@ -100,7 +100,7 @@ public class RecommendationService : IRecommendationService
         var biddedTenders = await _db.Tenders
             .Include(t => t.Category)
             .Include(t => t.Bids)
-            .Where(t => t.Bids.Any(b => b.SubmittedByUserId == userId) && t.Status == TenderStatus.Open)
+            .Where(t => t.Bids.Any(b => b.SubmittedByUserId == userId) )
             .ToListAsync();
 
         var userActivities = await _db.UserActivities
@@ -344,7 +344,7 @@ public class RecommendationService : IRecommendationService
     private static List<string> GetRecentSearchQueries(List<UserActivity> userActivities)
     {
         return userActivities
-            .Where(a => a.ActivityType == "Search" && !string.IsNullOrEmpty(a.SearchQuery))
+            .Where(a => a.ActivityType == ActivityRecommendType.TenderSearch && !string.IsNullOrEmpty(a.SearchQuery))
             .Select(a => a.SearchQuery!.Trim())
             .Where(q => !string.IsNullOrWhiteSpace(q))
             .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -355,10 +355,11 @@ public class RecommendationService : IRecommendationService
     private static List<Tender> GetViewedTenders(List<UserActivity> userActivities)
     {
         return userActivities
-            .Where(a => a.ActivityType == "View" && a.Tender != null)
+            .Where(a => a.ActivityType == ActivityRecommendType.TenderViewed && a.Tender != null)
             .Select(a => a.Tender!)
             .ToList();
     }
+
 
     private static void AddScore(Dictionary<int, List<double>> scoredDict, int tenderId, double score)
     {

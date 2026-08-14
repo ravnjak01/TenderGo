@@ -7,17 +7,16 @@ import 'package:tendergo/shared/models/requests/tender_cancel_request.dart';
 import 'package:tendergo/shared/models/requests/tender_search_request.dart';
 import 'package:tendergo/shared/services/base_service.dart';
 
-class TenderService extends BaseService<TenderDto> {
+class TenderService extends BaseService<TenderDto,TenderDto,TenderDto> {
   TenderService(Dio dio)
       : super(
           dio,
-          TenderApiEndpoints.baseUrl, // Bazna ruta npr. 'tender'
+          TenderApiEndpoints.baseUrl, 
           TenderDto.fromJson,
         );
 
-  // Napomena: insert(), update(), delete() i getById() su već naslijeđeni iz BaseService-a!
 
-  /// GET: api/tender (Standardna paginirana pretraga tendera za korisnike)
+  /// GET: api/tender 
   Future<PagedResult<TenderDto>> getTendersPaged(TenderSearchRequest request) {
     return get(
       page: request.page ?? 1,
@@ -26,7 +25,7 @@ class TenderService extends BaseService<TenderDto> {
     );
   }
 
-  /// GET: api/tender/admin (Specifična pretraga tendera za Admin panel sa AdminTenderDto)
+  /// GET: api/tender/admin 
   Future<PagedResult<AdminTenderDto>> searchAdminTenders(
     TenderSearchRequest request,
   ) async {
@@ -49,7 +48,7 @@ class TenderService extends BaseService<TenderDto> {
     }
   }
 
-  /// PATCH: api/tender/{id}/cancel (Otkaži tender sa obrazloženjem)
+  /// PATCH: api/tender/{id}/cancel 
   Future<TenderDto> cancel(int id, TenderCancelRequest request) async {
     try {
       final response = await dio.patch(

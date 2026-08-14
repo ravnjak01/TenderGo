@@ -547,7 +547,6 @@ final int totalPages = _totalCount <= 0
         ),
         const SizedBox(height: 24),
 
-        // Glavna tabela sa podacima
         Expanded(
           child: _isLoading
               ? const Center(child: CircularProgressIndicator())
@@ -798,7 +797,6 @@ final int totalPages = _totalCount <= 0
               ),
               Row(
                 children: [
-                  // Prethodna stranica dugme
                   OutlinedButton(
                     onPressed: _currentPage > 1
                         ? () {
@@ -827,7 +825,6 @@ final int totalPages = _totalCount <= 0
                   ),
                   const SizedBox(width: 8),
                   
-                  // Sljedeća stranica dugme
                   OutlinedButton(
                     onPressed: _currentPage < totalPages
                         ? () {

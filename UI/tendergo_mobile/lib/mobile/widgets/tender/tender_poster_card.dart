@@ -1,4 +1,3 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:tendergo/mobile/routes/routes.dart';
 import 'package:tendergo/shared/core/theme/app_theme.dart';

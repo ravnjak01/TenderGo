@@ -82,7 +82,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                   return 'Please enter your email';
                 }
                 if (!isValidEmail(value)) {
-                  return 'Please enter a valid email address';
+                  return 'Please enter a valid email address (e.g., user@example.com)';
                 }
                 return null;
               },

@@ -1,4 +1,3 @@
-// admin_report_request.dart
 class AdminReportRequest {
   final int locationId;
   final DateTime from;

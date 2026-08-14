@@ -4,7 +4,7 @@ import 'package:tendergo/shared/models/enums/tenderstatus.dart';
 class AdminTenderDto {
   final int id;
   final String title;
-  final String createdByUserFullname; // Usklađeno sa nazvom na TenderDto
+  final String createdByUserFullname; 
   final DateTime deadline;
   final double maxBudget;
   final TenderStatus status;

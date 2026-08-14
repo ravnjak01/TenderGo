@@ -86,7 +86,7 @@ class TenderInfoSection extends StatelessWidget {
         if (showDescription) ...[
           // Description
           const Text(
-            'Project Description',
+            'Opis projekta',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,

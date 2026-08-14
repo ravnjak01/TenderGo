@@ -3,16 +3,17 @@ import 'package:tendergo/shared/core/network/constants/location_endpoints.dart';
 import 'package:tendergo/shared/models/dto/location_dto.dart';
 import 'package:tendergo/shared/models/dto/paged_result.dart';
 import 'package:tendergo/shared/models/requests/location_filter_request.dart';
+import 'package:tendergo/shared/models/requests/location_insert_request.dart';
 import 'package:tendergo/shared/models/requests/location_search_request.dart';
+import 'package:tendergo/shared/models/requests/location_update_request.dart';
 import 'package:tendergo/shared/services/base_service.dart';
 
-class LocationService extends BaseService<LocationDto> {
+class LocationService extends BaseService<LocationDto,LocationInsertRequest,LocationUpdateRequest> {
   LocationService(Dio dio)
       : super(dio, LocationEndpoints.baseUrl, LocationDto.fromJson);
 
-  // Napomena: insert(), update(), delete() i getById() su već naslijeđeni iz BaseService-a!
 
-  /// GET: api/location (Paginacija i opća pretraga preko LocationSearchRequest)
+  /// GET: api/location 
   Future<PagedResult<LocationDto>> getLocationsPaged(
     LocationSearchRequest request,
   ) {
@@ -23,7 +24,7 @@ class LocationService extends BaseService<LocationDto> {
     );
   }
 
-  /// GET: api/location/all (Nepaginirana lista za Dropdown / Filter izbore)
+  /// GET: api/location/all 
   Future<List<LocationDto>> getAllForDropdown({
     LocationFilterRequest? filter,
     bool includeInactive = false,
@@ -35,7 +36,7 @@ class LocationService extends BaseService<LocationDto> {
       }
 
       final response = await dio.get(
-        LocationEndpoints.getAllFlat, // 'location/all'
+        LocationEndpoints.getAllFlat, 
         queryParameters: queryParameters,
       );
 

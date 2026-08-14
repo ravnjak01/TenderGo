@@ -1,5 +1,19 @@
+enum ActivityRecommendType {
+  tenderViewed,
+  tenderSearch;
+
+  String toJson() {
+    switch (this) {
+      case ActivityRecommendType.tenderViewed:
+        return 'TenderViewed';
+      case ActivityRecommendType.tenderSearch:
+        return 'TenderSearch';
+    }
+  }
+}
+
 class ActivityLogRequest {
-  final String activityType; 
+  final ActivityRecommendType activityType;
   final int? tenderId;
   final String? searchQuery;
   final int? durationSeconds;
@@ -12,7 +26,9 @@ class ActivityLogRequest {
   });
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = {'activityType': activityType};
+    final Map<String, dynamic> data = {
+      'activityType': activityType.toJson(),
+    };
 
     if (tenderId != null) {
       data['tenderId'] = tenderId;

@@ -24,7 +24,7 @@ namespace TenderGo.Api.Controllers
             _categoryService = categoryService;
         }
 
-        // POST api/category (Samo Admin može dodavati)
+        // POST api/category 
         [Authorize(Roles = AppRoles.Admin)]
         [HttpPost]
         public override Task<IActionResult> Insert([FromBody] CategoryInsertRequest request)
@@ -32,7 +32,7 @@ namespace TenderGo.Api.Controllers
             return base.Insert(request);
         }
 
-        // PATCH api/category/{id} (Samo Admin može azurirati)
+        // PATCH api/category/{id} 
         [Authorize(Roles = AppRoles.Admin)]
         [HttpPatch("{id:int}")]
         public override Task<IActionResult> Update(int id, [FromBody] CategoryUpdateRequest request)
@@ -40,7 +40,7 @@ namespace TenderGo.Api.Controllers
             return base.Update(id, request);
         }
 
-        // DELETE api/category/{id} (Samo Admin može brisati)
+        // DELETE api/category/{id} 
         [Authorize(Roles = AppRoles.Admin)]
         [HttpDelete("{id:int}")]
         public override Task<IActionResult> Delete(int id)

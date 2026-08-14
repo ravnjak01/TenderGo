@@ -26,7 +26,6 @@ class UserTendersScreen extends StatelessWidget {
         title: Text('Tenders by $userName'),
         leading: const CustomBackButton(),
       ),
-      // 1. Promenjen generički tip u PagedResult<TenderDto>
       body: FutureBuilder<PagedResult<TenderDto>>(
         future: tenderService.getByUser(userId),
         builder: (context, snapshot) {
@@ -46,7 +45,6 @@ class UserTendersScreen extends StatelessWidget {
             );
           }
 
-          // 2. Direktno preuzimamo listu iz PagedResult objekta
           final pagedResult = snapshot.data;
           final List<TenderDto> tenders = pagedResult?.result ?? [];
 

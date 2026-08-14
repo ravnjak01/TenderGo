@@ -18,7 +18,7 @@ class AppRoutes {
   static final GlobalKey<NavigatorState> navigatorKey =
       GlobalKey<NavigatorState>();
 
-  // Nazivi ruta (Konstante)
+  // Nazivi ruta 
   static const String login = '/login';
   static const String forgotPassword = '/forgot-password';
   static const String resetPassword = '/reset-password';
@@ -41,15 +41,14 @@ class AppRoutes {
 
   }) {
     return {
-   
-      AppRoutes.pdfViewer: (context) {
-        final args =
-            ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-        final Uint8List pdfBytes = args?['pdfBytes'] ?? Uint8List(0);
-        final String title = args?['title'] ?? 'Pregled izvještaja';
+   AppRoutes.pdfViewer: (context) {
+    final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
 
-        return AdminReportPreviewScreen(pdfBytes: pdfBytes, title: title);
-      },
+    final Uint8List pdfBytes = args['pdfBytes'] as Uint8List;
+    final String title = args['title'] as String;
+
+    return AdminReportPreviewScreen(pdfBytes: pdfBytes, title: title);
+  },
 
       AppRoutes.login: (context) => const AdminLoginScreen(),
       AppRoutes.mainAdminLayout: (context) =>

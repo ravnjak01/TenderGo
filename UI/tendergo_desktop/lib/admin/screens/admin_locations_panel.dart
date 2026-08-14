@@ -106,7 +106,9 @@ Future<void> _fetchLocations({String searchTerm = '', bool isNewSearch = false})
       isActive: _selectedActiveFilter,
     );
 
-    final pagedResult = await _locationService.getLocationsPaged(request);
+    final pagedResult = await _locationService.get(page: _currentPage,
+      pageSize: _pageSize,
+      queryParameters: request.toJson(),);
     
     if (!mounted) return;
 

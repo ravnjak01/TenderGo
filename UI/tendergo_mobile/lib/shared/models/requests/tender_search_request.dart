@@ -11,14 +11,10 @@ class TenderSearchRequest extends PagedSearchRequest {
     this.locationId,
     this.country,
     this.region,
-    String? searchTerm,
-    int page = 1,
-    int pageSize = 3,
-  }) : super(
-          page: page,
-          pageSize: pageSize,
-          searchTerm: searchTerm,
-        );
+    super.searchTerm,
+    super.page,
+    super.pageSize,
+  });
 
   @override
   Map<String, dynamic> toQueryParams() {

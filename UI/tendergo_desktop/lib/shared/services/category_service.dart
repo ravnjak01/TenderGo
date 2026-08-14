@@ -2,17 +2,17 @@ import 'package:dio/dio.dart';
 import 'package:tendergo/shared/core/network/constants/category_api_endpoints.dart';
 import 'package:tendergo/shared/models/dto/category_dto.dart';
 import 'package:tendergo/shared/models/dto/paged_result.dart';
+import 'package:tendergo/shared/models/requests/category_insert_request.dart';
 import 'package:tendergo/shared/models/requests/category_search_request.dart';
 import 'package:tendergo/shared/models/requests/category_update_request.dart';
 import 'package:tendergo/shared/services/base_service.dart';
 
-class CategoryService extends BaseService<CategoryDto> {
+class CategoryService extends BaseService<CategoryDto, CategoryInsertRequest, CategoryUpdateRequest> {
   CategoryService(Dio dio)
       : super(dio, CategoryApiEndpoints.baseUrl, CategoryDto.fromJson);
 
-  // Napomena: insert(), getById() i delete() su već naslijeđeni iz BaseService-a!
 
-  /// GET: api/category (Paginacija i pretraga preko CategorySearchRequest)
+  /// GET: api/category 
   Future<PagedResult<CategoryDto>> getCategories(CategorySearchRequest request) {
     return get(
       page: request.page ?? 1,
@@ -21,27 +21,8 @@ class CategoryService extends BaseService<CategoryDto> {
     );
   }
 
-  /// PATCH: api/category/{id} (Ažuriranje kategorije - vraća ažurirani CategoryDto)
-  @override
-  Future<CategoryDto> update(int id, dynamic requestData) async {
-    try {
-      final body = requestData is Map ? requestData : requestData.toJson();
-      final response = await dio.patch(
-        CategoryApiEndpoints.update(id),
-        data: body,
-      );
-
-      final data = extractData(response.data);
-      return parseJson(Map<String, dynamic>.from(data as Map));
-    } on DioException catch (e) {
-      throw Exception(extractErrorMessage(e, 'Greška pri ažuriranju kategorije'));
-    }
-  }
-
-  Future<CategoryDto> updateCategory(int id, CategoryUpdateRequest request) {
-    return update(id, request);
-  }
-
+ 
+ 
   /// PATCH: api/category/{id}/activate
   Future<CategoryDto> activateCategory(int id) async {
     try {

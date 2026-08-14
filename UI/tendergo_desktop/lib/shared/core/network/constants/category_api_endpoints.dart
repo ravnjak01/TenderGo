@@ -1,7 +1,7 @@
 class CategoryApiEndpoints {
   static const String baseUrl = 'category';
 
-  /// GET /api/category (Paginirana lista)
+  /// GET /api/category 
   static const String getAll = baseUrl;
 
   /// GET /api/category/{id}

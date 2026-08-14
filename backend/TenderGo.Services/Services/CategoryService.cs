@@ -38,17 +38,7 @@ namespace TenderGo.Services.Services
             {
                 query = query.Where(c => c.IsActive);
             }
-            else
-            {
-                var includeInactiveQuery = _httpContextAccessor.HttpContext?.Request.Query["includeInactive"];
-                var includeInactive = bool.TryParse(includeInactiveQuery, out var parsed) && parsed;
-
-                if (!includeInactive)
-                {
-                    query = query.Where(c => c.IsActive);
-                }
-            }
-
+           
             return query.OrderBy(c => c.Name);
         }
 

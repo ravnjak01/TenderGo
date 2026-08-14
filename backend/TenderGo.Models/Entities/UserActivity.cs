@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using TenderGo.Models.ENUMs;
 
 namespace TenderGo.Models.Entities;
 
@@ -10,7 +11,7 @@ public class UserActivity
     public string UserId { get; set; } = string.Empty;
 
     [Required]
-    public string ActivityType { get; set; } = string.Empty;
+    public ActivityRecommendType ActivityType { get; set; } 
 
     public int? TenderId { get; set; }
 
@@ -21,12 +22,3 @@ public class UserActivity
     public Tender? Tender { get; set; }
 }
 
-public enum ActivityType
-{
-    TenderViewed,
-    TenderCreated,
-    BidSubmitted,
-    BidWithdrawn,
-    SearchPerformed,
-    TenderBookmarked
-}

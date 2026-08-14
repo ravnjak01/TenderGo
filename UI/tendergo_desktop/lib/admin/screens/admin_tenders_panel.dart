@@ -78,7 +78,7 @@ class _AdminTendersPanelState extends State<AdminTendersPanel> {
   } catch (e) {
     if (!mounted) return;
     setState(() {
-      _error = e.toUserMessage(); // ✅ Uklonjen višak zagrada ;();
+      _error = e.toUserMessage(); 
       _loading = false;
     });
   }
@@ -107,7 +107,6 @@ class _AdminTendersPanelState extends State<AdminTendersPanel> {
   final TextEditingController reasonController = TextEditingController();
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
 
-  // Dijalog vraća uneseni razlog (String) ili null ako je korisnik odustao
   final String? reason = await showDialog<String>(
     context: context,
     builder: (BuildContext context) {
@@ -146,7 +145,7 @@ class _AdminTendersPanelState extends State<AdminTendersPanel> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(null), // Odustani
+            onPressed: () => Navigator.of(context).pop(null), 
             child: const Text('Odustani'),
           ),
           ElevatedButton(
@@ -166,14 +165,12 @@ class _AdminTendersPanelState extends State<AdminTendersPanel> {
     },
   );
 
-  // Ako je korisnik unio razlog i potvrdio
   if (reason != null && reason.isNotEmpty && mounted) {
     setState(() => _loading = true);
 
     try {
       final tenderProvider = context.read<TenderProvider>(); 
       
-      // Pozivamo provider koji šalje id i uneti razlog
       final success = await tenderProvider.cancelTender(tender.id, reason);
 
       if (success && mounted) {
@@ -271,7 +268,6 @@ Widget _buildStatusBadge(TenderStatus status) {
 
   @override
 Widget build(BuildContext context) {
-  // Izračunavanje ukupnog broja stranica za prikaz u traci
   final int totalPages = (_totalCount / _pageSize).ceil();
   final int displayTotalPages = totalPages == 0 ? 1 : totalPages;
 
@@ -358,7 +354,6 @@ Widget build(BuildContext context) {
         ),
         const SizedBox(height: 24),
 
-        // Tabela i Paginacija upakovane zajedno
         Expanded(
           child: _loading
               ? const Center(child: CircularProgressIndicator())
@@ -380,7 +375,6 @@ Widget build(BuildContext context) {
                       ),
                       child: Column(
                         children: [
-                          // Tabela unutar svog Expanded-a kako ne bi progutala prostor paginacije
                           Expanded(
                             child: SingleChildScrollView(
                               scrollDirection: Axis.vertical,
@@ -456,7 +450,6 @@ Widget build(BuildContext context) {
                                       ),
                                     ),
                                   ],
-                                  // Mapiranje iz serverske liste _tenders (AdminTenderDto)
                                   rows: _tenders.map((tender) {
                                     return DataRow(
                                       cells: [
@@ -604,7 +597,6 @@ Padding(
       ),
       Row(
         children: [
-          // Prethodna stranica dugme (Outlined sa tvojim stilom)
           OutlinedButton(
            onPressed: _currentPage > 1 && !_loading
               ? _previousPage

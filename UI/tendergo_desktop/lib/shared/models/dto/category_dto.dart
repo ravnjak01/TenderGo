@@ -34,7 +34,6 @@ class CategoryDto {
 
 
 
-// --- UI Theme logika za kategorije ---
 
 class CategoryTheme {
   const CategoryTheme({required this.bg, required this.icon});
@@ -54,8 +53,7 @@ const Map<String, CategoryTheme> categoryThemes = {
   'Supplies':      CategoryTheme(bg: Color(0xFFE6F1FB), icon: Icons.inventory_2_rounded),
 };
 
-/// Pomoćna funkcija za dobijanje teme. 
-/// Ako kategorija ne postoji u mapi, vraća defaultnu sivu temu.
+
 CategoryTheme themeForCategory(String categoryName) =>
     categoryThemes[categoryName] ??
     const CategoryTheme(bg: Color(0xFFF1EFE8), icon: Icons.description_rounded);

@@ -3,10 +3,10 @@ import 'package:flutter/foundation.dart';
 import 'package:tendergo/shared/models/dto/paged_result.dart';
 import 'package:tendergo/shared/services/api_helper.dart';
 
-abstract class BaseService<T> {
+abstract class BaseService<TDto,TInsertRequest,TUpdateRequest> {
   final Dio _dio;
   final String _endpointPath;
-  final T Function(Map<String, dynamic>) _fromJson;
+  final TDto Function(Map<String, dynamic>) _fromJson;
 
   BaseService(this._dio, this._endpointPath, this._fromJson);
 
@@ -17,7 +17,7 @@ abstract class BaseService<T> {
   String get endpointPath => _endpointPath;
 
   @protected
-  T parseJson(Map<String, dynamic> json) => _fromJson(json);
+  TDto parseJson(Map<String, dynamic> json) => _fromJson(json);
 
   @protected
   dynamic extractData(dynamic responseData) {
@@ -32,8 +32,8 @@ abstract class BaseService<T> {
     return ApiHelper.handleDioError(e, fallbackMessage: fallback).message;
   }
 
-  /// GET: api/endpoint (Sa paginacijom i filterima)
-  Future<PagedResult<T>> get({
+  /// GET: api/endpoint 
+  Future<PagedResult<TDto>> get({
     int page = 1,
     int pageSize = 10,
     Map<String, dynamic>? queryParameters,
@@ -66,7 +66,7 @@ abstract class BaseService<T> {
   }
 
   /// GET: api/endpoint/{id}
-  Future<T> getById(int id) async {
+  Future<TDto> getById(int id) async {
     try {
       final response = await _dio.get('$_endpointPath/$id');
       final data = extractData(response.data);
@@ -77,9 +77,11 @@ abstract class BaseService<T> {
   }
 
   /// POST: api/endpoint
-  Future<T> insert(dynamic requestData) async {
+  Future<TDto> insert(TInsertRequest requestData) async {
     try {
-      final body = requestData is Map ? requestData : requestData.toJson();
+      final body = requestData is Map 
+        ? requestData 
+        : (requestData as dynamic).toJson();
 
       final response = await _dio.post(_endpointPath, data: body);
       final data = extractData(response.data);
@@ -90,13 +92,17 @@ abstract class BaseService<T> {
   }
 
   /// PUT: api/endpoint/{id}
-  Future<T> update(int id, dynamic requestData) async {
+  Future<TDto> update(int id, TUpdateRequest requestData) async {
     try {
-      final body = requestData is Map ? requestData : requestData.toJson();
-
-      // Izmijenjeno iz .patch u .put (u skladu sa BaseController u .NET-u)
-      final response = await _dio.put('$_endpointPath/$id', data: body);
+    final body = requestData is Map 
+        ? requestData 
+        : (requestData as dynamic).toJson();
+      final response = await _dio.patch('$_endpointPath/$id', data: body);
       final data = extractData(response.data);
+      
+      if (data == null) {
+        return getById(id);
+      }
       
       return _fromJson(Map<String, dynamic>.from(data as Map));
     } on DioException catch (e) {
@@ -109,7 +115,6 @@ abstract class BaseService<T> {
     try {
       final response = await _dio.delete('$_endpointPath/$id');
       
-      // Ako backend vrati JSON { "message": "Location deleted..." }
       if (response.data is Map && response.data.containsKey('message')) {
         return response.data['message'].toString();
       }

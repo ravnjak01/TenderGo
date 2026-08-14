@@ -84,13 +84,11 @@ Future<void> _loadUsers() async {
 
 Future<void> _loadLocations() async {
   setState(() {
-    _isLoading = true; // ili opći _isLoading
+    _isLoading = true; 
     _error = null;
   });
 
   try {
-    // 1. Poziv servisa bez nepotrebnog 'const LocationFilterRequest()' ako nije obavezno,
-    // ili sa njim ako servisu striktno treba filter objekat.
     final result = await _locationService.getAllForDropdown(
       filter: const LocationFilterRequest(),
       includeInactive: true,
@@ -98,7 +96,6 @@ Future<void> _loadLocations() async {
 
     if (!mounted) return;
 
-    // 2. Sortiranje po nazivu (ili displayLabel ako imate taj getter na DTO-u)
     result.sort((a, b) => (a.name ?? '').toLowerCase().compareTo((b.name ?? '').toLowerCase()));
 
     setState(() {

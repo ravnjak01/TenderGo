@@ -15,14 +15,12 @@ class TenderDto extends AdminTenderDto {
   final DateTime postedAt;
 
   const TenderDto({
-    // Polja iz AdminTenderDto (bazna polja)
     required super.id,
     required super.title,
     required super.createdByUserFullname,
     required super.deadline,
     required super.maxBudget,
     required super.status,
-    // Dodatna detaljna polja za TenderDto
     this.description,
     required this.createdByUserId,
     required this.totalBids,
@@ -33,7 +31,6 @@ class TenderDto extends AdminTenderDto {
     required this.postedAt,
   });
 
-  /// Getter za primarnu sliku
   TenderImageDto? get primaryImage {
     if (images.isEmpty) return null;
     return images.firstWhere(
@@ -46,7 +43,6 @@ class TenderDto extends AdminTenderDto {
   }
 
   factory TenderDto.fromJson(Map<String, dynamic> json) {
-    // Prvo izvučemo bazna polja preko AdminTenderDto parsere
     final adminDto = AdminTenderDto.fromJson(json);
 
     return TenderDto(

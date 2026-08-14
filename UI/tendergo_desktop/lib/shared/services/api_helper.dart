@@ -13,7 +13,6 @@ class ApiHelper {
       try {
         final parsedResponse = ApiResponse<T>.fromJson(data);
         
-        // Ako je poruka sa backenda prazna, iskoristi fallbackMessage
         if (parsedResponse.message.isEmpty) {
           return ApiResponse<T>.failure(
             fallbackMessage,

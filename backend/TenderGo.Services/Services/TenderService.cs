@@ -421,7 +421,7 @@ namespace TenderGo.Services.Services
             var cutoff = DateTime.UtcNow.AddMinutes(-10);
             var alreadyLogged = await _context.UserActivities.AnyAsync(a =>
                 a.UserId == userId &&
-                a.ActivityType == "View" &&
+                a.ActivityType == ActivityRecommendType.TenderViewed &&
                 a.TenderId == tenderId.Value &&
                 a.Timestamp >= cutoff);
 
@@ -430,7 +430,7 @@ namespace TenderGo.Services.Services
                 return false;
             }
 
-            await AddUserActivityAsync("View", tenderId.Value, null);
+            await AddUserActivityAsync(ActivityRecommendType.TenderViewed, tenderId.Value, null);
             return true;
         }
 
@@ -442,11 +442,11 @@ namespace TenderGo.Services.Services
                 return false;
             }
 
-            await AddUserActivityAsync("Search", null, normalizedSearchTerm);
+            await AddUserActivityAsync(ActivityRecommendType.TenderSearch, null, normalizedSearchTerm);
             return true;
         }
 
-        private async Task AddUserActivityAsync(string activityType, int? tenderId, string? searchQuery)
+        private async Task AddUserActivityAsync(ActivityRecommendType activityType, int? tenderId, string? searchQuery)
         {
             var userId = _authService.GetCurrentUserId();
 
