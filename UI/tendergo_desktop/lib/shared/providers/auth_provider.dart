@@ -42,7 +42,11 @@ Future<ApiResponse> login(String email, String password) async {
     await _authService.logout();
     _currentUser = null;
     notifyListeners();
-    return result;
+
+   return ApiResponse.failure(
+      'Pogrešan email ili lozinka.', 
+      statusCode: result.statusCode ,
+    );
   }
   
   final userResult = await loadUser();

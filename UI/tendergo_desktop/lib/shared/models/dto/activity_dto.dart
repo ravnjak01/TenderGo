@@ -60,3 +60,16 @@ ActivityType parseActivityType(dynamic value) {
       return ActivityType.userRegistered;
   }
 }
+
+extension ActivityTypeX on ActivityType {
+  String get label {
+    switch (this) {
+      case ActivityType.userRegistered:
+        return 'Korisnik registrovan';
+      case ActivityType.tenderCreated:
+        return 'Tender kreiran';
+      case ActivityType.bidSubmitted:
+        return 'Ponuda poslana';
+    }
+  }
+}

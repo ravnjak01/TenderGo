@@ -7,8 +7,8 @@ class ApiEndpoints {
 
   static const String  me = '/auth/me';
 
-  static String uploadImage='Images/upload';
-  static String deleteImage='Images';
+  static String uploadImage='images/upload';
+  static String deleteImage='images';
 
   // --- RECOMMENDATIONS ---
   static String recommendSimilar(int tenderId) => '/recommend/similar/$tenderId';

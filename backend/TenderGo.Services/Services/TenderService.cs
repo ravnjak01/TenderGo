@@ -345,15 +345,21 @@ namespace TenderGo.Services.Services
 
             if (!string.IsNullOrWhiteSpace(request.SearchTerm))
             {
-                var term = $"%{request.SearchTerm.ToLower()}%";
+                var search = request.SearchTerm.Trim().ToLower();
                 query = query.Where(t =>
-                    EF.Functions.Like(t.Title.ToLower(), term) ||
-                    (t.Description != null && EF.Functions.Like(t.Description.ToLower(), term))
+                    t.Title.ToLower().Contains(search) ||
+                    (t.Description != null && t.Description.ToLower().Contains(search))
                 );
             }
 
-            if (request.CategoryId.HasValue)
+            if (request.CategoryIds != null && request.CategoryIds.Any())
+            {
+                query = query.Where(t => request.CategoryIds.Contains(t.CategoryId));
+            }
+            else if (request.CategoryId.HasValue)
+            {
                 query = query.Where(t => t.CategoryId == request.CategoryId.Value);
+            }
 
             if (request.LocationId.HasValue)
                 query = query.Where(t => t.LocationId == request.LocationId.Value);
@@ -364,7 +370,6 @@ namespace TenderGo.Services.Services
             if (!string.IsNullOrWhiteSpace(request.Region))
                 query = query.Where(t => t.Location.Region != null && t.Location.Region.ToLower() == request.Region.ToLower());
 
-            query = query.OrderByDescending(t => t.CreatedAt);
 
             return query;
         }

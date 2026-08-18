@@ -91,137 +91,168 @@ class _AdminUsersPanelState extends State<AdminUsersPanel> {
     });
   }
 
-  Future<void> _handleBanUser(UserDto user) async {
-    final reason = await _showBanReasonDialog();
-    if (reason == null || reason.isEmpty) return;
+ Future<void> _handleBanUser(UserDto user) async {
+  final reason = await _showBanReasonDialog();
+  
+  // Ako je korisnik kliknuo "Otkaži" ili zatvorio dijalog
+  if (reason == null) return;
 
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
-    try {
-      final response = await _adminService.banUser(user.id, BanRequest(reason: reason));
-      if (!mounted) return;
-
-      setState(() {
-        _isLoading = false;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(response.message),
-          backgroundColor: response.success ? Colors.green : Colors.red,
-        ),
-      );
-
-      if (response.success) {
-        setState(() {
-          _users = _users.map((u) {
-            if (u.id == user.id) {
-              return UserDto(
-                id: u.id,
-                email: u.email,
-                username: u.username,
-                firstName: u.firstName,
-                lastName: u.lastName,
-                address: u.address,
-                profileImageUrl: u.profileImageUrl,
-                roles: u.roles,
-                isBanned: true,
-              );
-            }
-            return u;
-          }).toList();
-        });
-      }
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-        _error = e.toUserMessage();();
-      });
-    }
-  }
-
-  Future<void> _handleUnbanUser(UserDto user) async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
-    try {
-      final response = await _adminService.unbanUser(user.id);
-      if (!mounted) return;
-
-      setState(() {
-        _isLoading = false;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(response.message),
-          backgroundColor: response.success ? Colors.green : Colors.red,
-        ),
-      );
-
-      if (response.success) {
-        setState(() {
-          _users = _users.map((u) {
-            if (u.id == user.id) {
-              return UserDto(
-                id: u.id,
-                email: u.email,
-                username: u.username,
-                firstName: u.firstName,
-                lastName: u.lastName,
-                address: u.address,
-                profileImageUrl: u.profileImageUrl,
-                roles: u.roles,
-                isBanned: false,
-              );
-            }
-            return u;
-          }).toList();
-        });
-      }
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-        _error = e.toUserMessage();();
-      });
-    }
-  }
-
-  Future<String?> _showBanReasonDialog() async {
-    final controller = TextEditingController();
-    return showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Ban korisnika'),
-        content: TextField(
-          controller: controller,
-          maxLines: 3,
-          decoration: const InputDecoration(
-            labelText: 'Razlog zabrane',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, null),
-            child: const Text('Otkaži'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text('Potvrdi'),
-          ),
-        ],
+  // Dodatna provjera ukoliko je unijeta prazna vrijednost
+  if (reason.trim().isEmpty) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Razlog za banovanje je obavezan.'),
+        backgroundColor: Colors.red,
       ),
     );
+    return;
   }
 
+  setState(() {
+    _isLoading = true;
+    _error = null;
+  });
+
+  try {
+    final response = await _adminService.banUser(user.id, BanRequest(reason: reason));
+    if (!mounted) return;
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(response.message),
+        backgroundColor: response.success ? Colors.green : Colors.red,
+      ),
+    );
+
+    if (response.success) {
+      setState(() {
+        _users = _users.map((u) {
+          if (u.id == user.id) {
+            return UserDto(
+              id: u.id,
+              email: u.email,
+              username: u.username,
+              firstName: u.firstName,
+              lastName: u.lastName,
+              address: u.address,
+              profileImageUrl: u.profileImageUrl,
+              roles: u.roles,
+              isBanned: true,
+            );
+          }
+          return u;
+        }).toList();
+      });
+    }
+  } catch (e) {
+    if (!mounted) return;
+    setState(() {
+      _isLoading = false;
+      _error = e.toUserMessage();
+    });
+  }
+}
+
+Future<void> _handleUnbanUser(UserDto user) async {
+  setState(() {
+    _isLoading = true;
+    _error = null;
+  });
+
+  try {
+    final response = await _adminService.unbanUser(user.id);
+    if (!mounted) return;
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(response.message),
+        backgroundColor: response.success ? Colors.green : Colors.red,
+      ),
+    );
+
+    if (response.success) {
+      setState(() {
+        _users = _users.map((u) {
+          if (u.id == user.id) {
+            return UserDto(
+              id: u.id,
+              email: u.email,
+              username: u.username,
+              firstName: u.firstName,
+              lastName: u.lastName,
+              address: u.address,
+              profileImageUrl: u.profileImageUrl,
+              roles: u.roles,
+              isBanned: false,
+            );
+          }
+          return u;
+        }).toList();
+      });
+    }
+  } catch (e) {
+    if (!mounted) return;
+    setState(() {
+      _isLoading = false;
+      _error = e.toUserMessage();
+    });
+  }
+}
+
+Future<String?> _showBanReasonDialog() async {
+  final controller = TextEditingController();
+  String? errorText;
+
+  return showDialog<String>(
+    context: context,
+    builder: (context) {
+      return StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: const Text('Ban korisnika'),
+            content: TextField(
+              controller: controller,
+              maxLines: 3,
+              decoration: InputDecoration(
+                labelText: 'Razlog zabrane',
+                errorText: errorText,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, null),
+                child: const Text('Otkaži'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  final text = controller.text.trim();
+                  if (text.isEmpty) {
+                    setDialogState(() {
+                      errorText = 'Razlog je obavezan';
+                    });
+                  } else {
+                    Navigator.pop(context, text);
+                  }
+                },
+                child: const Text('Potvrdi'),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
+}
   String _displayRole(UserDto user) {
     if (user.roles.isEmpty) return 'Korisnik';
     return user.roles.join(' / ');

@@ -8,7 +8,7 @@ namespace TenderGo.Models.Requests
 {
     public class TenderSearchRequest : PagedSearchRequest
     {
-        public int? CategoryId { get; set; }
+        public List<int>? CategoryIds { get; set; }
         public int? LocationId { get; set; }
         public string? Country { get; set; }
         public string? Region { get; set; }

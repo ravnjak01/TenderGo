@@ -53,31 +53,33 @@ class TenderProvider extends BaseProvider {
   Set<int> get savedIds => _savedIds;
 
   // --- Kreiranje Request objekta sa backend filterima ---
-  TenderSearchRequest _buildSearchRequest({int page = 1}) {
-    int? categoryId;
+TenderSearchRequest _buildSearchRequest({int page = 1}) {
+  List<int>? categoryIds;
 
-    // Ako je odabrana tačno jedna kategorija i nije 'All', pronađi njen ID
-    if (!_selectedCategories.contains('All') && _selectedCategories.length == 1) {
-      final selectedName = _selectedCategories.first;
-      final matchedCategory = _categories.firstWhere(
-        (c) => c.name.toLowerCase() == selectedName.toLowerCase(),
-        orElse: () => CategoryDto(id: 0, name: ''),
-      );
-      if (matchedCategory.id != 0) {
-        categoryId = matchedCategory.id;
-      }
+  // Ako 'All' nije selektovan i postoje izabrane kategorije
+  if (!_selectedCategories.contains('All') && _selectedCategories.isNotEmpty) {
+    categoryIds = _categories
+        .where((c) => _selectedCategories.any(
+            (selectedName) => selectedName.toLowerCase() == c.name.toLowerCase()))
+        .map((c) => c.id)
+        .toList();
+
+    // Ako iz nekog razloga nijedna nije mapirana (prazna lista), postavi na null
+    if (categoryIds.isEmpty) {
+      categoryIds = null;
     }
-
-    return TenderSearchRequest(
-      page: page,
-      pageSize: _pageSize,
-      searchTerm: _searchQuery.isNotEmpty ? _searchQuery : null,
-      categoryId: categoryId,
-      locationId: _locationFilter?.locationId,
-      country: _locationFilter?.country,
-      region: _locationFilter?.region,
-    );
   }
+
+  return TenderSearchRequest(
+    page: page,
+    pageSize: _pageSize,
+    searchTerm: _searchQuery.isNotEmpty ? _searchQuery : null,
+    categoryIds: categoryIds,
+    locationId: _locationFilter?.locationId,
+    country: _locationFilter?.country,
+    region: _locationFilter?.region,
+  );
+}
 
   Future<void> loadBookmarks(TenderService service) async {
     if (!await _tokenStore.hasValidAccessToken()) return;
@@ -244,7 +246,7 @@ class TenderProvider extends BaseProvider {
       if (!isDisposed) safeNotify();
     });
     try {
-      _categories = await _categoryService.getAll();
+      _categories = await _categoryService.getAllForDropdown();
       final activeCategoryNames = _categories.map((c) => c.name).toSet();
       if (!_selectedCategories.contains('All')) {
         _selectedCategories.removeWhere(

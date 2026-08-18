@@ -14,7 +14,7 @@ void main() {
             user: UserDto(
               id: '1',
               email: '',
-              username: '',
+              userName: '',
               firstName: 'John',
               lastName: 'Doe',
               profileImageUrl: 'http://127.0.0.1:1/no-image.png',

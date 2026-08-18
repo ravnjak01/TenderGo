@@ -24,7 +24,7 @@ namespace TenderGo.Api.Controllers
             _locationService = locationService;
         }
 
-        // POST api/location (Samo Admin može dodavati)
+        // POST api/location 
         [Authorize(Roles = AppRoles.Admin)]
         [HttpPost]
         public override Task<IActionResult> Insert([FromBody] LocationInsertRequest request)
@@ -32,7 +32,7 @@ namespace TenderGo.Api.Controllers
             return base.Insert(request);
         }
 
-        // PUT api/location/{id} (Samo Admin može mijenjati)
+        // PUT api/location/{id} 
         [Authorize(Roles = AppRoles.Admin)]
         [HttpPatch("{id:int}")]
         public override Task<IActionResult> Update(int id, [FromBody] LocationUpdateRequest request)
@@ -40,17 +40,16 @@ namespace TenderGo.Api.Controllers
             return base.Update(id, request);
         }
 
-        // DELETE api/location/{id} (Samo Admin može brisati)
+        // DELETE api/location/{id} 
         [Authorize(Roles = AppRoles.Admin)]
         [HttpDelete("{id:int}")]
         public override async Task<IActionResult> Delete(int id)
         {
-            // Pozivamo custom Delete iz LocationService koji vraća poruku o obrisanoj/deaktiviranoj lokaciji
             var message = await _locationService.Delete(id);
             return Ok(new { message });
         }
 
-        // GET api/location/all - Pomoćni endpoint bez paginacije (za dropdown opcije i sl.)
+        // GET api/location/all 
         [HttpGet("all")]
         public async Task<IActionResult> GetAll([FromQuery] LocationFilterRequest request)
         {

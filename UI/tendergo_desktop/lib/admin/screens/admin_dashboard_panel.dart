@@ -51,7 +51,7 @@ class _AdminDashboardPanelState extends State<AdminDashboardPanel> {
       });
     } catch (e) {
       setState(() {
-        _error = e.toUserMessage();();
+        _error = e.toUserMessage();
         _loading = false;
       });
     }
@@ -220,7 +220,7 @@ class _AdminDashboardPanelState extends State<AdminDashboardPanel> {
                             return DataRow(
                               cells: [
                                 DataCell(Text(activity.userName, style: const TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.w500))),
-                                DataCell(Text(activity.action, style: const TextStyle(color: Color(0xFF334155)))),
+                                DataCell(Text(activity.activityType.label, style: const TextStyle(color: Color(0xFF334155)))),
                                 DataCell(Text(_parseDetails(activity), style: const TextStyle(color: Color(0xFF334155)))),
                            
                               ],

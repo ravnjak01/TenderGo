@@ -19,7 +19,7 @@ class AuthInterceptor extends Interceptor {
   final AuthTokenStore _tokenStore;
 
   bool _isRefreshing = false;
-  final List<Completer<Response<dynamic>>> _pendingQueue = [];
+  final List<void Function(bool success)> _pendingQueue = [];
 
   AuthInterceptor(this._dio, [this._tokenStore = const AuthTokenStore()]);
 
@@ -85,7 +85,19 @@ class AuthInterceptor extends Interceptor {
 
     if (_isRefreshing) {
       final completer = Completer<Response<dynamic>>();
-      _pendingQueue.add(completer);
+      _pendingQueue.add((bool refreshed) async {
+        if(refreshed)
+        {
+            try {
+            final response = await _retry(err.requestOptions);
+            completer.complete(response);
+          } catch (e) {
+            completer.completeError(e);
+          }
+        } else {
+          completer.completeError(err);
+        }
+      });
       try {
         final response = await completer.future;
         return handler.resolve(response);
@@ -94,12 +106,14 @@ class AuthInterceptor extends Interceptor {
       }
     }
 
-    _isRefreshing = true;
+    _isRefreshing = false;
+    _resolvePending(true);
     final refreshed = await _tryRefresh();
 
     if (!refreshed) {
       _isRefreshing = false;
-      _rejectPending();
+      _resolvePending(false);
+      //_rejectPending();
       await _clearSession();
       return handler.next(err);
     }
@@ -108,10 +122,10 @@ class AuthInterceptor extends Interceptor {
 
     try {
       final response = await _retry(err.requestOptions);
-      _resolvePending(response);
+      _resolvePending(true);
       return handler.resolve(response);
     } on DioException catch (retryErr) {
-      _rejectPending();
+      //_rejectPending();
       return handler.next(retryErr);
     }
   }
@@ -200,19 +214,20 @@ class AuthInterceptor extends Interceptor {
     );
   }
 
-  void _resolvePending(Response<dynamic> response) {
+  void _resolvePending(bool success) {
     for (final c in _pendingQueue) {
-      c.complete(response);
+      c(success);
     }
     _pendingQueue.clear();
   }
 
-  void _rejectPending() {
-    for (final c in _pendingQueue) {
-      c.completeError(Exception('Token refresh failed; session ended'));
-    }
-    _pendingQueue.clear();
-  }
+//
+  ///void _rejectPending() {
+  ///  for (final c in _pendingQueue) {
+     /// c.completeError(Exception('Token refresh failed; session ended'));
+    ///}
+    ///_pendingQueue.clear();
+  //}
 
   Future<void> _clearSession() async {
     await _tokenStore.clear();

@@ -71,7 +71,6 @@ using TenderGo.Models.Entities;
 
                 var notifications = new List<Notification>();
 
-                // Šaljemo obavijest svim korisnicima koji su imali ponudu na otkazanom tenderu
                 var affectedUserIds = entity.AffectedUserIds ?? new List<string>();
                 foreach (var userId in affectedUserIds.Distinct())
                 {

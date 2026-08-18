@@ -102,7 +102,7 @@ class AdminService {
         options: await _options(),
       );
 
-      return ApiResponse.success(null, message: 'User banned successfully.');
+      return ApiResponse.success(null, message: 'Korisnik blokiran uspješno.');
     } on DioException catch (e) {
       return ApiHelper.handleDioError(e);
     }
@@ -115,7 +115,7 @@ class AdminService {
         options: await _options(),
       );
 
-      return ApiResponse.success(null, message: 'User unbanned successfully.');
+      return ApiResponse.success(null, message: 'Korisnik odblokiran uspješno.');
     } on DioException catch (e) {
       return ApiHelper.handleDioError(e);
     }

@@ -3,13 +3,13 @@ import 'package:dio/dio.dart';
 class ResponseParser {
   ResponseParser._();
 
+  /// Izvlači 'data' iz ApiSuccessEnvelope omotača
   static dynamic data(dynamic responseData) {
     if (responseData is Map<String, dynamic>) {
       if (responseData.containsKey('data')) {
         return responseData['data'];
       }
     }
-
     return responseData;
   }
 
@@ -38,16 +38,12 @@ class ResponseParser {
       return payload;
     }
 
-    if (payload is Map<String, dynamic>) {
-      final nestedList = payload['result'] ??
-          payload['Result'] ??
-          payload['resultList'] ??
-          payload['items'];
-
-      if (nestedList is List) {
-        return nestedList;
-      }
+   if (payload is Map<String, dynamic>) {
+    final listPayload = payload['result'];
+    if (listPayload is List) {
+      return listPayload;
     }
+  }
 
     throw Exception('Invalid response format: data is not a list.');
   }
@@ -61,16 +57,17 @@ class ResponseParser {
         .toList();
   }
 
+  /// Ekstraktuje poruku o grešci iz ApiErrorEnvelope omotača
   static String errorMessage(DioException e, String fallback) {
-    final data = e.response?.data;
+    final resData = e.response?.data;
 
-    if (data is Map<String, dynamic>) {
-      final errors = data['errors'];
+    if (resData is Map<String, dynamic>) {
+      final errors = resData['errors'];
       if (errors is List && errors.isNotEmpty) {
-        return errors.join('\n');
+        return errors.map((e) => e.toString()).join('\n');
       }
 
-      final message = data['message'];
+      final message = resData['message'];
       if (message is String && message.trim().isNotEmpty) {
         return message;
       }

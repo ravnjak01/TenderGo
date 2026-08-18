@@ -106,9 +106,13 @@ builder.Services.AddAuthentication(options =>
 
             var userId = context.Principal?.FindFirstValue(ClaimTypes.NameIdentifier);
 
+
             if (!string.IsNullOrEmpty(userId))
             {
                 var user = await userManager.FindByIdAsync(userId);
+
+
+
                 if (user == null || user.IsBanned)
                 {
                     context.Fail("Korisnički nalog je banovan.");
@@ -125,8 +129,10 @@ builder.Services.AddAuthentication(options =>
             var isRevoked = await db.RevokedTokens
                 .AnyAsync(x => x.Jti == jti);
 
+            Console.WriteLine($"Token revoked: {isRevoked}");
             if (isRevoked)
             {
+
                 context.Fail("Token has been revoked.");
             }
         }

@@ -1,15 +1,13 @@
 import 'package:tendergo/shared/models/has_initials.dart';
 import 'package:tendergo/shared/services/dio_client.dart';
 
-class UserPublicDto implements HasInitials{
+class UserPublicDto implements HasInitials {
   final String id;
   @override
-  final String username;
+  final String userName;
   @override
-
   final String firstName;
   @override
-
   final String lastName;
   final String location;
   final String? profileImageUrl;
@@ -22,7 +20,7 @@ class UserPublicDto implements HasInitials{
 
   UserPublicDto({
     required this.id,
-    required this.username,
+    required this.userName,
     required this.firstName,
     required this.lastName,
     required this.location,
@@ -34,27 +32,26 @@ class UserPublicDto implements HasInitials{
   });
 
   factory UserPublicDto.fromJson(Map<String, dynamic> json) {
-   
-
     return UserPublicDto(
       id: (json['id'] ?? '').toString(),
-      username: (json['userName'] ?? json['username'] ?? '').toString(),
-      firstName: json['firstName'] ?? '',
-      lastName: json['lastName'] ?? '',
-      location: json['location'],
-      rating: (json['rating'] ?? 0).toDouble(),
-      reviewCount: json['reviewCount'] ?? 0,
-      tenderCount: json['tenderCount'] ?? 0,
-      bidsCount: json['bidsCount'] ?? 0,
-       profileImageUrl: DioClient.resolveImageUrl(
-          json['profileImageUrl'] as String?)
+      userName: (json['userName'] ?? '').toString(),
+      firstName: json['firstName'] as String? ?? '',
+      lastName: json['lastName'] as String? ?? '',
+      location: json['location'] as String? ?? '',
+      rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
+      reviewCount: json['reviewCount'] as int? ?? 0,
+      tenderCount: json['tenderCount'] as int? ?? 0,
+      bidsCount: json['bidsCount'] as int? ?? 0,
+      profileImageUrl: DioClient.resolveImageUrl(
+        json['profileImageUrl'] as String?,
+      ),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'username': username,
+      'userName': userName, 
       'firstName': firstName,
       'lastName': lastName,
       'location': location,
@@ -65,6 +62,4 @@ class UserPublicDto implements HasInitials{
       'profileImageUrl': profileImageUrl,
     };
   }
-
-   
 }

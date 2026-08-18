@@ -137,31 +137,7 @@ Future<void> _initialLoad() async {
     }
   }
 
-  Future<void> _cancelTender(TenderDto tender) async {
-    final confirmed = await AppDialogs.showConfirm(
-      context: context,
-      title: 'Cancel tender',
-      content: 'Are you sure you want to cancel this tender?',
-      cancelLabel: 'No',
-      confirmLabel: 'Yes, Cancel',
-      isDestructive: true,
-    );
-    if (!confirmed || !mounted) return;
-
-    final provider = context.read<TenderProvider>();
-    final ok = await provider.cancelTender(tender.id);
-    if (!mounted) return;
-
-    if (ok) {
-      SnackbarHelper.show(context, 'Tender canceled successfully.');
-    } else {
-      SnackbarHelper.show(
-        context,
-        provider.error ?? 'Failed to cancel tender',
-        isError: true,
-      );
-    }
-  }
+ 
 
  Future<void> _toggleSave(TenderDto dto) async {
     try {
@@ -301,10 +277,7 @@ Future<void> _initialLoad() async {
                           isSaved: provider.savedIds.contains(dto.id),
                           onTap: () => _openTender(dto),
                           onSave: () => _toggleSave(dto),
-                          onCancelTender: isAdmin &&
-                                  dto.status == TenderStatus.open
-                              ? () => _cancelTender(dto)
-                              : null,
+                         
                         );
                       },
                       separatorBuilder: (_, _) => const SizedBox(height: 12),

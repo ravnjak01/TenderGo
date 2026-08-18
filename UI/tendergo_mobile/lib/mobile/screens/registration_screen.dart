@@ -10,7 +10,7 @@ import 'package:tendergo/mobile/widgets/common/auth_scaffold.dart';
 import 'package:tendergo/mobile/widgets/inputs/custom_auth_field.dart';
 
 const _passwordRequirementMessage =
-    'Use 8+ chars with upper, lower, number, and symbol.';
+    'Use 8+ chars with upper, lower, \n number, and symbol.';
 
 String? _validatePasswordRequirements(String? value) {
   if (value == null || value.isEmpty) {
@@ -157,7 +157,7 @@ class _MobileRegistrationScreenState extends State<MobileRegistrationScreen> {
                   return 'Email is required';
                 }
                 if (!isValidEmail(value)) {
-                  return 'Please enter a valid email address';
+                  return 'Enter a valid email address\n(e.g., example@gmail.com)';
                 }
                 return null;
               },

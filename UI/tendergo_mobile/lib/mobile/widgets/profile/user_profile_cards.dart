@@ -56,7 +56,7 @@ class UserProfileInfoCard extends StatelessWidget {
           label: 'Last Name',
           value: lastName.isEmpty ? '-' : lastName,
         ),
-        InfoRow(label: 'Username', value: user.username),
+        InfoRow(label: 'Username', value: user.userName),
         InfoRow(label: 'Email', value: user.email),
       ],
     );

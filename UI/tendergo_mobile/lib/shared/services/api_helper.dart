@@ -8,18 +8,24 @@ class ApiHelper {
     if (e.response?.data != null && e.response?.data is Map) {
       final responseData = e.response!.data as Map<String, dynamic>;
 
-      Map<String, List<String>>? parsedFieldErrors;
-      if (responseData['errors'] != null && responseData['errors'] is Map) {
-        var errorsJson = responseData['errors'] as Map<String, dynamic>;
-        parsedFieldErrors = errorsJson.map(
-          (key, value) => MapEntry(key, List<String>.from(value as List)),
-        );
+      final rawMessage = responseData['message']?.toString();
+      final rawErrors = responseData['errors'];
+
+      List<String> parsedErrors = [];
+
+      // Backend vraća 'errors' kao List<string> (npr. ["Field: Error message"])
+      if (rawErrors is List) {
+        parsedErrors = rawErrors.map((err) => err.toString()).toList();
       }
 
+      // Ako imamo niz grešaka, spajamo ih ili prosljeđujemo u poruku
+      final finalMessage = parsedErrors.isNotEmpty 
+          ? parsedErrors.join('\n') 
+          : (rawMessage ?? 'Došlo je do greške.');
+
       return ApiResponse<T>.failure(
-        responseData['message']?.toString() ?? 'Došlo je do greške.',
+        finalMessage,
         statusCode: statusCode,
-        fieldErrors: parsedFieldErrors,
       );
     }
 

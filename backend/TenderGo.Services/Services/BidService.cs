@@ -77,22 +77,33 @@ namespace TenderGo.Services.Services
                 throw new ForbiddenException();
             }
 
-            var query = _context.Bids
+            // Step 1: resolve the id of the latest bid per tender for this user.
+            // Pure scalar GroupBy -> translatable to SQL.
+            var latestBidIdsQuery = _context.Bids
                 .AsNoTracking()
-                .Where(x => x.SubmittedByUserId == userId );
+                .Where(x => x.SubmittedByUserId == userId)
+                .GroupBy(x => x.TenderId)
+                .Select(g => g.OrderByDescending(b => b.CreatedAt)
+                               .Select(b => b.Id)
+                               .First());
 
-            var totalCount = await query.CountAsync();
+            var totalCount = await latestBidIdsQuery.CountAsync();
 
             int page = request.Page > 0 ? request.Page : 1;
-            int pageSize = request.PageSize > 0 ? Math.Min(request.PageSize, 50) : 10;
-            int maxPageSize = 100;
+            int pageSize = request.PageSize > 0
+                ? Math.Min(request.PageSize, 100)
+                : 10;
 
-            if(pageSize > maxPageSize)
-            {
-                pageSize = maxPageSize;
-            }
-            var bids = await query
-                .OrderByDescending(x => x.CreatedAt) 
+            // Page the ids first, so Skip/Take happens on a cheap scalar query.
+            var pagedBidIds = await latestBidIdsQuery
+                .ToListAsync(); // materialize ids (needed because we then re-order/join on the full entity below)
+
+            // NOTE: ordering by CreatedAt must happen on the real Bid rows, since
+            // latestBidIdsQuery has no CreatedAt in its projection anymore.
+            var bids = await _context.Bids
+                .AsNoTracking()
+                .Where(b => pagedBidIds.Contains(b.Id))
+                .OrderByDescending(b => b.CreatedAt)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ProjectTo<BidDTO>(_mapper.ConfigurationProvider)

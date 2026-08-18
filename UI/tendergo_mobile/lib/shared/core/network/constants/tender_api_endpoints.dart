@@ -9,9 +9,6 @@ class TenderApiEndpoints {
 
   static const String insert = _tenderBase;
 
-
-  static String delete(int id) => '$_tenderBase/$id';
-
   static String getByUser(String userId) => '$_tenderBase/user/$userId';
 
 
