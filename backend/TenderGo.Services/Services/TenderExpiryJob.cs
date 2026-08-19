@@ -83,28 +83,28 @@ namespace TenderGo.Services.Services
 
             await db.SaveChangesAsync(ct);
 
-            //foreach (var tender in expiredTenders)
-            //{
-            //    try
-            //    {
-            //        await _pubSub.PublishAsync(
-            //            new TenderExpiredEvent
-            //            {
-            //                TenderId = tender.Id,
-            //                TenderTitle = tender.Title,
-            //                OwnerUserId = tender.CreatedByUserId,
-            //                ExpiredAt = DateTime.UtcNow
-            //            },
-            //            cfg => cfg.WithTopic("tender_expired"));
-            //    }
-            //    catch (Exception ex)
-            //    {
-            //        _logger.LogWarning(
-            //            ex,
-            //            "Tender {TenderId} expired but TenderExpiredEvent was not published",
-            //            tender.Id);
-            //    }
-            //}
+            foreach (var tender in expiredTenders)
+            {
+                try
+                {
+                    await _pubSub.PublishAsync(
+                        new TenderExpiredEvent
+                        {
+                            TenderId = tender.Id,
+                            TenderTitle = tender.Title,
+                            OwnerUserId = tender.CreatedByUserId,
+                            ExpiredAt = DateTime.UtcNow
+                        },
+                        cfg => cfg.WithTopic("tender_expired"));
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(
+                        ex,
+                        "Tender {TenderId} expired but TenderExpiredEvent was not published",
+                        tender.Id);
+                }
+            }
 
             _logger.LogInformation("Auto-closed {Count} tenders.", expiredTenders.Count);
         }

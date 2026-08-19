@@ -62,7 +62,6 @@ namespace TenderGo.Services.Services
             {
                 Id = user.Id,
                 Email = user.Email ?? string.Empty,
-                Username = user.UserName ?? string.Empty,
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 ProfileImageUrl = user.ProfileImageUrl,
@@ -129,7 +128,6 @@ namespace TenderGo.Services.Services
             {
                 Id = user.Id,
                 Email = user.Email ?? string.Empty,
-                Username = user.UserName ?? string.Empty,
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 ProfileImageUrl = user.ProfileImageUrl,

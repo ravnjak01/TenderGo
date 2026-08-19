@@ -2,6 +2,7 @@
 using AutoMapper.QueryableExtensions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -25,9 +26,11 @@ namespace TenderGo.Services.Services
         private readonly IImageService _imageService;
         private readonly IMapper _mapper;
         private readonly IAuthService _authService;
+        private readonly ILogger<UserService> _logger;
 
 
-        public UserService(UserManager<ApplicationUser> userManager,TenderGoContext context, ITenderService tenderService,IAuthService authService,IImageService imageService,IMapper mapper)
+        public UserService(UserManager<ApplicationUser> userManager,TenderGoContext context, ITenderService tenderService,
+            IAuthService authService,IImageService imageService,IMapper mapper, ILogger<UserService> logger)
         {
             _userManager = userManager;
             _context = context;
@@ -35,6 +38,7 @@ namespace TenderGo.Services.Services
             _imageService = imageService;
             _mapper = mapper;
             _authService = authService;
+            _logger = logger;
         }
 
 
@@ -89,6 +93,7 @@ namespace TenderGo.Services.Services
         public async Task UpdateProfileAsync(string userId, UpdateProfileRequest request)
         {
             var currentUserId = _authService.GetCurrentUserId();
+           
             if (currentUserId != userId)
             {
                 throw new ForbiddenException("You can only update your own profile.");

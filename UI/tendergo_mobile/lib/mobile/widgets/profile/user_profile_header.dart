@@ -100,16 +100,12 @@ class UserProfileHeader extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            user.userName,
+            user.email,
             style: textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            user.email,
-            style: textTheme.bodySmall,
-          ),
+         
         ],
       ),
     );

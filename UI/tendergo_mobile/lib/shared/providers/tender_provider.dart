@@ -4,6 +4,7 @@ import 'package:tendergo/shared/core/auth/auth_token_store.dart';
 import 'package:tendergo/shared/models/dto/bid_dto.dart';
 import 'package:tendergo/shared/models/dto/category_dto.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
+import 'package:tendergo/shared/models/requests/tender_cancel_request.dart';
 import 'package:tendergo/shared/models/requests/tender_insert_request.dart';
 import 'package:tendergo/shared/models/requests/tender_search_request.dart';
 import 'package:tendergo/shared/models/ui/location_filter_selection.dart';
@@ -222,9 +223,9 @@ TenderSearchRequest _buildSearchRequest({int page = 1}) {
     fetchActiveTenders();
   }
 
-  Future<bool> cancelTender(int id) async {
+  Future<bool> cancelTender(int id, TenderCancelRequest request) async {
     final result = await handleAsync(() async {
-      await _service.cancel(id);
+      await _service.cancel(id, request);
       _tenders.removeWhere((t) => t.id == id);
       return true;
     });
@@ -279,7 +280,7 @@ TenderSearchRequest _buildSearchRequest({int page = 1}) {
       }
 
       return {
-        'tenderId': bid.tenderId.toString(),
+        'tenderId': bid.tenderId,
         'ratedUserId': ratedUserId,
         'ratedUserName': ratedUserName.isEmpty ? null : ratedUserName,
         'tenderTitle': bid.tenderTitle

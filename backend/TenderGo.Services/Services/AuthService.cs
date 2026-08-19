@@ -313,7 +313,7 @@ namespace TenderGo.Services.Services
             if (user == null) throw new Exception("User not found");
             if (user.IsBanned)
             {
-                throw new UserException("ACCOUNT_BANNED"); 
+                throw new UserException("Your account is banned"); 
             }
 
             var roles = await _userManager.GetRolesAsync(user);

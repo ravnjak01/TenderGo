@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
+import 'package:tendergo/shared/models/requests/tender_cancel_request.dart';
 import 'package:tendergo/shared/services/auth_service.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
 
@@ -34,9 +35,13 @@ class MyTendersController with ChangeNotifier {
 
   Future<void> loadMore() => _fetchTenders();
 
-  Future<TenderDto> cancelTender(TenderDto tender) async {
-    final updated = await _tenderService.cancel(tender.id);
-    await refresh();
+  Future<TenderDto> cancelTender(int id, TenderCancelRequest request) async {
+    final updated = await _tenderService.cancel(id, request);
+   final index = items.indexWhere((item) => item.id == id);
+  if (index != -1) {
+    items[index] = updated;
+    notifyListeners();
+  }
     return updated;
   }
 

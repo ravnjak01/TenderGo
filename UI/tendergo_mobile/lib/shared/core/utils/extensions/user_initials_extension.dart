@@ -8,7 +8,6 @@ String get initials {
     if (lastName.trim().isNotEmpty) res += lastName.trim()[0];
     if (res.isNotEmpty) return res.toUpperCase();
     
-    if (userName.trim().isNotEmpty) return userName.trim()[0].toUpperCase();
     
     return '?';
   }

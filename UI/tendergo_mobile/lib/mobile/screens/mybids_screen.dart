@@ -176,7 +176,14 @@ class _MyBidsScreenState extends State<MyBidsScreen> {
       return;
     }
 
-    Navigator.of(context).pushNamed(AppRoutes.rateUser, arguments: args);
+    final rated = await Navigator.of(context).pushNamed(
+      AppRoutes.rateUser,
+      arguments: args,
+    );
+
+    if (rated == true && mounted) {
+      await _refresh();
+    }
   }
 
   @override

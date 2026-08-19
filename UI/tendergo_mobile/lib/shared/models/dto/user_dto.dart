@@ -10,8 +10,7 @@ class UserDto implements HasInitials {
   final AddressDto? address; 
   final List<String> roles;
   final bool isBanned;
-  @override
-  final String userName;
+
   @override
   final String firstName;
   @override
@@ -20,7 +19,6 @@ class UserDto implements HasInitials {
   const UserDto({
     required this.id,
     required this.email,
-    required this.userName,
     required this.firstName,
     required this.lastName,
      this.address,
@@ -40,7 +38,6 @@ class UserDto implements HasInitials {
     return UserDto(
       id: json['id'] as String ? ?? '',
       email: json['email'] as String? ?? '',
-      userName: json['userName'] as String? ?? '',
       firstName: json['firstName'] as String? ?? '',
       lastName: json['lastName'] as String? ?? '',
      profileImageUrl: DioClient.resolveImageUrl(
@@ -57,7 +54,6 @@ class UserDto implements HasInitials {
   Map<String, dynamic> toJson() => {
         'id': id,
         'email': email,
-        'userName': userName,
         'firstName': firstName,
         'lastName': lastName,
         'profileImageUrl': profileImageUrl,

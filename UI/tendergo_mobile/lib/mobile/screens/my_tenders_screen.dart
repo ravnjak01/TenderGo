@@ -5,6 +5,7 @@ import 'package:tendergo/shared/core/actions/back_button.dart';
 import 'package:tendergo/shared/core/utils/extensions/string_extensions.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
 import 'package:tendergo/shared/models/enums/tenderstatus.dart';
+import 'package:tendergo/shared/models/requests/tender_cancel_request.dart';
 import 'package:tendergo/shared/services/tender_service.dart';
 import 'package:tendergo/mobile/widgets/common/action_button.dart';
 import 'package:tendergo/mobile/widgets/common/app_badge.dart';
@@ -40,30 +41,72 @@ class _MobileMyTendersScreenState extends State<MobileMyTendersScreen> {
     super.dispose();
   }
 
-  Future<void> _cancelTender(TenderDto tender) async {
-    final confirmed = await AppDialogs.showConfirm(
-      context: context,
-      title: 'Cancel Tender',
-      content: 'Are you sure you want to cancel this tender?',
-      cancelLabel: 'No',
-      confirmLabel: 'Yes, Cancel',
-      isDestructive: true,
-    );
-    if (!confirmed || !mounted) return;
+ Future<void> _cancelTender(TenderDto tender) async {
+  final reasonController = TextEditingController();
 
-    try {
-      await _controller.cancelTender(tender);
-      if (!mounted) return;
-      SnackbarHelper.show(context, 'Tender canceled successfully.');
-    } catch (e) {
-      if (!mounted) return;
-      SnackbarHelper.show(
-        context,
-        e.toString().replaceFirst('Exception: ', ''),
-        isError: true,
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: const Text('Cancel Tender'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Are you sure you want to cancel this tender? Please enter a reason:'),
+            const SizedBox(height: 12),
+            TextField(
+              controller: reasonController,
+              decoration: const InputDecoration(
+                labelText: 'Reason',
+                hintText: 'Enter cancellation reason...',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 2,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('No'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Yes, Cancel'),
+          ),
+        ],
       );
-    }
+    },
+  );
+
+  final reason = reasonController.text.trim();
+  reasonController.dispose();
+
+  if (confirmed != true || !mounted) return;
+
+  if (reason.isEmpty) {
+    SnackbarHelper.show(context, 'Cancellation reason is required.', isError: true);
+    return;
   }
+
+  try {
+    final request = TenderCancelRequest(reason: reason);
+    await _controller.cancelTender(tender.id, request);
+    if (!mounted) return;
+    SnackbarHelper.show(context, 'Tender canceled successfully.');
+  } catch (e) {
+    if (!mounted) return;
+    SnackbarHelper.show(
+      context,
+      e.toString().replaceFirst('Exception: ', ''),
+      isError: true,
+    );
+  }
+}
 
   @override
   Widget build(BuildContext context) {

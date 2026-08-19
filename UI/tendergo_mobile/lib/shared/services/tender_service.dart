@@ -3,6 +3,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:tendergo/shared/core/network/constants/tender_api_endpoints.dart';
 import 'package:tendergo/shared/models/dto/paged_result.dart';
 import 'package:tendergo/shared/models/dto/tender_dto.dart';
+import 'package:tendergo/shared/models/requests/tender_cancel_request.dart';
 import 'package:tendergo/shared/models/requests/tender_insert_request.dart';
 import 'package:tendergo/shared/models/requests/tender_search_request.dart';
 import 'package:tendergo/shared/services/base_service.dart';
@@ -60,14 +61,17 @@ class TenderService extends BaseService<TenderDto> {
   }
 
   /// Otkazivanje tendera
-  Future<TenderDto> cancel(int id) async {
-    try {
-      final response = await dio.patch(TenderApiEndpoints.cancel(id));
-      return parseJson(extractObject(response.data));
-    } on DioException catch (e) {
-      throw Exception(extractErrorMessage(e, 'Greška pri otkazivanju tendera'));
-    }
+ Future<TenderDto> cancel(int id, TenderCancelRequest request) async {
+  try {
+    final response = await dio.patch(
+      TenderApiEndpoints.cancel(id),
+      data: request.toJson(),
+    );
+    return parseJson(extractObject(response.data));
+  } on DioException catch (e) {
+    throw Exception(extractErrorMessage(e, 'Greška pri otkazivanju tendera'));
   }
+}
 
   Future<PagedResult<TenderDto>> getByUser(
     String userId, {

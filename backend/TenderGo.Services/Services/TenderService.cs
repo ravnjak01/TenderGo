@@ -356,10 +356,7 @@ namespace TenderGo.Services.Services
             {
                 query = query.Where(t => request.CategoryIds.Contains(t.CategoryId));
             }
-            else if (request.CategoryId.HasValue)
-            {
-                query = query.Where(t => t.CategoryId == request.CategoryId.Value);
-            }
+          
 
             if (request.LocationId.HasValue)
                 query = query.Where(t => t.LocationId == request.LocationId.Value);
