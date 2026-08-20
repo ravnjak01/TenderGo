@@ -1,7 +1,7 @@
 class TenderApiEndpoints {
   static const String baseUrl = 'tender';
 
-  /// GET /api/tender (Paginirani spisak)
+  /// GET /api/tender 
   static const String getAll = baseUrl;
 
   /// GET /api/tender/{id}
@@ -19,6 +19,6 @@ class TenderApiEndpoints {
   /// PUT/PATCH /api/tender/{id}/cancel
   static String cancel(int id) => '$baseUrl/$id/cancel';
 
-  /// GET /api/tender/admin (Paginirani spisak za Admin panel)
+  /// GET /api/tender/admin 
   static const String adminSearch = '$baseUrl/admin';
 }

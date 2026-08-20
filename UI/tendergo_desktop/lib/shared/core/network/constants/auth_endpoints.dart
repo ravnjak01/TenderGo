@@ -7,8 +7,6 @@ class ApiEndpoints {
   // --- KORISNIK ---
 
   static const String  me = '/auth/me';
-
-
   static const String refreshToken = '/auth/refresh-token';
 
   

@@ -61,10 +61,10 @@ namespace TenderGo.Services.Services
                 .Select(t => new ActivityDTO
                 {
                     CreatedAt = t.CreatedAt,
-                    UserName = t.CreatedByUser.UserName ?? t.CreatedByUser.Email ?? string.Empty,
+                    UserName = t.CreatedByUser.UserName  ??  t.CreatedByUser.Email ??  string.Empty,
                     ActivityType = ActivityType.TenderCreated,
-                    Action = $"Tender created: {t.Title}",
-                    Details= $"{t.Category.Name}, {t.Location.Name}"
+                    Action = $"Tender created",
+                    Details= $"Naziv tendera: {t.Title},{t.Category.Name}, {t.Location.Name}"
                 })
                 .ToListAsync();
 

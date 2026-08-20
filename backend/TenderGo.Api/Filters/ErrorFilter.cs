@@ -118,7 +118,17 @@ public sealed class ErrorFilter : Attribute, IAsyncExceptionFilter, IAsyncResult
             return ((int)HttpStatusCode.BadRequest, "Validation failed.", validationErrors);
 
         if (ex is UnauthorizedAccessException)
-            return ((int)HttpStatusCode.Unauthorized, "Unauthorized access.", null);
+        {
+            _logger.LogError(
+                ex,
+                "File system access error occurred. TraceId={TraceId}",
+                GetTraceId(context.HttpContext));
+
+            return (
+                (int)HttpStatusCode.InternalServerError,
+                "Došlo je do greške prilikom pristupa fajlu.",
+                null);
+        }
 
         if (ex is DbUpdateException dbEx)
         {

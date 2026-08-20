@@ -8,7 +8,7 @@ extension UserMessageExtension on Object {
     final error = this;
 
     if (error is ApiResponse) {
-      return error.message ?? 'Došlo je do greške.';
+      return error.message ;
     }
 
     if (error is DioException) {

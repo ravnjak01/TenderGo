@@ -22,7 +22,14 @@ RUN dotnet publish "TenderGo.Api.csproj" -c Release -o /app/publish
 
 FROM base AS final
 WORKDIR /app
-RUN adduser --disabled-password --gecos "" appuser && chown -R appuser /app
-USER appuser
+
+RUN adduser --disabled-password --gecos "" appuser
+
 COPY --from=publish /app/publish .
+
+RUN mkdir -p /app/wwwroot/uploads \
+    && chown -R appuser:appuser /app/wwwroot/uploads
+
+USER appuser
+
 ENTRYPOINT ["dotnet", "TenderGo.Api.dll"]

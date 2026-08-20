@@ -213,6 +213,7 @@ class _AdminDashboardPanelState extends State<AdminDashboardPanel> {
                             DataColumn(label: Text('Korisnik', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF64748B)))),
                             DataColumn(label: Text('Akcija', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF64748B)))),
                             DataColumn(label: Text('Detalji', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF64748B)))),
+                            DataColumn(label: Text('Datum', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF64748B)))),
      
                           ],
                           rows: List.generate(_recentActivities.length, (index) {
@@ -222,7 +223,12 @@ class _AdminDashboardPanelState extends State<AdminDashboardPanel> {
                                 DataCell(Text(activity.userName, style: const TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.w500))),
                                 DataCell(Text(activity.activityType.label, style: const TextStyle(color: Color(0xFF334155)))),
                                 DataCell(Text(_parseDetails(activity), style: const TextStyle(color: Color(0xFF334155)))),
-                           
+                              DataCell(
+                              Text(
+                                DateFormat('dd/MM/yyyy').format(activity.createdAt), 
+                                style: const TextStyle(color: Color(0xFF64748B)),
+                              ),
+                            ),
                               ],
                             );
                           }),

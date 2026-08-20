@@ -66,17 +66,17 @@ namespace TenderGo.Services.StateMachines.TenderStates
 
             try
             {
-                //await _pubSub.PublishAsync(
-                //    new TenderAwardedEvent
-                //    {
-                //        TenderId = tender.Id,
-                //        TenderTitle = tender.Title,
-                //        WinnerUserId = winningBid.SubmittedByUserId,
-                //        OtherUserIds = otherPendingBids
-                //            .Select(b => b.SubmittedByUserId)
-                //            .ToList()
-                //    },
-                //    cfg => cfg.WithTopic("tender_awarded"));
+                await _pubSub.PublishAsync(
+                    new TenderAwardedEvent
+                    {
+                        TenderId = tender.Id,
+                        TenderTitle = tender.Title,
+                        WinnerUserId = winningBid.SubmittedByUserId,
+                        OtherUserIds = otherPendingBids
+                            .Select(b => b.SubmittedByUserId)
+                            .ToList()
+                    },
+                    cfg => cfg.WithTopic("tender_awarded"));
             }
             catch (Exception ex)
             {
