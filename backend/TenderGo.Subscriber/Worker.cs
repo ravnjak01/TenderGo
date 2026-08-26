@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -6,14 +7,14 @@ namespace TenderGo.Subscriber
 {
     public class Worker : BackgroundService
     {
-        private readonly TenderSubscriber _subscriber;
+        private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<Worker> _logger;
         private readonly IConfiguration _configuration;
 
-        public Worker(TenderSubscriber subscriber, ILogger<Worker> logger,IConfiguration configuration)
+        public Worker(IServiceScopeFactory scopeFactory, ILogger<Worker> logger,IConfiguration configuration)
         {
             _logger = logger;
-            _subscriber = subscriber;
+            _scopeFactory = scopeFactory;
             _configuration = configuration;
         }
 
@@ -29,7 +30,12 @@ namespace TenderGo.Subscriber
                 try
                 {
 
-                    await _subscriber.SubscribeAsync(subscriptionId);
+                    using (var scope = _scopeFactory.CreateScope())
+                    {
+                        var subscriber = scope.ServiceProvider.GetRequiredService<TenderSubscriber>();
+                        await subscriber.SubscribeAsync(subscriptionId);
+                    }
+
                     _logger.LogInformation(
                         "Uspješno pokrenut RabbitMQ subscriber na mreži! ID pretplate: {Id}",
                         subscriptionId);

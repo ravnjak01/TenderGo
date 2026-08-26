@@ -35,11 +35,14 @@ namespace TenderGo.Services.Services
         private readonly IMapper _mapper;
         private readonly ILogger<AuthService> _logger;
         private readonly IEmailService _emailService;
-        private readonly IConfiguration _configuration;
-        private readonly string _cloudName;
         private readonly IWebHostEnvironment _env;
+        private readonly string _jwtKey;
+        private readonly string _jwtIssuer;
+        private readonly string _jwtAudience;
+        private readonly int _jwtExpiresInMinutes;
+        private readonly int _refreshTokenExpiryDays;
         public AuthService(UserManager<ApplicationUser> userManager, IConfiguration config, IHttpContextAccessor httpContextAccessor,
-            TenderGoContext context, IMapper mapper, ILogger<AuthService> logger, IEmailService emailService, IConfiguration configuration
+            TenderGoContext context, IMapper mapper, ILogger<AuthService> logger, IEmailService emailService
            ,IWebHostEnvironment env )
         {
             _logger = logger;
@@ -49,9 +52,21 @@ namespace TenderGo.Services.Services
             _context = context;
             _mapper = mapper;
             _emailService = emailService;
-            _configuration = configuration;
             _env=env;
-            _cloudName = _configuration["AppSettings:FrontendUrl"];
+            _jwtKey = _config["Jwt:Key"]
+                ?? throw new InvalidOperationException("JWT Key is missing.");
+
+            _jwtIssuer = _config["Jwt:Issuer"]
+                ?? throw new InvalidOperationException("JWT Issuer is missing.");
+
+            _jwtAudience = _config["Jwt:Audience"]
+                ?? throw new InvalidOperationException("JWT Audience is missing.");
+
+            _jwtExpiresInMinutes =
+                int.Parse(_config["Jwt:ExpiresInMinutes"] ?? "60");
+
+            _refreshTokenExpiryDays =
+                int.Parse(_config["Jwt:RefreshTokenExpiryDays"] ?? "7");
         }
 
         public async Task<IdentityResult> RegisterAsync(RegisterRequest dto)
@@ -71,11 +86,10 @@ namespace TenderGo.Services.Services
             if (!result.Succeeded)
             {
                 var errors = result.Errors
-                    .GroupBy(e => e.Code.Contains("Password") ? "Password" : "Email")
-                    .ToDictionary(
-                        g => g.Key,
-                        g => g.Select(e => e.Description).ToArray()
-                    );
+                 .GroupBy(e => e.Code)
+                 .ToDictionary(
+                     g => g.Key,
+                     g => g.Select(e => e.Description).ToArray());
                 throw new ValidationException(errors);
             }
 
@@ -146,12 +160,11 @@ namespace TenderGo.Services.Services
                 existing.UpdatedByUserId = user.Id;
             }
 
-            var refreshTokenExpiryDays = int.Parse(_config["Jwt:RefreshTokenExpiryDays"] ?? "7");
             var refreshToken = new RefreshToken
             {
                 Token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64)),
                 UserId = user.Id,
-                Expires = DateTime.UtcNow.AddDays(refreshTokenExpiryDays),
+                Expires = DateTime.UtcNow.AddDays(_refreshTokenExpiryDays),
                 IsRevoked = false,
                 CreatedAt = DateTime.UtcNow,
                 CreatedByUserId = user.Id
@@ -179,9 +192,7 @@ namespace TenderGo.Services.Services
             {
                 Token = token,
                 RefreshToken = refreshToken.Token,
-                ExpiresAt = DateTime.UtcNow.AddMinutes(
-                 int.Parse(_config["Jwt:ExpiresInMinutes"])
-                )
+                ExpiresAt = DateTime.UtcNow.AddMinutes(_jwtExpiresInMinutes)
             };
 
 
@@ -249,48 +260,37 @@ namespace TenderGo.Services.Services
             });
         }
 
-        public string GenerateJwtToken(ApplicationUser user, IEnumerable<Claim> claims)
+        public string GenerateJwtToken(
+                     ApplicationUser user,
+                     IEnumerable<Claim> claims)
         {
-
-            var jwtKey = _config["Jwt:Key"];
-            if (string.IsNullOrEmpty(jwtKey))
+            if (_jwtKey.Length < 32)
             {
-                _logger.LogCritical("JWT Key is missing in configuration!");
-                throw new InvalidOperationException("Server configuration error: Security key is missing.");
+                _logger.LogCritical(
+                    "JWT Key is too short. Minimum 32 characters required.");
+
+                throw new InvalidOperationException(
+                    "Server configuration error: Security key is invalid.");
             }
 
+            var key = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(_jwtKey));
 
-            if (jwtKey.Length < 32)
-            {
-                _logger.LogCritical("JWT Key is too short. Minimum 32 characters required.");
-                throw new InvalidOperationException("Server configuration error: Security key is invalid.");
-            }
-
-
-            if (!int.TryParse(_config["Jwt:ExpiresInMinutes"], out var expires))
-            {
-                _logger.LogError("Jwt:ExpiresInMinutes is not a valid number in appsettings.json");
-                throw new InvalidOperationException("Server configuration error: Invalid token expiration settings.");
-            }
-
-
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var creds = new SigningCredentials(
+                key,
+                SecurityAlgorithms.HmacSha256);
 
             var token = new JwtSecurityToken(
-                issuer: _config["Jwt:Issuer"],
-                audience: _config["Jwt:Audience"],
+                issuer: _jwtIssuer,
+                audience: _jwtAudience,
                 claims: claims,
                 notBefore: DateTime.UtcNow,
-                 expires: DateTime.UtcNow.AddMinutes(expires),
+                expires: DateTime.UtcNow.AddMinutes(_jwtExpiresInMinutes),
                 signingCredentials: creds
-                );
-
+            );
 
             return new JwtSecurityTokenHandler().WriteToken(token);
-
         }
-
 
 
 
@@ -481,12 +481,11 @@ public async Task<IdentityResult> ResetPasswordAsync(ResetPasswordRequest model)
             storedToken.UpdatedAt = DateTime.UtcNow;
             storedToken.UpdatedByUserId = user.Id;
 
-            var refreshTokenExpiryDays = int.Parse(_config["Jwt:RefreshTokenExpiryDays"] ?? "7");
             var newRefreshToken = new RefreshToken
             {
                 Token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64)),
                 UserId = user.Id,
-                Expires = DateTime.UtcNow.AddDays(refreshTokenExpiryDays),
+                Expires = DateTime.UtcNow.AddDays(_refreshTokenExpiryDays),
                 IsRevoked = false,
                 CreatedAt = DateTime.UtcNow,
                 CreatedByUserId = user.Id
@@ -509,7 +508,7 @@ public async Task<IdentityResult> ResetPasswordAsync(ResetPasswordRequest model)
             {
                 Token = newJwtToken,
                 RefreshToken = newRefreshToken.Token,
-                ExpiresAt = DateTime.UtcNow.AddMinutes(int.Parse(_config["Jwt:ExpiresInMinutes"]))
+                ExpiresAt = DateTime.UtcNow.AddMinutes(_jwtExpiresInMinutes)
             };
         }
 

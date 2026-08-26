@@ -17,5 +17,9 @@ namespace TenderGo.Models.Entities
         public string ImageHash { get; set; } = string.Empty;
         public int TenderId { get; set; }
         public virtual Tender Tender { get; set; } = null!;
+
+        public string CreatedByUserId { get; set; }
+        public virtual ApplicationUser CreatedByUser { get; set; } = null!;
+
     }
 }

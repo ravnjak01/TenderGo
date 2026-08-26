@@ -39,8 +39,7 @@ namespace TenderGo.Services.StateMachines.BidStates
 
         public override async Task<BidDTO> Insert(BidInsertRequest request)
         {
-            var authService = _serviceProvider.GetRequiredService<IAuthService>();
-            var currentUserId = authService.GetCurrentUserId();
+            var currentUserId = _authService.GetCurrentUserId();
 
             var alreadyResponded = await _context.Bids
                 .AnyAsync(b => b.TenderId == request.TenderId && b.SubmittedByUserId == currentUserId && b.Status != ApplicationStatus.Withdrawn);

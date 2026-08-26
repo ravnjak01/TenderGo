@@ -35,10 +35,6 @@ namespace TenderGo.Services.StateMachines.TenderStates
             if (tender.Bids == null || !tender.Bids.Any())
                 _logger.LogWarning("Tender {Id} has no bids loaded — OtherUserIds will be empty", tender.Id);
 
-            var authService = _serviceProvider.GetRequiredService<IAuthService>();
-            if (tender.CreatedByUserId != authService.GetCurrentUserId())
-                throw new UserException("You can only award your own tenders");
-
             var winningBid = tender.Bids.FirstOrDefault(b => b.Id == bidId)
                 ?? throw new UserException("Bid not found or does not belong to this tender");
 

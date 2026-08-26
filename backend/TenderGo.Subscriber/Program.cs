@@ -43,7 +43,7 @@ var host = hostBuilder
 
         services.AddEasyNetQ(rabbitConnectionString);
 
-        services.AddSingleton<TenderSubscriber>();
+        services.AddScoped<TenderSubscriber>();
         services.AddHostedService<Worker>();
     })
     .Build();

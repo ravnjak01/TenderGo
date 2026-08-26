@@ -36,7 +36,7 @@ namespace TenderGo.Services.StateMachines.TenderStates
             var currentUserId = authService.GetCurrentUserId();
             bool isAdmin = authService.IsInRole(AppRoles.Admin);
             if (tender.CreatedByUserId != authService.GetCurrentUserId() && !isAdmin)
-                throw new UserException("You can only cancel your own tenders");
+                throw new ForbiddenException("You can only cancel your own tenders");
 
             tender.Status = TenderStatus.Cancelled;
             tender.CancellationReason = request.Reason;
@@ -44,6 +44,13 @@ namespace TenderGo.Services.StateMachines.TenderStates
             tender.CancelledByUserId = currentUserId;
 
             _logger.LogInformation("Tender with ID {TenderId} has been cancelled while in Open state", id);
+
+            var affectedUserIds = tender.Bids
+            .Where(b =>!string.IsNullOrEmpty(b.SubmittedByUserId))
+            .Select(b => b.SubmittedByUserId)
+            .Distinct()
+            .ToList();
+
 
             if (tender.Bids != null && tender.Bids.Any())
             {
@@ -54,11 +61,7 @@ namespace TenderGo.Services.StateMachines.TenderStates
             }
 
 
-            var affectedUserIds = tender.Bids
-                .Where(b => !string.IsNullOrEmpty(b.SubmittedByUserId))
-                .Select(b => b.SubmittedByUserId)
-                .Distinct()
-                .ToList();
+        
             await _context.SaveChangesAsync();
 
 
@@ -100,11 +103,10 @@ namespace TenderGo.Services.StateMachines.TenderStates
                     .Where(b => b.SubmittedByUserId == currentUserId)
                     .ToList() ?? new List<Bid>();
 
-                bool hasActiveBid = userBids.Any(b => b.Status != ApplicationStatus.Withdrawn);
+                bool hasActiveBid = userBids.Any(b => b.Status == ApplicationStatus.Pending);
 
-                bool maxAttemptsReached = userBids.Count >= 3;
 
-                if (!hasActiveBid && !maxAttemptsReached)
+                if (!hasActiveBid )
                 {
                     list.Add("SubmitBid");
                 }

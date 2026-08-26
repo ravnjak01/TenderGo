@@ -73,7 +73,7 @@ namespace TenderGo.Services.Services
 
             var category = await _context.Categories
                 .FirstOrDefaultAsync(c => c.Id == request.CategoryId && c.IsActive)
-               ?? throw new NotFoundException("Category", request.LocationId);
+               ?? throw new NotFoundException("Category", request.CategoryId);
 
             var location = await _context.Locations
                 .FirstOrDefaultAsync(l => l.Id == request.LocationId && l.IsActive)
@@ -109,6 +109,28 @@ namespace TenderGo.Services.Services
                 .ProjectTo<TenderDTO>(_mapper.ConfigurationProvider)
                 .FirstAsync();
         }
+
+        public override async Task<string> Delete(int id)
+        {
+            var entity = await _context.Tenders
+                .FirstOrDefaultAsync(t => t.Id == id)
+                ?? throw new NotFoundException("Tender", id);
+
+            var currentUserId = _authService.GetCurrentUserId();
+            bool isAdmin = _authService.IsInRole(AppRoles.Admin);
+
+            if (entity.CreatedByUserId != currentUserId && !isAdmin)
+            {
+                throw new ForbiddenException();
+            }
+
+            _context.Tenders.Remove(entity);
+            await _context.SaveChangesAsync();
+
+            return "Tender deleted successfully.";
+        }
+
+
 
         protected override IQueryable<Tender> AddIncludes(IQueryable<Tender> query)
         {
@@ -185,7 +207,7 @@ namespace TenderGo.Services.Services
         }
        
 
-        public async Task<PagedResult<TenderDTO>> GetMyTenders(string userId, PagedSearchRequest search)
+        public async Task<PagedResult<TenderDTO>> GetTendersByUser(string userId, PagedSearchRequest search)
         {
             var userExists = await _context.Users.AnyAsync(u => u.Id == userId);
             if (!userExists)
@@ -232,18 +254,23 @@ namespace TenderGo.Services.Services
                     .FirstOrDefaultAsync(l => l.Id == request.LocationId && l.IsActive);
               
 
-                var entity = _mapper.Map<Tender>(request);
+                    var entity = _mapper.Map<Tender>(request);
 
 
-                entity.LocationId = location.Id;
+            var currentUserId = _authService.GetCurrentUserId();
+
+
+            entity.LocationId = location.Id;
                 entity.Status = TenderStatus.Open;
                 entity.PostedAt = DateTime.UtcNow;
                 entity.CreatedAt = DateTime.UtcNow;
-                entity.CreatedByUserId = _authService.GetCurrentUserId();
+                entity.CreatedByUserId = currentUserId;
 
                 _context.Tenders.Add(entity);
 
-                if (request.Images != null && request.Images.Any())
+
+
+            if (request.Images != null && request.Images.Any())
                 {
                     entity.Images = new List<TenderImage>();
                     for (int i = 0; i < request.Images.Count; i++)
@@ -254,7 +281,9 @@ namespace TenderGo.Services.Services
                         {
                             ImageUrl = imgReq.ImageUrl,
                             ImageHash = imgReq.ImageHash,
-                            IsPrimary = i == 0 
+                            IsPrimary = i == 0 ,
+                            CreatedByUserId=currentUserId,
+                            Tender=entity
                         });
                     }
                 }
@@ -282,18 +311,22 @@ namespace TenderGo.Services.Services
                 throw new ForbiddenException();
             }
 
+
+            if (entity.Bids.Any(b => b.Status == ApplicationStatus.Accepted))
+            {
+                throw new UserException(
+                    "Cannot cancel a tender that has an accepted bid.");
+            }
+
+
             var state = CreateState(entity.Status);
             var result = await state.Cancel(id,request);
 
-            if (entity.Bids != null && entity.Bids.Any())
+            foreach (var bid in entity.Bids.Where(b => b.Status == ApplicationStatus.Pending))
             {
-                foreach (var bid in entity.Bids)
-                {
-                   
-                    bid.Status = ApplicationStatus.Cancelled; 
-                     _context.Entry(bid).State = EntityState.Modified;
-                }
+                bid.Status = ApplicationStatus.Cancelled;
             }
+
 
             await _context.SaveChangesAsync();
 
@@ -311,7 +344,7 @@ namespace TenderGo.Services.Services
 
             if (tender.CreatedByUserId != currentUserId )
             {
-                throw new ForbiddenException();
+                throw new ForbiddenException("Samo vlasnik tendera moze dodijeliti tender");
             }
 
             var state = CreateState(tender.Status);

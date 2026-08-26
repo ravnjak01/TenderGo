@@ -14,7 +14,7 @@ namespace TenderGo.Services.Interfaces
 {
     public interface ITenderService:IReadService<TenderDTO,TenderSearchRequest>,IWriteService<TenderDTO,TenderInsertRequest, TenderUpdateRequest>
     {
-        Task<PagedResult<TenderDTO>> GetMyTenders(string userId, PagedSearchRequest request);
+        Task<PagedResult<TenderDTO>> GetTendersByUser(string userId, PagedSearchRequest request);
 
         Task<TenderDTO> Cancel(int tenderId,TenderCancelRequest request);
         Task<TenderDTO> Award(int id, int bidId);

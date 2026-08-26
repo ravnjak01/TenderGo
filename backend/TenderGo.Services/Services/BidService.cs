@@ -41,7 +41,7 @@ namespace TenderGo.Services.Services
         }
         public override async Task<BidDTO> GetById(int id)
         {
-            var query = _context.Bids
+            var query =  _context.Bids
                 .Include(b => b.Tender)
                 .AsQueryable();
 
@@ -67,71 +67,62 @@ namespace TenderGo.Services.Services
 
         }
 
-        public async Task<PagedResult<BidDTO>> GetBidsByUser(string userId, PagedSearchRequest request)
+        public async Task<PagedResult<BidDTO>> GetBidsByUser(
+      string userId,
+      PagedSearchRequest request)
         {
             var currentUserId = _authService.GetCurrentUserId();
-            bool isAdmin = _authService.IsInRole(AppRoles.Admin);
+            var isAdmin = _authService.IsInRole(AppRoles.Admin);
 
             if (userId != currentUserId && !isAdmin)
-            {
                 throw new ForbiddenException();
-            }
-
-            // Step 1: resolve the id of the latest bid per tender for this user.
-            // Pure scalar GroupBy -> translatable to SQL.
-            var latestBidIdsQuery = _context.Bids
-                .AsNoTracking()
-                .Where(x => x.SubmittedByUserId == userId)
-                .GroupBy(x => x.TenderId)
-                .Select(g => g.OrderByDescending(b => b.CreatedAt)
-                               .Select(b => b.Id)
-                               .First());
-
-            var totalCount = await latestBidIdsQuery.CountAsync();
 
             int page = request.Page > 0 ? request.Page : 1;
             int pageSize = request.PageSize > 0
                 ? Math.Min(request.PageSize, 100)
                 : 10;
 
-            // Page the ids first, so Skip/Take happens on a cheap scalar query.
-            var pagedBidIds = await latestBidIdsQuery
-                .ToListAsync(); // materialize ids (needed because we then re-order/join on the full entity below)
-
-            // NOTE: ordering by CreatedAt must happen on the real Bid rows, since
-            // latestBidIdsQuery has no CreatedAt in its projection anymore.
-            var bids = await _context.Bids
+            var latestBidsQuery = _context.Bids
                 .AsNoTracking()
-                .Where(b => pagedBidIds.Contains(b.Id))
+                .Where(b => b.SubmittedByUserId == userId)
+                .GroupBy(b => b.TenderId)
+                .Select(g => g
+                    .OrderByDescending(b => b.CreatedAt)
+                    .ThenByDescending(b => b.Id)
+                    .First());
+
+            var totalCount = await latestBidsQuery.CountAsync();
+
+            var bids = await latestBidsQuery
                 .OrderByDescending(b => b.CreatedAt)
+                .ThenByDescending(b => b.Id)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
-                .ProjectTo<BidDTO>(_mapper.ConfigurationProvider)
-                .ToListAsync();
-
-            if (bids.Any())
-            {
-                var tenderIds = bids.Select(b => b.TenderId).Distinct().ToList();
-
-                var ratedPairs = await _context.Ratings
-                    .AsNoTracking()
-                    .Where(r =>
-                        r.RatedByUserId == currentUserId &&
-                        tenderIds.Contains(r.TenderId))
-                    .Select(r => new
-                    {
-                        r.TenderId,
-                        r.RatedUserId
-                    })
-                    .ToListAsync();
-
-                foreach (var bid in bids)
+                .Select(b => new BidDTO
                 {
-                    bid.AlreadyRated = ratedPairs.Any(r =>
-                        r.TenderId == bid.TenderId &&
-                        r.RatedUserId == bid.TenderCreatedByUserId);
-                }
-            }
+                    Id = b.Id,
+                    TenderId = b.TenderId,
+
+                    TenderTitle = b.Tender.Title,
+
+                    SubmittedByUserId = b.SubmittedByUserId,
+                    SubmittedByUserName = b.SubmittedByUser.UserName ?? string.Empty,
+
+                    OfferedPrice = b.OfferedPrice,
+                    SubmittedAt = b.CreatedAt,
+                    Status = b.Status,
+                    Proposal = b.Proposal,
+                    DeliveryDays = b.DeliveryDays,
+
+                    TenderStatus = b.Tender.Status,
+                    TenderCreatedByUserId = b.Tender.CreatedByUserId,
+
+                    AlreadyRated = _context.Ratings.Any(r =>
+                        r.RatedByUserId == currentUserId &&
+                        r.TenderId == b.TenderId &&
+                        r.RatedUserId == b.Tender.CreatedByUserId)
+                })
+                .ToListAsync();
 
             return new PagedResult<BidDTO>
             {
@@ -146,6 +137,7 @@ namespace TenderGo.Services.Services
 {
  
         var currentUserId = _authService.GetCurrentUserId();
+
         var tender = await _context.Tenders.FindAsync(request.TenderId)
               ?? throw new NotFoundException("Tender", request.TenderId);
 
@@ -154,24 +146,16 @@ namespace TenderGo.Services.Services
                 throw new ForbiddenException("Vlasnik tendera ne može slati ponude na sopstveni tender.");
             }
 
-        _logger.LogInformation("Attempting to create a new bid for tender {TenderId} by user {UserId}", request.TenderId, currentUserId);
 
         if (request.DeliveryDays <= 0)
         {
             throw new UserException("Delivery days must be greater than 0");
         }
 
-   
-        var totalAttempts = await _context.Bids
-            .CountAsync(b => b.TenderId == request.TenderId 
-                          && b.SubmittedByUserId == currentUserId);
+            _logger.LogInformation("Attempting to create a new bid for tender {TenderId} by user {UserId}", request.TenderId, currentUserId);
 
-        if (totalAttempts >= 3)
-        {
-            throw new UserException("You reached maximum number of bids for this tender");
-        }
 
-        var state = CreateState(ApplicationStatus.Pending, tender.Status);
+            var state = CreateState(ApplicationStatus.Pending, tender.Status);
 
   
         return await state.Insert(request);
@@ -250,7 +234,8 @@ namespace TenderGo.Services.Services
                 ?? throw new NotFoundException("Bid",id);
 
             var currentUserId = _authService.GetCurrentUserId();
-            if (bid.SubmittedByUserId != currentUserId)
+            bool isAdmin = _authService.IsInRole(AppRoles.Admin);
+            if (bid.SubmittedByUserId != currentUserId && !isAdmin)
             {
                 throw new ForbiddenException();
             }

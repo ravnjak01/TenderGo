@@ -34,6 +34,7 @@ class _AdminReportPreviewScreenState extends State<AdminReportPreviewScreen> {
 Future<void> _printPdf() async {
     try {
       if (widget.pdfBytes.isEmpty) {
+        if (!mounted) return;
         SnackbarHelper.show(
           context,
           'Nema podataka za printanje.',

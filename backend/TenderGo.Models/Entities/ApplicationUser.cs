@@ -33,7 +33,6 @@ namespace TenderGo.Models.Entities
         public virtual ICollection<Rating> RatingsReceived { get; set; } = new List<Rating>();
         public virtual ICollection<Rating> RatingsGiven { get; set; } = new List<Rating>();
 
-        [Required]
 
         public double AverageRating { get; set; } = 0;
         [Required]

@@ -50,7 +50,7 @@ public class EmailService: IEmailService
             {
                 UseDefaultCredentials = false,
                 Credentials = new NetworkCredential(_emailSettings.Username, _emailSettings.Password),
-                EnableSsl = true,
+                EnableSsl = _emailSettings.EnableSsl,
                 Timeout = 10000
             };
 

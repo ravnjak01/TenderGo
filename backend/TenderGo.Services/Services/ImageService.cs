@@ -1,12 +1,15 @@
 ﻿using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security;
 using System.Threading.Tasks;
+using TenderGo.Api.Database;
 using TenderGo.Models.DTOs;
+using TenderGo.Models.Entities;
 using TenderGo.Services.Interfaces;
 using TenderGo.Services.Services.Exceptions;
 
@@ -16,6 +19,8 @@ namespace TenderGo.Services.Services
     {
         private readonly IWebHostEnvironment _environment;
         private const long MaxFileSizeInBytes= 5*    1024 * 1024;
+        private readonly TenderGoContext _context;
+        private readonly IAuthService _authService;
 
         private static readonly HashSet<string> AllowedMimeTypes = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -36,9 +41,11 @@ namespace TenderGo.Services.Services
             (0, new byte[] { 0x42, 0x4D },                   "BMP"),
         };
 
-        public ImageService(IWebHostEnvironment environment)
+        public ImageService(IWebHostEnvironment environment, TenderGoContext context,IAuthService authService)
         {
             _environment = environment;
+            _context = context;
+            _authService = authService;
         }
 
         public async Task<TenderImageDTO> UploadImageAsync(
@@ -121,34 +128,65 @@ namespace TenderGo.Services.Services
             });
         }
 
-        public void DeleteImage(string relativePath)
+        public async Task DeleteImageAsync(int imageId)
         {
-            if (string.IsNullOrWhiteSpace(relativePath)) return;
+            var image = await _context.TenderImages
+                .FirstOrDefaultAsync(x => x.Id == imageId);
 
-            var webRoot = _environment.WebRootPath;
-            if (string.IsNullOrWhiteSpace(webRoot))
+            if (image == null)
             {
-                webRoot = Path.Combine(_environment.ContentRootPath, "wwwroot");
+                throw new NotFoundException("Slika nije pronađena.");
             }
 
-           
-            string uploadsBaseFolder = Path.GetFullPath(Path.Combine(webRoot, "uploads"))
-                .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+            var currentUserId = _authService.GetCurrentUserId();
+            bool isAdmin = _authService.IsInRole(AppRoles.Admin);
+
+            if (image.CreatedByUserId != currentUserId && !isAdmin )
+            {
+                throw new ForbiddenException(
+                    "Nemate dozvolu za brisanje ove slike.");
+            }
+
+            var webRoot = _environment.WebRootPath;
+
+            if (string.IsNullOrWhiteSpace(webRoot))
+            {
+                webRoot = Path.Combine(
+                    _environment.ContentRootPath,
+                    "wwwroot");
+            }
+
+            string uploadsBaseFolder = Path.GetFullPath(
+                Path.Combine(webRoot, "uploads"))
+                .TrimEnd(
+                    Path.DirectorySeparatorChar,
+                    Path.AltDirectorySeparatorChar)
                 + Path.DirectorySeparatorChar;
 
-            string cleanRelativePath = relativePath.TrimStart('/', '\\');
-            string fullPath = Path.GetFullPath(Path.Combine(webRoot, cleanRelativePath));
+            string cleanRelativePath = image.ImageUrl
+                .TrimStart('/', '\\');
 
-            if (!fullPath.StartsWith(uploadsBaseFolder, StringComparison.OrdinalIgnoreCase))
+            string fullPath = Path.GetFullPath(
+                Path.Combine(webRoot, cleanRelativePath));
+
+            if (!fullPath.StartsWith(
+                    uploadsBaseFolder,
+                    StringComparison.OrdinalIgnoreCase))
             {
-                throw new SecurityException("Pokušaj pristupa fajlu van dozvoljenog uploads foldera.");
+                throw new SecurityException(
+                    "Pokušaj pristupa fajlu van dozvoljenog uploads foldera.");
             }
 
             if (File.Exists(fullPath))
             {
                 File.Delete(fullPath);
             }
+
+            _context.TenderImages.Remove(image);
+
+            await _context.SaveChangesAsync();
         }
+
 
 
         public bool IsValidImage(byte[] fileBytes)

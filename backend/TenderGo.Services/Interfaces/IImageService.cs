@@ -12,7 +12,7 @@ namespace TenderGo.Services.Interfaces
     {
         Task<TenderImageDTO> UploadImageAsync(byte[] imageBytes, string subFolder, bool isPrimary = false);
         Task<TenderImageDTO> UploadImageAsync(IFormFile file, string subFolder, bool isPrimary = false);
-        void DeleteImage(string relativePath);
+        Task DeleteImageAsync(int imageId);
         Task<string> CalculateHash(byte[] data);
     }
 }

@@ -26,11 +26,12 @@ namespace TenderGo.Api.Controllers
             return Ok(imageDto);
         }
 
-        [HttpDelete]
-        public IActionResult DeleteImage(string path)
+        [HttpDelete("{imageId:int}")]
+        public async Task<IActionResult> DeleteImage(int imageId)
         {
-            _imageService.DeleteImage(path);
-            return Ok(); 
+            await _imageService.DeleteImageAsync(imageId);
+
+            return NoContent();
         }
     }
 }

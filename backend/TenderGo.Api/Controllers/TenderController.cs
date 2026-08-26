@@ -1,10 +1,12 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using System.Net;
+using TenderGo.Models.DTOs;
 using TenderGo.Models.Entities;
 using TenderGo.Models.Requests;
-using TenderGo.Models.DTOs;
 using TenderGo.Services.Interfaces;
+using TenderGo.Services.Services.Exceptions;
 
 [ApiController]
 [Route("api/tender")]
@@ -52,9 +54,9 @@ public class TenderController
 
 
     [HttpGet("user/{userId}")]
-    public async Task<IActionResult> GetMyTenders(string userId,[FromQuery] PagedSearchRequest request)
+    public async Task<IActionResult> GetTendersByUser(string userId,[FromQuery] PagedSearchRequest request)
     {
-        var tenders = await _tenderService.GetMyTenders(userId,request);
+        var tenders = await _tenderService.GetTendersByUser(userId,request);
         return Ok(tenders);
     }
 
@@ -77,5 +79,17 @@ public class TenderController
     {
         var actions = await _tenderService.AllowedActions(id);
         return Ok(actions);
+    }
+
+    [NonAction]
+    public override Task<IActionResult> Update(int id, TenderUpdateRequest request)
+    {
+        throw new UserException("Update is not supported.");
+    }
+
+    [NonAction]
+    public override Task<IActionResult> Delete(int id)
+    {
+        throw new UserException("Delete is not supported.");
     }
 }
