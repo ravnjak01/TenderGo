@@ -3,7 +3,6 @@ import 'package:dio/dio.dart';
 class ResponseParser {
   ResponseParser._();
 
-  /// Izvlači 'data' iz ApiSuccessEnvelope omotača
   static dynamic data(dynamic responseData) {
     if (responseData is Map<String, dynamic>) {
       if (responseData.containsKey('data')) {
@@ -57,7 +56,6 @@ class ResponseParser {
         .toList();
   }
 
-  /// Ekstraktuje poruku o grešci iz ApiErrorEnvelope omotača
   static String errorMessage(DioException e, String fallback) {
     final resData = e.response?.data;
 

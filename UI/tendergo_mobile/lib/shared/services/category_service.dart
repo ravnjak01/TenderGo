@@ -10,10 +10,9 @@ class CategoryService extends BaseService<CategoryDto> {
 Future<List<CategoryDto>> getAllForDropdown() async {
     final response = await getPaged(
       page: 1,
-      pageSize: 1000, // Postavljaš dovoljno velik broj da obuhvati sve kategorije
+      pageSize: 1000, 
     );
     
-    // Ako ti getPaged vraća PagedResult<CategoryDto>:
     return response.result;
   }
 }

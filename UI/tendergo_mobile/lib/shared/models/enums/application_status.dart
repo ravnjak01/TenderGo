@@ -1,4 +1,3 @@
-// lib/shared/models/enums/application_status.dart
 enum ApplicationStatus {
   pending(1),
   accepted(2),

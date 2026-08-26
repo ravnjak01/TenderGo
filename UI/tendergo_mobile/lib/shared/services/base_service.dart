@@ -34,7 +34,6 @@ abstract class BaseService<T> {
   String extractErrorMessage(DioException e, String fallback) =>
       ResponseParser.errorMessage(e, fallback);
 
-  /// Paginirani GET poziv 
   Future<PagedResult<T>> getPaged({
     int page = 1,
     int pageSize = 10,

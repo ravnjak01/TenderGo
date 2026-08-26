@@ -13,12 +13,10 @@ class ApiHelper {
 
       List<String> parsedErrors = [];
 
-      // Backend vraća 'errors' kao List<string> (npr. ["Field: Error message"])
       if (rawErrors is List) {
         parsedErrors = rawErrors.map((err) => err.toString()).toList();
       }
 
-      // Ako imamo niz grešaka, spajamo ih ili prosljeđujemo u poruku
       final finalMessage = parsedErrors.isNotEmpty 
           ? parsedErrors.join('\n') 
           : (rawMessage ?? 'Došlo je do greške.');

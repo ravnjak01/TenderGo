@@ -22,10 +22,8 @@ Future<PagedResult<NotificationDto>> getMyNotifications({
       },
     );
 
-    // Pretvaramo sirovi odgovor preko ResponseParser-a u Map<String, dynamic>
     final rawData = ResponseParser.data(response.data) as Map<String, dynamic>;
 
-    // Direktno instanciramo PagedResult sa podacima
     return PagedResult.fromJson(rawData, NotificationDto.fromJson);
   } on DioException catch (e) {
     throw _handleError(e, 'Error fetching notifications');

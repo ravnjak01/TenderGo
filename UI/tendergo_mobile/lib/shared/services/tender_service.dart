@@ -60,7 +60,6 @@ class TenderService extends BaseService<TenderDto> {
     }
   }
 
-  /// Otkazivanje tendera
  Future<TenderDto> cancel(int id, TenderCancelRequest request) async {
   try {
     final response = await dio.patch(
@@ -112,7 +111,6 @@ class TenderService extends BaseService<TenderDto> {
     }
   }
 
-  /// Dohvat sačuvanih (bookmarked) tendera
   Future<PagedResult<TenderDto>> getBookmarked({
     int page = 1,
     int pageSize = 10,

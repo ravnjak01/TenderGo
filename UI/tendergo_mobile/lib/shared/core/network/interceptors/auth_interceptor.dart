@@ -1,7 +1,5 @@
 import 'dart:async';
-
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:tendergo/mobile/routes/routes.dart';
 import 'package:tendergo/shared/core/auth/auth_token_store.dart';
@@ -49,10 +47,7 @@ class AuthInterceptor extends Interceptor {
     }
 
     final freshToken = await _tokenStore.readAccessToken();
-    if (kDebugMode) {
-
-    }
-
+   
     if (freshToken != null &&
         freshToken.trim().isNotEmpty &&
         _looksLikeJwt(freshToken)) {
@@ -64,71 +59,69 @@ class AuthInterceptor extends Interceptor {
     return handler.next(options);
   }
 
-  @override
-  Future<void> onError(
-    DioException err,
-    ErrorInterceptorHandler handler,
-  ) async {
-    final statusCode = err.response?.statusCode;
-    final path = err.requestOptions.path;
+ @override
+Future<void> onError(
+  DioException err,
+  ErrorInterceptorHandler handler,
+) async {
+  final statusCode = err.response?.statusCode;
+  final path = err.requestOptions.path;
 
-    if (err.requestOptions.extra['isRetry'] == true) {
-  return handler.next(err);
-}
+  if (statusCode != 401 ||
+      _isPublicPath(path) ||
+      path == ApiEndpoints.refreshToken ||
+      err.requestOptions.extra['isRetry'] == true) {
+    return handler.next(err);
+  }
 
-    if (statusCode != 401 ||
-    _isPublicPath(path) ||
-    path == ApiEndpoints.refreshToken ||
-    err.requestOptions.extra['isRetry'] == true) { 
-  return handler.next(err);
-}
+  if (_isRefreshing) {
+    final completer = Completer<Response<dynamic>>();
 
-    if (_isRefreshing) {
-      final completer = Completer<Response<dynamic>>();
-      _pendingQueue.add((bool refreshed) async {
-        if(refreshed)
-        {
-            try {
-            final response = await _retry(err.requestOptions);
-            completer.complete(response);
-          } catch (e) {
-            completer.completeError(e);
-          }
-        } else {
-          completer.completeError(err);
+    _pendingQueue.add((bool refreshed) async {
+      if (refreshed) {
+        try {
+          final response = await _retry(err.requestOptions);
+          completer.complete(response);
+        } catch (e) {
+          completer.completeError(e);
         }
-      });
-      try {
-        final response = await completer.future;
-        return handler.resolve(response);
-      } catch (_) {
-        return handler.next(err);
+      } else {
+        completer.completeError(err);
       }
-    }
-
-    _isRefreshing = false;
-    _resolvePending(true);
-    final refreshed = await _tryRefresh();
-
-    if (!refreshed) {
-      _isRefreshing = false;
-      _resolvePending(false);
-      //_rejectPending();
-      await _clearSession();
-      return handler.next(err);
-    }
-
-    _isRefreshing = false;
+    });
 
     try {
-      final response = await _retry(err.requestOptions);
-      _resolvePending(true);
+      final response = await completer.future;
       return handler.resolve(response);
-    } on DioException catch (retryErr) {
-      //_rejectPending();
-      return handler.next(retryErr);
+    } catch (_) {
+      return handler.next(err);
     }
   }
+
+  _isRefreshing = true;
+
+  final refreshed = await _tryRefresh();
+
+  if (!refreshed) {
+    _isRefreshing = false;
+    _resolvePending(false);
+
+    await _clearSession();
+
+    return handler.next(err);
+  }
+
+  _isRefreshing = false;
+
+  _resolvePending(true);
+
+  try {
+    final response = await _retry(err.requestOptions);
+    return handler.resolve(response);
+  } on DioException catch (retryErr) {
+    return handler.next(retryErr);
+  }
+}
 
   bool _isPublicPath(String path) => _publicPaths.contains(path);
 
@@ -221,13 +214,7 @@ class AuthInterceptor extends Interceptor {
     _pendingQueue.clear();
   }
 
-//
-  ///void _rejectPending() {
-  ///  for (final c in _pendingQueue) {
-     /// c.completeError(Exception('Token refresh failed; session ended'));
-    ///}
-    ///_pendingQueue.clear();
-  //}
+
 
   Future<void> _clearSession() async {
     await _tokenStore.clear();

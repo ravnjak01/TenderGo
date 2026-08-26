@@ -575,7 +575,6 @@ final int totalPages = _totalCount <= 0
           ],
         ),
         const SizedBox(height: 24),
-
         // STATISTIČKE KARTICE (OVERVIEW)
         if (overview != null)
           Row(

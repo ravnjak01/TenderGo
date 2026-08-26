@@ -40,7 +40,6 @@ Future<PagedResult<BidDto>> getMyBids({int page = 1, int pageSize = 3}) async {
       throw _handleError(e, 'Error fetching bid');
     }
   }
-  //zadnje popravio bug sa tenderima i kategorijom
 
   Future<BidDto> create(BidInsertRequest data) async {
     try {

@@ -40,7 +40,6 @@ class TenderProvider extends BaseProvider {
   bool get isSearchActive => _searchQuery.isNotEmpty;
   LocationFilterSelection? get locationFilter => _locationFilter;
 
-  // --- Paginacijska polja ---
   int _currentPage = 1;
   final int _pageSize = 3;
   bool _hasMore = true;
@@ -53,11 +52,9 @@ class TenderProvider extends BaseProvider {
   Set<int> _savedIds = {};
   Set<int> get savedIds => _savedIds;
 
-  // --- Kreiranje Request objekta sa backend filterima ---
 TenderSearchRequest _buildSearchRequest({int page = 1}) {
   List<int>? categoryIds;
 
-  // Ako 'All' nije selektovan i postoje izabrane kategorije
   if (!_selectedCategories.contains('All') && _selectedCategories.isNotEmpty) {
     categoryIds = _categories
         .where((c) => _selectedCategories.any(
@@ -65,7 +62,6 @@ TenderSearchRequest _buildSearchRequest({int page = 1}) {
         .map((c) => c.id)
         .toList();
 
-    // Ako iz nekog razloga nijedna nije mapirana (prazna lista), postavi na null
     if (categoryIds.isEmpty) {
       categoryIds = null;
     }
@@ -90,7 +86,6 @@ TenderSearchRequest _buildSearchRequest({int page = 1}) {
       _savedIds = bookmarkedPaged.result.map((t) => t.id).toSet();
       safeNotify();
     } catch (e) {
-      // Handle error
     }
   }
 
@@ -103,7 +98,6 @@ TenderSearchRequest _buildSearchRequest({int page = 1}) {
     safeNotify();
   }
 
-  // GETTER za kompatibilnost sa UI-em
   List<TenderDto> get filteredTenders => _tenders;
 
   void setLocationFilter(LocationFilterSelection? filter) {
@@ -141,7 +135,6 @@ TenderSearchRequest _buildSearchRequest({int page = 1}) {
     fetchActiveTenders();
   }
 
-  // --- 1. Inicijalno dohvatanje / Prva stranica ---
   Future<void> fetchActiveTenders({bool silent = false}) async {
     _currentPage = 1;
     _hasMore = true;
@@ -161,7 +154,6 @@ TenderSearchRequest _buildSearchRequest({int page = 1}) {
     );
   }
 
-  // --- 2. Beskonačno skrolovanje / Sljedeća stranica ---
   Future<void> fetchNextPage() async {
     if (_isLoadingMore || !_hasMore || isLoading) return;
 
@@ -180,7 +172,6 @@ TenderSearchRequest _buildSearchRequest({int page = 1}) {
 
       _hasMore = activePaged.result.length >= _pageSize;
     } catch (e) {
-      // Handle error
     } finally {
       _isLoadingMore = false;
       safeNotify();
@@ -198,7 +189,6 @@ TenderSearchRequest _buildSearchRequest({int page = 1}) {
         return created;
       }, silent: true);
 
-  // --- 3. Pretraga ---
   Future<void> searchTenders(String query) async {
     _searchQuery = query.trim();
     await fetchActiveTenders();
@@ -214,7 +204,6 @@ TenderSearchRequest _buildSearchRequest({int page = 1}) {
         query: normalized,
       );
     } catch (e) {
-      // Handle error
     }
   }
 

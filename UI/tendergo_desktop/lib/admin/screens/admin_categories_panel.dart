@@ -492,7 +492,6 @@ final int totalPages = _totalCount <= 0
         ),
         const SizedBox(height: 28),
 
-        // Search bar i Akciono dugme
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [

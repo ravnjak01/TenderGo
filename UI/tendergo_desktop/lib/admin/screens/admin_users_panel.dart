@@ -94,10 +94,8 @@ class _AdminUsersPanelState extends State<AdminUsersPanel> {
  Future<void> _handleBanUser(UserDto user) async {
   final reason = await _showBanReasonDialog();
   
-  // Ako je korisnik kliknuo "Otkaži" ili zatvorio dijalog
   if (reason == null) return;
 
-  // Dodatna provjera ukoliko je unijeta prazna vrijednost
   if (reason.trim().isEmpty) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
