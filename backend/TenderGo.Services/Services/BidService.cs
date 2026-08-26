@@ -68,8 +68,8 @@ namespace TenderGo.Services.Services
         }
 
         public async Task<PagedResult<BidDTO>> GetBidsByUser(
-      string userId,
-      PagedSearchRequest request)
+       string userId,
+       PagedSearchRequest request)
         {
             var currentUserId = _authService.GetCurrentUserId();
             var isAdmin = _authService.IsInRole(AppRoles.Admin);
@@ -82,18 +82,17 @@ namespace TenderGo.Services.Services
                 ? Math.Min(request.PageSize, 100)
                 : 10;
 
-            var latestBidsQuery = _context.Bids
+            var latestBidIdsQuery = _context.Bids
                 .AsNoTracking()
                 .Where(b => b.SubmittedByUserId == userId)
                 .GroupBy(b => b.TenderId)
-                .Select(g => g
-                    .OrderByDescending(b => b.CreatedAt)
-                    .ThenByDescending(b => b.Id)
-                    .First());
+                .Select(g => g.Max(b => b.Id)); 
 
-            var totalCount = await latestBidsQuery.CountAsync();
+            var totalCount = await latestBidIdsQuery.CountAsync();
 
-            var bids = await latestBidsQuery
+            var bids = await _context.Bids
+                .AsNoTracking()
+                .Where(b => latestBidIdsQuery.Contains(b.Id))
                 .OrderByDescending(b => b.CreatedAt)
                 .ThenByDescending(b => b.Id)
                 .Skip((page - 1) * pageSize)
@@ -102,7 +101,6 @@ namespace TenderGo.Services.Services
                 {
                     Id = b.Id,
                     TenderId = b.TenderId,
-
                     TenderTitle = b.Tender.Title,
 
                     SubmittedByUserId = b.SubmittedByUserId,
