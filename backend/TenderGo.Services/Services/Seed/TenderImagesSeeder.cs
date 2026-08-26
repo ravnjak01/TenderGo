@@ -21,6 +21,7 @@ namespace TenderGo.Services.Services.Seed
         {
             var env = serviceProvider.GetRequiredService<IWebHostEnvironment>();
 
+
             string relativeFolderPath = "uploads/tenders";
             string absoluteFolderPath = Path.Combine(env.WebRootPath, relativeFolderPath);
 
@@ -68,7 +69,8 @@ namespace TenderGo.Services.Services.Seed
                         TenderId = tender.Id,
                         ImageUrl = dbImageUrl,
                         IsPrimary = true,
-                        ImageHash = Guid.NewGuid().ToString("N")
+                        ImageHash = Guid.NewGuid().ToString("N"),
+                        CreatedByUserId=tender.CreatedByUserId,
                     });
 
             }
